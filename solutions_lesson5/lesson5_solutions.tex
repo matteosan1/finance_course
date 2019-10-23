@@ -150,11 +150,8 @@
     % Document parameters
     % Document title
     \title{Solutions - Practical Lesson 5}
-    \author{Matteo Sani \\ \href{mailto:matteosan1@gmail.com}{matteosan1@gmail.com}}
-    
-    
-    
-    
+    \author{Matteo Sani\\ \href{mailto:matteosan1@gmail.com}{matteosan1@gmail.com}}
+        
 
     % Pygments definitions
     
@@ -299,11 +296,67 @@
 \hypertarget{exercise-5.1}{%
 \subsubsection{Exercise 5.1}\label{exercise-5.1}}
 
+In the next lesson we're going to build lots of
+\texttt{OvernightIndexSwap} objects, one for each market quote we have.
+The market quotes will consist of fixed strikes for 1M, 2M, 3M,
+\ldots{}, 12M, 15M, 18M, 2Y, 3Y, \ldots{}, 30Y and 40Y swaps.
+
+It would be very boring to write a long list of payment dates for each
+one of these, plus they'd need to be updated every day. Write a function
+which given a start date and the number of months, returns a list of
+dates of \textbf{annual} frequency starting from the start date and
+ending after the specified number of months.
+
+For example
+
+2019-11-10 start date 12 months \(\rightarrow\) 2019-11-10, 2020-11-10
+2019-11-10 start date 24 months \(\rightarrow\) 2019-11-10, 2020-11-10,
+2021-11-10
+
+Note that if the number of months is not a multiple of 12, the last
+period should simply be shorter than 12 months. For example
+
+2019-11-10 start date 9 months \(\rightarrow\) 2019-11-10, 2020-08-10
+2019-11-10 start date 15 months \(\rightarrow\) 2019-11-10, 2020-11-10,
+2021-02-10
+
+\textbf{Solution}:
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}1}]:} \PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
+        \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+        \PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
+        
+        \PY{k}{def} \PY{n+nf}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{n\PYZus{}months}\PY{p}{)}\PY{p}{:}
+            \PY{n}{dates} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+            \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{n\PYZus{}months}\PY{p}{,} \PY{l+m+mi}{12}\PY{p}{)}\PY{p}{:}
+                \PY{n}{dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{months}\PY{o}{=}\PY{n}{i}\PY{p}{)}\PY{p}{)}
+            \PY{n}{dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{months}\PY{o}{=}\PY{n}{n\PYZus{}months}\PY{p}{)}\PY{p}{)}
+            
+            \PY{k}{return} \PY{n}{dates}
+        
+        
+        \PY{k}{assert} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{12}\PY{p}{)} \PY{o}{==} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,} 
+                                                               \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{]}
+        \PY{k}{assert} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{24}\PY{p}{)} \PY{o}{==} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,} 
+                                                               \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,} 
+                                                               \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{]}
+        
+        \PY{k}{assert} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{9}\PY{p}{)} \PY{o}{==} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,} 
+                                                              \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{]}
+        \PY{k}{assert} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{15}\PY{p}{)} \PY{o}{==} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,} 
+                                                               \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,} 
+                                                               \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{]}
+\end{Verbatim}
+
+    \hypertarget{exercise-5.2}{%
+\subsubsection{Exercise 5.2}\label{exercise-5.2}}
+
 Take the \texttt{OvernightIndexSwap} class from the lesson and add a new
 method called fair\_value\_strike which takes a discount curve object
 and returns the fixed rate which would make the OIS have zero NPV.
 
-\textbf{\emph{Hints}}:
+\emph{Hints}:
 
 \begin{itemize}
 \tightlist
@@ -317,11 +370,11 @@ and returns the fixed rate which would make the OIS have zero NPV.
 \textbf{Solution}: As the hint suggested and going back to lesson 5
 formulas we have:
 
-\[\mathrm{NPV}_{\mathrm{fix}} = N\cdot K\cdot \sum_{i=1}^{n}D(d_{i})\frac{d_i - d_{i-1}}{360}\]
+\[\mathrm{NPV}_{\mathrm{fix}} = NK \sum_{i=1}^{n}D(d_{i})\frac{d_i - d_{i-1}}{360}\]
 
 \[\mathrm{NPV}_{\mathrm{float}} = N \cdot [D(d_0) - D(d_n)]\]
 
-\[K \cdot \sum_{i=1}^{n}D(d_{i})\frac{d_i - d_{i-1}}{360} = [D(d_0) - D(d_n)]\]
+\[K \sum_{i=1}^{n}D(d_{i})\frac{d_i - d_{i-1}}{360} = [D(d_0) - D(d_n)]\]
 
 \[K = \frac{[D(d_0) - D(d_n)]}{\sum_{i=1}^{n}D(d_{i})\frac{d_i - d_{i-1}}{360}}\]
 
@@ -346,16 +399,18 @@ Now in python:
 \end{Highlighting}
 \end{Shaded}
 
-    \hypertarget{exercise-5.2}{%
-\subsection{Exercise 5.2}\label{exercise-5.2}}
+    \hypertarget{exercise-5.3}{%
+\subsubsection{Exercise 5.3}\label{exercise-5.3}}
 
-Take the  \texttt{OvernightIndexSwap} class, add it to finmarkets.py and try
-importing it and using it.
+Take the \texttt{OvernightIndexSwap} class, add it to finmarkets.py and
+try importing it and using it.
 
-\textbf{Solution:} Copy the above function in the  \texttt{OvernightIndexSwap} 𝚌𝚕𝚊𝚜𝚜. Then import the finmarket library and check few results
+\textbf{Solution:} Copy the above function in the
+\texttt{OvernightIndexSwap} class. Then import the finmarket library and
+check few results
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}1}]:} \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+{\color{incolor}In [{\color{incolor}3}]:} \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
         \PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{OvernightIndexSwap}\PY{p}{,} \PY{n}{DiscountCurve}
         
         \PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
@@ -382,68 +437,9 @@ importing it and using it.
 \end{Verbatim}
 
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}1}]:} 0.1947172768497251
+{\color{outcolor}Out[{\color{outcolor}3}]:} 0.1947172768497251
 \end{Verbatim}
             
-    \hypertarget{exercise-5.3}{%
-\subsubsection{Exercise 5.3}\label{exercise-5.3}}
-
-In the next lesson we're going to build lots of
-\texttt{OvernightIndexSwap} objects, one for each market quote we have.
-The market quotes will consist of fixed strikes for 1M, 2M, 3M,
-\ldots{}, 12M, 15M, 18M, 2Y, 3Y, \ldots{}, 30Y and 40Y swaps.
-
-It would be very boring to write a long list of payment dates for each
-one of these, plus they'd need to be updated every day. Write a function
-which given a start date and the number of months, returns a list of
-dates of \textbf{annual} frequency starting from the start date and
-ending after the specified number of months.
-
-For example
-
-2016-11-17 start date 12 months \(\rightarrow\) 2016-11-17, 2017-11-17
-2016-11-17 start date 24 months \(\rightarrow\) 2016-11-17, 2017-11-17,
-2018-11-17
-
-Note that if the number of months is not a multiple of 12, the last
-period should simply be shorter than 12 months. For example
-
-2016-11-17 start date 9 months \(\rightarrow\) 2016-11-17, 2017-08-17
-2016-11-17 start date 15 months \(\rightarrow\) 2016-11-17, 2017-11-17,
-2018-02-17
-
-\textbf{Solution}:
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\KeywordTok{def}\NormalTok{ generate_swap_dates(start_date, n_months, tenor_months}\OperatorTok{=}\DecValTok{12}\NormalTok{):}
-    
-\NormalTok{    dates }\OperatorTok{=}\NormalTok{ []}
-    \ControlFlowTok{for}\NormalTok{ i }\KeywordTok{in} \BuiltInTok{range}\NormalTok{(}\DecValTok{0}\NormalTok{, n_months, tenor_months):}
-\NormalTok{        dates.append(start_date }\OperatorTok{+}\NormalTok{ relativedelta(months}\OperatorTok{=}\NormalTok{i))}
-\NormalTok{    dates.append(start_date }\OperatorTok{+}\NormalTok{ relativedelta(months}\OperatorTok{=}\NormalTok{n_months))}
-    
-    \ControlFlowTok{return}\NormalTok{ dates}
-\end{Highlighting}
-\end{Shaded}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}2}]:} \PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
-        \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-        
-        \PY{k}{assert} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2016}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{12}\PY{p}{)} \PY{o}{==} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2016}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{,} 
-                                                               \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2017}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{]}
-        \PY{k}{assert} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2016}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{24}\PY{p}{)} \PY{o}{==} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2016}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{,} 
-                                                               \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2017}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{,} 
-                                                               \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2018}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{]}
-        
-        \PY{k}{assert} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2016}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{9}\PY{p}{)} \PY{o}{==} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2016}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{,} 
-                                                              \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2017}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{]}
-        \PY{k}{assert} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2016}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{15}\PY{p}{)} \PY{o}{==} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2016}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{,} 
-                                                               \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2017}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{,} 
-                                                               \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2018}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{17}\PY{p}{)}\PY{p}{]}
-\end{Verbatim}
-
 
     % Add a bibliography block to the postdoc
     
