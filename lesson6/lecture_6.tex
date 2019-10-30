@@ -30,7 +30,7 @@
     \makeatother
     \let\Oldincludegraphics\includegraphics
     % Set max figure width to be 80% of text width, for now hardcoded.
-    %\renewcommand{\includegraphics}[1]{\Oldincludegraphics[width=.8\maxwidth]{#1}}
+    \renewcommand{\includegraphics}[1]{\Oldincludegraphics[width=.8\maxwidth]{#1}}
     % Ensure that by default, figures have no caption (until we provide a
     % proper Figure object with a Caption API and a way to capture that
     % in the conversion process - todo).
@@ -149,25 +149,25 @@
     \renewcommand{\LaTeX}{\textrm{\Oldlatex}}
     % Document parameters
     % Document title
-    \title{Interest Rate Derivatives - Practical Lesson 6}
-    \author{Matteo Sani \\ \href{mailto:matteosan1@gmail.com}{matteosan1@gmail.com}}
-       
+    \title{Swaptions and Monte Carlo Simulation - Practical Lesson 6}
+    \author{Matteo Sani\\ \href{mailto:matteosan1@gmail.com}{matteosan1@gmail.com}} 
     
     
-
+    
+    
     % Pygments definitions
     
-\makeatletter
-\def\PY@reset{\let\PY@it=\relax \let\PY@bf=\relax%
-    \let\PY@ul=\relax \let\PY@tc=\relax%
-    \let\PY@bc=\relax \let\PY@ff=\relax}
-\def\PY@tok#1{\csname PY@tok@#1\endcsname}
-\def\PY@toks#1+{\ifx\relax#1\empty\else%
-    \PY@tok{#1}\expandafter\PY@toks\fi}
-\def\PY@do#1{\PY@bc{\PY@tc{\PY@ul{%
-    \PY@it{\PY@bf{\PY@ff{#1}}}}}}}
-\def\PY#1#2{\PY@reset\PY@toks#1+\relax+\PY@do{#2}}
-
+    \makeatletter
+    \def\PY@reset{\let\PY@it=\relax \let\PY@bf=\relax%
+      \let\PY@ul=\relax \let\PY@tc=\relax%
+      \let\PY@bc=\relax \let\PY@ff=\relax}
+    \def\PY@tok#1{\csname PY@tok@#1\endcsname}
+    \def\PY@toks#1+{\ifx\relax#1\empty\else%
+      \PY@tok{#1}\expandafter\PY@toks\fi}
+    \def\PY@do#1{\PY@bc{\PY@tc{\PY@ul{%
+            \PY@it{\PY@bf{\PY@ff{#1}}}}}}}
+    \def\PY#1#2{\PY@reset\PY@toks#1+\relax+\PY@do{#2}}
+    
 \expandafter\def\csname PY@tok@w\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.73,0.73}{##1}}}
 \expandafter\def\csname PY@tok@c\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
 \expandafter\def\csname PY@tok@cp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.74,0.48,0.00}{##1}}}
@@ -289,8 +289,11 @@
     
 
     
-    \hypertarget{interest-rate-swaps-and-swaptions---lesson-6}{%
-\section{Interest Rate Swaps and Swaptions}\label{interest-rate-swaps-and-swaptions---lesson-6}}
+    \hypertarget{interest-rate-swaps-and-swaptions---lesson-6}
+                {
+                  \section{Interest Rate Swaps and Swaptions}
+                  \label{interest-rate-swaps-and-swaptions---lesson-6}
+                }
 
 \hypertarget{overview}{%
 \subsection{Overview}\label{overview}}
@@ -401,7 +404,7 @@ lesson}\label{structure-of-todays-lesson}}
   Next we'll write a similar class for interest rate swaptions. We'll
   add a method for calculating the NPV analytically using the
   Black-Scholes formula, and then an additional method for calculating
-  the same NPV via a Monte-Carlo simulation.
+  the same NPV via a Monte Carlo simulation.
 \end{itemize}
 
     \hypertarget{interest-rate-swaps}{%
@@ -453,12 +456,12 @@ and floating legs, as follows:
 \end{Verbatim}
 
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}1}]:} [datetime.date(2019, 10, 28),
-         datetime.date(2020, 1, 28),
-         datetime.date(2020, 4, 28),
-         datetime.date(2020, 7, 28),
-         datetime.date(2020, 10, 28),
-         datetime.date(2021, 1, 28),
+{\color{outcolor}Out[{\color{outcolor}1}]:} [datetime.date(2019, 10, 30),
+         datetime.date(2020, 1, 30),
+         datetime.date(2020, 4, 30),
+         datetime.date(2020, 7, 30),
+         datetime.date(2020, 10, 30),
+         datetime.date(2021, 1, 30),
          datetime.date(2021, 2, 28)]
 \end{Verbatim}
             
@@ -490,8 +493,8 @@ counterparty which receives the floating leg) is
 
     For reasons which will become apparent later, it's actually more
 convenient to express the NPV of an IRS as a function of the fair value
-fixed rate \(S\) of the IRS, also known as the swap rate. \(S\) is the
-value of K which makes \(\mathrm{NPV}(d)=0\).
+fixed rate \(S\) of the IRS, also known as the \textbf{swap rate}. \(S\)
+is the value of K which makes \(\mathrm{NPV}(d)=0\).
 
 On the basis of the previous expressions, we can easiy calculate \(S\)
 as:
@@ -504,13 +507,18 @@ as:
     Once we have calculated \(S\), we can express the \(\mathrm{NPV}\) of an
 IRS as follows:
 
-  \begin{align*}
-    \mathrm{NPV}(d; K) & = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d; K) = & \\ \\ &= \underbrace{\mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d; S)}_{\mathrm{=\;0}} + \mathrm{NPV}_{\mathrm{fixed}}(d;S) - \mathrm{NPV}_{\mathrm{fixed}}(d;K) & \\ & = N\cdot(S-K)\cdot\underbrace{\sum_{i=1}^{p}D(d, d_{i}^{\mathrm{fixed}})}_{\mathrm{'annxuity'}}
-  \end{align*}
+\begin{equation*}
+  \begin{split}
+  \mathrm{NPV}(d; K) & = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d; K) = \\
+  &= \underbrace{\mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d; S)}_{\mathrm{=\;0}} + \mathrm{NPV}_{\mathrm{fixed}}(d;S) - \mathrm{NPV}_{\mathrm{fixed}}(d;K) \\
+  & = N\cdot(S-K)\cdot\underbrace{\sum_{i=1}^{p}D(d, d_{i}^{\mathrm{fixed}})}_{\mathrm{'annuity'}}
+  \end{split}
+\end{equation*}
 
     For convenience the relevant inputs that will be used later (observation
 date, discount and libor curve definitions) have been saved in a file
-\texttt{curve\_data.py}.
+\texttt{curve\_data.py} that can be found
+\(\href{https://repl.it/@MatteoSani/support6}{\textrm{here}}\).
 
     \begin{Verbatim}[commandchars=\\\{\}]
 {\color{incolor}In [{\color{incolor}2}]:} \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
@@ -563,14 +571,18 @@ date, discount and libor curve definitions) have been saved in a file
 \end{Verbatim}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}4}]:} \PY{n}{irs} \PY{o}{=} \PY{n}{InterestRateSwap}\PY{p}{(}\PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{l+m+mf}{1e6}\PY{p}{,} \PY{l+m+mf}{0.05}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{)}
-        \PY{n}{irs}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}4}]:} \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+        
+        \PY{n}{pricing\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}
+        \PY{n}{irs} \PY{o}{=} \PY{n}{InterestRateSwap}\PY{p}{(}\PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{l+m+mf}{1e6}\PY{p}{,} \PY{l+m+mf}{0.05}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{)}
+        \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{irs}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}\PY{p}{)}\PY{p}{)}
 \end{Verbatim}
 
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}4}]:} -160130.58128473637
-\end{Verbatim}
-            
+    \begin{Verbatim}[commandchars=\\\{\}]
+-160130.58 EUR
+
+    \end{Verbatim}
+
     \hypertarget{can-you-guess-what-could-be-the-swap-rate-given-that-the-npv-is-negative-remember-that-we-are-looking-at-this-contracts-from-the-point-of-view-of-the-receiver-of-the-floating-leg}{%
 \paragraph{Can you guess what could be the swap rate given that the npv
 is negative ? (Remember that we are looking at this contracts from the
@@ -578,22 +590,24 @@ point of view of the receiver of the floating
 leg\ldots{})}\label{can-you-guess-what-could-be-the-swap-rate-given-that-the-npv-is-negative-remember-that-we-are-looking-at-this-contracts-from-the-point-of-view-of-the-receiver-of-the-floating-leg}}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}5}]:} \PY{n}{irs}\PY{o}{.}\PY{n}{swap\PYZus{}rate}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}5}]:} \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{irs}\PY{o}{.}\PY{n}{swap\PYZus{}rate}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}\PY{p}{)}\PY{p}{)}
 \end{Verbatim}
 
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}5}]:} 0.010254255993254184
-\end{Verbatim}
-            
+    \begin{Verbatim}[commandchars=\\\{\}]
+0.01
+
+    \end{Verbatim}
+
     \begin{Verbatim}[commandchars=\\\{\}]
 {\color{incolor}In [{\color{incolor}6}]:} \PY{n}{irs2} \PY{o}{=} \PY{n}{InterestRateSwap}\PY{p}{(}\PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{l+m+mf}{1e6}\PY{p}{,} \PY{l+m+mf}{0.0102542}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{)}
-        \PY{n}{irs2}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}
+        \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{irs2}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}\PY{p}{)}\PY{p}{)}
 \end{Verbatim}
 
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}6}]:} 0.2255897471446154
-\end{Verbatim}
-            
+    \begin{Verbatim}[commandchars=\\\{\}]
+0.23 EUR
+
+    \end{Verbatim}
+
     \hypertarget{interest-rate-swaptions}{%
 \subsection{Interest Rate Swaptions}\label{interest-rate-swaptions}}
 
@@ -618,13 +632,12 @@ formula}\label{evaluation-through-black-scholes-formula}}
 In this case, to evaluate the NPV of this payoff, we'll use a
 generalization of the Black-Scholes-Merton formula applied to swaptions:
 
-\[\mathrm{NPV} = N\cdot A\cdot [S \Phi(d_+) - K\Phi(d_-)]\]
+\[\mathrm{NPV} = N\cdot A\cdot [S \mathcal{N}(d_+) - K\mathcal{N}(d_-)]\]
 
 where
 
-\[d_{\pm} = \frac{\mathrm{log}(\frac{S}{K}) \pm \frac{1}{2}\sigma^{2}T}{\sigma\sqrt{T}}\;\; (\sigma\;\textrm{is the volatility of the swap rate})\]
-\[\\\]
-\[A=\sum_{i=1}^{p}D(d, d_{i}^{\mathrm{fixed}}) \; (\mathrm{annuity})\]
+\[d_{\pm} = \frac{\mathrm{log}(\frac{S}{K}) \pm \frac{1}{2}\sigma^{2}T}{\sigma\sqrt{T}}\;\; (\sigma\;\textrm{is the volatility of the swap rate})\\\]
+\[A =\sum_{i=1}^{p}D(d, d_{i}^{\mathrm{fixed}})\;\;(\mathrm{annuity})\]
 
     \begin{Verbatim}[commandchars=\\\{\}]
 {\color{incolor}In [{\color{incolor}7}]:} \PY{n}{sigma} \PY{o}{=} \PY{l+m+mf}{0.07}
@@ -643,11 +656,11 @@ where
         \PY{n}{d2} \PY{o}{=} \PY{p}{(}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{S}\PY{o}{/}\PY{n}{irs}\PY{o}{.}\PY{n}{fixed\PYZus{}rate}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{sigma}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{*} \PY{n}{T}\PY{p}{)} \PY{o}{/} \PY{p}{(}\PY{n}{sigma} \PY{o}{*} \PY{n}{T}\PY{o}{*}\PY{o}{*}\PY{l+m+mf}{0.5}\PY{p}{)}
         \PY{n}{npv} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{n}{A} \PY{o}{*} \PY{p}{(}\PY{n}{S} \PY{o}{*} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{d1}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{irs}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{*} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{d2}\PY{p}{)}\PY{p}{)}
         
-        \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Swaption NPV: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{npv}\PY{p}{)}\PY{p}{)}
+        \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Swaption NPV with BS: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{npv}\PY{p}{)}\PY{p}{)}
 \end{Verbatim}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-Swaption NPV: 3330.741 EUR
+Swaption NPV with BS: 3330.741 EUR
 
     \end{Verbatim}
 
@@ -692,16 +705,16 @@ Artificial intelligence for games, Search and rescue and of course
 Finance and business.
 
     \hypertarget{pseudo-random-numbers}{%
-      \paragraph{Pseudo-Random Numbers}\label{pseudo-random-numbers}}
-    
+\paragraph{Pseudo-Random Numbers}\label{pseudo-random-numbers}}
+
 Uses of Monte Carlo methods require large amounts of random numbers to
 generate the inputs, and it was their use that spurred the development
 of pseudorandom number generators. Every language has libraries that
 allows to produce huge series of random numbers (with a periodicity of
 \(2^{19937}\)). Those numbers are produced by algorithms that take as
-inputs a \emph{seed} which determines univokely the serie. This means
+input a \emph{seed} which determines univokely the series. This means
 that setting the same seed you will produce the same set of numbers
-every time which is great for debugging purpouses.
+every time (which is great for debugging purpouses).
 
 In Python the right module to use is \texttt{random} which has the
 following useful functions:
@@ -711,16 +724,17 @@ following useful functions:
 \item
   \texttt{seed} set the seed of the random number generator;
 \item
-  \texttt{random} returns a random number between 0 and 1;
+  \texttt{random} returns a random number between 0 and 1 (with uniform
+  probability);
 \item
   \texttt{randint(min,\ max)} returns an integer random number between
-  \texttt{min} and \texttt{max} (uniform probability);
+  \texttt{min} and \texttt{max} (with uniform probability);
 \item
-  \texttt{sample(aList,\ k=n)} samples n elements from a the list
+  \texttt{sample(aList,\ k=n)} samples n elements from the list
   \texttt{aList}.
 \end{itemize}
 
-For a more detailed description check \texttt{help(random)}.
+As usual for a more detailed description check \texttt{help(random)}.
 
     \begin{Verbatim}[commandchars=\\\{\}]
 {\color{incolor}In [{\color{incolor}8}]:} \PY{k+kn}{import} \PY{n+nn}{random} 
@@ -729,13 +743,13 @@ For a more detailed description check \texttt{help(random)}.
         \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{seed is 1}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
         \PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
         \PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-        \PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}
         
+        \PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}
         \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{seed is 2}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
         \PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
         \PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-        \PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
         
+        \PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
         \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{seed is 1 again}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
         \PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
         \PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
@@ -761,36 +775,36 @@ seed is 1 again
     \end{Verbatim}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}10}]:} \PY{n}{numbers} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-         \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{10000}\PY{p}{)}\PY{p}{:}
-           \PY{n}{numbers}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{randint}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
-         
-         \PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
-         \PY{n}{plt}\PY{o}{.}\PY{n}{hist}\PY{p}{(}\PY{n}{numbers}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{n+nb}{range}\PY{o}{=}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.5}\PY{p}{,} \PY{l+m+mf}{5.5}\PY{p}{]}\PY{p}{)}
-         \PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Uniform distribution from randint}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-         \PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}9}]:} \PY{n}{numbers} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+        \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{10000}\PY{p}{)}\PY{p}{:}
+          \PY{n}{numbers}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{randint}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+        
+        \PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
+        \PY{n}{plt}\PY{o}{.}\PY{n}{hist}\PY{p}{(}\PY{n}{numbers}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{n+nb}{range}\PY{o}{=}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.5}\PY{p}{,} \PY{l+m+mf}{5.5}\PY{p}{]}\PY{p}{)}
+        \PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Uniform distribution from randint}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+        \PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{lecture_6_files/lecture_6_28_0.png}
+      \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{lecture_6_files/lecture_6_28_0.png}
     \end{center}
-    { \hspace*{\fill} \\}
     
-    \hypertarget{example}{%
-\paragraph{Example}\label{example}}
+    \hypertarget{example-of-monte-carlo-simulation}{%
+\paragraph{Example of Monte Carlo
+Simulation}\label{example-of-monte-carlo-simulation}}
 
-Let's try to check the probability to get two kings drawing two cards
+Let's check the probability to get two kings drawing randomly two cards
 from a deck. Using a frequentist approach, we can calculate the
 probability of an event as the ratio of the number of favorable outcomes
 of an experiment (number of successes) and the number of all possible
-outcomes so:
+outcomes so for our example:
 
 \[P_\textrm{two kings} = \frac{4}{40} \cdot \frac{3}{39} = \frac{1}{130} \approx 0.0077\]
 
-Let's try with a Monte Carlo simulation.
+Let's now try with a Monte Carlo simulation.
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}11}]:} \PY{k+kn}{from} \PY{n+nn}{random} \PY{k}{import} \PY{n}{sample}\PY{p}{,} \PY{n}{choices}\PY{p}{,} \PY{n}{seed}
+{\color{incolor}In [{\color{incolor}10}]:} \PY{k+kn}{from} \PY{n+nn}{random} \PY{k}{import} \PY{n}{sample}\PY{p}{,} \PY{n}{choices}\PY{p}{,} \PY{n}{seed}
          
          \PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
          
@@ -825,12 +839,12 @@ The probability to draw two kings is 0.0077
     \end{Verbatim}
 
     Other modules provide random generators according to different
-distributions. Below an example with numpy.random which allows to throw
-random numbers according to a normal distribution
+distributions. Below an example with \texttt{numpy.random} which allows
+to throw random numbers according to a normal distribution
 (\(\mathcal{N}(0, 1)\)).
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}12}]:} \PY{k+kn}{from} \PY{n+nn}{numpy}\PY{n+nn}{.}\PY{n+nn}{random} \PY{k}{import} \PY{n}{normal}
+{\color{incolor}In [{\color{incolor}11}]:} \PY{k+kn}{from} \PY{n+nn}{numpy}\PY{n+nn}{.}\PY{n+nn}{random} \PY{k}{import} \PY{n}{normal}
          \PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
          
          \PY{n}{gauss} \PY{o}{=} \PY{p}{[}\PY{p}{]}
@@ -862,7 +876,7 @@ in its price during a period \(dt\) can be decomposed in two parts:
   a deterministic part that is the expected return from the stock hold
   during the time period \(dt\) (\(\mu S_tdt\))
 \item
-  a stochastic part which reflects the random changes in stock price
+  a stochastic part which reflects the random changes of the market
   (e.g.~as a response to external effects such as unexpected news). A
   reasonable assumption is to take this contribution proportional to the
   stock (\(\sigma S_tdB_t\) where \(dB_t\) is a random walk process).
@@ -904,8 +918,13 @@ In this second case we start from the current swap rate \(S(d)\)
 evaluated at the pricing data \(d\), and assume that it follows a
 log-normal stochastic process, so its distribution at
 \(d_{\mathrm{ex}}\) (exercise date) is
-\(S(d_{\mathrm{ex}}) = S(d)\mathrm{exp}\{-\frac{1}{2}\sigma^{2}T+\sigma\sqrt{T}\epsilon\}\)
-where \(\epsilon\approx\mathcal{N}(0,1)\). To perform the simulation:
+\(S(d_{\mathrm{ex}}) = S(d)\mathrm{exp}(-\frac{1}{2}\sigma^{2}T+\sigma\sqrt{T}\epsilon)\)
+where \(\epsilon\approx\mathcal{N}(0,1)\). Remember that the discounted
+payoff is given by:
+
+\[N\cdot \mathrm{max}(0, S(d_{\mathrm{ex}}) - K)\cdot\sum D(d_{\mathrm{ex}}, d_i^{\mathrm{fixed}})\]
+
+So to perform the simulation:
 
 \begin{itemize}
 \tightlist
@@ -919,7 +938,7 @@ where \(\epsilon\approx\mathcal{N}(0,1)\). To perform the simulation:
 \end{itemize}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}14}]:} \PY{c+c1}{\PYZsh{} we\PYZsq{}ll need numpy.mean and numpy.std to calculate the average and standard }
+{\color{incolor}In [{\color{incolor}12}]:} \PY{c+c1}{\PYZsh{} we\PYZsq{}ll need numpy.mean and numpy.std to calculate the average and standard }
          \PY{c+c1}{\PYZsh{} deviation of a list of values}
          \PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
          \PY{k+kn}{from} \PY{n+nn}{numpy}\PY{n+nn}{.}\PY{n+nn}{random} \PY{k}{import} \PY{n}{normal}\PY{p}{,} \PY{n}{seed}
@@ -932,7 +951,7 @@ where \(\epsilon\approx\mathcal{N}(0,1)\). To perform the simulation:
          \PY{k}{for} \PY{n}{i\PYZus{}scenario} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{n\PYZus{}scenarios}\PY{p}{)}\PY{p}{:}
              \PY{c+c1}{\PYZsh{} simulate the swap rate in this scenario}
              \PY{n}{S\PYZus{}simulated} \PY{o}{=} \PY{n}{S} \PY{o}{*} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{sigma} \PY{o}{*} \PY{n}{sigma} \PY{o}{*} \PY{n}{T} \PY{o}{+}
-             \PY{n}{sigma} \PY{o}{*} \PY{n}{math}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{T}\PY{p}{)} \PY{o}{*} \PY{n}{normal}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+                                        \PY{n}{sigma} \PY{o}{*} \PY{n}{math}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{T}\PY{p}{)} \PY{o}{*} \PY{n}{normal}\PY{p}{(}\PY{p}{)}\PY{p}{)}
              
              \PY{c+c1}{\PYZsh{} calculate the swap NPV in this scenario}
              \PY{n}{swap\PYZus{}npv} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{p}{(}\PY{n}{S\PYZus{}simulated} \PY{o}{\PYZhy{}} \PY{n}{irs}\PY{o}{.}\PY{n}{fixed\PYZus{}rate}\PY{p}{)} \PY{o}{*} \PY{n}{A}
@@ -958,13 +977,13 @@ Swaption NPV: 3351.42 EUR (+/- 66.14 EUR with 99\% confidence)
     \end{Verbatim}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}15}]:} \PY{c+c1}{\PYZsh{} Note that this is not *strictly speaking* the correct way of calculating}
-         \PY{c+c1}{\PYZsh{} the value, the reason being that one should calculate the swap NPV at}
-         \PY{c+c1}{\PYZsh{} the expiry date of the swaption, apply the payoff function max(0, ...)}
+{\color{incolor}In [{\color{incolor}13}]:} \PY{c+c1}{\PYZsh{} Note that this is not *strictly speaking* the correct way of calculating}
+         \PY{c+c1}{\PYZsh{} the value, the reason being that one should calculate the swap NPV at }
+         \PY{c+c1}{\PYZsh{} the expiry date of the swaption, apply the payoff function max(0, ...) }
          \PY{c+c1}{\PYZsh{} and *then* discount from the expiry date to today.}
          
-         \PY{c+c1}{\PYZsh{} However, it\PYZsq{}s simpler to calculate it as above and it doesn\PYZsq{}t}
-         \PY{c+c1}{\PYZsh{} make any difference to the result, since }
+         \PY{c+c1}{\PYZsh{} However, it\PYZsq{}s simpler to calculate it as above and it doesn\PYZsq{}t make any }
+         \PY{c+c1}{\PYZsh{} difference to the result, since }
          \PY{c+c1}{\PYZsh{} DF * max(0, SwapNPVAtExpiry) == max(0, DF * SwapNPVAtExpiry)}
 \end{Verbatim}
 
@@ -972,8 +991,13 @@ Swaption NPV: 3351.42 EUR (+/- 66.14 EUR with 99\% confidence)
 confidence interval produced by the Monte Carlo simulation, so we can
 assert that the two methods are in agreement.
 
-Swaption NPV (BS): 3330.74 EUR
-Swaption NPV (MC): 3351.42 EUR
+\begin{itemize}
+\tightlist
+\item
+  Swaption NPV (BS): 3330.74 EUR
+\item
+  Swaption NPV (MC): 3351.42 EUR
+\end{itemize}
 
     \hypertarget{confidence-interval}{%
 \paragraph{Confidence interval}\label{confidence-interval}}
@@ -987,9 +1011,9 @@ hence \(\mathcal{N}\) is sampled many times, the fraction of calculated
 confidence intervals (which would differ for each sample) than contains
 the true population parameter would tend toward X\%
 
-\begin{figure}[ht]
+\begin{figure}
 \centering
-\includegraphics[width=.6\linewidth]{Standard_deviation_diagram.svg.png}
+\includegraphics{Standard_deviation_diagram.svg.png}
 \caption{Confidence interval graphical explanation}
 \end{figure}
 
@@ -1001,7 +1025,8 @@ the true population parameter would tend toward X\%
 
 Write a ForwardRateCurve (for EURIBOR/LIBOR rate curve) which doesn't
 compute discount factors but only interplatates forward rates; then add
-it to the \texttt{finmarkets} module.
+it to the \texttt{finmarkets} module (this function is used to define
+the Libor curve used throughout this lesson).
 
     \hypertarget{exercise-6.2}{%
 \subsubsection{Exercise 6.2}\label{exercise-6.2}}
@@ -1028,11 +1053,12 @@ the plot changes.
     \hypertarget{exercise-6.4}{%
 \subsubsection{Exercise 6.4}\label{exercise-6.4}}
 
-Suppouse that the Libor Forward rates are those defined here in 
-\(\href{https://repl.it/@MatteoSani/support6}{curve\_data.py}\). Determine the value of an option to pay a fixed rate
-of 4\% and receives LIBOR on a 5 year swap starting in 1 year. Assume
-the notional is 100 EUR, the exercise date is on October, 30th 2020 and
-the swap rate volatility is 15\%.
+Suppouse that the Libor Forward rates are those defined here in
+$\href{https://repl.it/@MatteoSani/support6}{\textrm{curve\_data.py}}$.
+Determine the value of an option to pay a fixed rate of 4\% and receives
+LIBOR on a 5 year swap starting in 1 year. Assume the notional is 100
+EUR, the exercise date is on October, 30th 2020 and the swap rate
+volatility is 15\%.
 
 
     % Add a bibliography block to the postdoc
