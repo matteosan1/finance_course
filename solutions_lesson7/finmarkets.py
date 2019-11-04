@@ -171,3 +171,80 @@ class InterestRateSwaption:
         npv_error = 3 * numpy.std(discounted_payoffs) / math.sqrt(n_scenarios)
         
         return npv_mc, npv_error
+
+class CreditCurve(object):
+    
+    def __init__(self, pillar_dates, pillar_ndps):
+        
+        self.pillar_dates = pillar_dates
+        
+        self.pillar_days = [
+            (pd - pillar_dates[0]).days
+            for pd in pillar_dates
+        ]
+        
+        self.log_ndps = [
+            math.log(ndp)
+            for ndp in pillar_ndps
+        ]
+        
+    def ndp(self, value_date):
+        
+        value_days = (value_date - self.pillar_dates[0]).days
+        
+        return math.exp(
+            numpy.interp(value_days,
+                         self.pillar_days,
+                         self.log_ndps))
+    
+    def hazard(self, value_date):
+        ndp_1 = self.ndp(value_date)
+        ndp_2 = self.ndp(value_date + relativedelta(days=1))
+        delta_t = 1.0 / 365.0
+        h = -1.0 / ndp_1 * (ndp_2 - ndp_1) / delta_t
+        return h
+
+
+class CreditDefaultSwap:
+    
+    def __init__(self, notional, start_date, nyears, fixed_spread, recovery=0.4):
+        
+        self.notional = notional
+        self.payment_dates = generate_swap_dates(start_date, nyears*12, 3)
+        self.fixed_spread = fixed_spread
+        self.recovery = recovery
+    
+    def premium_leg_npv(self, discount_curve, credit_curve):
+        
+        npv = 0
+        
+        for i in range(1, len(self.payment_dates)):
+            npv += (
+                self.fixed_spread *
+                discount_curve.df(self.payment_dates[i]) *
+                credit_curve.ndp(self.payment_dates[i])
+            )
+            
+        return npv * self.notional
+    
+    def default_leg_npv(self, discount_curve, credit_curve):
+        
+        npv = 0
+        d = self.payment_dates[0]
+        
+        while d <= self.payment_dates[-1]:
+            
+            npv += discount_curve.df(d) * (
+                credit_curve.ndp(d) -
+                credit_curve.ndp(d + relativedelta(days=1))
+            )
+            
+            d += relativedelta(days=1)
+        
+        return npv * self.notional * (1 - self.recovery)
+    
+    def npv(self, discount_curve, credit_curve):
+        
+        return self.default_leg_npv(discount_curve, credit_curve) - \
+               self.premium_leg_npv(discount_curve, credit_curve)
+    
