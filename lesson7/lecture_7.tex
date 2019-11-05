@@ -13,7 +13,7 @@
 \documentclass[11pt]{article}
 
     
-    
+    \usepackage{array}
     \usepackage[T1]{fontenc}
     % Nicer default font (+ math font) than Computer Modern for most use cases
     \usepackage{mathpazo}
@@ -403,9 +403,9 @@ of ISDA (International Swaps and Derivatives Association) master
 agreement.
 
 In any case, we will generically call a credit event a \emph{default},
-and talk about \textbf{non-default probabilities} (\textbf{NDP}),
-i.e.~the probability that the issuer will not suffer a credit event
-before a given value date.
+and talk about \textbf{non-default probabilities} (\textbf{NDP}, or
+survival probability), i.e.~the probability that the issuer will
+not suffer a credit event before a given value date.
 
 NDPs are the equivalent for credit curves of discount factors for
 discount curves. Just like discount curves, credit curves are built by
@@ -424,23 +424,22 @@ practice we'll calculate it numerically, and therefore it'll be the
 (annualized) conditional probability of the issuer defaulting between
 the value date and the day after.
 
-Discount Curve
+\begin{center}
+  \begin{tabular}{|| m{0.4\linewidth} | m{0.4\linewidth} ||}
+    \hline
+    Discount Curve & Credit Curve \\
+    \hline \hline
+    Represents underlying rates implicit in market quotes of IR products &
+    Represents default probabilities implied by credit default swaps \\
+    \hline
+    discount factors & non-default probabilities \\
+    \hline
+    short rate & hazard rate \\
+    \hline    \hline
+  \end{tabular}
+\end{center}
 
-Credit Curve
-
-Represents underlying rates implicit in market quotes of IR products
-
-Represents default probability implied by credit default swaps
-
-discount factors
-
-non-default probabilities
-
-short rate
-
-hazard rate
-
-    \hypertarget{hazard-rate}{%
+\hypertarget{hazard-rate}{%
 \subsubsection{Hazard Rate}\label{hazard-rate}}
 
 Hazard rate is often called a \emph{conditional failure rate} since it's
@@ -475,7 +474,9 @@ hence:
 
 \[P(A|B) = \frac{|A\cap B|}{|B|} = \frac{\frac{|A\cap B|}{|S|}}{\frac{|B|}{|S|}} = \frac{P(A\cap B)}{P(B)}\]
 
+\begin{center}
 \includegraphics[width=0.7\linewidth]{conditional_b.png}
+\end{center}
 
 In formula if the non-default probability is indicated by \(N\) and the
 hazard rate by \(\lambda\):
@@ -635,14 +636,15 @@ of ``daily NPVs'' calculated as a function of the daily forward default
 probabilities:
 
 \[
-\def\P{\mathbb{P}}
 \begin{align*}
-\tilde{\mathbb{E}}[(1-R) \times D(\tau) \times \1\set{\tau \leq d_n} ]
-&= \sum_{d'=d_0}^{d_n} \tilde{\mathbb{E}}[ (1-R) \times D(\tau) \mid \tau = d'] \P[ \tau = d' ] \\
-&= (1-R) \sum_{d'=d_0}^{d_n} D(d') \left( \P[ \tau \geq d' ] - \P[ \tau \geq d'+1 ] \right) \\
+\tilde{\mathbb{E}}[(1-R) \times D(\tau) \times \mathbb{1}\{\tau \leq d_n\} ]
+&= \sum_{d'=d_0}^{d_n} \tilde{\mathbb{E}}[ (1-R) \times D(\tau) \mid \tau = d'] \mathbb{P}[ \tau = d' ] \\
+&= (1-R) \sum_{d'=d_0}^{d_n} D(d') \left( \mathbb{P}[ \tau \geq d' ] - \mathbb{P}[ \tau \geq d'+1 ] \right) \\
 &= (1-R) \sum_{d'=d_0}^{d_n} D(d') \left( N(d') - N(d'+1) \right)
 \end{align*}
 \]
+
+where the last step holds since $\mathbb{P}[\tau\geq d^{'}] = 1 - \mathbb{P}[\tau < d^{'}] = 1 - (1-N(d^{'})) = N(d^{'})$.
 
     \begin{Verbatim}[commandchars=\\\{\}]
 {\color{incolor}In [{\color{incolor}7}]:} \PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
@@ -726,7 +728,12 @@ probabilities:
 \subsection{Exercises}\label{exercises}}
 
 \hypertarget{exercise-7.1}{%
-\subsubsection{Exercise 7.1}\label{exercise-7.1}}
+  \subsubsection{Exercise 7.1}\label{exercise-7.1}}
+
+Update \verb!finmarkets! module with \verb!CreditCurve! and \verb!CreditDefaultSwap! classes.
+    
+\hypertarget{exercise-7.2}{%
+\subsubsection{Exercise 7.2}\label{exercise-7.2}}
 
 Applying a bootstrapping technique (outlined in lesson 5) derive the a
 credit curve from the following CDS market quotes:
@@ -767,8 +774,8 @@ credit curve from the following CDS market quotes:
   using the \texttt{scipy.optimize.minimize} find the curve.
 \end{itemize}
 
-    \hypertarget{exercise-7.2}{%
-\subsubsection{Exercise 7.2}\label{exercise-7.2}}
+    \hypertarget{exercise-7.3}{%
+\subsubsection{Exercise 7.3}\label{exercise-7.3}}
 
 Using the above \texttt{Credit\ Curve} and the \texttt{DiscountCurve}
 already defined in lesson 5, price the following CDS:
