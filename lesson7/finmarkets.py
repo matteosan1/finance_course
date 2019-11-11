@@ -4,7 +4,7 @@ import numpy
 from dateutil.relativedelta import relativedelta
 
 # Discount curve class
-class DiscountCurve(object):
+class DiscountCurve:
 
     def __init__(self, today, pillar_dates, discount_factors):
         
@@ -36,7 +36,7 @@ class DiscountCurve(object):
         ) / ((d2  - d1).days / 365)
     
 
-class OvernightIndexSwap(object):
+class OvernightIndexSwap:
     def __init__(self, notional, payment_dates, fixed_rate):
         
         self.notional = notional
@@ -83,7 +83,7 @@ def generate_swap_dates(start_date, n_months, tenor_months=12):
     
     return dates    
 
-class ForwardRateCurve(object):
+class ForwardRateCurve:
     
     def __init__(self, pillar_dates, pillar_rates):
         self.today = pillar_dates[0]
