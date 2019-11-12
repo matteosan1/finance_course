@@ -29,7 +29,7 @@ def transform_image(file_name):
         for x in range(width):
             pixel = im.getpixel((x, y))
             g = 255 - ((pixel[0] * 0.299) + (pixel[1] * 0.587) + (pixel[2] * 0.114))
-            l.append(pixel)
+            l.append(g)
         pixels.append(l)
     out.append(pixels)
 

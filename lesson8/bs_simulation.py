@@ -2,8 +2,7 @@ import numpy as np
 np.random.seed(1000)
 import matplotlib.pyplot as plt
 import csv
-
-from ex2_2 import call
+from finmarkets import call
 
 def gen_paths(S0, r, sigmas, T, M, I):
     dt = float(T) / M
