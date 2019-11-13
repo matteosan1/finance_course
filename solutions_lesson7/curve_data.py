@@ -1,7 +1,7 @@
 from finmarkets import DiscountCurve, ForwardRateCurve
 from datetime import date
 
-pricing_date = date(2019, 11, 6)
+pricing_date = date(2019, 11, 23)
 
 start_date = date(2018, 11, 23)
 
