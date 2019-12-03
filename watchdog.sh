@@ -1,0 +1,4 @@
+#! /bin/bash
+
+echo "USERNAME: $GITLAB_USER_LOGIN"
+echo "ASSEGNEE: $CI_MERGE_REQUEST_ASSIGNEES" 
