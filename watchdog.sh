@@ -3,9 +3,12 @@
 echo "USERNAME: $GITLAB_USER_LOGIN"
 echo "ASSIGNEE: $CI_MERGE_REQUEST_ASSIGNEES"
 
+echo "$CI_MERGE_REQUEST_ID"
+echo "$CI_MERGE_REQUEST_IID"
+
 if [[ "$CI_MERGE_REQUEST_ASSIGNEES" = "" ]]
 then
-    echo "This merge request needs an assginee...
+    echo "This merge request needs an assginee..."
     exit 254
 fi 
 
