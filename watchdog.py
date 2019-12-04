@@ -1,4 +1,4 @@
-import request, json, os
+import requests, json, os
 from sys import exit
 
 url = "http://lx000000700503.testfactory.copergmps:7074/deployarchive/check"
