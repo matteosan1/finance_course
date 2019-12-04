@@ -15,11 +15,11 @@ result = json.loads(r.text)
 
 if result["result"]:
     if user == result["user"]:
-        print ("Merge request can be approved !")
-        exit(0)
-    else:
         print ("An owner cannot apprve his/her merge requests...")
         exit(255)
+    else:
+        print ("Merge request can be approved !")
+        exit(0)
 else:
     if "error" in result.keys():
         print (result["error"])
