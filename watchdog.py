@@ -1,7 +1,7 @@
 import requests, json, os
 from sys import exit
 
-url = "http://lx000000700503.testfactory.copergmps:7074/deployarchive/check"
+url = "djquants.gruppo.mps.local/deployarchive/check"
 
 user = os.environ.get("GITLAB_USER_LOGIN")
 project = os.environ.get("CI_PROJECT_NAME")
@@ -18,7 +18,7 @@ if result["result"]:
         print ("An owner cannot apprve his/her merge requests...")
         exit(255)
     else:
-        print ("Merge request can be approved !")
+        print ("Merge request will be approved by {} !".format(user))
         exit(0)
 else:
     if "error" in result.keys():
