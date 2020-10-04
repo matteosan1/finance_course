@@ -1,44 +1,32 @@
-
-% Default to the notebook output style
-
-    
-
-
-% Inherit from the specified cell style.
-
-
-
-
-    
 \documentclass[11pt]{article}
 
+    \usepackage[breakable]{tcolorbox}
+    \usepackage{parskip} % Stop auto-indenting (to mimic markdown behaviour)
     
-    
-    \usepackage[T1]{fontenc}
-    % Nicer default font (+ math font) than Computer Modern for most use cases
-    \usepackage{mathpazo}
+    \usepackage{iftex}
+    \ifPDFTeX
+    	\usepackage[T1]{fontenc}
+    	\usepackage{mathpazo}
+    \else
+    	\usepackage{fontspec}
+    \fi
 
     % Basic figure setup, for now with no caption control since it's done
     % automatically by Pandoc (which extracts ![](path) syntax from Markdown).
     \usepackage{graphicx}
-    % We will generate all images so they have a width \maxwidth. This means
-    % that they will get their normal width if they fit onto the page, but
-    % are scaled down if they would overflow the margins.
-    \makeatletter
-    \def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth
-    \else\Gin@nat@width\fi}
-    \makeatother
+    % Maintain compatibility with old templates. Remove in nbconvert 6.0
     \let\Oldincludegraphics\includegraphics
-    % Set max figure width to be 80% of text width, for now hardcoded.
-    \renewcommand{\includegraphics}[1]{\Oldincludegraphics[width=.8\maxwidth]{#1}}
     % Ensure that by default, figures have no caption (until we provide a
     % proper Figure object with a Caption API and a way to capture that
     % in the conversion process - todo).
     \usepackage{caption}
-    \DeclareCaptionLabelFormat{nolabel}{}
-    \captionsetup{labelformat=nolabel}
+    \DeclareCaptionFormat{nocaption}{}
+    \captionsetup{format=nocaption,aboveskip=0pt,belowskip=0pt}
 
-    \usepackage{adjustbox} % Used to constrain images to a maximum size 
+    \usepackage[Export]{adjustbox} % Used to constrain images to a maximum size
+    \adjustboxset{max size={0.9\linewidth}{0.9\paperheight}}
+    \usepackage{float}
+    \floatplacement{figure}{H} % forces figures to be placed at the correct location
     \usepackage{xcolor} % Allow colors to be defined
     \usepackage{enumerate} % Needed for markdown enumerations to work
     \usepackage{geometry} % Used to adjust the document margins
@@ -52,14 +40,24 @@
     \usepackage{upquote} % Upright quotes for verbatim code
     \usepackage{eurosym} % defines \euro
     \usepackage[mathletters]{ucs} % Extended unicode (utf-8) support
-    \usepackage[utf8x]{inputenc} % Allow utf-8 characters in the tex document
     \usepackage{fancyvrb} % verbatim replacement that allows latex
     \usepackage{grffile} % extends the file name processing of package graphics 
-                         % to support a larger range 
+                         % to support a larger range
+    \makeatletter % fix for grffile with XeLaTeX
+    \def\Gread@@xetex#1{%
+      \IfFileExists{"\Gin@base".bb}%
+      {\Gread@eps{\Gin@base.bb}}%
+      {\Gread@@xetex@aux#1}%
+    }
+    \makeatother
+
     % The hyperref package gives us a pdf with properly built
     % internal navigation ('pdf bookmarks' for the table of contents,
     % internal cross-reference links, web links for URLs, etc.)
     \usepackage{hyperref}
+    % The default LaTeX title has an obnoxious amount of whitespace. By default,
+    % titling removes some of it. It also provides customization options.
+    \usepackage{titling}
     \usepackage{longtable} % longtable support required by pandoc >1.10
     \usepackage{booktabs}  % table support for pandoc > 1.12.2
     \usepackage[inline]{enumitem} % IRkernel/repr support (it uses the enumerate* environment)
@@ -68,7 +66,6 @@
     \usepackage{mathrsfs}
     
 
-    
     
     % Colors for the hyperref package
     \definecolor{urlcolor}{rgb}{0,.145,.698}
@@ -149,14 +146,13 @@
     \renewcommand{\LaTeX}{\textrm{\Oldlatex}}
     % Document parameters
     % Document title
-    \title{Introduction to Python - Practical Lesson 1}
-    \author{Matteo Sani \\ \href{mailto:matteosan1@gmail.com}{matteosan1@gmail.com}}
-       
+    \title{lecture\_1}
     
     
-
-    % Pygments definitions
     
+    
+    
+% Pygments definitions
 \makeatletter
 \def\PY@reset{\let\PY@it=\relax \let\PY@bf=\relax%
     \let\PY@ul=\relax \let\PY@tc=\relax%
@@ -258,11 +254,97 @@
 \makeatother
 
 
+    % For linebreaks inside Verbatim environment from package fancyvrb. 
+    \makeatletter
+        \newbox\Wrappedcontinuationbox 
+        \newbox\Wrappedvisiblespacebox 
+        \newcommand*\Wrappedvisiblespace {\textcolor{red}{\textvisiblespace}} 
+        \newcommand*\Wrappedcontinuationsymbol {\textcolor{red}{\llap{\tiny$\m@th\hookrightarrow$}}} 
+        \newcommand*\Wrappedcontinuationindent {3ex } 
+        \newcommand*\Wrappedafterbreak {\kern\Wrappedcontinuationindent\copy\Wrappedcontinuationbox} 
+        % Take advantage of the already applied Pygments mark-up to insert 
+        % potential linebreaks for TeX processing. 
+        %        {, <, #, %, $, ' and ": go to next line. 
+        %        _, }, ^, &, >, - and ~: stay at end of broken line. 
+        % Use of \textquotesingle for straight quote. 
+        \newcommand*\Wrappedbreaksatspecials {% 
+            \def\PYGZus{\discretionary{\char`\_}{\Wrappedafterbreak}{\char`\_}}% 
+            \def\PYGZob{\discretionary{}{\Wrappedafterbreak\char`\{}{\char`\{}}% 
+            \def\PYGZcb{\discretionary{\char`\}}{\Wrappedafterbreak}{\char`\}}}% 
+            \def\PYGZca{\discretionary{\char`\^}{\Wrappedafterbreak}{\char`\^}}% 
+            \def\PYGZam{\discretionary{\char`\&}{\Wrappedafterbreak}{\char`\&}}% 
+            \def\PYGZlt{\discretionary{}{\Wrappedafterbreak\char`\<}{\char`\<}}% 
+            \def\PYGZgt{\discretionary{\char`\>}{\Wrappedafterbreak}{\char`\>}}% 
+            \def\PYGZsh{\discretionary{}{\Wrappedafterbreak\char`\#}{\char`\#}}% 
+            \def\PYGZpc{\discretionary{}{\Wrappedafterbreak\char`\%}{\char`\%}}% 
+            \def\PYGZdl{\discretionary{}{\Wrappedafterbreak\char`\$}{\char`\$}}% 
+            \def\PYGZhy{\discretionary{\char`\-}{\Wrappedafterbreak}{\char`\-}}% 
+            \def\PYGZsq{\discretionary{}{\Wrappedafterbreak\textquotesingle}{\textquotesingle}}% 
+            \def\PYGZdq{\discretionary{}{\Wrappedafterbreak\char`\"}{\char`\"}}% 
+            \def\PYGZti{\discretionary{\char`\~}{\Wrappedafterbreak}{\char`\~}}% 
+        } 
+        % Some characters . , ; ? ! / are not pygmentized. 
+        % This macro makes them "active" and they will insert potential linebreaks 
+        \newcommand*\Wrappedbreaksatpunct {% 
+            \lccode`\~`\.\lowercase{\def~}{\discretionary{\hbox{\char`\.}}{\Wrappedafterbreak}{\hbox{\char`\.}}}% 
+            \lccode`\~`\,\lowercase{\def~}{\discretionary{\hbox{\char`\,}}{\Wrappedafterbreak}{\hbox{\char`\,}}}% 
+            \lccode`\~`\;\lowercase{\def~}{\discretionary{\hbox{\char`\;}}{\Wrappedafterbreak}{\hbox{\char`\;}}}% 
+            \lccode`\~`\:\lowercase{\def~}{\discretionary{\hbox{\char`\:}}{\Wrappedafterbreak}{\hbox{\char`\:}}}% 
+            \lccode`\~`\?\lowercase{\def~}{\discretionary{\hbox{\char`\?}}{\Wrappedafterbreak}{\hbox{\char`\?}}}% 
+            \lccode`\~`\!\lowercase{\def~}{\discretionary{\hbox{\char`\!}}{\Wrappedafterbreak}{\hbox{\char`\!}}}% 
+            \lccode`\~`\/\lowercase{\def~}{\discretionary{\hbox{\char`\/}}{\Wrappedafterbreak}{\hbox{\char`\/}}}% 
+            \catcode`\.\active
+            \catcode`\,\active 
+            \catcode`\;\active
+            \catcode`\:\active
+            \catcode`\?\active
+            \catcode`\!\active
+            \catcode`\/\active 
+            \lccode`\~`\~ 	
+        }
+    \makeatother
+
+    \let\OriginalVerbatim=\Verbatim
+    \makeatletter
+    \renewcommand{\Verbatim}[1][1]{%
+        %\parskip\z@skip
+        \sbox\Wrappedcontinuationbox {\Wrappedcontinuationsymbol}%
+        \sbox\Wrappedvisiblespacebox {\FV@SetupFont\Wrappedvisiblespace}%
+        \def\FancyVerbFormatLine ##1{\hsize\linewidth
+            \vtop{\raggedright\hyphenpenalty\z@\exhyphenpenalty\z@
+                \doublehyphendemerits\z@\finalhyphendemerits\z@
+                \strut ##1\strut}%
+        }%
+        % If the linebreak is at a space, the latter will be displayed as visible
+        % space at end of first line, and a continuation symbol starts next line.
+        % Stretch/shrink are however usually zero for typewriter font.
+        \def\FV@Space {%
+            \nobreak\hskip\z@ plus\fontdimen3\font minus\fontdimen4\font
+            \discretionary{\copy\Wrappedvisiblespacebox}{\Wrappedafterbreak}
+            {\kern\fontdimen2\font}%
+        }%
+        
+        % Allow breaks at special characters using \PYG... macros.
+        \Wrappedbreaksatspecials
+        % Breaks at punctuation characters . , ; ? ! and / need catcode=\active 	
+        \OriginalVerbatim[#1,codes*=\Wrappedbreaksatpunct]%
+    }
+    \makeatother
+
     % Exact colors from NB
-    \definecolor{incolor}{rgb}{0.0, 0.0, 0.5}
-    \definecolor{outcolor}{rgb}{0.545, 0.0, 0.0}
-
-
+    \definecolor{incolor}{HTML}{303F9F}
+    \definecolor{outcolor}{HTML}{D84315}
+    \definecolor{cellborder}{HTML}{CFCFCF}
+    \definecolor{cellbackground}{HTML}{F7F7F7}
+    
+    % prompt
+    \makeatletter
+    \newcommand{\boxspacing}{\kern\kvtcb@left@rule\kern\kvtcb@boxsep}
+    \makeatother
+    \newcommand{\prompt}[4]{
+        \ttfamily\llap{{\color{#2}[#3]:\hspace{3pt}#4}}\vspace{-\baselineskip}
+    }
+    
 
     
     % Prevent overflowing lines due to hard-to-break entities
@@ -281,31 +363,31 @@
     
     
 
-    \begin{document}
-    
+\begin{document}
     
     \maketitle
     
     
 
     
-    \hypertarget{introduction-to-python---lesson-1}{%
-\section{Introduction to Python - Part 1}\label{introduction-to-python---lesson-1}}
+    \hypertarget{introduction-to-ttpython}{%
+\section{\texorpdfstring{Introduction to
+\(\tt{Python}\)}{Introduction to \textbackslash{}tt\{Python\}}}\label{introduction-to-ttpython}}
 
 In the first two lessons of this course we'll take a quick tour of the
-Python programming language and see how to write a simple function which
-would actually be useful in a real-world finance environment.
+\(\tt{Python}\) programming language and see how to write a simple
+functions or classes which would actually be useful in a real-world
+finance environment.
 
-\hypertarget{what-is-python}{%
-\subsection{What is Python}\label{what-is-python}}
+\hypertarget{what-is-ttpython}{%
+\subsection{\texorpdfstring{What is
+\(\tt{Python}\)}{What is \textbackslash{}tt\{Python\}}}\label{what-is-ttpython}}
 
-Python is a so called \emph{interpreter}, it takes some code (a sequence
-of instructions or commands), reads and executes it. This is different
-from other programming languages like C or C++ which compile code into a
-language that the computer can understand directly (\emph{machine
-language}). As a result, Python is essentially an \emph{interactive}
-programming language, you can program and see the results almost at the
-same time.
+\(\tt{Python}\) is a so called \emph{interpreted language}: it takes
+some code (a sequence of instructions), reads and executes it. This is
+different from other programming languages like C or C++ which
+\emph{compile} code into a language that the computer can understand
+directly (\emph{machine language}).
 
 \begin{figure}
 \centering
@@ -313,227 +395,211 @@ same time.
 \caption{Interpreted vs compiled language}
 \end{figure}
 
-\hypertarget{which-python-should-i-use}{%
-\subsection{Which Python should I use
-?}\label{which-python-should-i-use}}
+As a result, \(\tt{Python}\) is essentially an \emph{interactive}
+programming language, you can program and see the results almost at the
+same time. This is very nice in terms of readability of the code since
+programmming is almost like instructing the computer in plain English
+but it has drawbacks in term of perfomance since we have the
+intermediate step of the ``translation'' (just to give an idea the
+compilation of our C++ financial code takes more than one hour).
 
-Python, as basically all programs, comes in different version and
-flavours.
+\begin{figure}
+\centering
+\includegraphics{machine_language.jpeg}
+\caption{Human readable vs machine suitable code}
+\end{figure}
 
-The latest version is \(\tt{3.7}\) (but it is continously evolving),
-however you'll see older versions floating around (e.g. \(\tt{2.7}\)).
+\hypertarget{which-ttpython-should-i-use}{%
+\subsubsection{\texorpdfstring{Which \(\tt{Python}\) should I use
+?}{Which \textbackslash{}tt\{Python\} should I use ?}}\label{which-ttpython-should-i-use}}
+
+\(\tt{Python}\), as basically all programs, comes in different version
+and flavours as you can see by the number of updates the apps in your
+mobile phone receives.
+
+The latest version is \(\tt{3.8.5}\) (but it is continously evolving),
+however you'll see older versions floating around (e.g.~\(\tt{2.7}\)).
 This is because there are some big differences between
 \(\tt{Python 2.X}\) and \(\tt{Python 3.X}\) which prevent a sizeable
-portion of \(\tt{Python 2}\) users to stick with it (moving to
-\(\tt{Python 3}\) would require sizeable amount of work for big
-projects).
+portion of \(\tt{Python 2}\) users to stick with it since moving to
+\(\tt{Python 3}\) would require a lot of work to adapt the code (this
+process is usually called \emph{porting}).
 
-\textbf{We will go for \(\tt{Python 3.X}\) anyway !}
+\textbf{We will go for \(\tt{Python 3.7}\) !}
 
-Any Python interpreter, available at http://www.python.org, comes with a
-standard set of \emph{packages} (will see in a while what they are), but
-if you want more functionality, you can download more of them (there are
-zillions of packages out there).
+\hypertarget{how-can-i-use-ttpython}{%
+\subsubsection{\texorpdfstring{How can I use \(\tt{Python}\)
+?}{How can I use \textbackslash{}tt\{Python\} ?}}\label{how-can-i-use-ttpython}}
 
-Some examples are:
-
-\begin{itemize}
-\tightlist
-\item
-  Numpy - which provides matrix algebra functionality;
-\item
-  Scipy - which provides a whole series of scientific computing
-  functions;
-\item
-  Pandas - which provides tools for manipulating time series or dataset
-  in general;
-\item
-  Matplotlib - for plotting graphs;
-\item
-  Jupyter - for notebooks like this one;
-\item
-  \ldots{}and many more.
-\end{itemize}
-
-\hypertarget{how-can-i-use-python}{%
-\subsection{How can I use Python ?}\label{how-can-i-use-python}}
-
-Once you have downloaded a Python distribution, there are various ways
-of actually using it.
+Once you have installed a \(\tt{Python}\) distribution there are various
+ways of actually using it.
 
 \begin{itemize}
 \tightlist
 \item
-  The most immediate way is to just execute \(\tt{python.exe}\) on the
-  command line to get a Python console for interacting with the
-  interpreter.
+  the most immediate way is to just execute \(\tt{python.exe}\) on the
+  command line to get a \(\tt{Python}\) console for interacting with the
+  interpreter;
 \item
-  If you are learining Python or do some simple data analysis, Jupyter
-  notebooks (i.e.~this document) allow to see the results of your code
-  as you write it, as well as make notes, plot graphs and so on.
+  if you are learning \(\tt{Python}\) or do some simple data analysis,
+  \$\tt{Jupyter notebooks} \$(i.e.~this document) allow to see the
+  results of your code as you write it, as well as make notes, plot
+  graphs beside it;
 \item
-  If you are a programmer and want to do more complex things, you'll
-  usually want one or more scripts, perhaps linked together, and execute
-  one of them again using \(\tt{python.exe}\). For this last case an
-  integrated development environment (IDE) can be very useful. An IDE is
-  a graphical user interface which makes writing complex code easier by
-  providing a text editor, a file browser, a debugger (a tool that helps
-  you to spot mistakes in your code) all in one software application.
-  Good example is \(\tt{PyCharm}\) (https://www.jetbrains.com/pycharm/)
-  or repl.it an online IDE.
+  if you are a programmer and want to do more complex things, you'll
+  usually want to split your code between more files to manage your
+  project more easily. For this last case an integrated development
+  environment (IDE) can be very useful. An IDE is a graphical user
+  interface which makes writing complex code easier by providing a text
+  editor, a file browser, a debugger (a tool that helps you to spot
+  mistakes in your code) all in one software application. Good example
+  is \(\tt{PyCharm}\) (https://www.jetbrains.com/pycharm/).
 \end{itemize}
-
-\hypertarget{how-we-will-use-it}{%
-\subsection{How we will use it}\label{how-we-will-use-it}}
-
-To avoid time consuming installations we will mainly use online tools so
-that all you need is just a browser (Firefox :-), Chrome :-), Explorer
-:-(). For completeness from time to time I will show you code running in
-in a more advanced IDE called \texttt{PyCharm} but you won't need to
-install it. So our tool are:
-
-\begin{itemize}
-\tightlist
-\item
-  \texttt{repl.it}, an online IDE to develop the more complicated
-  projects in these lessions;
-\item
-  \texttt{colab}, an online notebook editor from Google.
-\end{itemize}
-
-As you can imagine there are many more similar tools available which
-have more or less the same functionality as the one proposed
-(e.g.~cocalc a possible replacement of colab). Another possibility,
-quite flexible but slightly more complicated to setup, is Anaconda
-Python. It's free to download and works on Windows, Mac or Linux and has
-been used in the past years for this course. Those interested can take a
-look at https://www.anaconda.com.
 
 \hypertarget{online-courses}{%
-\subsection{Online courses}\label{online-courses}}
+\subsubsection{Online courses}\label{online-courses}}
 
-Python popularity is growing every day so it is very easy to find good
-(and free) online courses looking in Google. Since in this course we do
-not have time to cover in depth the potentiality of this language I
-strongly suggest you to spend some time in watching one of them. One
-example could be
+\(\tt{Python}\) popularity is growing every day so it is very easy to
+find good (and free) online courses looking into the web. Since in this
+course we do not have time to cover in depth the potentiality of this
+language I strongly suggest you to spend some time in watching one of
+them. One example could be
 
 \textbf{MITx: 6.00.1x Introduction to Computer Science and Programming
 Using Python}
 https://courses.edx.org/courses/course-v1:MITx+6.00.1x+2T2017\_2/course/
 
-\hypertarget{lets-spend-few-minutes-all-together-to-setup-the-software}{%
-\subsubsection{Let's spend few minutes all together to setup the
-software}\label{lets-spend-few-minutes-all-together-to-setup-the-software}}
-
 \hypertarget{python-basics}{%
 \subsection{Python basics}\label{python-basics}}
 
-Try the commands I will explain in the remaining part of the lession
-either typing them in a \texttt{colab} notebook or using the interactive
-shell of \texttt{repl.it}.
+Every language has \emph{keywords}, those are reserved words that have a
+special meaning and tell the computer what to do. The first one we see
+is \(\tt{print}\): it prints to screen whatever is specified between the
+parenthesis.
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}1}]:} \PY{c+c1}{\PYZsh{} print is a keyword, reserved words that have a special meaning}
-        \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Hello world !}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)} 
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{1}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Hello world !}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)} 
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 Hello world !
-
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}2}]:} \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Welcome}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-        \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{to}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-        \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{everybody}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{2}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Welcome}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{to}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{everybody}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 Welcome
 to
 everybody
-
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}3}]:} \PY{c+c1}{\PYZsh{} this is a comment and the next line prints \PYZdq{}Ciao\PYZdq{}}
-        \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Ciao}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)} \PY{c+c1}{\PYZsh{} comments like this are useful to explain what\PYZsq{}s going on in the }
-                       \PY{c+c1}{\PYZsh{} code you write}
+    Good programming practice recommends to document the code you write (it
+is surprisingly easy to forget what you wanted to do in your code). In
+\(\tt{python}\) you can add comments to the code starting your sentence
+with a hash character (\#).
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{3}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} this is a comment and the next line prints \PYZdq{}Ciao\PYZdq{}}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Ciao}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)} \PY{c+c1}{\PYZsh{} comments like this are useful to explain what\PYZsq{}s going on in the }
+               \PY{c+c1}{\PYZsh{} code you write}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 Ciao
-
     \end{Verbatim}
 
-    \hypertarget{exercise-1.1}{%
-\subsubsection{Exercise 1.1}\label{exercise-1.1}}
-
-Write few lines of code in your notebook or in the interactive shell
-that print on the display ``Hello !''
-
-\hypertarget{variables}{%
+    \hypertarget{variables}{%
 \subsection{Variables}\label{variables}}
 
-Variables are used to store information to be referenced and manipulated
-in a computer program (e.g.~a number, a string\ldots{}).
+Variables are essentially labels you stick to some data (e.g.~a number,
+a string\ldots{}). Variables and hence data they contain, can be used
+referenced and manipulated throughout a program.
 
 \includegraphics{var1.jpeg} \includegraphics{var2.jpeg}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}4}]:} \PY{n}{x} \PY{o}{=} \PY{l+m+mi}{9} \PY{c+c1}{\PYZsh{} assign number 9 to variable named x}
-\end{Verbatim}
+A variable can contain every kind of objects and is decleared using the
+= operator. To inspect the content of a variable it can be used the
+\(\tt{print}\) statement.
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}5}]:} \PY{n}{x} \PY{c+c1}{\PYZsh{} in console typing just a variable is equivalent to print its value}
-\end{Verbatim}
-
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{2}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}5}]:} 9
+\PY{n}{x} \PY{o}{=} \PY{l+m+mi}{9} \PY{c+c1}{\PYZsh{} assign number 9 to variable named x}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{x}\PY{p}{)} 
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}6}]:} \PY{n}{myphone} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Huawei P10Lite}\PY{l+s+s2}{\PYZdq{}}
-\end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}7}]:} \PY{n+nb}{print} \PY{p}{(}\PY{n}{myphone}\PY{p}{)}
-\end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-Huawei P10Lite
-
+9
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}8}]:} \PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{)}       \PY{c+c1}{\PYZsh{} the type keyword tells you which kind of object is }
-                              \PY{c+c1}{\PYZsh{} stored in a variable}
-        \PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{n}{myphone}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} int\PYZhy{}\PYZgt{}integer, str\PYZhy{}\PYZgt{}string we will see later in more}
-                              \PY{c+c1}{\PYZsh{} detail what is a string}
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{6}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{myphone} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Huawei P10Lite}\PY{l+s+s2}{\PYZdq{}} \PY{c+c1}{\PYZsh{} in this case the variable contains a string}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{myphone}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
+
+    Another very useful keyword is \(\tt{type}\), it tells which kind of
+object is stored in a variable.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{8}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{)}        
+                      
+\PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{n}{myphone}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} int\PYZhy{}\PYZgt{}integer, str\PYZhy{}\PYZgt{}string we will see later in more}
+                      \PY{c+c1}{\PYZsh{} detail what is a string}
+\end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 <class 'int'>
 <class 'str'>
-
     \end{Verbatim}
 
-    \hypertarget{python-variable-name-rules}{%
-\subsubsection{Python variable name
-rules}\label{python-variable-name-rules}}
+    From now on I can use \(\tt{x}\) as an alias for a number or
+\(\tt{myphone}\) as a string and manipuate their content for example I
+can add 5 to \(\tt{x}\):
 
-A Python variable name must: * begin with a letter (myphone) or
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{3}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{x}\PY{o}{+}\PY{l+m+mi}{5}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+14
+    \end{Verbatim}
+
+    \hypertarget{variable-name-rules}{%
+\subsubsection{Variable name rules}\label{variable-name-rules}}
+
+A \(\tt{python}\) variable name must: * begin with a letter (myphone) or
 underscore (\_myphone); * other characters can be letters, numbers or
 more \_; * variable names are case-sensitive so myphone and myPhone are
-two distinct variables;
+two distinct variables.
 
-\textbf{There are some reserved words which you cannot use as a variable
-name because Python uses them for other things (e.g.
-\(\tt{print, type, for...}\))}.
+\textbf{Keywords are reserved words as such you cannot use as variable
+names (e.g.~\(\tt{print, type, for...}\))}.
 
 To use GOOD variable names always choose meaningful names instead of
-short names (i.e. \(\tt{numberOfCakes}\) is much better than simply
+short names (i.e.~\(\tt{numberOfCakes}\) is much better than simply
 \(\tt{n}\)), try to be consistent with your conventions (e.g.~choose
 once and for all between \(\tt{number\_of\_cakes}\) or
 \(\tt{numberofcakes}\) or \(\tt{numberOfCakes}\)), usually begin a
@@ -543,78 +609,144 @@ later when this is usually done).
 \hypertarget{mathematical-expressions}{%
 \subsection{Mathematical expressions}\label{mathematical-expressions}}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}9}]:} \PY{l+m+mi}{1} \PY{o}{+} \PY{l+m+mi}{2}
-\end{Verbatim}
-
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{9}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}9}]:} 3
+\PY{l+m+mi}{1} \PY{o}{+} \PY{l+m+mi}{2}
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}10}]:} \PY{l+m+mi}{40} \PY{o}{\PYZhy{}} \PY{l+m+mi}{5}
-\end{Verbatim}
+\end{tcolorbox}
 
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{9}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}10}]:} 35
+3
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}11}]:} \PY{n}{x} \PY{o}{*} \PY{l+m+mi}{20} \PY{c+c1}{\PYZsh{} remember that we set x equal to 9}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{10}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{l+m+mi}{40} \PY{o}{\PYZhy{}} \PY{l+m+mi}{5}
 \end{Verbatim}
+\end{tcolorbox}
 
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{10}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}11}]:} 180
+35
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}12}]:} \PY{n}{x} \PY{o}{/} \PY{l+m+mi}{4}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{11}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{x} \PY{o}{*} \PY{l+m+mi}{20} \PY{c+c1}{\PYZsh{} remember that we set x equal to 9}
 \end{Verbatim}
+\end{tcolorbox}
 
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{11}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}12}]:} 2.25
+180
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}13}]:} \PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{l+m+mf}{2.25}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} this is a new type: floating\PYZhy{}point value}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{12}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{x} \PY{o}{/} \PY{l+m+mi}{4}
 \end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{12}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+2.25
+\end{Verbatim}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{13}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{l+m+mf}{2.25}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} this is a new type: floating\PYZhy{}point value}
+\end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 <class 'float'>
-
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}14}]:} \PY{n}{x} \PY{o}{/}\PY{o}{/} \PY{l+m+mi}{4} \PY{c+c1}{\PYZsh{} interger division \PYZhy{} result will be truncated to the }
-                \PY{c+c1}{\PYZsh{} corresponding integer (no rounding)}
-                \PY{c+c1}{\PYZsh{} 11 / 3 = 3.666666 \PYZhy{}\PYZgt{} 11 // 3 = 3}
-\end{Verbatim}
-
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{14}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}14}]:} 2
+\PY{n}{x} \PY{o}{/}\PY{o}{/} \PY{l+m+mi}{4} \PY{c+c1}{\PYZsh{} interger division \PYZhy{} result will be truncated to the }
+       \PY{c+c1}{\PYZsh{} corresponding integer (no rounding)}
+       \PY{c+c1}{\PYZsh{} 11 / 3 = 3.666666 \PYZhy{}\PYZgt{} 11 // 3 = 3}
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}15}]:} \PY{n}{y} \PY{o}{=} \PY{l+m+mi}{3}
-         \PY{n}{x} \PY{o}{*}\PY{o}{*} \PY{n}{y} \PY{c+c1}{\PYZsh{} x to the power of y}
-\end{Verbatim}
+\end{tcolorbox}
 
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{14}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}15}]:} 729
+2
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}16}]:} \PY{l+m+mi}{3} \PY{o}{*} \PY{p}{(}\PY{n}{x} \PY{o}{+} \PY{n}{y}\PY{p}{)}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{15}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{y} \PY{o}{=} \PY{l+m+mi}{3}
+\PY{n}{x} \PY{o}{*}\PY{o}{*} \PY{n}{y} \PY{c+c1}{\PYZsh{} x to the power of y}
 \end{Verbatim}
+\end{tcolorbox}
 
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{15}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}16}]:} 36
+729
 \end{Verbatim}
-            
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{16}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{l+m+mi}{3} \PY{o}{*} \PY{p}{(}\PY{n}{x} \PY{o}{+} \PY{n}{y}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{16}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+36
+\end{Verbatim}
+\end{tcolorbox}
+        
+    As an example of variable manipulation let's try to increment \(\tt{x}\)
+by 1 and save the result again in \(\tt{x}\).
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{12}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{x}\PY{p}{)}
+\PY{n}{x} \PY{o}{=} \PY{n}{x} \PY{o}{+} \PY{l+m+mi}{1}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{x}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}17}]:} \PY{n}{log}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)} \PY{c+c1}{\PYZsh{} causes an error because the logarithm function }
-                \PY{c+c1}{\PYZsh{} is not available by default}
+15
+16
+    \end{Verbatim}
+
+    More complex mathematical functions are not directly available, let's
+see for example the logarithm:
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{17}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{log}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 
@@ -634,13 +766,36 @@ later when this is usually done).
     \hypertarget{modules}{%
 \subsection{Modules}\label{modules}}
 
-Useful functions can be saved in libraries (called \emph{modules}) so
-that thay can be re-used in different programs. The keyword
-\emph{import} allows to load functions and data from other Python files
-(\emph{modules}) and make them available in your program. Python already
-comes with a lot of built-in modules for doing lots of different tasks
-(the so called \emph{standard library}) but many more modules are
-available for download on the web and you can of course write your own !
+One very important feature of each language is the ability to reuse code
+in different programs, e.g.~imagine how awful would be if you had to
+reimplement every time you need it a function to compute the logarithm.
+Usually there are mechanisms that allow to collect useful routines in
+\emph{packages} (or \emph{libraries}, or \emph{modules}) so that later
+they can be called and used by any program may need them.
+
+These collections of utilities in \(\tt{python}\) are called
+\emph{modules} and every time you install it, it comes with a standard
+set of them. If you need more functionality, you can download more of
+them (there are zillions of packages out there) or you can of course
+write your own (which is the goal of this course in the end).
+
+Some examples of useful modules we will use are:
+
+\begin{itemize}
+\tightlist
+\item
+  Numpy - which provides matrix algebra functionality and much more;
+\item
+  Scipy - which provides a whole series of scientific computing
+  functions;
+\item
+  Pandas - which provides tools for manipulating time series or dataset
+  in general;
+\item
+  Matplotlib - for plotting graphs;
+\item
+  Jupyter - for notebooks like this one.
+\end{itemize}
 
 \begin{figure}
 \centering
@@ -648,239 +803,620 @@ available for download on the web and you can of course write your own !
 \caption{Python has many modules for download on the web\ldots{}}
 \end{figure}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}18}]:} \PY{k+kn}{import} \PY{n+nn}{math}
-         \PY{n+nb}{dir}\PY{p}{(}\PY{n}{math}\PY{p}{)} \PY{c+c1}{\PYZsh{} dir keyword lists the content of a module}
-\end{Verbatim}
+In order to load a module in a \(\tt{python}\) program you can use the
+\(\tt{import}\) keyword. Information on a module can be retrieved using
+\(\tt{help}\) and \(\tt{dir}\) keywords: the first write a help message
+which usually describes the functionalities of a module, the latter list
+all the available functions of a module. \textbf{In order to access a
+function of a module you have to use the . (dot) operator:
+module\_name.function.} Let's see an example dealing with the
+\(\tt{math}\) module which implements the most common mathematical
+functions.
 
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{4}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}18}]:} ['\_\_doc\_\_',
-          '\_\_loader\_\_',
-          '\_\_name\_\_',
-          '\_\_package\_\_',
-          '\_\_spec\_\_',
-          'acos',
-          'acosh',
-          'asin',
-          'asinh',
-          'atan',
-          'atan2',
-          'atanh',
-          'ceil',
-          'copysign',
-          'cos',
-          'cosh',
-          'degrees',
-          'e',
-          'erf',
-          'erfc',
-          'exp',
-          'expm1',
-          'fabs',
-          'factorial',
-          'floor',
-          'fmod',
-          'frexp',
-          'fsum',
-          'gamma',
-          'gcd',
-          'hypot',
-          'inf',
-          'isclose',
-          'isfinite',
-          'isinf',
-          'isnan',
-          'ldexp',
-          'lgamma',
-          'log',
-          'log10',
-          'log1p',
-          'log2',
-          'modf',
-          'nan',
-          'pi',
-          'pow',
-          'radians',
-          'remainder',
-          'sin',
-          'sinh',
-          'sqrt',
-          'tan',
-          'tanh',
-          'tau',
-          'trunc']
+\PY{k+kn}{import} \PY{n+nn}{math} \PY{c+c1}{\PYZsh{} make available the math module}
+\PY{n+nb}{dir}\PY{p}{(}\PY{n}{math}\PY{p}{)} \PY{c+c1}{\PYZsh{} list its content}
 \end{Verbatim}
-            
-    \textbf{Once a module has been imported, the functions it contains can
-be accessed with a \emph{dot} ``module\_name.function\_name'':}
+\end{tcolorbox}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}19}]:} \PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}
-\end{Verbatim}
-
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{4}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}19}]:} 1.0986122886681098
+['\_\_doc\_\_',
+ '\_\_file\_\_',
+ '\_\_loader\_\_',
+ '\_\_name\_\_',
+ '\_\_package\_\_',
+ '\_\_spec\_\_',
+ 'acos',
+ 'acosh',
+ 'asin',
+ 'asinh',
+ 'atan',
+ 'atan2',
+ 'atanh',
+ 'ceil',
+ 'copysign',
+ 'cos',
+ 'cosh',
+ 'degrees',
+ 'e',
+ 'erf',
+ 'erfc',
+ 'exp',
+ 'expm1',
+ 'fabs',
+ 'factorial',
+ 'floor',
+ 'fmod',
+ 'frexp',
+ 'fsum',
+ 'gamma',
+ 'gcd',
+ 'hypot',
+ 'inf',
+ 'isclose',
+ 'isfinite',
+ 'isinf',
+ 'isnan',
+ 'ldexp',
+ 'lgamma',
+ 'log',
+ 'log10',
+ 'log1p',
+ 'log2',
+ 'modf',
+ 'nan',
+ 'pi',
+ 'pow',
+ 'radians',
+ 'sin',
+ 'sinh',
+ 'sqrt',
+ 'tan',
+ 'tanh',
+ 'tau',
+ 'trunc']
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}20}]:} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}
-\end{Verbatim}
-
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{5}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}20}]:} 20.085536923187668
+\PY{n}{help}\PY{p}{(}\PY{n}{math}\PY{p}{)}
 \end{Verbatim}
-            
+\end{tcolorbox}
+
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}21}]:} \PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} yet another type: builtin function}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+Help on module math:
+
+NAME
+    math
+
+MODULE REFERENCE
+    https://docs.python.org/3.6/library/math
+
+    The following documentation is automatically generated from the Python
+    source files.  It may be incomplete, incorrect or include features that
+    are considered implementation detail and may vary between Python
+    implementations.  When in doubt, consult the module reference at the
+    location listed above.
+
+DESCRIPTION
+    This module is always available.  It provides access to the
+    mathematical functions defined by the C standard.
+
+FUNCTIONS
+    acos({\ldots})
+        acos(x)
+
+        Return the arc cosine (measured in radians) of x.
+
+    acosh({\ldots})
+        acosh(x)
+
+        Return the inverse hyperbolic cosine of x.
+
+    asin({\ldots})
+        asin(x)
+
+        Return the arc sine (measured in radians) of x.
+
+    asinh({\ldots})
+        asinh(x)
+
+        Return the inverse hyperbolic sine of x.
+
+    atan({\ldots})
+        atan(x)
+
+        Return the arc tangent (measured in radians) of x.
+
+    atan2({\ldots})
+        atan2(y, x)
+
+        Return the arc tangent (measured in radians) of y/x.
+        Unlike atan(y/x), the signs of both x and y are considered.
+
+    atanh({\ldots})
+        atanh(x)
+
+        Return the inverse hyperbolic tangent of x.
+
+    ceil({\ldots})
+        ceil(x)
+
+        Return the ceiling of x as an Integral.
+        This is the smallest integer >= x.
+
+    copysign({\ldots})
+        copysign(x, y)
+
+        Return a float with the magnitude (absolute value) of x but the sign
+        of y. On platforms that support signed zeros, copysign(1.0, -0.0)
+        returns -1.0.
+
+    cos({\ldots})
+        cos(x)
+
+        Return the cosine of x (measured in radians).
+
+    cosh({\ldots})
+        cosh(x)
+
+        Return the hyperbolic cosine of x.
+
+    degrees({\ldots})
+        degrees(x)
+
+        Convert angle x from radians to degrees.
+
+    erf({\ldots})
+        erf(x)
+
+        Error function at x.
+
+    erfc({\ldots})
+        erfc(x)
+
+        Complementary error function at x.
+
+    exp({\ldots})
+        exp(x)
+
+        Return e raised to the power of x.
+
+    expm1({\ldots})
+        expm1(x)
+
+        Return exp(x)-1.
+        This function avoids the loss of precision involved in the direct
+evaluation of exp(x)-1 for small x.
+
+    fabs({\ldots})
+        fabs(x)
+
+        Return the absolute value of the float x.
+
+    factorial({\ldots})
+        factorial(x) -> Integral
+
+        Find x!. Raise a ValueError if x is negative or non-integral.
+
+    floor({\ldots})
+        floor(x)
+
+        Return the floor of x as an Integral.
+        This is the largest integer <= x.
+
+    fmod({\ldots})
+        fmod(x, y)
+
+        Return fmod(x, y), according to platform C.  x \% y may differ.
+
+    frexp({\ldots})
+        frexp(x)
+
+        Return the mantissa and exponent of x, as pair (m, e).
+        m is a float and e is an int, such that x = m * 2.**e.
+        If x is 0, m and e are both 0.  Else 0.5 <= abs(m) < 1.0.
+
+    fsum({\ldots})
+        fsum(iterable)
+
+        Return an accurate floating point sum of values in the iterable.
+        Assumes IEEE-754 floating point arithmetic.
+
+    gamma({\ldots})
+        gamma(x)
+
+        Gamma function at x.
+
+    gcd({\ldots})
+        gcd(x, y) -> int
+        greatest common divisor of x and y
+
+    hypot({\ldots})
+        hypot(x, y)
+
+        Return the Euclidean distance, sqrt(x*x + y*y).
+
+    isclose({\ldots})
+        isclose(a, b, *, rel\_tol=1e-09, abs\_tol=0.0) -> bool
+
+        Determine whether two floating point numbers are close in value.
+
+           rel\_tol
+               maximum difference for being considered "close", relative to the
+               magnitude of the input values
+            abs\_tol
+               maximum difference for being considered "close", regardless of
+the
+               magnitude of the input values
+
+        Return True if a is close in value to b, and False otherwise.
+
+        For the values to be considered close, the difference between them
+        must be smaller than at least one of the tolerances.
+
+        -inf, inf and NaN behave similarly to the IEEE 754 Standard.  That
+        is, NaN is not close to anything, even itself.  inf and -inf are
+        only close to themselves.
+
+    isfinite({\ldots})
+        isfinite(x) -> bool
+
+        Return True if x is neither an infinity nor a NaN, and False otherwise.
+
+    isinf({\ldots})
+        isinf(x) -> bool
+
+        Return True if x is a positive or negative infinity, and False
+otherwise.
+
+    isnan({\ldots})
+        isnan(x) -> bool
+
+        Return True if x is a NaN (not a number), and False otherwise.
+
+    ldexp({\ldots})
+        ldexp(x, i)
+
+        Return x * (2**i).
+
+    lgamma({\ldots})
+        lgamma(x)
+
+        Natural logarithm of absolute value of Gamma function at x.
+
+    log({\ldots})
+        log(x[, base])
+
+        Return the logarithm of x to the given base.
+        If the base not specified, returns the natural logarithm (base e) of x.
+
+    log10({\ldots})
+        log10(x)
+
+        Return the base 10 logarithm of x.
+
+    log1p({\ldots})
+        log1p(x)
+
+        Return the natural logarithm of 1+x (base e).
+        The result is computed in a way which is accurate for x near zero.
+
+    log2({\ldots})
+        log2(x)
+
+        Return the base 2 logarithm of x.
+
+    modf({\ldots})
+        modf(x)
+
+        Return the fractional and integer parts of x.  Both results carry the
+sign
+        of x and are floats.
+
+    pow({\ldots})
+        pow(x, y)
+
+        Return x**y (x to the power of y).
+
+    radians({\ldots})
+        radians(x)
+
+        Convert angle x from degrees to radians.
+
+    sin({\ldots})
+        sin(x)
+
+        Return the sine of x (measured in radians).
+
+    sinh({\ldots})
+        sinh(x)
+
+        Return the hyperbolic sine of x.
+
+    sqrt({\ldots})
+        sqrt(x)
+
+        Return the square root of x.
+
+    tan({\ldots})
+        tan(x)
+
+        Return the tangent of x (measured in radians).
+
+    tanh({\ldots})
+        tanh(x)
+
+        Return the hyperbolic tangent of x.
+
+    trunc({\ldots})
+        trunc(x:Real) -> Integral
+
+        Truncates x to the nearest Integral toward 0. Uses the \_\_trunc\_\_ magic
+method.
+
+DATA
+    e = 2.718281828459045
+    inf = inf
+    nan = nan
+    pi = 3.141592653589793
+    tau = 6.283185307179586
+
+FILE
+    /home/sani/anaconda3/envs/.python3/lib/python3.6/lib-
+dynload/math.cpython-36m-x86\_64-linux-gnu.so
+
+
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{19}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)} \PY{c+c1}{\PYZsh{} accessing the logarithm function}
 \end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{19}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+1.0986122886681098
+\end{Verbatim}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{20}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)} \PY{c+c1}{\PYZsh{} accessing the exponential function}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{20}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+20.085536923187668
+\end{Verbatim}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{21}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} yet another type: builtin function}
+\PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 <class 'builtin\_function\_or\_method'>
 <class 'float'>
-
     \end{Verbatim}
 
     Since we are lazy and we don't want to type ``math.'' every time we
-compute a logarithm or an exponential, we can use the following syntax:
+compute a logarithm or an exponential, we can just import the needed
+functions from a module using the following syntax:
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}22}]:} \PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{log}\PY{p}{,} \PY{n}{exp}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n}{log}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}\PY{p}{)}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n}{exp}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}\PY{p}{)}
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{7}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{log}\PY{p}{,} \PY{n}{exp}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{log}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{exp}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 1.0986122886681098
 20.085536923187668
-
     \end{Verbatim}
 
-    Putting together what we have learned so far we can try to save the
-result of an expression in a variable (or even in the same variable we
-started with). As an example let's compute the interest rate \(r\) that
-produces a return \(R\) of about 1051.71 Euro when investing 10000 Euro
-for 2 years:
+    As an example let's compute the interest rate \(r\) that produces a
+return \(R\) of about 11000 Euro when investing 10000 Euro for 2 years:
 
 \(R = N\mathrm{e}^{r\tau} \rightarrow r = \frac{1}{\tau} \mathrm{log}(\frac{R}{N})\)
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}23}]:} \PY{n}{rate} \PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{/}\PY{l+m+mi}{2}\PY{p}{)}\PY{o}{*}\PY{n}{log}\PY{p}{(}\PY{l+m+mf}{11051.71}\PY{o}{/}\PY{l+m+mi}{10000}\PY{p}{)}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n}{rate}\PY{p}{)}
-         \PY{n}{x} \PY{o}{=} \PY{n}{x} \PY{o}{+} \PY{l+m+mi}{1}    \PY{c+c1}{\PYZsh{} the value of x was 9 when was used last}
-         \PY{n}{x} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}       \PY{c+c1}{\PYZsh{} += is a shortcut for x = x + 1}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n}{x}\PY{p}{)}
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{11}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{rate} \PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{/}\PY{l+m+mi}{2}\PY{p}{)}\PY{o}{*}\PY{n}{log}\PY{p}{(}\PY{l+m+mi}{11000}\PY{o}{/}\PY{l+m+mi}{10000}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{rate}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-0.05000003706410832
-11
-
+0.04765508990216247
     \end{Verbatim}
 
-    \hypertarget{exercise-1.2}{%
-\subsubsection{Exercise 1.2}\label{exercise-1.2}}
-
-Write code in your notebook or in the interactive shell to print the
-natural logarithm of your year of birth (expected something like:
-7.587817219993427)
-
-\hypertarget{boolean-expressions}{%
+    \hypertarget{boolean-expressions}{%
 \subsection{Boolean expressions}\label{boolean-expressions}}
 
 The expressions we have seen so far evaluate to a number. Boolean
-expressions evaluate to \(\tt{true}\) or \(\tt{false}\). Sometimes they
-involves logical or comparison operators like \(\tt{or}\), \(\tt{and}\),
-\textgreater{} (greater than), \textless{} (less than)\ldots{} Let's see
-some example.
+expressions evaluate to \(\tt{true}\) or \(\tt{false}\) only. This type
+of expressions usually involve logical or comparison operators like
+\(\tt{or}\), \(\tt{and}\), \textgreater{} (greater than), \textless{}
+(less than)\ldots{} Let's see some example. The following expression
+answer the question is 1 equal to 2:
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}24}]:} \PY{l+m+mi}{1} \PY{o}{==} \PY{l+m+mi}{2} 
-         \PY{c+c1}{\PYZsh{} single = assigns a value to a variable like in x = 9}
-         \PY{c+c1}{\PYZsh{} double == checks the equality of two objects}
-\end{Verbatim}
-
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{24}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}24}]:} False
+\PY{l+m+mi}{1} \PY{o}{==} \PY{l+m+mi}{2} 
+\PY{c+c1}{\PYZsh{} single = assigns a value to a variable like in x = 9}
+\PY{c+c1}{\PYZsh{} double == checks the equality of two objects}
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}25}]:} \PY{l+m+mi}{1} \PY{o}{!=} \PY{l+m+mi}{2} \PY{c+c1}{\PYZsh{} != is the \PYZdq{}not equal to\PYZdq{} operator}
-\end{Verbatim}
+\end{tcolorbox}
 
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{24}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}25}]:} True
+False
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}26}]:} \PY{l+m+mi}{2} \PY{o}{\PYZlt{}} \PY{l+m+mi}{2}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{25}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{l+m+mi}{1} \PY{o}{!=} \PY{l+m+mi}{2} \PY{c+c1}{\PYZsh{} != is the \PYZdq{}not equal to\PYZdq{} operator}
 \end{Verbatim}
+\end{tcolorbox}
 
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{25}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}26}]:} False
+True
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}27}]:} \PY{l+m+mi}{2} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{l+m+mi}{2}  \PY{c+c1}{\PYZsh{} in this case we allow the numbers to be equal too}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{26}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{l+m+mi}{2} \PY{o}{\PYZlt{}} \PY{l+m+mi}{2}
 \end{Verbatim}
+\end{tcolorbox}
 
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{26}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}27}]:} True
+False
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}28}]:} \PY{n+nb}{print} \PY{p}{(}\PY{n}{x}\PY{p}{)}
-         \PY{l+m+mi}{15} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{n}{x} \PY{o+ow}{and} \PY{n}{x} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{l+m+mi}{20} \PY{c+c1}{\PYZsh{} this expression could also be written as 15 \PYZlt{}= x \PYZlt{}= 20}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{27}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{l+m+mi}{2} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{l+m+mi}{2}  \PY{c+c1}{\PYZsh{} in this case we allow the numbers to be equal too}
 \end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{27}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+True
+\end{Verbatim}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{28}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{x}\PY{p}{)}
+\PY{l+m+mi}{15} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{n}{x} \PY{o+ow}{and} \PY{n}{x} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{l+m+mi}{20} 
+\end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 11
-
     \end{Verbatim}
 
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{28}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}28}]:} False
+False
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}29}]:} \PY{l+m+mi}{15} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{n}{x} \PY{o+ow}{or} \PY{n}{x} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{l+m+mi}{20}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{29}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{l+m+mi}{15} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{n}{x} \PY{o+ow}{or} \PY{n}{x} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{l+m+mi}{20}
 \end{Verbatim}
+\end{tcolorbox}
 
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{29}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}29}]:} True
+True
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}30}]:} \PY{o+ow}{not} \PY{p}{(}\PY{n}{x} \PY{o}{\PYZgt{}} \PY{l+m+mi}{20}\PY{p}{)} \PY{c+c1}{\PYZsh{} the not keyword negates the following expression}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{30}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{o+ow}{not} \PY{p}{(}\PY{n}{x} \PY{o}{\PYZgt{}} \PY{l+m+mi}{20}\PY{p}{)} \PY{c+c1}{\PYZsh{} the not keyword negates the following expression}
 \end{Verbatim}
+\end{tcolorbox}
 
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{30}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}30}]:} True
+True
 \end{Verbatim}
-            
+\end{tcolorbox}
+        
     \hypertarget{string-expressions}{%
 \subsection{String expressions}\label{string-expressions}}
 
 A ``string'' is a sequence of characters (letters, digits, spaces,
-punctiation, new lines\ldots{})
+punctuation, new lines\ldots{}). There are many operations that can be
+performed on strings, like concatenate (with + operator), truncate,
+replace\ldots{}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}31}]:} \PY{n}{mystring} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{some text with punctuation, spaces and digits 10}\PY{l+s+s2}{\PYZdq{}}
-\end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}32}]:} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{abc}\PY{l+s+s2}{\PYZdq{}} \PY{o}{+} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{def}\PY{l+s+s2}{\PYZdq{}} \PY{c+c1}{\PYZsh{} it is possible to concatenate strings with + }
-\end{Verbatim}
-
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{14}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}32}]:} 'abcdef'
+\PY{n}{mystring} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{some text with punctuation, spaces and digits 10}\PY{l+s+s2}{\PYZdq{}}
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}33}]:} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{The number }\PY{l+s+s2}{\PYZdq{}} \PY{o}{+} \PY{l+m+mi}{4} \PY{o}{+} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ is my favourite number}\PY{l+s+s2}{\PYZdq{}}
-         \PY{c+c1}{\PYZsh{} this causes an error since we are trying to concatenate a string }
-         \PY{c+c1}{\PYZsh{} with a number so two different kind of objects}
+\end{tcolorbox}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{16}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{mystring}\PY{o}{.}\PY{n}{replace}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{s}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{z}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{16}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+'zome text with punctuation, zpacez and digitz 10'
+\end{Verbatim}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{15}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{abc}\PY{l+s+s2}{\PYZdq{}} \PY{o}{+} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{def}\PY{l+s+s2}{\PYZdq{}}  
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{15}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+'abcdef'
+\end{Verbatim}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{33}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{The number }\PY{l+s+s2}{\PYZdq{}} \PY{o}{+} \PY{l+m+mi}{4} \PY{o}{+} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ is my favourite number}\PY{l+s+s2}{\PYZdq{}}
+\PY{c+c1}{\PYZsh{} this causes an error since we are trying to concatenate a string }
+\PY{c+c1}{\PYZsh{} with a number so two different kind of objects}
+\end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 
@@ -898,80 +1434,143 @@ punctiation, new lines\ldots{})
 
     \end{Verbatim}
 
-    To avoid this error is possible to \emph{cast} an object to a different
-type, Python will try then to convert it to the desired type. This is
-not always possible though: for example a number can be converted to a
-string (e.g.~from the integer 4 to the actual symbol ``4'') but the
-opposite is not possible (e.g.~cannot convert the string ``matteo'' to a
-meaningful number)
+    To avoid this error is possible to \textbf{cast} an object to a
+different type, \(\tt{python}\) will try then to convert it to the
+desired type. In this case we can \emph{force} the number four to be
+represented as a string with the \(\tt{str()}\) function:
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}34}]:} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{The number }\PY{l+s+s2}{\PYZdq{}} \PY{o}{+} \PY{n+nb}{str}\PY{p}{(}\PY{l+m+mi}{4}\PY{p}{)} \PY{o}{+} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ is my favourite number}\PY{l+s+s2}{\PYZdq{}} \PY{c+c1}{\PYZsh{} str() cast the number to a string}
-\end{Verbatim}
-
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{34}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}34}]:} 'The number 4 is my favourite number'
+\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{The number }\PY{l+s+s2}{\PYZdq{}} \PY{o}{+} \PY{n+nb}{str}\PY{p}{(}\PY{l+m+mi}{4}\PY{p}{)} \PY{o}{+} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ is my favourite number}\PY{l+s+s2}{\PYZdq{}}
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}35}]:} \PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{l+m+mf}{3.4}\PY{p}{)}\PY{p}{)}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{n+nb}{str}\PY{p}{(}\PY{l+m+mf}{3.4}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{34}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+'The number 4 is my favourite number'
 \end{Verbatim}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{35}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{l+m+mf}{3.4}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{n+nb}{str}\PY{p}{(}\PY{l+m+mf}{3.4}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 <class 'float'>
 <class 'str'>
+    \end{Verbatim}
+
+    Type casting is not always possible though: for example a number can be
+converted to a string (e.g.~from the integer 4 to the actual symbol
+``4'') but the opposite is not possible (e.g.~cannot convert the string
+``matteo'' to a meaningful number). Here we use the function
+\(\tt{int()}\) to try to convert a string to an integer.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{17}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{int}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{matteo}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+
+        ---------------------------------------------------------------------------
+
+        ValueError                                Traceback (most recent call last)
+
+        <ipython-input-17-979283bb65e4> in <module>
+    ----> 1 int("matteo")
+    
+
+        ValueError: invalid literal for int() with base 10: 'matteo'
 
     \end{Verbatim}
 
-    Instead of using + to concatenate strings, Python allows for a prettier
-formatting using the following syntax (which for example allows for
-float rounding):
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}36}]:} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{The speed of light is about }\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{ }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{l+m+mf}{299792.458}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{km/s}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-         \PY{c+c1}{\PYZsh{} each \PYZob{}\PYZcb{} is mapped to the variables listed later in the \PYZdq{}format\PYZdq{}}
-\end{Verbatim}
-
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{19}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}36}]:} 'The speed of light is about 299792.5 km/s'
+\PY{n+nb}{int}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{4}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
 \end{Verbatim}
-            
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{19}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+4
+\end{Verbatim}
+\end{tcolorbox}
+        
+    In order to get prettier strings than just concatenating with +,
+\(\tt{python}\) allows to format text using the following syntax (which
+for example allows for float rounding):
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{20}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{The speed of light is about }\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{ }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{l+m+mf}{299792.458}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{km/s}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{c+c1}{\PYZsh{} each \PYZob{}\PYZcb{} is mapped to the variables listed later in the \PYZdq{}format\PYZdq{}}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{20}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+'The speed of light is about 299792.5 km/s'
+\end{Verbatim}
+\end{tcolorbox}
+        
     \hypertarget{indented-blocks-and-the-ttifelse-statement}{%
 \subsection{\texorpdfstring{Indented blocks and the \(\tt{if/else}\)
 statement}{Indented blocks and the \textbackslash{}tt\{if/else\} statement}}\label{indented-blocks-and-the-ttifelse-statement}}
 
 Unlike other languages which uses parenthesis to isolate blocks of code
-Python uses indentation. A first example of this is given by the
-\(\tt{if/then}\) statements where based on some condition we can run
-different part of the code.
+\(\tt{python}\) uses indentation. A first example of this is given by
+the \(\tt{if/then}\) statements. Such statements allow to dynamically
+run different blocks of code based on certain conditions. For example in
+the following we print different statements according to the value of
+\(\tt{x}\), note the that the block of code to be run according each
+condition is shifted (i.e.~indented) with respect to the rest of the
+code:
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}37}]:} \PY{c+c1}{\PYZsh{} remember x value is 13 now}
-         \PY{k}{if} \PY{n}{x} \PY{o}{==} \PY{l+m+mi}{1}\PY{p}{:} 
-             \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{This will not be printed}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)} 
-             \PY{c+c1}{\PYZsh{} the block of code that is run if the first condition is met is indented}
-         \PY{k}{elif} \PY{n}{x} \PY{o}{==} \PY{l+m+mi}{15}\PY{p}{:}
-             \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{This will not be printed either}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-             \PY{c+c1}{\PYZsh{} again the block of code that is run here is indented to be \PYZdq{}isolated\PYZdq{} by the rest }
-         \PY{k}{else}\PY{p}{:}
-             \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{This *will* be printed}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{21}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{x}\PY{p}{)}
+\PY{k}{if} \PY{n}{x} \PY{o}{==} \PY{l+m+mi}{1}\PY{p}{:} 
+    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{This will not be printed}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)} 
+    \PY{c+c1}{\PYZsh{} the block of code that is run if the first condition is met is indented}
+\PY{k}{elif} \PY{n}{x} \PY{o}{==} \PY{l+m+mi}{15}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{This will not be printed either}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+    \PY{c+c1}{\PYZsh{} again the block of code that is run here is indented to be \PYZdq{}isolated\PYZdq{} by the rest }
+\PY{k}{else}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{This *will* be printed}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
+16
 This *will* be printed
-
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}38}]:} \PY{c+c1}{\PYZsh{} if by mistake I forget to indent some block I get an error}
-         \PY{k}{if} \PY{n}{x} \PY{o}{==} \PY{l+m+mi}{1}\PY{p}{:} 
-         \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{This will not be printed}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-         \PY{k}{elif} \PY{n}{x} \PY{o}{==} \PY{l+m+mi}{15}\PY{p}{:}
-             \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{This will not be printed either}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-         \PY{k}{else}\PY{p}{:}
-             \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{This *will* be printed}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{38}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} if by mistake I forget to indent some block I get an error}
+\PY{k}{if} \PY{n}{x} \PY{o}{==} \PY{l+m+mi}{1}\PY{p}{:} 
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{This will not be printed}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{k}{elif} \PY{n}{x} \PY{o}{==} \PY{l+m+mi}{15}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{This will not be printed either}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{k}{else}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{This *will* be printed}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 
@@ -980,16 +1579,6 @@ This *will* be printed
             \^{}
     IndentationError: expected an indented block
 
-
-    \end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}39}]:} \PY{k}{if} \PY{n}{x} \PY{o}{!=} \PY{l+m+mi}{1}\PY{p}{:}
-             \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x does not equal to 1}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-x does not equal to 1
 
     \end{Verbatim}
 
@@ -1009,37 +1598,34 @@ x does not equal to 1
 \end{Highlighting}
 \end{Shaded}
 
-N.B. Notice how indentation doesn't matter at all here.
+N.B. Notice how indentation doesn't matter at all here since the blocks
+are enclosed and defined by the brackets.
 
 \hypertarget{loops}{%
 \subsection{Loops}\label{loops}}
 
-Another very import feature of a language is the loop that allows to
-repeat the same block of code many times. In Python loops can be coded
-with \(\tt{for}\) or \(\tt{while}\) keywords.
+Another very important feature of a language is the ability to
+repeatedly run the same block of code many times. These is called
+looping and in \(\tt{python}\) can be done with \(\tt{for}\) or
+\(\tt{while}\) keywords.
 
 \hypertarget{for}{%
 \subsubsection{for}\label{for}}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}40}]:} \PY{c+c1}{\PYZsh{} the range keyword returns a \PYZdq{}list\PYZdq{} of integers starting from 0}
-         \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{:}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{)}
+In a \(\tt{for}\) loop we specifiy the set (or interval) over which we
+want to loop and a variable will assume all the values in that set (or
+interval). For example let's assume we want to print all the numbers
+between 25 and 30 excluded (here the function \(\tt{range}\) returns the
+list of integers between the specified limits, if the first limit is not
+specified 0 is assumed):
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{41}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{25}\PY{p}{,} \PY{l+m+mi}{30}\PY{p}{)}\PY{p}{:} 
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{)}
 \end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-0
-1
-2
-3
-4
-
-    \end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}41}]:} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{25}\PY{p}{,} \PY{l+m+mi}{30}\PY{p}{)}\PY{p}{:} \PY{c+c1}{\PYZsh{} here both boundaries are specified}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{)}
-\end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 25
@@ -1047,13 +1633,19 @@ with \(\tt{for}\) or \(\tt{while}\) keywords.
 27
 28
 29
-
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}42}]:} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range} \PY{p}{(}\PY{l+m+mi}{30}\PY{p}{,} \PY{l+m+mi}{25}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{:} \PY{c+c1}{\PYZsh{} here both boundaries and step are specified}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{)}
+    At each loop the variable \(\tt{i}\) will take one of the values between
+25 and 31. With \(\tt{range}\) it is also possible to specify the step,
+so that it is possible to loop every 2 or to go in descending order:
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{42}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range} \PY{p}{(}\PY{l+m+mi}{30}\PY{p}{,} \PY{l+m+mi}{25}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{:} 
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 30
@@ -1061,16 +1653,21 @@ with \(\tt{for}\) or \(\tt{while}\) keywords.
 28
 27
 26
-
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}43}]:} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{)}\PY{p}{:}
-             \PY{k}{if} \PY{n}{i} \PY{o}{==} \PY{l+m+mi}{5}\PY{p}{:}
-                 \PY{k}{continue} \PY{c+c1}{\PYZsh{} this line skips the current iteration, }
-                          \PY{c+c1}{\PYZsh{} 5 is actually missing from the output below}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{)}
+    If we want to skip values in the loop we have to use the
+\(\tt{continue}\) keyword, below 5 is actually missing from the list in
+the printout:
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{43}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{)}\PY{p}{:}
+    \PY{k}{if} \PY{n}{i} \PY{o}{==} \PY{l+m+mi}{5}\PY{p}{:}
+        \PY{k}{continue} 
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 0
@@ -1082,70 +1679,84 @@ with \(\tt{for}\) or \(\tt{while}\) keywords.
 7
 8
 9
-
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}44}]:} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{p}{(}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{:} \PY{c+c1}{\PYZsh{} here we loop directly on a list of numbers}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{)}
+    Instead of using \(\tt{range}\) it is possbile to specify directly the
+set of looping values:
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{44}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{p}{(}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{:} 
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 4
 6
 10
 20
-
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}45}]:} \PY{n}{phrase} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{how to loop over a string}\PY{l+s+s1}{\PYZsq{}}
-         \PY{k}{for} \PY{n}{c} \PY{o+ow}{in} \PY{n}{phrase}\PY{p}{:}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{c}\PY{p}{)}
+    Looping on a string actually means to loop on each single character:
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{45}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{phrase} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{how to loop over a string}\PY{l+s+s1}{\PYZsq{}}
+\PY{k}{for} \PY{n}{c} \PY{o+ow}{in} \PY{n}{phrase}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{c}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 h
 o
 w
- 
+
 t
 o
- 
+
 l
 o
 o
 p
- 
+
 o
 v
 e
 r
- 
+
 a
- 
+
 s
 t
 r
 i
 n
 g
-
     \end{Verbatim}
 
     \hypertarget{while}{%
 \subsubsection{while}\label{while}}
 
-In a for loop we go through all the elements of a list of objects, the
-\texttt{while} statement instead repeats the same block of code untill a
-condition is met.
+In a \(\tt{for}\) loop we go through all the elements of a list of
+objects, the \texttt{while} statement instead repeats the same block of
+code untill a condition is met. The following block of code is run if
+\texttt{x} squared is less than 50, we first set \texttt{x=1} and at
+each iteration we increment it by 1 untill the condition is
+\texttt{True}, (indeed 8 squared is 64 which is greater than 50):
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}46}]:} \PY{n}{x} \PY{o}{=} \PY{l+m+mi}{1}
-         \PY{k}{while} \PY{n}{x} \PY{o}{*}\PY{o}{*} \PY{l+m+mi}{2} \PY{o}{\PYZlt{}} \PY{l+m+mi}{50}\PY{p}{:} \PY{c+c1}{\PYZsh{} the following block of code is run if x squared is \PYZlt{}50}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{x}\PY{p}{)}
-             \PY{n}{x} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1} \PY{c+c1}{\PYZsh{} each time we increment by 1 the variable x}
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{46}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{x} \PY{o}{=} \PY{l+m+mi}{1}
+\PY{k}{while} \PY{n}{x} \PY{o}{*}\PY{o}{*} \PY{l+m+mi}{2} \PY{o}{\PYZlt{}} \PY{l+m+mi}{50}\PY{p}{:} 
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{x}\PY{p}{)}
+    \PY{n}{x} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1} 
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 1
@@ -1155,20 +1766,24 @@ condition is met.
 5
 6
 7
-
     \end{Verbatim}
 
-    It is possible to exit prematurely from a while loop using the
-\(\tt{break}\) keyword.
+    It is possible to exit prematurely from a \texttt{while} loop using the
+\(\tt{break}\) keyword. In this case the condition is simply
+\texttt{True} so the code would run forever unless we set an exit
+strategy.
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}47}]:} \PY{n}{x} \PY{o}{=} \PY{l+m+mi}{1}
-         \PY{k}{while} \PY{k+kc}{True}\PY{p}{:} \PY{c+c1}{\PYZsh{} True is always true :\PYZhy{}) so this would run forever}
-             \PY{k}{if} \PY{p}{(}\PY{n}{x} \PY{o}{*}\PY{o}{*} \PY{l+m+mi}{2} \PY{o}{\PYZgt{}} \PY{l+m+mi}{50}\PY{p}{)}\PY{p}{:} 
-                 \PY{k}{break} \PY{c+c1}{\PYZsh{} this line exit from the while loop}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{x}\PY{p}{)}
-             \PY{n}{x} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1} 
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{47}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{x} \PY{o}{=} \PY{l+m+mi}{1}
+\PY{k}{while} \PY{k+kc}{True}\PY{p}{:} 
+    \PY{k}{if} \PY{p}{(}\PY{n}{x} \PY{o}{*}\PY{o}{*} \PY{l+m+mi}{2} \PY{o}{\PYZgt{}} \PY{l+m+mi}{50}\PY{p}{)}\PY{p}{:} 
+        \PY{k}{break} 
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{x}\PY{p}{)}
+    \PY{n}{x} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1} 
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 1
@@ -1178,163 +1793,102 @@ condition is met.
 5
 6
 7
-
     \end{Verbatim}
 
     \hypertarget{lists}{%
 \subsection{Lists}\label{lists}}
 
-A list in Python is a container that is a \emph{mutable}, ordered
-sequence of elements. Each element or value that is inside of a list is
-called an item. Each item can be accessed using squared brackets (list
-indexing is zero-based). It is considered mutable since you can add,
-remove or update the items in the list. Ordered instead means that items
-are kept in the same order they have been added to the list.
+A list in \(\tt{python}\) is a container that is a \emph{mutable},
+ordered sequence of elements. Each element or value that is inside of a
+list is called an item. Each item can be accessed using square brackets
+(very important, list indexing is zero-based so the first element is the
+0th). A list is considered mutable since you can add, remove or update
+the items in the list. Ordered instead means that items are kept in the
+same order they have been added to the list.
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}48}]:} \PY{n}{mylist} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{21}\PY{p}{,} \PY{l+m+mi}{32}\PY{p}{,} \PY{l+m+mi}{15}\PY{p}{]}
-         \PY{n}{mylist}
-\end{Verbatim}
-
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{22}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}48}]:} [21, 32, 15]
+\PY{n}{mylist} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{21}\PY{p}{,} \PY{l+m+mi}{32}\PY{p}{,} \PY{l+m+mi}{15}\PY{p}{]}
+\PY{n+nb}{print}\PY{p}{(}\PY{n}{mylist}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{n}{mylist}\PY{p}{)}\PY{p}{)}
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}49}]:} \PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{n}{mylist}\PY{p}{)}\PY{p}{)}
-\end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-<class 'list'>
-
+[21, 32, 15]
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}50}]:} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{mylist}\PY{p}{)}\PY{p}{)}\PY{p}{:} \PY{c+c1}{\PYZsh{} len() returns the number of items in a list}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{mylist}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{24}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{mylist}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
 \end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{24}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+21
+\end{Verbatim}
+\end{tcolorbox}
+        
+    The number of elements in a list are counted using \texttt{len()}:
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{25}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{len}\PY{p}{(}\PY{n}{mylist}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{25}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+3
+\end{Verbatim}
+\end{tcolorbox}
+        
+    Looping on list items can be achieved in two ways: using directly the
+list or by index:
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{26}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Loop using the list itself:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n}{mylist}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{)}
+
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Loop by index:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{mylist}\PY{p}{)}\PY{p}{)}\PY{p}{:} \PY{c+c1}{\PYZsh{} len() returns the number of items in a list}
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{mylist}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
+Loop using the list itself:
 21
 32
 15
-
-    \end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}51}]:} \PY{n+nb}{len}\PY{p}{(}\PY{n}{mylist}\PY{p}{)}
-\end{Verbatim}
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}51}]:} 3
-\end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}52}]:} \PY{n}{mylist}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{c+c1}{\PYZsh{} accessing an item by index,remember the first item is element 0}
-\end{Verbatim}
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}52}]:} 21
-\end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}53}]:} \PY{n}{mylist}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{=} \PY{l+m+mi}{74} \PY{c+c1}{\PYZsh{} we can change list items since it\PYZsq{}s *mutable*}
-         \PY{n}{mylist}
-\end{Verbatim}
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}53}]:} [21, 74, 15]
-\end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}54}]:} \PY{n}{mylist}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{]} \PY{c+c1}{\PYZsh{} error ! it doesn\PYZsq{}t exists, the list has only 3 }
-                   \PY{c+c1}{\PYZsh{} elements, so the last is item 2}
-\end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-
-        ---------------------------------------------------------------------------
-
-        IndexError                                Traceback (most recent call last)
-
-        <ipython-input-54-3a32eb4a7169> in <module>()
-    ----> 1 mylist[3] \# error ! it doesn't exists, the list has only 3
-          2           \# elements, so the last is item 2
-
-
-        IndexError: list index out of range
-
-    \end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}55}]:} \PY{n}{mylist}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]} \PY{c+c1}{\PYZsh{} negative index starts from the last element}
-\end{Verbatim}
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}55}]:} 15
-\end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}56}]:} \PY{n}{mylist}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]} \PY{c+c1}{\PYZsh{} : is called slice, all items starting from the second }
-                    \PY{c+c1}{\PYZsh{} (remember indexing starts from 0)}
-\end{Verbatim}
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}56}]:} [74, 15]
-\end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}57}]:} \PY{n}{mylist}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{2}\PY{p}{]} \PY{c+c1}{\PYZsh{} elements up to but excluding item 2}
-\end{Verbatim}
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}57}]:} [21, 74]
-\end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}58}]:} \PY{n}{mylist}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{l+m+mi}{188}\PY{p}{)} \PY{c+c1}{\PYZsh{} append add an item at the end of the list}
-         \PY{n}{mylist}
-\end{Verbatim}
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}58}]:} [21, 74, 15, 188]
-\end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}59}]:} \PY{n}{mylist}\PY{o}{.}\PY{n}{insert}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{85}\PY{p}{)} \PY{c+c1}{\PYZsh{} insert an item in the desired position }
-                              \PY{c+c1}{\PYZsh{} (2 in this example)}
-         \PY{n}{mylist}
-\end{Verbatim}
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}59}]:} [21, 74, 85, 15, 188]
-\end{Verbatim}
-            
-    \begin{figure}
-\centering
-\includegraphics{pic1.png}
-\caption{Representation of mylist in the computer memory}
-\end{figure}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}60}]:} \PY{k}{for} \PY{n}{item} \PY{o+ow}{in} \PY{n}{mylist}\PY{p}{:} \PY{c+c1}{\PYZsh{} iterate over the list}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{item}\PY{p}{)}
-\end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
+Loop by index:
 21
-74
-85
+32
 15
-188
-
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}61}]:} \PY{k}{for} \PY{n}{i}\PY{p}{,} \PY{n}{item} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{mylist}\PY{p}{)}\PY{p}{:} \PY{c+c1}{\PYZsh{} enumerate keyword iterates}
-                                           \PY{c+c1}{\PYZsh{} returning the item and its index}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{item}\PY{p}{)}
+    With the \texttt{enumerate} function is actually possible to do both at
+the same time, it returns two values, the index of the item and its
+value, so in the example below, \texttt{i} will take the item index
+values while \texttt{item} the item value itself:
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{39}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{for} \PY{n}{i}\PY{p}{,} \PY{n}{item} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{mylist}\PY{p}{)}\PY{p}{:} 
+                                  
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{item}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 0 21
@@ -1342,151 +1896,128 @@ are kept in the same order they have been added to the list.
 2 85
 3 15
 4 188
-
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}62}]:} \PY{n}{secondlist} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-         \PY{k}{for} \PY{n}{item} \PY{o+ow}{in} \PY{n}{mylist}\PY{p}{:} \PY{c+c1}{\PYZsh{} create second list using mylist as input}
-             \PY{n}{secondlist}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{item} \PY{o}{*}\PY{o}{*} \PY{l+m+mi}{2}\PY{p}{)}
-         \PY{n}{secondlist}
-\end{Verbatim}
+    Since a list is mutable we can dynamically change its items:
 
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{27}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}62}]:} [441, 5476, 7225, 225, 35344]
+\PY{n}{mylist}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{=} \PY{l+m+mi}{74} \PY{c+c1}{\PYZsh{} we can change list items since it\PYZsq{}s *mutable*}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{mylist}\PY{p}{)}
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}63}]:} \PY{c+c1}{\PYZsh{} for a more compact code the previous lines can be shrinked to}
-         \PY{n}{secondlist} \PY{o}{=} \PY{p}{[} \PY{n}{item}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{k}{for} \PY{n}{item} \PY{o+ow}{in} \PY{n}{mylist}\PY{p}{]}
-         \PY{n}{secondlist}
-\end{Verbatim}
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}63}]:} [441, 5476, 7225, 225, 35344]
-\end{Verbatim}
-            
-    \hypertarget{tricky-point-here}{%
-\paragraph{Tricky point here !!!}\label{tricky-point-here}}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}64}]:} \PY{n+nb}{print}\PY{p}{(}\PY{n+nb}{sorted}\PY{p}{(}\PY{n}{secondlist}\PY{p}{)}\PY{p}{)} \PY{c+c1}{\PYZsh{} sort returns a new list doesn\PYZsq{}t }
-                                   \PY{c+c1}{\PYZsh{} change secondlist itself}
-         \PY{n+nb}{print}\PY{p}{(}\PY{n}{secondlist}\PY{p}{)}
-\end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-[225, 441, 5476, 7225, 35344]
-[441, 5476, 7225, 225, 35344]
-
+[21, 74, 15]
     \end{Verbatim}
 
-    \begin{figure}
-\centering
-\includegraphics{pic2.png}
-\caption{Sorted function returns a new list}
-\end{figure}
+    With \texttt{append} an item is added at the end of list, with
+\texttt{insert} an item can be added in a desired position of the list:
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}65}]:} \PY{n}{secondlist}\PY{o}{.}\PY{n}{sort}\PY{p}{(}\PY{p}{)} \PY{c+c1}{\PYZsh{} instead change secondlist}
-         \PY{n}{secondlist}
-\end{Verbatim}
-
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{34}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}65}]:} [225, 441, 5476, 7225, 35344]
+\PY{n}{mylist}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{l+m+mi}{188}\PY{p}{)} \PY{c+c1}{\PYZsh{} append add an item at the end of the list}
+\PY{n}{mylist}
 \end{Verbatim}
-            
-    \begin{figure}
-\centering
-\includegraphics{pic3.png}
-\caption{Sort method instead directly changes the current list}
-\end{figure}
+\end{tcolorbox}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}66}]:} \PY{n}{thirdlist} \PY{o}{=} \PY{n}{mylist} \PY{c+c1}{\PYZsh{} this is tricky, since variables *point* to objects}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n}{mylist}\PY{p}{)}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n}{thirdlist}\PY{p}{)}
-         \PY{n}{thirdlist}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{=} \PY{l+m+mi}{0}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n}{mylist}\PY{p}{)}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n}{thirdlist}\PY{p}{)}
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{34}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+[21, 74, 15, 188]
 \end{Verbatim}
+\end{tcolorbox}
+        
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{35}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{mylist}\PY{o}{.}\PY{n}{insert}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{85}\PY{p}{)} \PY{c+c1}{\PYZsh{} insert an item in the desired position }
+                     \PY{c+c1}{\PYZsh{} (2 in this example)}
+\PY{n}{mylist}
+\end{Verbatim}
+\end{tcolorbox}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{35}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
 [21, 74, 85, 15, 188]
-[21, 74, 85, 15, 188]
-[0, 74, 85, 15, 188]
-[0, 74, 85, 15, 188]
+\end{Verbatim}
+\end{tcolorbox}
+        
+    Accessing items outside the list range gives an error:
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{36}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{mylist}\PY{p}{[}\PY{l+m+mi}{10}\PY{p}{]} \PY{c+c1}{\PYZsh{} error ! it doesn\PYZsq{}t exists, the list has only 3 }
+          \PY{c+c1}{\PYZsh{} elements, so the last is item 2}
+\end{Verbatim}
+\end{tcolorbox}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+
+        ---------------------------------------------------------------------------
+
+        IndexError                                Traceback (most recent call last)
+
+        <ipython-input-36-ed1e5e6c3e46> in <module>
+    ----> 1 mylist[10] \# error ! it doesn't exists, the list has only 3
+          2           \# elements, so the last is item 2
+
+
+        IndexError: list index out of range
 
     \end{Verbatim}
 
-    \begin{figure}
-\centering
-\includegraphics{pic4.png}
-\caption{In thist case mylist is assigned to a new variable thirdlist}
-\end{figure}
+    There are two more nice features of \(\tt{python}\) indexing: negative
+indices are like positive ones except that they starts from the last
+element, and \emph{slicing} whcih allows to specify a range of indices.
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}67}]:} \PY{n}{mylist} \PY{o}{==} \PY{n}{thirdlist} \PY{c+c1}{\PYZsh{} comparison by value, }
-                             \PY{c+c1}{\PYZsh{} i.e. they contains the same items}
-\end{Verbatim}
-
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{38}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}67}]:} True
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{negative index \PYZhy{}1 returns the last element:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{mylist}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{slicing [1:3] returns the elements between the 1st and 2nd:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{mylist}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{:}\PY{l+m+mi}{3}\PY{p}{]}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{slicing [:2] returns the elements between the 1st and 2nd:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{mylist}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{slicing [2:] returns the elements between the 2nd and the last:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{mylist}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{:}\PY{p}{]}\PY{p}{)}
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}68}]:} \PY{n}{mylist} \PY{o+ow}{is} \PY{n}{thirdlist} \PY{c+c1}{\PYZsh{} as said before mylist and thirdlist }
-                             \PY{c+c1}{\PYZsh{} *point* to the same list}
-\end{Verbatim}
+\end{tcolorbox}
 
+    \begin{Verbatim}[commandchars=\\\{\}]
+negative index -1 returns the last element: 188
+slicing [1:3] returns the elements between the 1st and 2nd: [21, 74, 85]
+slicing [:2] returns the elements between the 1st and 2nd: [21, 74]
+slicing [2:] returns the elements between the 2nd and the last: [85, 15, 188]
+    \end{Verbatim}
+
+    It is worth mentioning that a \texttt{list} doesn't have to be populated
+with the same kind of objects (list indices are instead always
+integers).
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{71}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}68}]:} True
+\PY{n}{mixedlist} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{b}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{math}\PY{o}{.}\PY{n}{sqrt}\PY{p}{]}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{mixedlist}\PY{p}{)}
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}69}]:} \PY{n}{fourthlist} \PY{o}{=} \PY{n+nb}{list}\PY{p}{(}\PY{n}{mylist}\PY{p}{)} \PY{c+c1}{\PYZsh{} now mylist and fourtfhlist *point* to different list}
-         \PY{n}{mylist} \PY{o}{==} \PY{n}{fourthlist}
-\end{Verbatim}
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}69}]:} True
-\end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}70}]:} \PY{n}{fourthlist} \PY{o}{=} \PY{n+nb}{list}\PY{p}{(}\PY{n}{mylist}\PY{p}{)} \PY{c+c1}{\PYZsh{} now mylist and fourtfhlist *point* to different list}
-         \PY{n}{fourthlist} \PY{o+ow}{is} \PY{n}{mylist}
-\end{Verbatim}
-
-\begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}70}]:} False
-\end{Verbatim}
-            
-    \begin{figure}
-\centering
-\includegraphics{pic5.png}
-\caption{In this case mylist has been cloned into fourthlist}
-\end{figure}
-
-List can contain objects of different kind but indices has to be integer
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}71}]:} \PY{n}{mixedlist} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{b}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{math}\PY{o}{.}\PY{n}{sqrt}\PY{p}{]}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n}{mixedlist}\PY{p}{)}
-\end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 [1, 2, 'b', <built-in function sqrt>]
-
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}72}]:} \PY{n+nb}{print} \PY{p}{(}\PY{n}{mixedlist}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n}{mixedlist}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{k}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{72}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{mixedlist}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{mixedlist}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{k}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 1
-
     \end{Verbatim}
 
     \begin{Verbatim}[commandchars=\\\{\}]
@@ -1507,27 +2038,50 @@ List can contain objects of different kind but indices has to be integer
     \hypertarget{dictionaries}{%
 \subsection{Dictionaries}\label{dictionaries}}
 
-Dictionaries are objects which map keys to values. Keys can be (almost)
-any kind of object (strings, numbers\ldots{}) and they do not have to be
-sequential.
+A we have seen lists are ordered collections of element and as such we
+can say that map integers (the index of each item) to values (any kind
+of \texttt{python} object). \emph{Dictionaries} generalize such a
+concept being objects which map \emph{keys} (\textbf{almost} any kind of
+\texttt{python} object) to values (any kind of \texttt{python} object).
+In this case since the keys are not anymore necessarily integers there
+is no particular ordering of the items of a dictionary.
 
-\["apple" \rightarrow 4 \] \["banana" \rightarrow 5 \]
+In our previous example of the list we had:
 
-Dictionaries are very flexible so that different keys can be different
-type of objects.
+\[ 0~(\textrm{0th item}) \rightarrow 21\]
+\[ 1~(\textrm{1st item}) \rightarrow 74\]
+\[ 2~(\textrm{2nd item}) \rightarrow 85\] \[ ... \]
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}73}]:} \PY{n}{adict} \PY{o}{=} \PY{p}{\PYZob{}}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{apple}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{banana}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{l+m+mi}{5}\PY{p}{\PYZcb{}}
-         \PY{n}{adict}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{apple}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{c+c1}{\PYZsh{} values are accessed through their key}
-\end{Verbatim}
+With a dictionary we can have something like this:
 
+\["apple" (\textrm{key}) \rightarrow 4 \]
+\["banana" (\textrm{key}) \rightarrow 5 \]
+
+As we will see dictionaries are very flexible and will be very usefull
+to represent complex data structures.
+
+In lists we could access items by index, here we do it by key still
+using the square brackets. Trying to access not existing keys results in
+error. We can check if a key exists with the \texttt{in} operator.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{40}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}73}]:} 4
+\PY{n}{adict} \PY{o}{=} \PY{p}{\PYZob{}}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{apple}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{banana}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{l+m+mi}{5}\PY{p}{\PYZcb{}}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{adict}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{apple}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{)}
 \end{Verbatim}
-            
+\end{tcolorbox}
+
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}74}]:} \PY{n}{adict}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{pear}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{c+c1}{\PYZsh{} error ! this key doesn\PYZsq{}t exists}
+4
+    \end{Verbatim}
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{41}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{adict}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{pear}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{c+c1}{\PYZsh{} error !}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
 
@@ -1535,7 +2089,7 @@ type of objects.
 
         KeyError                                  Traceback (most recent call last)
 
-        <ipython-input-74-9d051ebd10de> in <module>()
+        <ipython-input-41-9d051ebd10de> in <module>
     ----> 1 adict["pear"] \# error ! this key doesn't exists
     
 
@@ -1543,142 +2097,143 @@ type of objects.
 
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}75}]:} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{pear}\PY{l+s+s2}{\PYZdq{}} \PY{o+ow}{in} \PY{n}{adict} \PY{c+c1}{\PYZsh{} indeed}
-\end{Verbatim}
-
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{75}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}75}]:} False
+\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{pear}\PY{l+s+s2}{\PYZdq{}} \PY{o+ow}{in} \PY{n}{adict} \PY{c+c1}{\PYZsh{} indeed}
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}76}]:} \PY{n+nb}{len}\PY{p}{(}\PY{n}{adict}\PY{p}{)}
-\end{Verbatim}
+\end{tcolorbox}
 
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{75}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}76}]:} 2
+False
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}77}]:} \PY{n}{adict}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{banana}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{=} \PY{l+m+mi}{2}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{adict}\PY{p}{)}\PY{p}{)}
-         \PY{n+nb}{print} \PY{p}{(}\PY{n}{adict}\PY{p}{)}
+\end{tcolorbox}
+        
+    The items can be dynamically created or updated with the assignement
+\texttt{=} operator, while again \texttt{len()} returns the number of
+items in a dictionary.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{43}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{adict}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{banana}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{=} \PY{l+m+mi}{2}
+\PY{n}{adict}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{pear}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{=} \PY{l+m+mi}{10}
+\PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{adict}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{adict}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-2
-\{'apple': 4, 'banana': 2\}
-
+3
+\{'apple': 4, 'banana': 2, 'pear': 10\}
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}78}]:} \PY{n}{adict}\PY{p}{[}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{]} \PY{o}{=} \PY{n}{math}\PY{o}{.}\PY{n}{exp}
-\end{Verbatim}
+    Dictionaries can be made of more complecated types than simple string
+and integers:
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}79}]:} \PY{n}{adict}\PY{o}{.}\PY{n}{keys}\PY{p}{(}\PY{p}{)} \PY{c+c1}{\PYZsh{} returns all the keys (they are not ordered in any way)}
-\end{Verbatim}
-
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{44}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}79}]:} dict\_keys(['apple', 'banana', <built-in function log>])
+\PY{n}{adict}\PY{p}{[}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{]} \PY{o}{=} \PY{n}{math}\PY{o}{.}\PY{n}{exp}
 \end{Verbatim}
-            
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}80}]:} \PY{k}{for} \PY{n}{key} \PY{o+ow}{in} \PY{n}{adict}\PY{o}{.}\PY{n}{keys}\PY{p}{(}\PY{p}{)}\PY{p}{:}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{key}\PY{p}{)}
+\end{tcolorbox}
+
+    Looping over dictionary items can be done key, by value or by both:
+\texttt{.keys()} returns the list of keys, \texttt{.values()} returns
+the list of values and \texttt{.items()} the list of pairs key-value.
+
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{45}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{All keys: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{adict}\PY{o}{.}\PY{n}{keys}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+\PY{k}{for} \PY{n}{key} \PY{o+ow}{in} \PY{n}{adict}\PY{o}{.}\PY{n}{keys}\PY{p}{(}\PY{p}{)}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{key}\PY{p}{)}
+
+\PY{n+nb}{print} \PY{p}{(}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{All values: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{adict}\PY{o}{.}\PY{n}{values}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+\PY{k}{for} \PY{n}{value} \PY{o+ow}{in} \PY{n}{adict}\PY{o}{.}\PY{n}{values}\PY{p}{(}\PY{p}{)}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{value}\PY{p}{)}
+
+\PY{n+nb}{print}\PY{p}{(}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{All key\PYZhy{}value pairs: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{adict}\PY{o}{.}\PY{n}{items}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+\PY{k}{for} \PY{n}{key}\PY{p}{,} \PY{n}{value} \PY{o+ow}{in} \PY{n}{adict}\PY{o}{.}\PY{n}{items}\PY{p}{(}\PY{p}{)}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{key}\PY{p}{,} \PY{n}{value}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
     \begin{Verbatim}[commandchars=\\\{\}]
+All keys:  dict\_keys(['apple', 'banana', 'pear', <built-in function log>])
 apple
 banana
+pear
 <built-in function log>
 
-    \end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}81}]:} \PY{k}{for} \PY{n}{value} \PY{o+ow}{in} \PY{n}{adict}\PY{o}{.}\PY{n}{values}\PY{p}{(}\PY{p}{)}\PY{p}{:}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{value}\PY{p}{)}
-\end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
+All values:  dict\_values([4, 2, 10, <built-in function exp>])
 4
 2
+10
 <built-in function exp>
 
+All key-value pairs:  dict\_items([('apple', 4), ('banana', 2), ('pear', 10),
+(<built-in function log>, <built-in function exp>)])
+apple 4
+banana 2
+pear 10
+<built-in function log> <built-in function exp>
     \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}82}]:} \PY{k}{for} \PY{n}{item} \PY{o+ow}{in} \PY{n}{adict}\PY{o}{.}\PY{n}{items}\PY{p}{(}\PY{p}{)}\PY{p}{:} \PY{c+c1}{\PYZsh{} items() returns a pair of key, value}
-             \PY{n+nb}{print} \PY{p}{(}\PY{n}{item}\PY{p}{)}
-\end{Verbatim}
+    To merge two dictionaries the function \texttt{update()} can be used,
+while with \texttt{del} it is possible to remove a key-value pair.
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-('apple', 4)
-('banana', 2)
-(<built-in function log>, <built-in function exp>)
-
-    \end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}83}]:} \PY{n}{seconddict} \PY{o}{=} \PY{p}{\PYZob{}}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{watermelon}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{strawberry}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{l+m+mi}{1}\PY{p}{\PYZcb{}}
-         \PY{n}{adict}\PY{o}{.}\PY{n}{update}\PY{p}{(}\PY{n}{seconddict}\PY{p}{)} \PY{c+c1}{\PYZsh{} update adict with the items in seconddict}
-         \PY{n}{adict}
-\end{Verbatim}
-
+    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\prompt{In}{incolor}{46}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}83}]:} \{'apple': 4,
-          'banana': 2,
-          <function math.log>: <function math.exp>,
-          'watermelon': 0,
-          'strawberry': 1\}
+\PY{k}{del} \PY{n}{adict}\PY{p}{[}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{]}
+\PY{n}{seconddict} \PY{o}{=} \PY{p}{\PYZob{}}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{watermelon}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{strawberry}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:} \PY{l+m+mi}{1}\PY{p}{\PYZcb{}}
+\PY{n}{adict}\PY{o}{.}\PY{n}{update}\PY{p}{(}\PY{n}{seconddict}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{adict}\PY{p}{)}
 \end{Verbatim}
-            
+\end{tcolorbox}
 
-    \subsection{Exercises}\label{exercises}
+            \begin{tcolorbox}[breakable, size=fbox, boxrule=.5pt, pad at break*=1mm, opacityfill=0]
+\prompt{Out}{outcolor}{46}{\boxspacing}
+\begin{Verbatim}[commandchars=\\\{\}]
+\{'apple': 4, 'banana': 2, 'pear': 10, 'watermelon': 0, 'strawberry': 1\}
+\end{Verbatim}
+\end{tcolorbox}
+        
+    \hypertarget{exercises}{%
+\subsection{Exercises}\label{exercises}}
 
-\subsubsection{Exercise 1.1}\label{exercise-1.1}
+\hypertarget{exercise-1.1}{%
+\subsubsection{Exercise 1.1}\label{exercise-1.1}}
 
 \begin{itemize}
 \tightlist
 \item
-  What is a built-in function that Python uses to iterate over a number
-  sequence?
+  What is the built-in function that \(\tt{python}\) uses to iterate
+  over a number sequence ? Wrtie an example that uses it.
 \item
-  What is a string in Python?
+  What is a string in \(\tt{python}\) ? Declare one string variable and
+  try to manipulate it.
 \item
-  What does the continue do in Python?
+  What does the continue do in \(\tt{python}\) ? Show an example of its
+  usage.
 \item
-  What is the purpose of end in Python?
+  When should you use the break in \(\tt{python}\) ? Show an example of
+  its usage.
 \item
-  When should you use the break in Python?
+  What is a dictionary in \(\tt{python}\) programming ? Create a
+  dictionary, modify it and then print all its items.
 \item
-  What is a dictionary in Python programming?
-\item
-  What is the use of the dictionary in Python?
-\item
-  How do you create a dictionary in Python?
-\item
-  How do you read from a dictionary in Python?
-\item
-  How do you traverse through a dictionary object in Python?
-\item
-  How do you add elements To a dictionary in Python?
-\item
-  How do you delete elements Of a dictionary in Python?
-\item
-  How do you check the presence of a key in a dictionary?
-\item
-  What is the syntax for list comprehension in Python?
-\item
-  What is the syntax for dictionary comprehension in Python?
-\item
-  How do you write a conditional expression in Python?
-\item
-  Which Python function will you use to convert a number to a string?
+  Which \(\tt{python}\) function will you use to convert a number to a
+  string ? Show an example.
 \end{itemize}
-    
 
-\section{Advanced hints}\label{advanced-hints}
+    \hypertarget{advanced-hints}{%
+\section{Advanced hints}\label{advanced-hints}}
 
 If you would like to know much \textbf{more} about python during the
 course without the EDX site you can look these videos during the course
@@ -1708,5 +2263,6 @@ Dictionaries: https://www.youtube.com/watch?v=elSt5hke-Rs
 
     % Add a bibliography block to the postdoc
     
-
-    \end{document}
+    
+    
+\end{document}

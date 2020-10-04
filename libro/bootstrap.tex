@@ -1,0 +1,141 @@
+In finance, bootstrapping is a method for constructing a (zero-coupon) fixed-income yield curve from the prices of a set of coupon-bearing products, e.g. bonds and swaps.
+The term structure of spot returns is recovered from the bond yields by solving for them recursively, by forward substitution: this iterative process is called the \emph{bootstrap method}.
+The usefulness of bootstrapping is that using only a few carefully selected zero-coupon products, it becomes possible to derive par swap rates (forward and spot) for all maturities given the solved curve.
+
+To illustrate bootstrapping let's consider the following example which can be solved analytically: we have some coupon paying bond with maturities ranging from 1 to 5 years, each having a value of \euro{100} and traded at par. To determine the zero-coupon yield curve preceed as follows:
+
+\begin{enumerate}
+\item at the end of the first year this $1^{st}$ bond will pay a coupon of \euro{4} (= \euro{100} * 4\%) plus the principal amount (= \euro{100}) which sums up to \euro{104} while the bond is trading at \euro{100}. Therefore, the 1-year spot rate $S_{1y}$ can be calculated as, $\euro{100} = \euro{104} / (1 + S_{1y})$;
+
+\item at the end of second year the sum of the cash flows of the $2^{nd}$ bond can be compared to its trading price to compute the 2-year spot rate $S_{2y}$ as $\euro{100} = \euro{5} / (1 + S_{1y}) + \euro{105} / (1 + S_{2y})^{2}$, using the previously derived value of $S_{1y}$;
+
+\item at the end of third year the sum of the cash flows of the $3^{rd}$ bond can be compared to its trading price to calculate th 3-year spot rate $S_{3y}$ as $\euro{100} = \euro{6} / (1 + S_{1y}) + \euro{6} / (1 + S_{2y})^{2} + \euro{106} / (1 + S_{3y})^{3}$, using $S_{1y}$ and $S_{2y}$ computed before;
+
+\item repeat the same reasoning fo the other bonds.
+\end{enumerate}
+
+Putting all together we can construct a system of equations (now omitting the currency symbol for simplicity):
+
+\begin{equation*}
+\begin{cases}
+100 = \frac{104}{(1 + S_{1y})} \\
+100 = \frac{5}{(1 + S_{1y})} + \frac{105}{(1 + S_{2y})^{2}} \\
+100 = \frac{6} {(1 + S_{1y})} + \frac{6}{(1 + S_{2y})^{2}} + \frac{106} {(1 + S_{3y})^{3}} \\
+100 = \frac{7} {(1 + S_{1y})} + \frac{7} {(1 + S_{2y})^{2}} + \frac{7} {(1 + S_{3y})^{3}} + \frac{107} {(1 + S_{4y})^{4}} \\
+100 = \frac{8} {(1 + S_{1y})} + \frac{8} {(1 + S_{2y})^{2}}+ \frac{8} {(1 + S_{3y})^{3}} + \frac{7} {(1 + S_{4y})^{4}} + \frac{108} {(1 + S_{5y})^{5}}
+\end{cases}
+\end{equation*}
+
+This system can be solved quite easily: from the first equation $S_{1y}$ can be derived, from the second $S_{2y}$, from the third $S_{3y}$ and so on. So
+
+\[100 = 104 / (1 + S_{1y})~~\rightarrow~~S_{1y} = 104/100 - 1 = 4\% \]
+
+Moving to the second equation:
+
+\begin{equation*}
+\begin{split}
+& 100 = 5 / (1 + 0.04) + 105 / (1 + S_{2y})^{2}~~\rightarrow~~S_{2y}^2  + 2 S_{2y}  - 0.103030 = 0 \\
+& S_{2y} = - 1 \pm \sqrt{1 + 0.103030} = \begin{cases}\text{\sout{-2.05023}} \\ 0.0503\end{cases}
+\end{split}
+\end{equation*}
+where the first solution has been discarded because negative.
+From the third one on it is not as simple to solve them analytically since involve third order (or more) equations. Anyway it is possible to solve them numerically and the results are:
+
+\begin{table}[htp]
+\caption{default}
+\begin{center}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{years} & \textbf{coupon rate} & \textbf{bond price} & \textbf{spot rate} \\
+\hline
+1 & 1.00 \% & \euro{100} & 4.00\% \\
+\hline
+2 & 2.00 \% & \euro{100} & 5.03\% \\
+\hline
+3 & 3.00 \% & \euro{100} & 6.08\% \\
+\hline
+4 & 4.00 \% & \euro{100} & 7.19\% \\
+\hline
+5 & 5.00 \% & \euro{100} & 8.36\% \\
+\hline
+\end{tabular}
+\end{center}
+\label{default}
+\end{table}
+
+The last column of the table provide us with the terms to fill the zero-coupon yield curve.
+The very same mechanism can be generalized and extended to more maturities to get a more detailed yield curve. In general terms the previous system can be written as:
+
+\begin{equation*}
+\begin{cases}
+f_1(S_1, p_1) = 0 \\
+f_2(S_1, S_2, p_2) = 0 \\
+f_3(S_1, S_2, S_3, p_3) = 0 \\
+f_4(S_1, S_2, S_3, S_4, p_4) = 0 \\
+\cdots
+\end{cases}
+\end{equation*}
+where $S_i'$ are the unknown spot rate and $p_i$ the prices of the considered products. The iterative procedure we have applied before exploits the first equation to find $S_1 = f_1^{-1}(p_1)$, the second to find $S_2 = f_2^{-1}(S_1, p_2)$ and so on and so forth; this algorithm works since each equation will determine exactly one \emph{free} spot rate which is not already determined by the others.
+
+\subsection{Bootstrap as Minimization Problem}
+We can now describe the bootstrapping algorithm in general terms as follows:
+\begin{enumerate}
+\item define the set of yielding products , these will generally be coupon-bearing bonds;
+\item derive discount factors for the corresponding terms;
+\item \emph{bootstrap} the zero-coupon curve, successively calibrating this curve such that it returns the prices of these inputs.
+\end{enumerate}
+
+Instead of iteratively finding the solution of each equation as before, equivalently we could define a vector (list) of spot rates $\vec{S} = (S_1, S_2, S_3, \ldots)$ seeking for a particular $\vec{S}$ which solves the following equation:
+
+\begin{equation*}
+F = f_1^2(S_1) + f_2^2(S_1, S_2) + f_3^2(S_1, S_2, S_3) + f_4^2(S_1, S_2, S_3, S_4) + \ldots = 0
+\end{equation*}
+
+Under this terms the bootstrapping technique can be considered as a minimization problem indeed we need to find $\vec{S_0}$ which \emph{minimize} $F$, makes it as close as possible to 0.
+
+Back to our Overnight Index Swap example, the general idea here is to get the discount curve such that it prices correctly each OIS by minimizing the sum of the squared OIS NPVs:
+
+\[\mathrm{min}_{curve} \Big\{\sum_{i=1}^{n}\mathrm{NPV}(\mathrm{ois}_i, \mathrm{curve})^2\Big\}\]
+
+A discount curve is characterized by pillar dates and the corresponding discount factors. The description of the problem we have given above does not, in theory, specifies any constraint on the pillar dates of the discount curve. However, the pillar dates determine the number of unknown variables (i.e.~the dimensionality \(n\) of the optimization problem). A curve with \(n\) pillar dates has \(n\) discount factors (note that the first discount factor with value date equal to the today date, is constrained to 1). \textbf{In practice, therefore, it makes sense to choose the pillar dates in such a way that there are exactly the right number of degrees of freedom in the optimization to match data.} So the natural choice is to choose the pillar dates of the discount curve equal to the set of expiry dates of the swaps.
+
+Therefore, once we've fixed \(\vec{d}\) to be a vector of pillar dates equal to the expiry dates of the OIS swaps, and we use the notation \(\vec{x}\) to represent the vector of pillar discount factors, then the problem becomes:
+
+\[\mathrm{min}_{\vec{x}} \Big\{\sum_{i=1}^{n}\mathrm{NPV}(\mathrm{ois}_i, \mathrm{curve(\vec{d}, \vec{x})})^2\Big\}\]
+again this is an optmization problem (\textbf{to find the minimum of the above expression as a function of \(\vec{x}\)}) which can sovled using one of the available numerical optimization routines in \texttt{python}.
+
+So let's start by defining a set of OIS objects to cover all the maturities defined by the market data we have collected in \texttt{ois\_data}.
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}\PY{p}{,} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
+         \PY{k+kn}{import} \PY{n+nn}{ois\PYZus{}data}
+         
+         \PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{ois\PYZus{}data}\PY{o}{.}\PY{n}{observation\PYZus{}date}\PY{p}{]}
+         
+         \PY{n}{swaps} \PY{o}{=} \PY{p}{[}\PY{p}{]} \PY{c+c1}{\PYZsh{} container of the OIS objects}
+         
+         \PY{k}{for} \PY{n}{quote} \PY{o+ow}{in} \PY{n}{ois\PYZus{}data}\PY{o}{.}\PY{n}{quotes}\PY{p}{:}
+             \PY{n}{swap} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}
+                 \PY{c+c1}{\PYZsh{} notional \PYZhy{} doesn\PYZsq{}t really matter what we put here}
+                 \PY{l+m+mf}{1e6}\PY{p}{,}
+                 
+                 \PY{c+c1}{\PYZsh{} payment dates}
+                 \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}
+                     \PY{n}{ois\PYZus{}data}\PY{o}{.}\PY{n}{observation\PYZus{}date}\PY{p}{,}
+                     \PY{n}{quote}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{months}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
+                 \PY{p}{)}\PY{p}{,}
+                 
+                 \PY{c+c1}{\PYZsh{} the fixed rate (in the file is expressed in percent)}
+                 \PY{l+m+mf}{0.01} \PY{o}{*} \PY{n}{quote}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rate}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
+             \PY{p}{)}
+             \PY{n}{swaps}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{swap}\PY{p}{)}
+             \PY{n}{pillar\PYZus{}dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{swap}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
+             
+         \PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{n+nb}{sorted}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}
+         \PY{n}{n\PYZus{}df\PYZus{}vector} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}
+
+\PY{n+nb}{type}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}
+
+(list, 34, datetime.date(2016, 11, 23), datetime.date(2076, 11, 23))
+\end{Verbatim}
+

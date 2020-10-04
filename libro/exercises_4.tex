@@ -1,0 +1,210 @@
+\chapter{Function and Classes}\label{introduction-to-python---lesson-4}
+
+\section{Exercises}
+
+\begin{Exercise}[label={ex:BS2}]
+Take the code for the Black-Scholes formula from Exercise~\ref{ex:BS1} and wrap it in a function. Then, use this function to calculate the prices of calls with various strikes, using the following data.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{s }\OperatorTok{=} \DecValTok{800}
+\CommentTok{# strikes expressed as % of spot price}
+\NormalTok{moneyness }\OperatorTok{=}\NormalTok{ [ }\FloatTok{0.5}\NormalTok{, }\FloatTok{0.75}\NormalTok{, }\FloatTok{0.825}\NormalTok{, }\FloatTok{1.0}\NormalTok{, }\FloatTok{1.125}\NormalTok{, }\FloatTok{1.25}\NormalTok{, }\FloatTok{1.5}\NormalTok{ ] }
+\NormalTok{vol }\OperatorTok{=} \FloatTok{0.3}
+\NormalTok{ttm }\OperatorTok{=} \FloatTok{0.75}
+\NormalTok{r }\OperatorTok{=} \FloatTok{0.005}
+\end{Highlighting}
+\end{Shaded}
+
+The output should be a dictionary mapping strikes to call prices.
+\end{Exercise}
+
+\begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{log}\PY{p}{,} \PY{n}{exp}\PY{p}{,} \PY{n}{sqrt}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
+
+\PY{k}{def} \PY{n+nf}{d1}\PY{p}{(}\PY{n}{S\PYZus{}t}\PY{p}{,} \PY{n}{K}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{vol}\PY{p}{,} \PY{n}{ttm}\PY{p}{)}\PY{p}{:}
+    \PY{n}{num} \PY{o}{=} \PY{n}{log}\PY{p}{(}\PY{n}{S\PYZus{}t}\PY{o}{/}\PY{n}{K}\PY{p}{)} \PY{o}{+} \PY{p}{(}\PY{n}{r} \PY{o}{+} \PY{l+m+mf}{0.5}\PY{o}{*}\PY{n+nb}{pow}\PY{p}{(}\PY{n}{vol}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)} \PY{o}{*} \PY{n}{ttm}
+    \PY{n}{den} \PY{o}{=} \PY{n}{vol} \PY{o}{*} \PY{n}{sqrt}\PY{p}{(}\PY{n}{ttm}\PY{p}{)}
+    \PY{k}{return} \PY{n}{num}\PY{o}{/}\PY{n}{den}
+
+\PY{k}{def} \PY{n+nf}{d2}\PY{p}{(}\PY{n}{S\PYZus{}t}\PY{p}{,} \PY{n}{K}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{vol}\PY{p}{,} \PY{n}{ttm}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{d1}\PY{p}{(}\PY{n}{S\PYZus{}t}\PY{p}{,} \PY{n}{K}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{vol}\PY{p}{,} \PY{n}{ttm}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{vol} \PY{o}{*} \PY{n}{sqrt}\PY{p}{(}\PY{n}{ttm}\PY{p}{)}
+
+\PY{k}{def} \PY{n+nf}{call}\PY{p}{(}\PY{n}{S\PYZus{}t}\PY{p}{,} \PY{n}{K}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{vol}\PY{p}{,} \PY{n}{ttm}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{S\PYZus{}t} \PY{o}{*} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{d1}\PY{p}{(}\PY{n}{S\PYZus{}t}\PY{p}{,} \PY{n}{K}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{vol}\PY{p}{,} \PY{n}{ttm}\PY{p}{)}\PY{p}{)} \PYZbs{}
+       \PY{o}{\PYZhy{}} \PY{n}{K} \PY{o}{*} \PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{r} \PY{o}{*} \PY{n}{ttm}\PY{p}{)} \PY{o}{*} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{d2}\PY{p}{(}\PY{n}{S\PYZus{}t}\PY{p}{,} \PY{n}{K}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{vol}\PY{p}{,} \PY{n}{ttm}\PY{p}{)}\PY{p}{)}
+
+\PY{n}{s} \PY{o}{=} \PY{l+m+mi}{800}
+\PY{c+c1}{\PYZsh{} strikes expressed as \PYZpc{} of spot price}
+\PY{n}{moneyness} \PY{o}{=} \PY{p}{[} \PY{l+m+mf}{0.5}\PY{p}{,} \PY{l+m+mf}{0.75}\PY{p}{,} \PY{l+m+mf}{0.825}\PY{p}{,} \PYZbs{}
+             \PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{1.125}\PY{p}{,} \PY{l+m+mf}{1.25}\PY{p}{,} \PY{l+m+mf}{1.5} \PY{p}{]}
+\PY{n}{vol} \PY{o}{=} \PY{l+m+mf}{0.3}
+\PY{n}{ttm} \PY{o}{=} \PY{l+m+mf}{0.75}
+\PY{n}{r} \PY{o}{=} \PY{l+m+mf}{0.005}
+
+\PY{n}{result} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
+\PY{k}{for} \PY{n}{m} \PY{o+ow}{in} \PY{n}{moneyness}\PY{p}{:}
+    \PY{n}{result}\PY{p}{[}\PY{n}{s}\PY{o}{*}\PY{n}{m}\PY{p}{]} \PY{o}{=} \PY{n}{call}\PY{p}{(}\PY{n}{s}\PY{p}{,} \PY{n}{m}\PY{o}{*}\PY{n}{s}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{vol}\PY{p}{,} \PY{n}{ttm}\PY{p}{)}
+\PY{k}{print}\PY{p}{(}\PY{n}{result}\PY{p}{)}
+
+\{400.0: 401.66074527896365,
+  600.0: 213.9883852521275,
+  660.0: 166.85957363897393,
+  800.0: 84.03697017660357,
+  900.0: 47.61880394696229,
+  1000.0: 25.632722952585738,
+  1200.0: 6.655275227771156\}
+\end{Verbatim}
+\end{tcolorbox}
+\end{Answer}
+
+\begin{Exercise}
+Write two classes, \texttt{Circle} and \texttt{Rectangle} that given the radius and height, width respectively allow to compute area and perimeter of the two shapes. Test them with the following:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{a_circle }\OperatorTok{=}\NormalTok{ Circle(}\DecValTok{5}\NormalTok{)}
+\BuiltInTok{print}\NormalTok{ (}\StringTok{"My circle has an area of }\SpecialCharTok{\{\}}\StringTok{ m**2"}\NormalTok{.}\BuiltInTok{format}\NormalTok{(a_circle.area()))}
+
+\NormalTok{a_rectangle }\OperatorTok{=}\NormalTok{ Rectangle(}\DecValTok{3}\NormalTok{, }\DecValTok{6}\NormalTok{)}
+\BuiltInTok{print}\NormalTok{ (}\StringTok{"My rectangle has a perimeter of }\SpecialCharTok{\{\}}\StringTok{ m and an area of }\SpecialCharTok{\{\}}\StringTok{ m**2"}\NormalTok{ \textbackslash{}}
+\NormalTok{    .}\BuiltInTok{format}\NormalTok{(a_rectangle.perimeter(), a_rectangle.area()))}
+\end{Highlighting}
+\end{Shaded}
+\end{Exercise}
+
+\begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{pi}     
+\PY{k}{class} \PY{n+nc}{Circle}\PY{p}{:}
+    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{radius}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{radius} \PY{o}{=} \PY{n}{radius}
+
+    \PY{k}{def} \PY{n+nf}{area}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{)}\PY{p}{:}
+        \PY{k}{return} \PY{n}{pi}\PY{o}{*}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{radius}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}
+
+\PY{k}{class} \PY{n+nc}{Rectangle}\PY{p}{:}
+    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{width}\PY{p}{,} \PY{n}{height}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{height} \PY{o}{=} \PY{n}{height}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{width} \PY{o}{=} \PY{n}{width}
+
+    \PY{k}{def} \PY{n+nf}{area}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{)}\PY{p}{:}
+        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{width}\PY{o}{*}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{height}
+
+    \PY{k}{def} \PY{n+nf}{perimeter}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{)}\PY{p}{:}
+        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{width}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{+} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{height}\PY{o}{*}\PY{l+m+mi}{2}
+
+\PY{n}{circle} \PY{o}{=} \PY{n}{Circle}\PY{p}{(}\PY{l+m+mi}{5}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{My circle area is }\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{ m**2}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{circle}\PY{o}{.}\PY{n}{area}\PY{p}{(}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+
+\PY{n}{rect} \PY{o}{=} \PY{n}{Rectangle}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{My rect area is }\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{ m**2 and the }\PY{l+s+s2}{\PYZdq{}}\PYZbs{}
+       \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{perimeter is }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{ m}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{rect}\PY{o}{.}\PY{n}{area}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{n}{rect}\PY{o}{.}\PY{n}{perimeter}\PY{p}{(}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+
+My circle area is 78.5 m**2
+My rect area is 18.0 m**2 and the perimeter is 18 m
+\end{Verbatim}
+\end{tcolorbox}
+\end{Answer}
+
+\begin{Exercise}
+Define a class \texttt{Songs}, its \texttt{\_\_init\_\_} should take as input a dictionary (\texttt{lyrics} that contains lyrics line by line). Define a method, \texttt{sing\_me\_a\_song} that prints each element of the lyrics in his own line. Also test it with the follwing input.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{lyrics }\OperatorTok{=}\NormalTok{ \{}\StringTok{"Wonderwall"}\NormalTok{:[}\StringTok{"Today is gonna be the day"}\NormalTok{,}
+                        \StringTok{"That they're gonna throw it back to you"}\NormalTok{,}
+                        \StringTok{"By now you should've somehow"}\NormalTok{, }\StringTok{"..."}\NormalTok{], }
+          \StringTok{"Wish you were here"}\NormalTok{:  [}\StringTok{"So, so you think you can tell"}\NormalTok{,}
+                                  \StringTok{"Heaven from hell"}\NormalTok{,}
+                                   \StringTok{"Blue skies from pain"}\NormalTok{, }\StringTok{"..."}\NormalTok{]\}}
+\end{Highlighting}
+\end{Shaded}
+\end{Exercise}
+
+\begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{class} \PY{n+nc}{Songs}\PY{p}{:}
+        \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{lyrics}\PY{p}{)}\PY{p}{:}
+            \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{lyrics} \PY{o}{=} \PY{n}{lyrics}
+    
+        \PY{k}{def} \PY{n+nf}{sing\PYZus{}me\PYZus{}a\PYZus{}song}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{title}\PY{p}{)}\PY{p}{:}
+            \PY{n}{song} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{lyrics}\PY{p}{[}\PY{n}{title}\PY{p}{]}
+            \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Title: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{title}\PY{p}{)}\PY{p}{)}
+            \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{********************}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+            \PY{k}{for} \PY{n}{line} \PY{o+ow}{in} \PY{n}{song}\PY{p}{:}
+                \PY{n+nb}{print} \PY{p}{(}\PY{n}{line}\PY{p}{)}
+    
+\PY{n}{lyrics} \PY{o}{=} \PY{p}{\PYZob{}}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Wonderwall}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Today is gonna be the day}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+                        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{That they}\PY{l+s+s2}{\PYZsq{}}\PY{l+s+s2}{re gonna throw it back to you}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+                        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{By now you should}\PY{l+s+s2}{\PYZsq{}}\PY{l+s+s2}{ve somehow}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{...}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,} 
+          \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Vado al massimo}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}  \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Voglio veder come va a finire}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+                        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Andando al massimo senza frenare}\PY{l+s+s2}{\PYZdq{}}
+                        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Voglio vedere se davvero poi}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
+                        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Si va a finir male}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{...}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{\PYZcb{}}
+
+\PY{n}{songs} \PY{o}{=} \PY{n}{Songs}\PY{p}{(}\PY{n}{lyrics}\PY{p}{)}
+\PY{n}{songs}\PY{o}{.}\PY{n}{sing\PYZus{}me\PYZus{}a\PYZus{}song}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Wonderwall}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+
+Title: Wonderwall
+********************
+Today is gonna be the day
+That they're gonna throw it back to you
+By now you should've somehow
+{\ldots}
+\end{Verbatim}
+\end{tcolorbox}
+\end{Answer}
+
+\begin{Exercise}
+Define a Point2D class that represent a point in a plane. Its \texttt{\_\_init\_\_} method should accept the point coordinates \texttt{x} and \texttt{y}. Write a method \texttt{distanceTo} that compute the distance of the point to another passed as input. Test the class by printing the distance of the point \(P=(4, 5)\) to the origin \(P=(0,0)\) and to \(P=(3,4)\).
+\end{Exercise}
+
+\begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{sqrt}
+\PY{k}{class} \PY{n+nc}{Point2D}\PY{p}{:}
+    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{x} \PY{o}{=} \PY{n}{x}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{y} \PY{o}{=} \PY{n}{y}
+
+    \PY{k}{def} \PY{n+nf}{distanceTo}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{)}\PY{p}{:}
+        \PY{n}{dist} \PY{o}{=} \PY{n}{sqrt}\PY{p}{(}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{x}\PY{o}{\PYZhy{}}\PY{n}{x}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{+} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{y} \PY{o}{\PYZhy{}} \PY{n}{y}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)}
+        \PY{k}{return} \PY{n}{dist}
+
+    \PY{k}{def} \PY{n+nf}{distanceTo\PYZus{}v2}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{p}\PY{p}{)}\PY{p}{:}
+        \PY{n}{dist} \PY{o}{=} \PY{n}{sqrt}\PY{p}{(}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{x}\PY{o}{\PYZhy{}}\PY{n}{p}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{+} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{y} \PY{o}{\PYZhy{}} \PY{n}{p}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)}
+        \PY{k}{return} \PY{n}{dist}
+
+    \PY{k}{def} \PY{n+nf}{distanceTo\PYZus{}v3}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{p}\PY{p}{)}\PY{p}{:}
+        \PY{n}{dist} \PY{o}{=} \PY{n}{sqrt}\PY{p}{(}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{x}\PY{o}{\PYZhy{}}\PY{n}{p}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{+} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{y} \PY{o}{\PYZhy{}} \PY{n}{p}\PY{o}{.}\PY{n}{y}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)}
+        \PY{k}{return} \PY{n}{dist}
+
+\PY{n}{point} \PY{o}{=} \PY{n}{Point2D}\PY{p}{(}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{)}
+\PY{n}{p0} \PY{o}{=} \PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{)}
+\PY{n}{point0} \PY{o}{=} \PY{n}{Point2D}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{distance to p0: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{point}\PY{o}{.}\PY{n}{distanceTo}\PY{p}{(}\PY{n}{p0}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{p0}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{distance\PYZus{}v2 to p0: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{point}\PY{o}{.}\PY{n}{distanceTo\PYZus{}v2}\PY{p}{(}\PY{n}{p0}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{distance\PYZus{}v3 to p0: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{point}\PY{o}{.}\PY{n}{distanceTo\PYZus{}v3}\PY{p}{(}\PY{n}{point0}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+
+\PY{n}{p1} \PY{o}{=} \PY{p}{(}\PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{)}
+\PY{n}{point1} \PY{o}{=} \PY{n}{Point2D}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{distance to p1: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{point}\PY{o}{.}\PY{n}{distanceTo}\PY{p}{(}\PY{n}{p1}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{p1}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{distance\PYZus{}v2 to p1: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{point}\PY{o}{.}\PY{n}{distanceTo\PYZus{}v2}\PY{p}{(}\PY{n}{p1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{distance\PYZus{}v3 to p1: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{point}\PY{o}{.}\PY{n}{distanceTo\PYZus{}v3}\PY{p}{(}\PY{n}{point1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+
+distance to p0: 6.40
+distance\_v2 to p0: 6.40
+distance\_v3 to p0: 6.40
+distance to p1: 1.41
+distance\_v2 to p1: 1.41
+distance\_v3 to p1: 1.41
+\end{Verbatim}
+\end{tcolorbox}
+\end{Answer}

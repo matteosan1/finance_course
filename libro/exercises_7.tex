@@ -1,0 +1,108 @@
+\chapter{Swap and Boostrapping}\label{introduction-to-python---lesson-7}
+
+\begin{Exercise}[title={(Analytic bootstrapping)}]
+Consider two 5\% coupon paying bonds and a par value of \euro{100} with the clean market prices (exclusive of accrued interest) of \euro{99.50} and \euro{98.30} and having time for the maturity of 6 months and 1 year respectively.
+Determine the spot rate for the 6-month and 1-year bond.  
+\end{Exercise}
+
+\begin{Answer}
+  Consider two 5\% coupon paying bonds and a par value of €100 with the
+clean market prices (exclusive of accrued interest) of €99.50 and €98.30
+and having time for the maturity of 6 months and 1 year respectively.
+Determine the spot rate for the 6-month and 1-year bond.
+
+At the end of 6 months the bond will pay a coupon of €2.5 (= €100 * 5\%
+/ 2) plus the principal amount (= €100) which sums up to 102.50. To
+determine the 6m spot rate we can write the following equation, :
+
+\[ \cfrac{102.5}{(1 + S_{6m}/2)} = 99.5~~\rightarrow~~ S_{6m} = 2 \cdot \Big( \frac{102.5}{99.5} - 1 \Big) =  6.03 \%\]
+
+At the end of another 6 months the second bond will pay a coupon of €2.5
+(= €100 * 5\% / 2) plus the principal amount (= €100) which sums up to
+€102.50. The bond is trading at €98.30, therefore, the 1-year spot rate
+\(S_{1y}\) can be calculated using \(S_{6m}\) as,
+
+\[ \cfrac{2.5}{(1+S_{6m}/2)} + \cfrac{102.5}{(1 + S_{1y}/2)^{2}} = 98.30 \]
+
+\[ \cfrac{102.5}{(1 + S_{1y}/2)^{2}} = 98.30 - \cfrac{2.5}{(1+0.03015)} \]
+
+\[ (2 + S_{1y})^{2} = \cfrac{4\cdot102.5}{98.87317} = 4.276428 \]
+
+\[ S_{1y}^{2} + 4\cdot S_{1y} - 0.276428 = 0 \]
+
+\[ S_{1y} = -2 \pm \sqrt{4 + 0.276428} =\begin{cases}-4.06795~~\textrm{not valid} \\ 6.80\%\end{cases} \]
+
+\end{Answer}
+
+\begin{Exercise}
+Take the \texttt{OvernightIndexSwap} class, add it to \texttt{finmarket} module and try importing and using it. In particular read the OIS market data from the excel file used during the lesson and construct the corresponding swaps.
+\end{Exercise}
+
+\begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{pandas}\PY{o}{,} \PY{n+nn}{datetime}
+\PY{k+kn}{from} \PY{n+nn}{finmarket} \PY{k}{import} \PY{n}{OvernightIndexSwap}\PY{p}{,} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
+
+\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
+\PY{n}{df} \PY{o}{=} \PY{n}{pandas}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ois\PYZus{}data.xlsx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+
+\PY{n}{market\PYZus{}quotes} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{df}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+    \PY{n}{key} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{i}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{months}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
+    \PY{n}{value} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{i}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{quote}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
+    \PY{n}{market\PYZus{}quotes}\PY{p}{[}\PY{n}{key}\PY{p}{]} \PY{o}{=} \PY{n}{value}
+
+\PY{n}{swaps} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{k}{for} \PY{n}{months}\PY{p}{,} \PY{n}{rate} \PY{o+ow}{in} \PY{n}{market\PYZus{}quotes}\PY{o}{.}\PY{n}{items}\PY{p}{(}\PY{p}{)}\PY{p}{:}
+        
+    \PY{n}{swap} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,}
+                              \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,}
+                                                  \PY{n}{months}\PY{p}{)}\PY{p}{,}
+                              \PY{l+m+mf}{0.01} \PY{o}{*} \PY{n}{rate}
+                              \PY{p}{)}
+    \PY{n}{swaps}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{swap}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+\end{Answer}
+
+\begin{Exercise}[title={(OvernightIndexSwap fair value)}]
+Take the \texttt{OvernightIndexSwap} class from the lesson and add a new method called fair\_value\_strike which takes a discount curve object and returns the fixed rate which would make the OIS have zero NPV.
+
+\emph{Hints}: first take the formulas for the NPV of the fixed and floating legs, put one equal to the other and solve for $K$.
+\end{Exercise}
+
+\begin{Answer}
+As the hint suggested the two NPV equations are compared:
+
+\[\mathrm{NPV}_{\mathrm{fix}} = NK \sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}\]
+
+\[\mathrm{NPV}_{\mathrm{float}} = N \cdot [D(d_0) - D(d_n)]\]
+
+\[K \sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360} = [D(d_0) - D(d_n)]\]
+
+\[K = \cfrac{[D(d_0) - D(d_n)]}{\sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}}\]
+
+Now in python:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{class}\NormalTok{ OverNightIndexSwap:}
+\NormalTok{    ...}
+    \KeywordTok{def}\NormalTok{ fair_value_strike(}\VariableTok{self}\NormalTok{, discount_curve):}
+\NormalTok{        den }\OperatorTok{=} \DecValTok{0}
+        \ControlFlowTok{for}\NormalTok{ i }\KeywordTok{in} \BuiltInTok{range}\NormalTok{(}\DecValTok{1}\NormalTok{, }\BuiltInTok{len}\NormalTok{(}\VariableTok{self}\NormalTok{.payment_dates)):}
+\NormalTok{            start_date }\OperatorTok{=} \VariableTok{self}\NormalTok{.payment_dates[i}\DecValTok{-1}\NormalTok{] }
+\NormalTok{            end_date }\OperatorTok{=} \VariableTok{self}\NormalTok{.payment_dates[i]}
+\NormalTok{            tau }\OperatorTok{=}\NormalTok{ (end_date }\OperatorTok{-}\NormalTok{ start_date).days }\OperatorTok{/} \DecValTok{360}
+\NormalTok{            df }\OperatorTok{=}\NormalTok{ discount_curve.df(end_date)}
+\NormalTok{            den }\OperatorTok{+=}\NormalTok{ df }\OperatorTok{*}\NormalTok{ tau}
+\NormalTok{        num }\OperatorTok{=}\NormalTok{ (discount_curve.df(}\VariableTok{self}\NormalTok{.payment_dates[}\DecValTok{0}\NormalTok{]) }\OperatorTok{-} 
+\NormalTok{               discount_curve.df(}\VariableTok{self}\NormalTok{.payment_dates[}\OperatorTok{-}\DecValTok{1}\NormalTok{]))}
+
+        \ControlFlowTok{return}\NormalTok{ num}\OperatorTok{/}\NormalTok{den    }
+\end{Highlighting}
+\end{Shaded}
+
+Finally add this method to the class implementation in \texttt{finmarket}.
+\end{Answer}
