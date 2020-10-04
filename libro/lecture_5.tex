@@ -57,6 +57,7 @@ so the NPV of the fixed leg is
 \textbf{Ultimately the aim will be to take a series of OIS quotations, and determine the discount factors implied by their prices.} To do this we will build a pricing \texttt{class}, with a method which takes discount curve as input and produces the net present value of the OIS as the output.
 Then we will put this function inside a numerical optimizer to \emph{invert} the process to determine the implied discount factors from their prices (market quotes).
 
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k}{class} \PY{n+nc}{OvernightIndexSwap}\PY{p}{:}        
    \PY{c+c1}{\PYZsh{} this method is called to build the instance,}
@@ -98,9 +99,7 @@ Then we will put this function inside a numerical optimizer to \emph{invert} the
        \PY{n}{float\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}floating\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
        \PY{n}{fixed\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}fixed\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
        \PY{k}{return} \PY{n}{float\PYZus{}npv} \PY{o}{\PYZhy{}} \PY{n}{fixed\PYZus{}npv}
-\end{Verbatim}
 
-\begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
 
 \PY{n}{ois} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}
@@ -117,10 +116,12 @@ Then we will put this function inside a numerical optimizer to \emph{invert} the
     \PY{l+m+mf}{0.025}
 \PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
 To test our new class we have need a discount curve to use as input of the \texttt{npv} method. 
 In the following example a fake curve is defined, then it is used with an OIS product.
 
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
 \PY{k+kn}{from} \PY{n+nn}{finmarket} \PY{k}{import} \PY{n}{DiscountCurve}
@@ -138,7 +139,8 @@ In the following example a fake curve is defined, then it is used with an OIS pr
 
 -10990.364227052869
 \end{Verbatim}
-            
+\end{tcolorbox}
+
 \section{Bootstrapping}\label{bootstrapping}
 
 Now we are going to look at how extract a discount curve from OIS market data, via a process called \emph{bootstrapping}. This is the ABC of financial mathematics, since you almost always need a discount curve to price any contract, especially if you are interested in its NPV. We are going to concentrate on EONIA swaps in order to build an EUR discount curve.
@@ -325,6 +327,7 @@ again this is an optmization problem (\textbf{to find the minimum of the above e
 
 So let's start by defining a set of OIS objects to cover all the maturities defined by the market data we have collected in \texttt{ois\_data}.
 
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}\PY{p}{,} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
 \PY{k+kn}{import} \PY{n+nn}{ois\PYZus{}data}
@@ -357,6 +360,7 @@ So let's start by defining a set of OIS objects to cover all the maturities defi
 
 (list, 34, datetime.date(2016, 11, 23), datetime.date(2076, 11, 23))
 \end{Verbatim}
+\end{tcolorbox}
 
 Now we can implement the minimization algorithm.
             
@@ -375,6 +379,7 @@ Now we can implement the minimization algorithm.
   the last two steps will be repeated until further variations of the $\vec{x}$ values won't change significantly the objective function (i.e.~we have found a minimum of the function so the minimization process is completed !).
 \end{itemize}
 
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k}{def} \PY{n+nf}{objective\PYZus{}function}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}             
     \PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}       
@@ -390,10 +395,12 @@ Now we can implement the minimization algorithm.
         
     \PY{k}{return} \PY{n}{sum\PYZus{}sq}
 \end{Verbatim}
+\end{tcolorbox}
 
 Of course we don't need to write our minimization algorithm since we can use the one provided by \texttt{python} which is defined in \texttt{scipy.optimize}, function \texttt{minimize}.
 The following code exactly implements the points desribed above:
 
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}   
 \PY{c+c1}{\PYZsh{} initialize to 1 the x vector (random choice)}
@@ -412,6 +419,7 @@ The following code exactly implements the points desribed above:
 \PY{c+c1}{\PYZsh{} finally we run the minimization}
 \PY{n}{result} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{objective\PYZus{}function}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
 \end{Verbatim}
+\end{tcolorbox}
 
 Let's look at some diagnostic plots to check if the minimization was successful:
 
@@ -423,6 +431,7 @@ Let's look at some diagnostic plots to check if the minimization was successful:
   on the right the value of objective function at each iteration.}
 \end{figure}
 
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{c+c1}{\PYZsh{} print the diagnostic of the minimization problem}
 \PY{n}{result}
@@ -461,9 +470,11 @@ success: True
 
 0.0007370890117814888
 \end{Verbatim}
+\end{tcolorbox}
 
 The objective function at the end of the minimization is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied, we started with $10^{13}$ and now it is $10^{-3}$ so 16 orders of magnitude smaller. This means that with the derived discount curve the NPV's of our OIS won't be identically 0 but so small that we can consider them as they were.
 
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{c+c1}{\PYZsh{} define the discount curve object using the }
 \PY{c+c1}{\PYZsh{} resulting discount factors (result.x)}
@@ -473,17 +484,13 @@ The objective function at the end of the minimization is not exactly 0 (and rare
 \PY{n}{curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2059}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{)}
 
 0.6278698804291626
-\end{Verbatim}
-            
-\begin{Verbatim}[commandchars=\\\{\}]
+
 \PY{c+c1}{\PYZsh{} 50 years rate }
 \PY{k+kn}{import} \PY{n+nn}{math}
 \PY{o}{\PYZhy{}}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2059}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{)}\PY{p}{)} \PY{o}{/} \PY{l+m+mi}{50}
 
 0.009308446615020075
-\end{Verbatim}
-            
-\begin{Verbatim}[commandchars=\\\{\}]
+
 \PY{n+nb}{list}\PY{p}{(}\PY{n}{result}\PY{o}{.}\PY{n}{x}\PY{p}{)}
 
 [1.0,
@@ -521,3 +528,4 @@ The objective function at the end of the minimization is not exactly 0 (and rare
  0.5928197767210946,
  0.5454732370629979]
 \end{Verbatim}
+\end{tcolorbox}
