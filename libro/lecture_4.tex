@@ -1,259 +1,344 @@
-\section{Calculating Forward Rates}\label{calculating-forward-rates}
+\chapter{Python's Object Oriented Programming}\label{introduction-to-python---lesson-2}
 
-Last week we wrote a function called \texttt{df} for calculating a
-discount factor at any date, given a set of discount factors each
-relative to a corresponding pillar date, using log-linear interpolation.
-Now we want a function to compute forward rates.
+In this chapter the main characteristics that makes $\tt{python}$ an \textit{object oriented programming} language will be reviewed.
+Before going to OOP however the concepts of function and variable scope will be outlined.
 
-The formula to calculate the forward rates can be found exploiting the
-property that investing at rate \(r_1\) for the period \((0, T_1)\) and
-then \emph{reinvesting} at rate \(r_{1,2}\) for the time period
-\((T_1, T_2)\) is equivalent to invest at rate \(r_2\) for the time
-period \((0, T_2)\) (i.e.~no arbitrage condition, two investors
-shouldn't be able to earn money from arbitraging between different
-interest periods). That said:
+\section{Functions}\label{functions}
 
-\[(1+r_1 T_1)(1+r_{1,2}(T_2 - T_1)) = 1 + r_2 T_2\]
+A function is a block of organized, reusable code that is used to perform a single action. Functions provide better modularity for your application and high degree of code reusing.
+To define a function the keyword \texttt{def} is used, followed by the name of the function and by the required parameters in parenthesis. Functions are called by name passing the necessary parameters if any.
 
-Solving for \(r_{1,2}\) leads to
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} sum up all the integers between 1 and n }
+\PY{k}{def} \PY{n+nf}{my\PYZus{}function}\PY{p}{(}\PY{n}{n}\PY{p}{)}\PY{p}{:} \PY{c+c1}{\PYZsh{} this function take one input only (n)}
+    \PY{n}{x} \PY{o}{=} \PY{l+m+mi}{0}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{n}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{:}
+        \PY{n}{x} \PY{o}{+}\PY{o}{=} \PY{n}{i}
+    \PY{k}{return} \PY{n}{x} \PY{c+c1}{\PYZsh{} the function returns a number}
 
-\[F(T_1, T_2) = r_{1,2} = \frac{1}{T_2-T_1}\Big(\frac{D(T_1)}{D(T_2)} - 1 \Big)~~~~\textrm{(where $D{(T_i)}=\frac{1}{1+r_iT_{i}}$)}\]
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor} }]:} \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-        \PY{k+kn}{import} \PY{n+nn}{numpy}\PY{o}{,} \PY{n+nn}{math}
-        
-        \PY{n}{today\PYZus{}date} \PY{o}{=} \PY{n}{date} \PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-        
-        \PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019} \PY{p}{,} \PY{l+m+mi}{1} \PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-                        \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-                        \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{10} \PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
-        \PY{n}{discount\PYZus{}factors} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.97}\PY{p}{,} \PY{l+m+mf}{0.72}\PY{p}{]}
-        
-        \PY{k}{def} \PY{n+nf}{df}\PY{p}{(}\PY{n}{d}\PY{p}{)}\PY{p}{:}
-            \PY{n}{log\PYZus{}discount\PYZus{}factors} \PY{o}{=} \PY{p}{[}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{discount\PYZus{}factor}\PY{p}{)} \PYZbs{}
-                                    \PY{k}{for} \PY{n}{discount\PYZus{}factor} \PY{o+ow}{in} \PY{n}{discount\PYZus{}factors}\PY{p}{]}
-            \PY{n}{pillar\PYZus{}days} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{n}{pillar\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{today\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PYZbs{}
-                           \PY{k}{for} \PY{n}{pillar\PYZus{}date} \PY{o+ow}{in} \PY{n}{pillar\PYZus{}dates}\PY{p}{]}
-            \PY{n}{d\PYZus{}days} \PY{o}{=} \PY{p}{(}\PY{n}{d} \PY{o}{\PYZhy{}} \PY{n}{today\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days}
-            \PY{n}{interpolated\PYZus{}log\PYZus{}discount\PYZus{}factor} \PY{o}{=} \PYZbs{}
-                \PY{n}{numpy}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{d\PYZus{}days}\PY{p}{,} \PY{n}{pillar\PYZus{}days}\PY{p}{,} \PY{n}{log\PYZus{}discount\PYZus{}factors}\PY{p}{)}
-            
-            \PY{k}{return} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{interpolated\PYZus{}log\PYZus{}discount\PYZus{}factor}\PY{p}{)}
-        
-        \PY{k}{def} \PY{n+nf}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{t1}\PY{p}{,} \PY{n}{t2}\PY{p}{)}\PY{p}{:}
-            \PY{k}{return} \PY{l+m+mf}{365.0}\PY{o}{/}\PY{p}{(}\PY{n}{t2}\PY{o}{\PYZhy{}}\PY{n}{t1}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{*} \PY{p}{(}\PY{n}{df}\PY{p}{(}\PY{n}{t1}\PY{p}{)} \PY{o}{/} \PY{n}{df}\PY{p}{(}\PY{n}{t2}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}\PY{p}{)}
-        
-        \PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
+\PY{n}{my\PYZus{}function}\PY{p}{(}\PY{l+m+mi}{5}\PY{p}{)} \PY{c+c1}{\PYZsh{} 5 + 4 + 3 + 2 + 1}
 \end{Verbatim}
 
-\hypertarget{financial-crisis}{%
-\subsection{2008 Financial Crisis}\label{financial-crisis}}
+Functions can return any kind of objects (numbers, strings, lists, complex objects\ldots{}) but it is not mandatory to have a return value, so you can have functions \textbf{without} a \texttt{return} statement (e.g. a function that simply take a string as input and print it to screen with a particular format).
+In addition the syntax of the \texttt{return} is different from other languages like \texttt{Visual\ Basic}, the returned object doesn't have to have the same name as the function. Indeed above the variable $\tt{x}$ is returned and not the variable \texttt{my\_function}. Below an example of function not returning anything.
 
-Looking at the historical series of the Euribor (6M) rate versus the
-Eonia Overnight Indexed Swap (OIS-6M) rate over the time interval
-2006-2011 it becomes apparent how before August 2007 the two rates
-display strictly overlapping trends differing of no more than 6 bps.
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def}\NormalTok{ printing(mystring):}
+    \BuiltInTok{print}\NormalTok{((myString)}\BuiltInTok{.upper())}
+\end{Highlighting}
+\end{Shaded}
 
-\includegraphics{credit_crunch.png}
+Functions can call other functions (once a function has been defined it can be accessed from everyone within the same file or notebook): here $\tt{my\_function_2}$ calls $\tt{my\_function}$
 
-In August 2007 however we observe a sudden increase of the Euribor rate
-and a simultaneous decrease of the OIS rate that leads to the explosion
-of the corresponding basis spread, touching the peak of 222 bps in
-October 2008, when Lehman Brothers filed for bankruptcy protection.
-Successively the basis has sensibly reduced and stabilized between 40
-bps and 60 bps (notice that the pre-crisis level has never been
-recovered). The same effect is observed for other similar couples,
-e.g.~Euribor 3M vs OIS 3M.
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{my\PYZus{}function\PYZus{}2}\PY{p}{(}\PY{n}{n}\PY{p}{,} \PY{n}{x}\PY{p}{)}\PY{p}{:} 
+   \PY{k}{return} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{The result is : }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n+nb}{str}\PY{p}{(}\PY{n}{my\PYZus{}function}\PY{p}{(}\PY{n}{n}\PY{p}{)}\PY{o}{*}\PY{n}{x}\PY{p}{)}\PY{p}{)}
 
-The reason of the abrupt divergence between the Euribor and OIS rates
-can be explained by considering both the monetary policy decisions
-adopted by international authorities in response to the financial
-turmoil, and the impact of the credit crunch on the credit and liquidity
-risk perception of the market, coupled with the different financial
-meaning and dynamics of these rates.
+\PY{n}{my\PYZus{}function\PYZus{}2}\PY{p}{(}\PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}
+\end{Verbatim}
+
+Functions can also call themselves too (i.e \emph{recursion}). In the next example we will see a function that computes the factorial exploiting the following relationship:
+
+\[
+\begin{cases}
+    n! = n \times (n-1)! & \;\; (\forall n \gt 1) \\
+    n! = 1 & \;\; (\forall n \le 1)
+\end{cases}
+\]
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{factorial}\PY{p}{(}\PY{n}{n}\PY{p}{)}\PY{p}{:}
+   \PY{k}{if} \PY{n}{n} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{l+m+mi}{1}\PY{p}{:}
+      \PY{k}{return} \PY{l+m+mi}{1}
+   \PY{k}{else}\PY{p}{:}
+      \PY{k}{return} \PY{n}{n} \PY{o}{*} \PY{n}{factorial}\PY{p}{(}\PY{n}{n}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}
+
+\PY{n}{factorial}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{)}
+\end{Verbatim}
+
+In this example the function $\tt{factorial}$ is initially called with the input corresponding to the factorial we want to compute, it then call itself each time with $\tt{n-1}$, multypling together all the results.
+The previous example is quite simple but recursion can be tricky sometimes so apply it with caution. 
+
+Functions input parameters can have default values, which means that a function that works with some input values can be called with less parameters provided their default values have been specified.
+
+In the following example the function $\tt{powers}$ takes three inputs: a list of numbers, an exponent ($\tt{n}$) and a constant ($\tt{c}$). The code loops through the provided list of numbers and process them according to the formula $item^{n} + c$, it puts the results in a new list which will be finally returned.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{powers}\PY{p}{(}\PY{n}{l}\PY{p}{,} \PY{n}{n}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{c}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{p}{[}\PY{n}{item}\PY{o}{*}\PY{o}{*}\PY{n}{n}\PY{o}{+}\PY{n}{c} \PY{k}{for} \PY{n}{item} \PY{o+ow}{in} \PY{n}{l}\PY{p}{]}
+
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{powers}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{]}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{powers}\PY{p}{(}\PY{p}{[}\PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+
+[129, 1335, 220]
+[25, 121, 36]
+\end{Verbatim}
+\end{tcolorbox}
+    
+As you can see the function is called twice with two different set of parameters: in the first case we pass to it the list of numbers, the exponent and the costant, in the second just the same list of numbers.
+In the latter case, being defined the default values for $\tt{n}$ and $\tt{c}$, the function works perfectly well, fewer inputs are provided and the missing ones are replaced by their defaults. 
+
+When calling a function paramenters can be passed also by name for clarity, in this case of course the order doesn't matter. Compare the two results below:
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{func}\PY{p}{(}\PY{n}{a}\PY{p}{,} \PY{n}{b}\PY{p}{,} \PY{n}{c}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{a} \PY{o}{+} \PY{n}{b} \PY{o}{*} \PY{n}{c}
+
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{func}\PY{p}{(}\PY{n}{c}\PY{o}{=}\PY{l+m+mi}{4}\PY{p}{,} \PY{n}{b}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{a}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{func}\PY{p}{(}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
+
+9
+6
+\end{Verbatim}
+\end{tcolorbox}
+
+In the first case the function is called by name, in the second case the parameter are implicitly assigned according to their position.
+
+Another nice feature of $\tt{pyhton}$ functions is that we can associate an help message to them so that we can easily check what a function is for by simply asking $\tt{help(functioName)}$:
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{powers}\PY{p}{(}\PY{n}{l}\PY{p}{,} \PY{n}{n}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{c}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}\PY{p}{:}
+    \PY{l+s+sd}{\PYZdq{}\PYZdq{}\PYZdq{}}
+\PY{l+s+sd}{a shifted power function example    }
+\PY{l+s+sd}{    \PYZdq{}\PYZdq{}\PYZdq{}}
+    \PY{k}{return} \PY{p}{[}\PY{n}{item}\PY{o}{*}\PY{o}{*}\PY{n}{n}\PY{o}{+}\PY{n}{c} \PY{k}{for} \PY{n}{item} \PY{o+ow}{in} \PY{n}{l}\PY{p}{]}
+
+\PY{n}{help}\PY{p}{(}\PY{n}{powers}\PY{p}{)}
+
+Help on function powers in module \_\_main\_\_:
+
+powers(l, n=2, c=0)
+    a shifted power function example
+\end{Verbatim}
+\end{tcolorbox}
+
+\textbf{Remember, it is always very important to document your code !}
+
+\section{Variable scope}\label{advanced---variable-scope}
+
+Not all variables are accessible from all parts of our program, and not all variables exist for the entire lifetime of the program. The part of a program where a variable is accessible is called its \emph{scope}.
+
+A variable which is defined in the main body, sometimes referred to as global namespace i.e. the code block which is not indented at all, of a file is called a \emph{global variable}. It will be visible throughout the file, and also inside any file which imports that file. Global variables can have unintended consequences because of their wide-ranging effects, that is why we should almost never use them and they are usually represented by an uppercase name. Only objects which are intended to be used globally, like functions and classes (which will be introduced in the next section), should be put in the global namespace.
+
+Global variables cannot be accessed directly inside functions but before using them they have to be named in a special statement starting with the keyword \texttt{global}. Essentially \texttt{global} tells \texttt{python} that in the following function we want to use the listed global variable.
+Imagine a global variable $\tt{AGLOBALPARAM}$ has been defined at the beginning of a program, in the example below few cases are outlined:
+\begin {itemize}
+\item a function that read the value of $\tt{AGLOBALPARAM}$ without modifying it;
+\item a function that read and modify $\tt{AGLOBALPARAM}$;
+\item and a function that throws an exception (i.e. an error in technical language) because it has been badly coded.
+\end{itemize}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{AGLOBALPARAM} \PY{o}{=} \PY{l+m+mi}{10}
+
+\PY{c+c1}{\PYZsh{} Here you just use AGLOBALPARAM value, but do not modify it}
+\PY{c+c1}{\PYZsh{} param is just a local copy of AGLOBALPARAM}
+\PY{k}{def} \PY{n+nf}{multiplyParam}\PY{p}{(}\PY{n}{param}\PY{p}{)}\PY{p}{:} 
+    \PY{n}{param} \PY{o}{=} \PY{n}{param} \PY{o}{*} \PY{l+m+mi}{10}
+    \PY{k}{return} \PY{p}{(}\PY{n}{param}\PY{p}{)}
+
+\PY{c+c1}{\PYZsh{} Here you actually use AGLOBALPARAM}
+\PY{c+c1}{\PYZsh{} you modify it directly with the global command}
+\PY{k}{def} \PY{n+nf}{divideParam}\PY{p}{(}\PY{p}{)}\PY{p}{:}
+    \PY{k}{global} \PY{n}{AGLOBALPARAM}
+    \PY{n}{AGLOBALPARAM} \PY{o}{=} \PY{n}{AGLOBALPARAM} \PY{o}{/} \PY{l+m+mi}{10}
+    \PY{k}{return} \PY{p}{(}\PY{n}{AGLOBALPARAM}\PY{p}{)}
+    
+\PY{c+c1}{\PYZsh{} Here you try to use AGLOBALPARAM but gives you an error}
+\PY{c+c1}{\PYZsh{} AGLOBALPARAM is not defined in the function body}
+\PY{c+c1}{\PYZsh{} and the global command has not been used neither}
+\PY{k}{def} \PY{n+nf}{sumParam}\PY{p}{(}\PY{p}{)}\PY{p}{:}
+    \PY{n}{AGLOBALPARAM} \PY{o}{=} \PY{n}{AGLOBALPARAM} \PY{o}{+} \PY{l+m+mi}{10}
+    \PY{k}{return} \PY{p}{(}\PY{n}{AGLOBALPARAM} \PY{o}{+} \PY{n}{x}\PY{p}{)}
+
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{AGLOBALPARAM is }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{ to start.}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{AGLOBALPARAM}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Let}\PY{l+s+s2}{\PYZsq{}}\PY{l+s+s2}{s multiply it by 10.}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{multiplyParam}\PY{p}{(}\PY{n}{AGLOBALPARAM}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{AGLOBALPARAM is still }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{AGLOBALPARAM}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Let}\PY{l+s+s2}{\PYZsq{}}\PY{l+s+s2}{s divide it by 10}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{divideParam}\PY{p}{(}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Now AGLOBALPARAM is }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{AGLOBALPARAM}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Let}\PY{l+s+s2}{\PYZsq{}}\PY{l+s+s2}{s sum it to 10}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{sumParam}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+
+A variable which is defined in a block of code is said to be local to that block. Examples of local scopes are: functions, \texttt{for} or \texttt{while} loops, \texttt{if} blocks, \ldots In the case of a fucntion it means that a local variable will be accessible from the point at which it is defined until the end of the function itself (e.g. function parameters are examples of local variables).
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} functions are not evaluated untill their are not called}
+\PY{k}{def} \PY{n+nf}{test\PYZus{}scope}\PY{p}{(}\PY{n}{max\PYZus{}val}\PY{p}{)}\PY{p}{:}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{max\PYZus{}val}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{)}
+    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{max\PYZus{}val in }\PY{l+s+s2}{\PYZsq{}}\PY{l+s+s2}{test\PYZus{}scope}\PY{l+s+s2}{\PYZsq{}}\PY{l+s+s2}{ function is }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{max\PYZus{}val}\PY{p}{)}\PY{p}{)}
+    
+\PY{c+c1}{\PYZsh{} the Python interpreter starts evaluating the code from here}
+\PY{n}{max\PYZus{}val} \PY{o}{=} \PY{l+m+mi}{10}
+\PY{n}{test\PYZus{}scope}\PY{p}{(}\PY{l+m+mi}{5}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{max\PYZus{}val in global scope is }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{max\PYZus{}val}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{i}\PY{p}{)}
+\end{Verbatim}
+
+In the previous example we have defined two \texttt{max\_val} variables, one which is global and it has been initially set to 10, another one which is local to the \texttt{test\_scope} function.
+Try as much as possible to choose different names for each variable you are going to use in a program to avoid confusions and mistakes which may lead to unexpected behaviour of your code.
+
+As a last example compare the following \texttt{for} loops; the first one, correctly written, loops with tha variables \texttt{i} and \texttt{j}, in the second one \texttt{j} has been replaced by \texttt{i}, note how this is perfectly legal but the result changes dramatically:
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{a} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{a}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{b}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{c}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{d}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{e}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{f}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{g}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{h}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{i}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{]}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}\PY{p}{:}
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb}{print} \PY{p}{(}\PY{n}{a}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{)}
+
+a
+b
+c
+d
+e
+f
+g
+h
+i
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{a} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{a}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{b}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{c}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{d}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{e}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{f}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{g}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{h}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{i}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{]}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}\PY{p}{:}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb}{print} \PY{p}{(}\PY{n}{a}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}
+
+a
+e
+i
+a
+e
+i
+a
+e
+i
+\end{Verbatim}
+\end{tcolorbox}
+\newpage
+\section{Classes}\label{classes}
+
+Classes are a key ingredient of \emph{Object Oriented Programming} (OOP) and their concept is implemented basically in every modern programming language like \texttt{python}, \texttt{Java} and \texttt{C++}. OOP is a programming model in which programs are organized around data, or objects, rather than functions and logic.
+\textbf{Any object can be thought of a dataset with unique attributes and behaviour} (examples can range from physical entities, such as a human being that is described by properties like name and birthday, down to abstract concepts as a discount curve). This opposes the historical approach to programming where emphasis was placed on how the logic was written rather than how to define the data within the logic. In this framework classes are a mean for creating objects (a particular data structure), providing initial values for its state (member variables or attributes), and implementations of behavior (member functions or methods).
+
+Let's summarize here some terminology:
 
 \begin{itemize}
 \tightlist
-\item
-  The Euribor rate is the reference rate for over-the-counter (OTC)
-  transactions in the Euro area. It is defined as ``the rate at which
-  Euro interbank Deposits are being offered within the EMU zone by one
-  prime bank to another at 11:00 a.m. Brussels time''. The rate fixings
-  for a strip of 15 maturities, ranging from one day to one year, are
-  constructed as the average of the rates submitted (excluding the
-  highest and lowest 15\% tails) by a panel of banks 42 banks, selected
-  among the EU banks with the highest volume of business in the Euro
-  zone money markets, plus some large international bank from non-EU
-  countries with important euro zone operations. \textbf{Thus, Euribor
-  rates reflect the average cost of funding of banks in the interbank
-  market at each given maturity. During the crisis the solvency and
-  solidity of the whole financial sector was brought into question and
-  the credit and liquidity risk and premia associated to interbank
-  counterparties sharply increased.} The Euribor rates immediately
-  reflected these dynamics and raise to their highest values over more
-  than 10 years. As seen in the plot above, the Euribor 6M rate suddenly
-  increased on August 2007 and reached 5.49\% on 10th October 2008.
-\item
-  The Eonia rate is the reference rate for overnight OTC transactions in
-  the Euro area. It is constructed as the average rate of the overnight
-  transactions (one day maturity deposits) executed during a given
-  business day by a panel of banks on the interbank money market,
-  weighted with the corresponding transaction volumes. \textbf{The Eonia
-  Contribution Panel coincides with the Euribor Contribution Panel, thus
-  Eonia rate includes information on the short term (overnight)
-  liquidity expectations of banks in the Euro money market. It is also
-  used by the European Central Bank (ECB) as a method of effecting and
-  observing the transmission of its monetary policy actions. During the
-  crisis the central banks were mainly concerned about restabilising the
-  level of liquidity in the market, thus they reduced the level of the
-  official rates.} Furthermore, the daily tenor of the Eonia rate makes
-  negligible the credit and liquidity risks reflected on it: for this
-  reason the OIS rates are considered the best proxies available in the
-  market for the risk-free rate.
+\item a class is a collection of related functions, and these are called the \emph{methods} of the class;
+\item methods act on \emph{instances} of the class, which are classes initialized with some data;
+\item each data item has a name, and those names are called the \emph{attributes} of the class.
 \end{itemize}
 
-As a practial result, after the 2008 financial crisis, it is not
-possible anymore to use a single discount curve to correctly price
-forward rates of all tenors. For example, if we want to calculate the
-net present value of a forward 6-month libor coupon, we need to
-simultaneously use two different discount curves:
+\textbf{In other words classes are collections of functions that operate on a dataset, and instances of that class represent individual datasets (or in other words a specialization of that class).}
+
+Examples of class are: a class representing a generic building (with number of entrances, number of floors, a flag to know if there is a garden...), a generic dog (with age, fur color...) or a generic computer (with manifacturer, RAM size, CPU type,...).
+
+Examples of corresponding instances are: the Empire State Building (a specific building), Lassie (a very particular dog), or your computer.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.8\linewidth]{classes_instances.png}
+\caption{Graphical representation of a class instance.}
+\end{figure}
+
+To see how they can be defined let's try to code a class representing a person:
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}        
+\PY{c+c1}{\PYZsh{} this is the class definition}
+\PY{c+c1}{\PYZsh{} usually classes use camel naming convention}
+\PY{k}{class} \PY{n+nc}{Person}\PY{p}{:}
+   
+   \PY{c+c1}{\PYZsh{} the special method \PYZus{}\PYZus{}init\PYZus{}\PYZus{} allows to instanciate a class}
+   \PY{c+c1}{\PYZsh{} with an initial dataset (in this example a name and a birthday)}
+   \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{name}\PY{p}{,} \PY{n}{date\PYZus{}of\PYZus{}birth}\PY{p}{)}\PY{p}{:}
+       \PY{c+c1}{\PYZsh{} attribute of the class Person}
+       \PY{c+c1}{\PYZsh{} name and self.name are different variable !!!}
+       \PY{c+c1}{\PYZsh{} name will be destroyed once \PYZus{}\PYZus{}init\PYZus{}\PYZus{} is processed}
+       \PY{c+c1}{\PYZsh{} self.name lives with every particualar instance of Person}
+       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{name} \PY{o}{=} \PY{n}{name} 
+       \PY{c+c1}{\PYZsh{} attribute of the class Person}
+       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{date\PYZus{}of\PYZus{}birth} \PY{o}{=} \PY{n}{date\PYZus{}of\PYZus{}birth} 
+       
+   \PY{c+c1}{\PYZsh{} this normal method computes the current age of the}
+   \PY{c+c1}{\PYZsh{} \PYZdq{}instanciated\PYZdq{} person}
+   \PY{k}{def} \PY{n+nf}{age}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{)}\PY{p}{:}
+       \PY{n}{today} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
+       \PY{n}{age} \PY{o}{=} \PY{n}{today}\PY{o}{.}\PY{n}{year} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{date\PYZus{}of\PYZus{}birth}\PY{o}{.}\PY{n}{year}
+       \PY{k}{if} \PY{n}{today}\PY{o}{.}\PY{n}{month} \PY{o}{\PYZlt{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{date\PYZus{}of\PYZus{}birth}\PY{o}{.}\PY{n}{month} \PY{o+ow}{or} \PYZbs{}
+           \PY{n}{today}\PY{o}{.}\PY{n}{day} \PY{o}{\PYZlt{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{date\PYZus{}of\PYZus{}birth}\PY{o}{.}\PY{n}{day}\PY{p}{:}
+           \PY{n}{age} \PY{o}{\PYZhy{}}\PY{o}{=} \PY{l+m+mi}{1}
+       \PY{k}{return} \PY{n}{age}
+\end{Verbatim}
+
+First of all the necessary modules are imported, in this case the \texttt{datetime} module is used to managed the person age.
+Then the \texttt{class} keyword followed by the class name is used to start the actual class definition. In a sepate block of code all the class methods are defined like normal functions, you can see \texttt{\_\_init\_\_} and \texttt{age} here. These are examples of two kind of methods:
 
 \begin{itemize}
 \tightlist
-\item
-  the 6-month libor curve for determining the forward rate
-\item
-  the EONIA curve for discounting the expected cash flow
+\item normal methods which use or modify the instance attributes;
+\item special methods, which define the class behaviour: you can spot these because they start and end with two underscores (\_\_).
 \end{itemize}
 
-Essentially we are now going to explore how to implement the following
-calculation:
+\texttt{\_\_init\_\_} is the simplest example of special methods, it is called every time a class is instanciated (e.g. when you write me = Person(\ldots{})) and initializes the attributes of the class, in our example assign values to the \texttt{name} and \texttt{date\_of\_birth} attributes.
 
-\[\mathrm{NPV} = D_{\mathrm{EONIA}}(T_1) \times \frac{1}{T_2-T_1}\Big(\frac{D_{\mathrm{LIBOR}}(T_1)}{D_{\mathrm{LIBOR}}(T_2)} - 1 \Big)\]
+Another peculiarity of class methods with respect to standard functions is that they always take as first argument \texttt{self}. The \texttt{self} keyword is very important since allows a method to use the class attributes. Basically if you need to use the \texttt{name} attribute you have to type \texttt{self.name}. 
 
+There are lots of other things you can do with classes, but this is enough for now. So let's try to play a bit with our example:
 
-However, as we have seen, Python allows you to represent collections of
-objects with dictionaries. A clear improvement could be, instead of
-passing a long list of data parameters to each function call, to group
-the datasets into dictionaries, and then pass those to the function.
-    This design pattern, i.e.~using dictionaries to group together data, and
-then having functions operate on those dictionaries, perhaps with a few
-additional parameters, is so useful that Python (and many other
-programming languages) have a built-in feature that allows you to do
-this conveniently: \textbf{classes}.
-So now that we have an idea of what a class is, try to write a
-\texttt{DiscountCurve} class which contains the pillar dates and pillar
-discount factors as attributes and which has methods for calculating the
-discount factor and forward rate at arbitrary dates.
-
-\hypertarget{solution}{%
-\paragraph{Solution:}\label{solution}}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}4}]:} \PY{k+kn}{import} \PY{n+nn}{math}
-        \PY{k+kn}{import} \PY{n+nn}{numpy}
-        \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} here we instanciate (create an instance of) the class }
+\PY{c+c1}{\PYZsh{} in other words we \PYZdq{}specialize\PYZdq{} a generic Person with some data}
         
-        \PY{k}{class} \PY{n+nc}{DiscountCurve}\PY{p}{:}
-        
-            \PY{c+c1}{\PYZsh{} the special \PYZus{}\PYZus{}init\PYZus{}\PYZus{} method defines }
-            \PY{c+c1}{\PYZsh{} how to construct instances of the class}
-            \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{today}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{discount\PYZus{}factors}\PY{p}{)}\PY{p}{:}
-                \PY{c+c1}{\PYZsh{} we just store the arguments as attributes of the instance}
-                \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today} \PY{o}{=} \PY{n}{today}
-                \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{n}{pillar\PYZus{}dates}
-                \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{discount\PYZus{}factors} \PY{o}{=} \PY{n}{discount\PYZus{}factors}
-        
-            \PY{c+c1}{\PYZsh{} calculates a discount factor at an arbitrary }
-            \PY{c+c1}{\PYZsh{}value date using the data stored in the instance}
-            \PY{k}{def} \PY{n+nf}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{d}\PY{p}{)}\PY{p}{:}
-                \PY{c+c1}{\PYZsh{} these remain local variables, }
-                \PY{c+c1}{\PYZsh{} i.e. they are only available within the function.}
-                \PY{c+c1}{\PYZsh{} to read (or write) instance attributes, }
-                \PY{c+c1}{\PYZsh{} you always need to use the self. syntax}
-                \PY{n}{log\PYZus{}discount\PYZus{}factors} \PY{o}{=} \PYZbs{}
-                  \PY{p}{[}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{discount\PYZus{}factor}\PY{p}{)} 
-                   \PY{k}{for} \PY{n}{discount\PYZus{}factor} \PY{o+ow}{in} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{discount\PYZus{}factors}\PY{p}{]}
-                \PY{n}{pillar\PYZus{}days} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{n}{pillar\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days} 
-                               \PY{k}{for} \PY{n}{pillar\PYZus{}date} \PY{o+ow}{in} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates}\PY{p}{]}
-                \PY{n}{d\PYZus{}days} \PY{o}{=} \PY{p}{(}\PY{n}{d} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days}
-                \PY{n}{interpolated\PYZus{}log\PYZus{}discount\PYZus{}factor} \PY{o}{=} \PYZbs{}
-                    \PY{n}{numpy}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{d\PYZus{}days}\PY{p}{,} \PY{n}{pillar\PYZus{}days}\PY{p}{,} \PY{n}{log\PYZus{}discount\PYZus{}factors}\PY{p}{)}
-                \PY{k}{return} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{interpolated\PYZus{}log\PYZus{}discount\PYZus{}factor}\PY{p}{)}
-        
-            \PY{c+c1}{\PYZsh{} calculates a forward libor rate based on the discount }
-            \PY{c+c1}{\PYZsh{} curve data stored in the instance}
-            \PY{k}{def} \PY{n+nf}{forward\PYZus{}rate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{d1}\PY{p}{,} \PY{n}{d2}\PY{p}{)}\PY{p}{:}
-                \PY{c+c1}{\PYZsh{} we use the df method of the current instance to calculate}
-                \PY{c+c1}{\PYZsh{} the forward rate}
-                \PY{k}{return} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d1}\PY{p}{)} \PY{o}{/} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d2}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mf}{1.0}\PY{p}{)} \PY{o}{*} \PYZbs{}
-                        \PY{p}{(}\PY{l+m+mf}{365.0} \PY{o}{/} \PY{p}{(}\PY{p}{(}\PY{n}{d2} \PY{o}{\PYZhy{}} \PY{n}{d1}\PY{p}{)}\PY{o}{.}\PY{n}{days}\PY{p}{)}\PY{p}{)}
+\PY{n}{me} \PY{o}{=} \PY{n}{Person}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Matteo}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{1974}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{)}
+  \PY{n+nb}{print} \PY{p}{(}\PY{n+nb}{type}\PY{p}{(}\PY{n}{me}\PY{p}{)}\PY{p}{)}
 \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}5}]:} \PY{c+c1}{\PYZsh{} build the EONIA curve object}
-        \PY{c+c1}{\PYZsh{} n.b. here we use the \PYZsq{}parameter=argument\PYZsq{} syntax }
-        \PY{c+c1}{\PYZsh{} (today=..., pillar\PYZus{}dates=...)}
-        \PY{c+c1}{\PYZsh{} just so it\PYZsq{}s really clear what we\PYZsq{}re doing - it\PYZsq{}s not necessary, }
-        \PY{c+c1}{\PYZsh{} it\PYZsq{}s only for clarity}
-        \PY{n}{eonia\PYZus{}curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{today}\PY{o}{=}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
-                                    \PY{n}{pillar\PYZus{}dates}\PY{o}{=}\PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-                                                  \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-                                                  \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}\PY{p}{,}
-                                    \PY{n}{discount\PYZus{}factors}\PY{o}{=}\PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.95}\PY{p}{,} \PY{l+m+mf}{0.8}\PY{p}{]}\PY{p}{)}
-        
-        \PY{c+c1}{\PYZsh{} build the Libor curve object}
-        \PY{n}{libor\PYZus{}curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{today}\PY{o}{=}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
-                                    \PY{n}{pillar\PYZus{}dates}\PY{o}{=}\PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-                                                  \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-                                                  \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}\PY{p}{,}
-                                    \PY{n}{discount\PYZus{}factors}\PY{o}{=}\PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.98}\PY{p}{,} \PY{l+m+mf}{0.82}\PY{p}{]}\PY{p}{)}
-        
-        \PY{c+c1}{\PYZsh{} Let\PYZsq{}s compute the discount factor of the two curves}
-        \PY{c+c1}{\PYZsh{} on the 2020\PYZhy{}5\PYZhy{}1}
-        \PY{n+nb}{print} \PY{p}{(}\PY{n}{eonia\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-        \PY{n+nb}{print} \PY{p}{(}\PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+Once we have create an instance of a class its methods and attributes can be accessed again with the dot notazion: \texttt{instance\_name.method\_name}.
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} to access class attributes you have to use .}
+\PY{n}{me}\PY{o}{.}\PY{n}{name}
 \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-0.9705901255781632
-0.9517777485424973
-
-    \end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}6}]:} \PY{c+c1}{\PYZsh{} Let\PYZsq{}s compute now the 6m forward rate at 1\PYZhy{}4\PYZhy{}2020}
-        \PY{n+nb}{print} \PY{p}{(}\PY{n}{eonia\PYZus{}curve}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-                                         \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-        
-        \PY{n+nb}{print} \PY{p}{(}\PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-                                         \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{me}\PY{o}{.}\PY{n}{date\PYZus{}of\PYZus{}birth}
 \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-0.05248777681909687
-0.3891776622684259
-
-    \end{Verbatim}
-
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}7}]:} \PY{c+c1}{\PYZsh{} Compute the NPV of the 6m forward libor coupon}
-        \PY{n}{npv} \PY{o}{=} \PY{n}{eonia\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)} \PY{o}{*} \PYZbs{}
-              \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-                                        \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-        
-        \PY{c+c1}{\PYZsh{} Compute it in the pre\PYZhy{}2008 way}
-        \PY{n}{npv\PYZus{}pre\PYZus{}2008} \PY{o}{=} \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)} \PY{o}{*} \PYZbs{}
-                       \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-                                                 \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-        \PY{n+nb}{print} \PY{p}{(}\PY{n}{npv}\PY{p}{)}
-        \PY{n+nb}{print} \PY{p}{(}\PY{n}{npv\PYZus{}pre\PYZus{}2008}\PY{p}{)}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} to call a class method you have to use . }
+\PY{c+c1}{\PYZsh{} passing the parameters if needed}
+\PY{n}{me}\PY{o}{.}\PY{n}{age}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-0.37932346377238657
-0.38139410902305737
+Let's try to add more functionality to our class, adding a method that simply prints the age of the person in nice format. So complete the \texttt{Person} class with the following code:
 
-    \end{Verbatim}
+\begin{Verbatim}[commandchars=\\\{\}]
+    \PY{c+c1}{\PYZsh{} methods in a class are just functions which can work}
+    \PY{c+c1}{\PYZsh{} with the class attributes}
+    \PY{c+c1}{\PYZsh{} Remember I told you functions can have no return ?}
+    \PY{k}{def} \PY{n+nf}{print\PYZus{}age}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{ is }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{ years old right now}\PY{l+s+s2}{\PYZdq{}}\PYZbs{}
+               \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{name}\PY{p}{,} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{age}\PY{p}{(}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+
+Then try to test the new method by instanciating a new ``person'' and print her age.
+
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{her} \PY{o}{=} \PY{n}{Person}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Francesca}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{1986}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{27}\PY{p}{)}\PY{p}{)}
+\PY{n}{print} \PY{p}{(}\PY{n}{her}\PY{o}{.}\PY{n}{print\PYZus{}age}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+
+34
+\end{Verbatim}
+
 
