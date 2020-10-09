@@ -1,491 +1,507 @@
-\chapter{Credit Default Swaps}
+\chapter{Swaps and Bootstrapping}\label{swaps-and-bootstrapping---practical-lesson-5}
 
-\section{Credit curves}\label{credit-curves}
+In this chapter the Overnight Index Swap contract is reviewed and new functionalities to compute its net present value (NPV) will be added to our financial module. Beside financial arguments the another very important mathematical technique is introduced: \emph{bootstrapping}.
 
-Just like a discount curve is a way of representing the underlying
-interest rates implicit in the market quotes of a collection of
-real-world interest rate products, \textbf{credit curves} are a way of
-representing the data implied by credit default swaps.
+\section{Overnight Index Swap}\label{overnight-index-swap}
 
-\textbf{Credit default swaps} (\textbf{CDS}) are instruments whose value
-depends on the likelihood that a given company (the curve's
-\textbf{issuer}) will suffer a credit event over a given period.
+Overnight Index Swaps (OIS) are products which pay a floating coupon, determined by overnight rate fixings over the reference periods, against a fixed coupon. Interest rate swaps are usually used to mitigate the risks of fluctuations of varying interest rates, or to benefit from  lower interest rates. We will always look at these products from the point of view of the \textbf{receiver of the floating leg}. By definition an OIS is defined by:
 
-A \textbf{credit event} can be a default, the failure to make payments,
-the issuer entering into bankruptcy proceedings, or the occurence of
-other legal events. The exact definition of what constitutes a credit
-event depends on a series of factors and is usually defined in some kind
-of ISDA (International Swaps and Derivatives Association) master
-agreement.
+\begin{itemize}
+\tightlist
+\item a notional amount \(N\);
+\item a start date \(d_0\);
+\item a sequence of payment dates \(d_1,...,d_n\);
+\item a fixed rate \(K\).
+\end{itemize}
 
-In any case, we will generically call a credit event a \emph{default},
-and talk about \textbf{non-default probabilities} (\textbf{NDP}, or
-survival probability), i.e.~the probability that the issuer will
-not suffer a credit event \textbf{before} a given value date.
+In the following and for simplicity we are assuming that the fixed and floating legs of our OIS have the same notional and payment dates, although this is not necessarily always the case in practice.
 
-NDPs are the equivalent for credit curves of discount factors for
-discount curves. Just like discount curves, credit curves are built by
-specifying a pricing/observation date, a sequence of pillar dates and a
-sequence of NDPs. We will then implement a \texttt{CreditCurve} class
-that provides a method which interpolates these pillar NDPs
-to return the NDP at an arbitrary value date.
+To evaluate the net present value of such products the cash flows of each leg have to be calculated; today's NPV then is the sum of all the discounted cash flows.
 
-In addition, we'll also write a method which returns the \textbf{hazard
-rate} at an arbitrary value date. The hazard rate is the credit curve
-equivalent of the short rate or overnight rate for discount curves. It
-represents the instantaneous probability of the issuer defaulting
-conditioned on it not having defaulted until that moment (in
-practice we'll calculate it numerically, and therefore it'll be the, annualised,
-conditional probability of the issuer defaulting between
-the value date and the day after.
+\textbf{Floating leg:} at each payment date, the floating leg pays a cash flow determined as follows:
 
-\begin{center}
-  \begin{tabular}{|| c | c ||}
-    \hline
-    Discount Curve & Credit Curve \\
-    \hline \hline
-    \begin{tabular}{@{}c@{}}underlying rates implicit in \\ market quotes of IR products\end{tabular} &
-    \begin{tabular}{@{}c@{}}default probabilities implied \\ by credit default swaps \end{tabular} \\
-    \hline
-    discount factors & non-default probabilities \\
-    \hline
-    short rate & hazard rate \\
-    \hline  
-  \end{tabular}
-\end{center}
+\[f_{\mathrm{float},~i} = N \Bigg\{\prod_{d=d_{i-1}}^{d=d_i-1}\Big(1+r_{o/n}(d)\cdot\frac{1}{360}\Big) -1 \Bigg\}\]
 
-\subsection{Hazard Rate}\label{hazard-rate}
+This formula is valid for an EONIA swap, i.e.~for OIS swaps in EUR, other currencies might have different conventions. The \(\frac{1}{360}\) fraction appears because EONIA rates are quoted using the ACT/360 day-count convention and here we're making the simplifying assumption of ignoring weekends and holidays, so we assume that each overnight rate is valid for only one day.
+The sum of the discounted expected values of these cash flows is
 
-Hazard rate is often called a \emph{conditional failure rate} since it's
-expression is a direct application of the conditional probability
-concept.
+\[\mathrm{NPV}_{\mathrm{float}} = \sum_{i=1}^{n}D(d_i)\mathbb{E}[f_{\mathrm{float},~i}]\]
+where \(D(d)\) is the discount factor with expiry \(d\). On the other hand, by definition (remember Lesson~\ref{calculating-forward-rates} with forward rates), we also have the following relationship
 
-Conditional probability answers to the question ``how should you update
-probabilities of events when there is additional information available
-?''. To derive the general formula let's start with an example.
+\[\mathbb{E}[f_{\mathrm{float},~i}] = N\cdot\Big(\frac{D_{ois}(d_{i-1})}{D_{ois}(d_{i})} - 1\Big) \]
+hence
 
-A fair die is rolled. Let \(A\) be the event that the outcome is an odd
-number (\(A={1,3,5}\)). Also let \(B\) be the event that the outcome is
-less than or equal to \(3\) (\(B={1,2,3}\)). What is the probability of
-\(A\) (\(P(A)\)) ? What is the probability of \(A\) given \(B\)
-(\(P(A|B)\)) ?
+\[\mathrm{NPV}_{\mathrm{float}} = N\cdot \sum_{i=1}^{n}D(d_i) \Big(\frac{D_{ois}(d_{i-1})}{D_{ois}(d_{i})} - 1\Big) \]
+where \(D_{ois}(d)\) is the discount factor implied by OIS prices (we will see it better later).
 
-Being a simple example we can compute the result by hand:
+The correct curve to use for discounting the flows of a collateralized contract, like OIS, is the one associated with the collateral. Since OIS contracts are collateralized with cash, and cash accrues daily interest
+at the overnight rate, the OIS curve is itself the correct curve with which to discount the flows of an OIS contract !
 
-\[P(A) = \cfrac{|A|}{|S|} = \cfrac{|\{1,3,5\}|}{6} = \cfrac{1}{2}\;\;\textrm{(where S is the entire sample space)}\]
+In summary, \(D = D_{ois}\) so the NPV simplifies to
 
-Now let's find the conditional probability of \(A\) given that \(B\)
-occurred. If we know \(B\) has occurred, the outcome must be among
-\(\{1,2,3\}\). For \(A\) to also happen the outcome must be in
-\(A\cap B = \{1,3\}\). Since all die rolls are equally likely, we argue
-that \(P(A|B)\) must be equal to
+\begin{equation}
+  \begin{split}
+    \mathrm{NPV}_{\mathrm{float}} & = N\cdot\sum_{i=1}^{n}[D(d_{i-1}) - D(d_i)] =  \\
+    &= N\cdot[(D(d_{0}) - D(d_{1})) + (D(d_{1}) - D(d_{2})) + ... + (D(d_{n-1}) - D(d_{n}))]\\
+    &= N \cdot [D(d_0) - D(d_n)]
+  \end{split}
+\end{equation}
 
-\[P(A|B) = \cfrac{|A\cap B|}{|B|} = \cfrac{2}{3}\]
+\textbf{Fixed leg:} calculation for the fixed leg is simpler; each cash flow is  equal to
 
-To generalise our example we can rewrite the calculation by dividing the
-numerator and denominator by the entire space of the events \(|S|\)
-hence:
+\[f_{\mathrm{fix},~i}=N\cdot K\cdot \frac{d_i - d_{i-1}}{360}\]
+so the NPV of the fixed leg is
 
-\[P(A|B) = \cfrac{|A\cap B|}{|B|} = \cfrac{\cfrac{|A\cap B|}{|S|}}{\cfrac{|B|}{|S|}} = \cfrac{P(A\cap B)}{P(B)}\]
+\[\mathrm{NPV}_{\mathrm{fix}} = N\cdot K\cdot \sum_{i=1}^{n}D(d_{i})\frac{d_i - d_{i-1}}{360}\]
 
-\begin{center}
-\includegraphics[width=0.7\linewidth]{conditional_b.png}
-\end{center}
-
-In formula if the non-default probability is indicated by \(N\) and the
-hazard rate by \(\lambda\):
-
-\[\lambda = \cfrac{P(\tau\in (t, t+dt))}{P(\tau>t)} = \cfrac{\cfrac{d(1-N)}{dt}}{N(t_0, t_1)} = -\cfrac{dN}{dt}\cdot\frac{1}{N(t_0, t_1)}.\]
-Conversely given the hazard rate the non-default probability can be
-determined as:
-
-\[\lambda = -\cfrac{1}{dt}\cdot\cfrac{dN}{N} = -\cfrac{d(\textrm{log}N)}{dt} \implies N(t_0, t) = e^{-\int_{t_0}^{t}\lambda dt}\]
+\textbf{Ultimately the aim will be to take a series of OIS quotations, and determine the discount factors implied by their prices.} To do this we will build a pricing \texttt{class}, with a method which takes discount curve as input and produces the net present value of the OIS as the output.
+Then we will put this function inside a numerical optimizer to \emph{invert} the process to determine the implied discount factors from their prices (market quotes).
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{math}
-\PY{k+kn}{import} \PY{n+nn}{numpy}
-
-\PY{k}{class} \PY{n+nc}{CreditCurve}\PY{p}{(}\PY{n+nb}{object}\PY{p}{)}\PY{p}{:}
-    
-    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{pillar\PYZus{}ndps}\PY{p}{)}\PY{p}{:}    
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{n}{pillar\PYZus{}dates}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days} \PY{o}{=} \PY{p}{[}
-            \PY{p}{(}\PY{n}{pd} \PY{o}{\PYZhy{}} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{days}
-            \PY{k}{for} \PY{n}{pd} \PY{o+ow}{in} \PY{n}{pillar\PYZus{}dates}
-        \PY{p}{]}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{log\PYZus{}ndps} \PY{o}{=} \PY{p}{[}
-            \PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{ndp}\PY{p}{)}
-            \PY{k}{for} \PY{n}{ndp} \PY{o+ow}{in} \PY{n}{pillar\PYZus{}ndps}
-        \PY{p}{]}
-        
-    \PY{k}{def} \PY{n+nf}{ndp}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{value\PYZus{}date}\PY{p}{)}\PY{p}{:}
-        \PY{n}{value\PYZus{}days} \PY{o}{=} \PY{p}{(}\PY{n}{value\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{days}
-        \PY{k}{return} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}
-            \PY{n}{numpy}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{value\PYZus{}days}\PY{p}{,}
-                         \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days}\PY{p}{,}
-                         \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{log\PYZus{}ndps}\PY{p}{)}\PY{p}{)}
-    
-    \PY{k}{def} \PY{n+nf}{hazard}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{value\PYZus{}date}\PY{p}{)}\PY{p}{:}
-        \PY{n}{ndp\PYZus{}1} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{value\PYZus{}date}\PY{p}{)}
-        \PY{n}{ndp\PYZus{}2} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{value\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-        \PY{n}{delta\PYZus{}t} \PY{o}{=} \PY{l+m+mf}{1.0} \PY{o}{/} \PY{l+m+mf}{365.0}
-        \PY{n}{h} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{l+m+mf}{1.0} \PY{o}{/} \PY{n}{ndp\PYZus{}1} \PY{o}{*} \PY{p}{(}\PY{n}{ndp\PYZus{}2} \PY{o}{\PYZhy{}} \PY{n}{ndp\PYZus{}1}\PY{p}{)} \PY{o}{/} \PY{n}{delta\PYZus{}t}
-        \PY{k}{return} \PY{n}{h}
+\PY{k}{class} \PY{n+nc}{OvernightIndexSwap}\PY{p}{:}        
+   \PY{c+c1}{\PYZsh{} this method is called to build the instance,}
+   \PY{c+c1}{\PYZsh{} n.b.: payment\PYZus{}dates should be a list of dates,}
+   \PY{c+c1}{\PYZsh{} including the start date as the first element}
+   \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{notional}\PY{p}{,} \PY{n}{payment\PYZus{}dates}\PY{p}{,} \PY{n}{fixed\PYZus{}rate}\PY{p}{)}\PY{p}{:}
+       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{=} \PY{n}{notional}
+       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates} \PY{o}{=} \PY{n}{payment\PYZus{}dates}
+       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{=} \PY{n}{fixed\PYZus{}rate}
+       
+   \PY{c+c1}{\PYZsh{} this method takes a discount curve and calculates}
+   \PY{c+c1}{\PYZsh{} the NPV of the floating leg using that curve}
+   \PY{k}{def} \PY{n+nf}{npv\PYZus{}floating\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
+       \PY{c+c1}{\PYZsh{} self.payment\PYZus{}date s[0] is the start date of the swap}
+       \PY{c+c1}{\PYZsh{} self.payment\PYZus{}date s[-1] is the last payment date of the swap}
+       \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)} \PY{o}{\PYZhy{}} 
+                               \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+   
+   \PY{c+c1}{\PYZsh{} this method takes a discount curve and calculates the NPV}
+   \PY{c+c1}{\PYZsh{} of the fixed leg using that curve}
+   \PY{k}{def} \PY{n+nf}{npv\PYZus{}fixed\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
+       \PY{n}{npv} \PY{o}{=} \PY{l+m+mi}{0}
+       \PY{c+c1}{\PYZsh{} we loop from i=1 up to but not including the length of the date list}
+       \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:} 
+           \PY{c+c1}{\PYZsh{} we can do i-1, because the loop starts with i=1}
+           \PY{n}{start\PYZus{}date} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]} 
+           \PY{n}{end\PYZus{}date} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}
+           \PY{n}{tau} \PY{o}{=} \PY{p}{(}\PY{n}{end\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{start\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{360}
+           \PY{n}{df} \PY{o}{=} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{end\PYZus{}date}\PY{p}{)}
+           \PY{n}{npv} \PY{o}{=} \PY{n}{npv} \PY{o}{+} \PY{n}{df} \PY{o}{*} \PY{n}{tau}
+       \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{*} \PY{n}{npv}
+   
+   \PY{c+c1}{\PYZsh{} this method calculates the NPV of the OIS swap}
+   \PY{c+c1}{\PYZsh{} n.b.: inside this method we call the other two }
+   \PY{c+c1}{\PYZsh{} methods of the class on the same instance \PYZsq{}self\PYZsq{},}
+   \PY{c+c1}{\PYZsh{} using self.npv\PYZus{}XXX\PYZus{}leg(...), and we pass the }
+   \PY{c+c1}{\PYZsh{} discount\PYZus{}curve we received as an argument}
+   \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
+       \PY{n}{float\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}floating\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
+       \PY{n}{fixed\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}fixed\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
+       \PY{k}{return} \PY{n}{float\PYZus{}npv} \PY{o}{\PYZhy{}} \PY{n}{fixed\PYZus{}npv}
 
 \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
-\PY{k+kn}{from} \PY{n+nn}{curve\PYZus{}data} \PY{k}{import} \PY{n}{pricing\PYZus{}date}
-        
-\PY{n}{cc} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}
-      \PY{p}{[}\PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{n}{pricing\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{]}\PY{p}{,}
-      \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.8}\PY{p}{]}
+
+\PY{n}{ois} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}
+    \PY{c+c1}{\PYZsh{} the notional, one million}
+    \PY{l+m+mf}{1e6}\PY{p}{,}
+    \PY{c+c1}{\PYZsh{} the list of product dates, }
+    \PY{c+c1}{\PYZsh{} i.e. the start date then the payment dates}
+    \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
+     \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
+     \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{7}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
+     \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
+     \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}\PY{p}{,}
+    \PY{c+c1}{\PYZsh{} the fixed rate, 2.5\PYZpc{}}
+    \PY{l+m+mf}{0.025}
 \PY{p}{)}
-
-\PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{pricing\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-
-0.8942906859183223
-\PY{n}{cc}\PY{o}{.}\PY{n}{hazard}\PY{p}{(}\PY{n}{pricing\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-
-0.11140214262993799
-\end{Verbatim}
-\end{tcolorbox}    
-            
-\section{Credit Deafult Swaps}\label{credit-deafult-swaps}
-
-Once we have implemented a \texttt{CreditCurve} class which allows us to
-interpolate non-default probabilities (NDPs) and also to calculate the hazard rate at arbitrary
-dates, we can use it to price \textbf{credit default swaps} (CDSs).
-
-CDSs are made up of two legs:
-
-\begin{itemize}
-\tightlist
-\item
-  the \emph{premium} leg: which pays \(S\) (\emph{spread}) periodically until a credit event occurs;
-\item
-  the \emph{default} leg: which pays \(L = 1 - R\), known as the
-  \textbf{loss given default} (LGD) if and when the credit event occurs 
-  (\(R = 40\%\) is a conventional \textbf{recovery value}).
-\end{itemize}
-
-\subsubsection{Premium leg}\label{premium-leg}
-
-In the calculation of the premium leg, we'll use the following notation:
-
-\begin{itemize}
-\tightlist
-\item
-  \(d\) today's date;
-\item
-  \(d_0\) the start date of the CDS (could be different from \(d\));
-\item
-  \(d_1, ..., d_n\) the payment dates of the premium leg, which occur at
-  a n-month frequency;
-\item
-  we assume that \(d_n\) is the end date of the CDS;
-\item
-  \(D(d')\) the discount factor between \(d\) and \(d'\);
-\item
-  \(N(d')\) the non-default probability between \(d\) and \(d'\);
-\item
-  \(\tau\) the random variable representing the date of the credit event.
-\end{itemize}
-
-At each payment date \(d_i\), a flow of \(S\) is paid if and only if the
-credit event has \emph{not} occurred before that date. Therefore the NPV of the
-each flow is
-
-\[
-\def\1{\mathbb{1}}
-\def\set#1{\!\left\{ #1 \right\}}
-\mathbb{E}\left[ S \times D(d_i) \times \1\set{\tau > d_i} \right] = S \cdot D(d_i) \cdot N(d_i)
-\]
-therefore the NPV of the premium leg is simply the sum, over the payment
-dates, of these terms:
-
-\[\textrm{NPV}_{premium} = \sum_{i=1}^{n} S \cdot D(d_i) \cdot N(d_i)\]
-
-\subsubsection{Default leg}\label{default-leg}
-
-The LGD \((1-R)\) is paid out on the same date on which the credit event
-occurs, i.e.~it can potentially be paid out on any date between \(d_0\)
-and \(d_n\). Mathematically, therefore, the NPV of the premium leg can
-be expressed as follows:
-
-\[
-\mathbb{E}[(1-R) \times D(\tau) \times \mathbb{1} \{\tau \leq d_n\} ]
-\]
-
-Using the law of total probability, we can break this down into the sum
-of ``daily NPVs'' calculated as a function of the daily forward default
-probabilities ($P$):
-
-\begin{align*}
-\mathbb{E}[(1-R) \times D(\tau) \times \mathbb{1}\{\tau \leq d_n\} ]
-&= \sum_{d'=d_0}^{d_n} \mathbb{E}[ (1-R) \times D(\tau) \mid \tau = d'] P(\tau = d') \\
-&= (1-R) \sum_{d'=d_0}^{d_n} D(d') \left(P(\tau \geq d') - P( \tau \geq d'+1) \right) \\
-&= (1-R) \sum_{d'=d_0}^{d_n} D(d') \left( N(d') - N(d'+1) \right)
-\end{align*}
-where the last step holds since $P(\tau\geq d^{'}) = 1 - P(\tau < d^{'}) = 1 - (1-N(d^{'})) = N(d^{'})$.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
-        
-\PY{k}{class} \PY{n+nc}{CreditDefaultSwap}\PY{p}{:}
-    
-    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{notional}\PY{p}{,} \PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{nyears}\PY{p}{,} \PY{n}{fixed\PYZus{}spread}\PY{p}{,} \PY{n}{recovery}\PY{o}{=}\PY{l+m+mf}{0.4}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{=} \PY{n}{notional}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates} \PY{o}{=} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{nyears}\PY{o}{*}\PY{l+m+mi}{12}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{)}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}spread} \PY{o}{=} \PY{n}{fixed\PYZus{}spread}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{recovery} \PY{o}{=} \PY{n}{recovery}
-    
-    \PY{k}{def} \PY{n+nf}{premium\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{n}{npv} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-            \PY{n}{npv} \PY{o}{+}\PY{o}{=} \PY{p}{(}
-                \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}spread} \PY{o}{*}
-                \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)} \PY{o}{*}
-                \PY{n}{credit\PYZus{}curve}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}
-            \PY{p}{)}
-        \PY{k}{return} \PY{n}{npv} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional}
-    
-    \PY{k}{def} \PY{n+nf}{default\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{n}{npv} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{n}{d} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
-        
-        \PY{k}{while} \PY{n}{d} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{:}
-            \PY{n}{npv} \PY{o}{+}\PY{o}{=} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d}\PY{p}{)} \PY{o}{*} \PY{p}{(}
-                \PY{n}{credit\PYZus{}curve}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{d}\PY{p}{)} \PY{o}{\PYZhy{}}
-                \PY{n}{credit\PYZus{}curve}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{d} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-            \PY{p}{)}
-            \PY{n}{d} \PY{o}{+}\PY{o}{=} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-        \PY{k}{return} \PY{n}{npv} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{recovery}\PY{p}{)}
-    
-    \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{default\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)} \PY{o}{\PYZhy{}} \PYZbs{}
-               \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{premium\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-
-
-\PY{k+kn}{from} \PY{n+nn}{curve\PYZus{}data} \PY{k}{import} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{pricing\PYZus{}date}
-\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
-        
-\PY{n}{credit\PYZus{}curve} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{p}{[}\PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{n}{pricing\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{months}\PY{o}{=}\PY{l+m+mi}{36}\PY{p}{)}\PY{p}{]}\PY{p}{,} 
-                           \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.7}\PY{p}{]}\PY{p}{)}
-        
-\PY{n}{cds} \PY{o}{=} \PY{n}{CreditDefaultSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,} \PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mf}{0.03}\PY{p}{)}
-\PY{n}{cds}\PY{o}{.}\PY{n}{premium\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-
-300505.06774906756
-
-\PY{n}{cds}\PY{o}{.}\PY{n}{default\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-
-181369.30417135215
-
-\PY{n}{cds}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-
--119135.7635777154
-\end{Verbatim}
-\end{tcolorbox}    
-
-\section{Credit Ratings}\label{credit-ratings}
-
-A credit rating is a quantified assessment of the creditworthiness of a
-borrower either in general terms or with respect to a particular debt or
-financial obligation. A credit rating can be assigned to any entity that
-seeks to borrow money (e.g.~an individual, corporation, state or
-provincial authority, or sovereign government).
-
-A loan is a essentially a promise and the credit rating determines the
-likelihood that the borrower will be able to pay back it within the loan
-agreement terms. A high credit rating indicates a high possibility of
-paying back the loan in its entirety without any issues; a poor credit
-rating suggests that the borrower has had trouble paying back loans in
-the past and might follow the same pattern in the future.
-
-Individual credit is scored from credit bureaus (e.g.~Experian and
-TransUnion) and it is reported as a number, generally ranging from 300
-to 850.
-
-Credit assessment and evaluation for companies and governments instead
-is generally done by credit rating agencies (e.g.~Standard \& Poor's
-(S\&P), Moody's, or Fitch), which typically assign letter grades to
-indicate ratings. Standard \& Poor's, for instance, has a credit rating
-scale ranging from AAA (excellent) to C and D. A debt instrument with a
-rating below BB is considered to be a speculative grade or a junk bond,
-which means it is more likely to default on loans.
-
-\subsubsection{Why Credit Ratings Are
-Important}\label{why-credit-ratings-are-important}
-
-A borrowing entity will strive to have the highest possible credit
-rating since it has a major impact on interest rates charged by lenders.
-Rating agencies, on the other hand, must take a balanced and objective
-view of the borrower's financial situation and capacity to service/repay
-the debt.
-
-A credit rating not only determines whether or not a borrower will be
-approved for a loan but also determines the interest rate at which the
-loan will need to be repaid. Since companies depend on loans for many
-start-up and other expenses, being denied a loan could spell disaster,
-in any case a high interest rate is much more difficult to pay back.
-Credit ratings also play a large role in a potential investor's
-determining whether or not to purchase bonds. A poor credit rating is a
-risky investment; it indicates a larger probability that the company
-will be unable to make its bond payments.
-
-It is important for a borrower to remain diligent in maintaining a high
-credit rating. Credit ratings are never static; in fact, they change all
-the time based on the newest data, and one negative debt will bring down
-even the best score. Credit also takes time to build up. An entity with
-good credit but a short credit history is not seen as positively as
-another entity with the same quality of credit but a longer history.
-Debtors want to know a borrower can maintain good credit consistently
-over time.
-
-\begin{center}
-\includegraphics[width=0.75\linewidth]{timeline.png}
-\end{center}
-
-\section{Bonds}\label{bonds}
-
-A bond is an instrument that represents a loan made by an investor to a
-borrower (typically corporate or governmental). Bonds are used by
-companies, municipalities, states, and sovereign governments to finance
-projects and operations. Owners of bonds are debt-holders, or creditors,
-of the issuer. Bond details include the end date when the principal of
-the loan is due to be paid to the bond owner and usually includes the
-terms for variable or fixed interest payments made by the borrower.
-
-The coupon is the interest rate that the issuer pays to the holder.
-This rate can be fixed throughout the life of the bond but it can also
-vary with a money market index, such as LIBOR, or it can be even more
-exotic.
-
-\subsection{Pricing}\label{pricing}
-
-The price of a bond can be computed as the present discounted value of
-future cash flows generated by the bond itself.
-
-For example consider a 3-years bond with a face value of 100 EUR
-providing coupons at a 6\% rate annualy. Assume also that the interest
-rates are 5.0\% 5.8\% 6.4\% and 6.8\% for 1, 2, 3, 4 year maturities. To
-compute the present value of the first copuon we need to discount it at
-5.0\% for 1 year, for the second the discount has to be at 5.8\% and so
-on. The price will be then:
-
-\[6e^{-0.05\times 1}+6e^{-0.058\times 2}+106e^{-0.064\times 3} = 98.53~\textrm{EUR}\]
-
-    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\prompt{In}{incolor}{6}{\boxspacing}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{exp}
-\PY{n}{rates} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.05}\PY{p}{,} \PY{l+m+mf}{0.058}\PY{p}{,} \PY{l+m+mf}{0.064}\PY{p}{,} \PY{l+m+mf}{0.068}\PY{p}{]}
-
-\PY{n}{N} \PY{o}{=} \PY{l+m+mi}{100}
-\PY{n}{maturity} \PY{o}{=} \PY{l+m+mi}{3}
-\PY{n}{fixed\PYZus{}coupon} \PY{o}{=} \PY{l+m+mf}{0.06}
-\PY{n}{price} \PY{o}{=} \PY{l+m+mi}{0}
-\PY{k}{for} \PY{n}{tau} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{maturity} \PY{o}{+} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{:}
-    \PY{n}{price} \PY{o}{+}\PY{o}{=} \PY{n}{N} \PY{o}{*} \PY{n}{fixed\PYZus{}coupon} \PY{o}{*} \PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{rates}\PY{p}{[}\PY{n}{tau}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{*} \PY{n}{tau}\PY{p}{)}
-
-\PY{n}{price} \PY{o}{+}\PY{o}{=} \PY{n}{N} \PY{o}{*} \PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{rates}\PY{p}{[}\PY{n}{maturity} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}\PY{p}{]} \PY{o}{*} \PY{n}{maturity}\PY{p}{)}
-    
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{price}\PY{p}{)}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-98.53 EUR
-    \end{Verbatim}
+To test our new class we need a discount curve to use as input of the \texttt{npv} method. 
+In the following example a fake curve is defined, then it is used with an OIS product.
 
- \subsection{Implied Probability of Default on Coupon Bonds}\label{default-probabilities-and-bond-prices}
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\PY{k+kn}{from} \PY{n+nn}{finmarket} \PY{k}{import} \PY{n}{DiscountCurve}
+        
+\PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
+                      \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
+                       \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
+                       \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2022}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}\PY{p}{,}
+                      \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.98}\PY{p}{,} \PY{l+m+mf}{0.82}\PY{p}{]}\PY{p}{)}
+\PY{n}{curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{7}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
 
-The price of a bond issued by a party is directly linked to the credit
-rating of that party, since there is always a default risk associated
-with a bond, which means that the borrower might not be able to pay the
-full or partial amount of the loan taken. So, bonds with low ratings,
-called junk bonds, are sold at lower prices and those with higher
-ratings, called investment-grade bonds, are sold at higher prices.
+0.9929132520645648
 
-We can then estimate the probability of a company default directly from
-the prices of the bonds issued by it. You can imagine that the spread
-between a corporate bond over the risk-free rate should compensate for
-the loss in case of default, so naively:
+\PY{n}{ois}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{curve}\PY{p}{)}
 
-\[\lambda = \frac{s}{1-R}\]
+-10990.364227052869
+\end{Verbatim}
+\end{tcolorbox}
 
-In a more detailed way let $X$ represent the present value of a bond cash flow stream. When you
-have a default probability then $X$ becomes a random variable with a range
-of possible values. The way
-to value the bond in this case is to take each possible value of $X$, multiply it
-by its probability and sum the results. In other words the value of the bond
-should equal the mathematical expectation of $X$.
+\section{Bootstrapping}\label{bootstrapping}
 
-To illustrate the idea, consider the case of a bond with 4 coupon payments
-until maturity. Let $p$ be the probability that the bond survives from one
-coupon payment to the next and let $X_i$ ($i$ = 0, 1, 2, 3, 4) be the value of
-$X$ given that the bond defaults after making its $i$-th coupon payment. 
-The expectation of $X$ can then be expressed as:
+Now we are going to look at how extract a discount curve from OIS market data, via a process called \emph{bootstrapping}. This is the ABC of financial mathematics, since you almost always need a discount curve to price any contract, especially if you are interested in its NPV. We are going to concentrate on EONIA swaps in order to build an EUR discount curve.
 
-\begin{align*}
-\mathbb{E}(X) &= X_0(1-p) + X_1 p(1-p) + X_2 p^2 (1-p) + X_3 p^3 (1-p) + X_4 p^4 \\
-&= X_0 + (X_1 - X_0)p + (X_2 - X_1)p^2 + (X_3 - X_2)p^3 + (X_4 - X_3)p^4
-\end{align*}
+\subsection{Building OIS instances}\label{building-ois-instances}
 
-Assuming a constant recovery value $R$ the values $X_i$ are:
+The first problem is actually getting data, the swap market quotes, from somewhere, and this is not actually as simple as it sounds.
 
-\begin{align*}
-X_0 &= RN \\
-X_1 &= (C + RN)/D \\
-X_2 &= C/D + (C + RN)/D^2 \\
-X_3 &= C/D + C/D^2 + (C + RN)/D^3 \\
-X_4 &= C/D + C/D^2 + C/D^3 + (C + N)/D^4 \\
-\end{align*}
+The issue is that the EONIA swap market is over the counter (OTC) and it's not straightforward to access it. Unlike (some) listed futures, where anyone with a retail brokerage account can view and apply real time prices, to trade in the EONIA swap market you have to be a financial institution or at least a large company and have an agreement with a broker which operates in the market. One of the main brokers in the OIS market is ICAP.
 
-Substituting into the expectation formula:
+Though there exist some electronic platform in which market participants post bids and offers and other participants can apply them, in practice a lot of trading is still done over ``voice'', i.e.~by phone or more
+commonly over chat. For convenience, however, Bloomberg provides a service which displays indicative real time rates as provided by a selection of relevant brokers. (\emph{n.b.~interest rate swap quotes vary from standard price quotes of commonly traded instruments, they can appear puzzling because the quotes are effectively interest rates})
 
-\begin{align*}
-\mathbb{E}(X) &= C((p/D) + (p/D)^2 + (p/D)^3 + (p/D)^4) + \\
-&RN(1-p)(1+(p/D)+(p/D)^2 + (p/D)^3) + \\
-&N(p/d)^4 
-\end{align*}
+\begin{figure}
+  \centering
+\includegraphics[width=0.8\linewidth]{icap_3.png}
+\end{figure}
 
-It is now easy to generalise to the case of $N$ coupons:
+As part of the quantitative analyst duties there is the set up an Excel spreadsheet which acquires this data from Bloomberg in real time. From this spreadsheet, it is easy to export the data into other formats.
 
-\[ \mathbb{E}(X) = C \sum_{k=1}^{N}{(p/D)^k} + RN(1-p)\sum_{k=1}^{N-1}{(p/D)^k} + N(p/D)^N \]
+In the following we use a similarly created data-set (\href{https://drive.google.com/file/d/1LCEDmheKqwPXFpJ25hFz32QI5im2UJO1/view?usp=sharing}{\texttt{ois\_data.xlsx}}) to derive our discount curve; with the help of the \texttt{pandas} module the data-set can be inspected:
 
-Each of the sums in this s formula is a geometric series that can be collapsed
-into a single term. The formula for collapsing a general geometric series is 
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{pandas}\PY{o}{,} \PY{n+nn}{datetime}
 
-\[ \sum_{k=0}^N a^k = 1 + a + a^2 + \ldots + a^N = \cfrac{1-a^{N+1}}{1-a} \]
+\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
 
-Hence we get:
+\PY{n}{df} \PY{o}{=} \PY{n}{pandas}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ois\PYZus{}data.xlsx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n}{df}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}
 
-\begin{align*}
-\mathbb{E}(X) &= C(p/D) \cfrac{1-(p/D)^N}{1-(p/D)}+RN(1-p)\cfrac{1-(p/D)^N}{1-(p/D)} + N(p/D)^N \\
-&= \Big(C(p/D) + RN(1-p)\Big)\cfrac{1-(p/D)^N}{1-(p/D)} + N(p/D)^N 
-\end{align*}
+   months  quote
+0       1 -0.350
+1       2 -0.347
+2       3 -0.348
+3       4 -0.350
+4       5 -0.350
+\end{Verbatim}
+\end{tcolorbox}
 
-With $\mathbb{E}(X)$ equal to the price of the bond, this equation can be solved numerically for the 
-survival probability $p$.
+Then we can move this data to a dictionary for later usage:
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{market\PYZus{}quotes} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{df}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+    \PY{n}{key} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{i}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{months}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
+    \PY{n}{value} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{i}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{quote}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
+    \PY{n}{market\PYZus{}quotes}\PY{p}{[}\PY{n}{key}\PY{p}{]} \PY{o}{=} \PY{n}{value}
+    
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{market\PYZus{}quotes}\PY{p}{)}
 
-To get the default probability for the bond, simply subtract the survival
-probability from 1, default probability =~$1 - p$. The cumulative default
-probability, or the probability that the bond defaults anytime within the
-next $n$ coupon periods is $(1 - p)^n$.
+\{1: -0.35, 2: -0.347, 3: -0.348, 4: -0.35, 5: -0.35, 6: -0.351, 7: -0.351, 8:
+-0.351, 9: -0.351, 10: -0.351, 11: -0.35, 12: -0.35, 15: -0.35, 18: -0.348, 21:
+-0.345, 24: -0.34, 36: -0.296, 48: -0.228, 60: -0.139, 72: -0.031, 84: 0.087,
+96: 0.205, 108: 0.318, 120: 0.424, 132: 0.519, 144: 0.603, 180: 0.794, 240:
+0.959, 300: 1.02, 360: 1.048, 480: 1.061, 600: 1.022, 720: 0.997\}
+\end{Verbatim}
+\end{tcolorbox}
 
-There are several ways to test the formula for logical consistency. First look
-at the case where the survival probability is zero so that with $p = 0$ the
-formula reduces to:
+Let's say we want to build a 15 months swap instance using data contained in \texttt{ois\_data} file (be careful when doing this operation and double check the units of rates, quotes, etc... in this case for example they are expressed in \% so you need to multiply the quote by 0.01):
 
-\[\mathbb{E}(X) = RN\]
-this is logical since when default is immanent the price should just equal the
-recovery amount.
-In the case where survival is certain and the risk free rate is zero you have
-$p = 1$ and $D=1$:
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{ois }\OperatorTok{=}\NormalTok{ OvernightIndexSwap(}\FloatTok{1e6}\NormalTok{,}
+\NormalTok{                         [date(}\DecValTok{2019}\NormalTok{, }\DecValTok{10}\NormalTok{, }\DecValTok{23}\NormalTok{), }
+\NormalTok{                          date(}\DecValTok{2020}\NormalTok{, }\DecValTok{10}\NormalTok{, }\DecValTok{23}\NormalTok{), }
+\NormalTok{                          date(}\DecValTok{2020}\NormalTok{, }\DecValTok{1}\NormalTok{, }\DecValTok{23}\NormalTok{)],                        }
+\NormalTok{                         market_quotes[}\DecValTok{12}\NormalTok{]}\OperatorTok{*}\FloatTok{0.01} 
+\NormalTok{                        )}
+\CommentTok{# print the last payment date (15 months after obs date)}
+\NormalTok{ois.payment_dates[}\OperatorTok{-}\DecValTok{1}\NormalTok{]}
+\end{Highlighting}
+\end{Shaded}
 
-\[\mathbb{E}(X) = NC + F \]
-The price here is equal to the total of the coupon payments plus the face
-value, as you would expect.
+Clearly to use the \texttt{npv} method to calculate the OIS' NPV we need a discount curve with which to evaluate it and here comes to hand the bootstrapping technique !
+
+\subsection{Bootstrapping Technique}\label{the-bootstrapping-technique}
+
+In finance, bootstrapping is a method for constructing a (zero-coupon) fixed-income yield curve from the prices of a set of coupon-bearing products, e.g. bonds and swaps.
+The term structure of spot returns is recovered from the bond yields by solving for them recursively, by forward substitution: this iterative process is called the \emph{bootstrap method}.
+The usefulness of bootstrapping is that using only a few carefully selected zero-coupon products, it becomes possible to derive par swap rates (forward and spot) for all maturities given the solved curve.
+
+To illustrate bootstrapping let's consider the following example which can be solved analytically: we have some coupon paying bond (coupon of 4\%, 5\%, 6\%, 7\% and 8\% respectively) with maturities ranging from 1 to 5 years, each having a value of \euro{100} and traded at par. To determine the zero-coupon yield curve proceed as follows:
+
+\begin{enumerate}
+\item at the end of the first year the $1^{st}$ bond will pay a coupon of \euro{4} (= \euro{100} * 4\%) plus the principal amount (= \euro{100}) which sums up to \euro{104} while the bond is trading at \euro{100}. Therefore, the 1-year spot rate $S_{1y}$ can be calculated as, $\mbox{\euro{100}} = \mbox{\euro{104}} / (1 + S_{1y})$;
+
+\item at the end of second year the sum of the cash flows of the $2^{nd}$ bond can be compared to its trading price to compute the 2-year spot rate $S_{2y}$ as $\mbox{\euro{100}} = \mbox{\euro{5}} / (1 + S_{1y}) + \mbox{\euro{105}} / (1 + S_{2y})^{2}$, using the previously derived value of $S_{1y}$;
+
+\item at the end of third year the sum of the cash flows of the $3^{rd}$ bond can be compared to its trading price to calculate the 3-year spot rate $S_{3y}$ as $\mbox{\euro{100}} = \mbox{\euro{6}} / (1 + S_{1y}) + \mbox{\euro{6}} / (1 + S_{2y})^{2} + \mbox{\euro{106}} / (1 + S_{3y})^{3}$, using $S_{1y}$ and $S_{2y}$ computed before;
+
+\item repeat the same reasoning for the other bonds.
+\end{enumerate}
+
+Putting all together we can construct a system of equations (now omitting the currency symbol for simplicity):
+
+\begin{equation*}
+\begin{cases}
+100 = \cfrac{104}{(1 + S_{1y})} \\
+100 = \cfrac{5}{(1 + S_{1y})} + \cfrac{105}{(1 + S_{2y})^{2}} \\
+100 = \cfrac{6} {(1 + S_{1y})} + \cfrac{6}{(1 + S_{2y})^{2}} + \cfrac{106} {(1 + S_{3y})^{3}} \\
+100 = \cfrac{7} {(1 + S_{1y})} + \cfrac{7} {(1 + S_{2y})^{2}} + \cfrac{7} {(1 + S_{3y})^{3}} + \cfrac{107} {(1 + S_{4y})^{4}} \\
+100 = \cfrac{8} {(1 + S_{1y})} + \cfrac{8} {(1 + S_{2y})^{2}}+ \cfrac{8} {(1 + S_{3y})^{3}} + \cfrac{7} {(1 + S_{4y})^{4}} + \cfrac{108} {(1 + S_{5y})^{5}}
+\end{cases}
+\end{equation*}
+
+This system can be solved quite easily: from the first equation can be derived $S_{1y}$, from the second $S_{2y}$, from the third $S_{3y}$ and so on. So
+
+\[100 = 104 / (1 + S_{1y})~~\Rightarrow~~S_{1y} = 104/100 - 1 = 4\% \]
+
+Moving to the second equation:
+
+\begin{equation*}
+\begin{split}
+& 100 = 5 / (1 + 0.04) + 105 / (1 + S_{2y})^{2}~~\Rightarrow~~S_{2y}^2  + 2 S_{2y}  - 0.103030 = 0 \\
+& S_{2y} = - 1 \pm \sqrt{1 + 0.103030} = \begin{cases}\text{\sout{-2.05023}} \\ 0.0503\end{cases}
+\end{split}
+\end{equation*}
+where the first solution has been discarded because negative.
+From the third one on it is not as simple to solve them analytically since involve third order (or more) equations. Anyway it is possible to solve them numerically and the results are:
+
+\begin{table}[htp]
+\begin{center}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{years} & \textbf{coupon rate} & \textbf{bond price} & \textbf{spot rate} \\
+\hline
+1 & 1.00 \% & \euro{100} & 4.00\% \\
+\hline
+2 & 2.00 \% & \euro{100} & 5.03\% \\
+\hline
+3 & 3.00 \% & \euro{100} & 6.08\% \\
+\hline
+4 & 4.00 \% & \euro{100} & 7.19\% \\
+\hline
+5 & 5.00 \% & \euro{100} & 8.36\% \\
+\hline
+\end{tabular}
+\end{center}
+\label{default}
+\end{table}
+
+The last column of the table provide us with the terms to fill the zero-coupon yield curve.
+The very same mechanism can be generalized and extended to more maturities to get a more detailed yield curve. In general terms the previous system can be written as:
+
+\begin{equation*}
+\begin{cases}
+f_1(S_1, p_1) = 0 \\
+f_2(S_1, S_2, p_2) = 0 \\
+f_3(S_1, S_2, S_3, p_3) = 0 \\
+f_4(S_1, S_2, S_3, S_4, p_4) = 0 \\
+\cdots
+\end{cases}
+\end{equation*}
+where $S_i$ are the unknown spot rates and $p_i$ the prices of the considered products. The iterative procedure we have applied before exploits the first equation to find $S_1 = f_1^{-1}(p_1)$, the second to find $S_2 = f_2^{-1}(S_1, p_2)$ and so on and so forth; this algorithm works since each equation will determine exactly one \emph{free} spot rate which is not already determined by the others.
+
+\subsection{Bootstrap as Minimization Problem}
+We can now describe the bootstrapping algorithm in general terms as follows:
+\begin{enumerate}
+\item define a set of yielding products , these will generally be coupon-bearing bonds;
+\item derive discount factors for the corresponding terms;
+\item \emph{bootstrap} the zero-coupon curve, successively calibrating this curve such that it returns the prices of these inputs.
+\end{enumerate}
+
+Instead of iteratively finding the solution of each equation as before, equivalently we could define a vector (list) of spot rates $\mathbf{S} = (S_1, S_2, S_3, \ldots)$ seeking for a particular $\mathbf{S_0}$ which solves the following equation:
+
+\begin{equation*}
+F = f_1^2(S_1) + f_2^2(S_1, S_2) + f_3^2(S_1, S_2, S_3) + f_4^2(S_1, S_2, S_3, S_4) + \ldots = 0
+\end{equation*}
+
+Under this terms the bootstrapping technique can be considered as a minimization problem indeed we need to find $\mathbf{S_0}$ which \emph{minimize} $F$, or makes it as close as possible to 0.
+
+Back to our Overnight Index Swap, the general idea here is to get the discount curve such that it prices correctly each OIS by minimizing the sum of the squared OIS NPVs:
+
+\[\mathrm{min}_{curve} \Big\{\sum_{i=1}^{n}\mathrm{NPV}(\mathrm{ois}_i, \mathrm{curve})^2\Big\}\]
+
+A discount curve is characterized by pillar dates and the corresponding discount factors. The description of the problem we have given above does not, in theory, specifies any constraint on the pillar dates of the discount curve. However, the pillar dates determine the number of unknown variables (i.e.~the dimensionality \(n\) of the optimization problem). A curve with \(n\) pillar dates has \(n\) discount factors (note that the first discount factor with value date equal to the today date, is constrained to 1). \textbf{In practice, therefore, it makes sense to choose the pillar dates in such a way that there are exactly the right number of degrees of freedom in the optimization to match data.} So the natural choice is to choose the pillar dates of the discount curve equal to the set of expiry dates of the swaps.
+
+Therefore, once we've fixed \(\mathbf{d}\) to be a vector of pillar dates equal to the expiry dates of the OIS swaps, and we use the notation \(\mathbf{x}\) to represent the vector of pillar discount factors, then the problem becomes:
+
+\[\mathrm{min}_{\mathbf{x}} \Big\{\sum_{i=1}^{n}\mathrm{NPV}(\mathrm{ois}_i, \mathrm{curve(\mathbf{d}, \mathbf{x})})^2\Big\}\]
+again this is an optimization problem (\textbf{to find the minimum of the above expression as a function of x}) which can solved using one of the available numerical optimization routines in \texttt{python}.
+
+So let's start by defining a set of OIS objects to cover all the maturities defined by the market data we have collected in \texttt{ois\_data}.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}\PY{p}{,} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
+\PY{k+kn}{import} \PY{n+nn}{ois\PYZus{}data}
+
+\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{observation\PYZus{}date}\PY{p}{]}
+\PY{n}{swaps} \PY{o}{=} \PY{p}{[}\PY{p}{]} \PY{c+c1}{\PYZsh{} container of the OIS objects}
+
+\PY{k}{for} \PY{n}{months, rate} \PY{o+ow}{in} \PY{n}{market_quotes.items()}\PY{p}{:}
+    \PY{n}{swap} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}
+        \PY{c+c1}{\PYZsh{} notional \PYZhy{} doesn\PYZsq{}t really matter what we put here}
+        \PY{l+m+mf}{1e6}\PY{p}{,}
+        \PY{c+c1}{\PYZsh{} payment dates}
+        \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}
+            \PY{n}{ois\PYZus{}data}\PY{o}{.}\PY{n}{observation\PYZus{}date}\PY{p}{,}
+            \PY{n}{months}\PY{p}{)}\PY{p}{,}
+        \PY{c+c1}{\PYZsh{} the fixed rate (in the file is expressed in percent)}
+        \PY{l+m+mf}{0.01} \PY{o}{*} \PY{n}{rate}\PY{p}{)}
+    \PY{n}{swaps}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{swap}\PY{p}{)}
+    \PY{n}{pillar\PYZus{}dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{swap}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
+    
+\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{n+nb}{sorted}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}
+\PY{n}{n\PYZus{}df\PYZus{}vector} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}
+
+\PY{n+nb}{type}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}
+
+(list, 34, datetime.date(2016, 11, 23), datetime.date(2076, 11, 23))
+\end{Verbatim}
+\end{tcolorbox}
+
+Now we can implement the minimization algorithm.
+            
+\subsection{How Does the Minimization Algorithm Work ?}\label{how-does-the-minimization-algorithm-work}
+
+\begin{itemize}
+\item
+  Define an \emph{objective function} i.e.~the function that is actually minimized to reach our goal. In our case we want to find the discount curve which minimises the sum of the squared NPVs (swap quotes are considered their fair-values);
+\item
+  set the initial value of the unknown parameters and their range of variability. We will set all the discount factors to 1 with a range of \([0.01, 10]\) (of course the first element of the list, today's discount factor, will be fixed to 1);
+\item
+  the \emph{minimizer} will compute the objective function value;
+\item
+  then will move the parameter values in such a way to find a smaller value of the objective function (e.g.~\emph{following} the derivative w.r.t. each parameter);
+\item
+  the last two steps will be repeated until further variations of the $\mathbf{x}$ values won't change significantly the objective function (i.e.~we have found a minimum of the function so the minimisation process is completed !).
+\end{itemize}
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{objective\PYZus{}function}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}             
+    \PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}       
+        \PY{n}{observation\PYZus{}date}\PY{p}{,}
+        \PY{n}{pillar\PYZus{}dates}\PY{p}{,}
+        \PY{n}{x}
+    \PY{p}{)}
+    
+    \PY{n}{sum\PYZus{}sq} \PY{o}{=} \PY{l+m+mf}{0.0}
+    
+    \PY{k}{for} \PY{n}{swap} \PY{o+ow}{in} \PY{n}{swaps}\PY{p}{:}
+        \PY{n}{sum\PYZus{}sq} \PY{o}{+}\PY{o}{=} \PY{n}{swap}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{curve}\PY{p}{)} \PY{o}{*}\PY{o}{*} \PY{l+m+mi}{2}
+        
+    \PY{k}{return} \PY{n}{sum\PYZus{}sq}
+\end{Verbatim}
+\end{tcolorbox}
+
+Of course we don't need to write our minimisation algorithm since we can use the one provided by \texttt{python} which is defined in \texttt{scipy.optimize}, function \texttt{minimize}.
+The following code exactly implements the points described above:
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}   
+\PY{c+c1}{\PYZsh{} initialize to 1 the x vector}
+\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{n\PYZus{}df\PYZus{}vector}\PY{p}{)}\PY{p}{]} 
+
+\PY{c+c1}{\PYZsh{} set wide constraints on the discount factors}
+\PY{c+c1}{\PYZsh{} in the minimization problem the value of each x\PYZus{}i}
+\PY{c+c1}{\PYZsh{} will be bound between these limits}
+\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{10.0}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{n\PYZus{}df\PYZus{}vector}\PY{p}{)}\PY{p}{]} 
+
+\PY{c+c1}{\PYZsh{} in addition we have another constraint:}
+\PY{c+c1}{\PYZsh{} we want the first pillar to be 1 (fixed)}
+\PY{c+c1}{\PYZsh{} (because it has pillar date = today)}
+\PY{n}{bounds}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{1.0}\PY{p}{)}
+
+\PY{c+c1}{\PYZsh{} finally we run the minimization}
+\PY{n}{result} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{objective\PYZus{}function}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+Let's look at some diagnostic plots to check if the minimization was successful:
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.45\linewidth]{obj_func.png}
+  \includegraphics[width=0.45\linewidth]{obj_func_iter.png}
+\end{figure}
+On the left the objective function value as a function of discount factor $(x_1)$ is drawn clearly we have found a minimum. On the right the value of objective function at each iteration, as you can see at each iteration its value is decreasing dramatically (notice that the $y$ axis is drawn in log scale.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{result}
+
+fun: 0.0007370890117814888
+hess\_inv: <34x34 LbfgsInvHessProduct with dtype=float64>
+jac: array([ 6.40061365e+05, -4.14161280e+01, -1.93984741e+01,  5.37030079e+00,
+      3.02530223e+01,  5.95243457e+01,  9.05547884e+01,  1.24363295e+02,
+      1.59125629e+02,  1.97071574e+02,  2.36973096e+02,  2.76028231e+02,
+     -9.72901535e+02, -3.95831915e+02, -3.67814737e+02, -3.29982597e+02,
+     -3.11447882e+02,  1.31701062e+02,  5.96919251e+02,  9.85290168e+02,
+      1.18797301e+03,  1.09656582e+03,  7.03858626e+02,  7.86777868e+01,
+     -6.55082634e+02, -1.36397212e+03, -1.89121870e+02,  1.93487828e+03,
+      5.40226051e+02, -1.65947564e+02, -5.36852034e+02, -2.47750882e+03,
+     -1.84414691e+02,  1.90090790e+03])
+message: b'CONVERGENCE: REL\_REDUCTION\_OF\_F\_<=\_FACTR*EPSMCH'
+   nfev: 875
+    nit: 12
+ status: 0
+success: True
+      x: array([1.        , 1.00029175, 1.00058831, 1.00089012, 1.00116802,
+     1.00147021, 1.00176786, 1.00207128, 1.00236508, 1.00266885,
+     1.00297281, 1.0032578 , 1.00356124, 1.00445968, 1.00529983,
+     1.00614269, 1.00693061, 1.00906201, 1.0093198 , 1.00710112,
+     1.0018986 , 0.99379504, 0.9833297 , 0.97101001, 0.95723164,
+     0.9426886 , 0.92772535, 0.88314869, 0.8178113 , 0.76554845,
+     0.71988664, 0.64350636, 0.59281978, 0.54547324])
+\end{Verbatim}
+\end{tcolorbox}
+
+Printing the result gives us the a lot of information about the minimisation just performed, the most useful are:
+\begin{itemize}
+\item \texttt{func}: the value of the objective function at the last iteration;
+\item \texttt{message}: the summary message from the algorithm (if it is \texttt{CONVERGENCE} is OK);
+\item \texttt{success}: the name is self explanatory;
+\item \texttt{x}: the vector of unknown parameters that have been optimised.
+\end{itemize}
+
+Another useful check to perform in order to understand if everything went fine, is the comparison of the objective function with the initial guessed parameters and at the end of the minimisation.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} objective function value with starting point parameters}
+\PY{n}{objective\PYZus{}function}\PY{p}{(}\PY{n}{x0}\PY{p}{)} 
+
+1055841619695.9585
+
+\PY{c+c1}{\PYZsh{} objective function value with final values}
+\PY{n}{objective\PYZus{}function}\PY{p}{(}\PY{n}{result}\PY{o}{.}\PY{n}{x}\PY{p}{)} 
+\PY{c+c1}{\PYZsh{} equivalently result.fun}
+
+0.0007370890117814888
+\end{Verbatim}
+\end{tcolorbox}
+
+The objective function at the end of the minimisation is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied, we started with $10^{13}$ and now it is $10^{-3}$ so 16 orders of magnitude smaller. This means that with the derived discount curve the NPV's of our OIS won't be identically 0 but so small that we can consider them as they were.
+
+Let's create a discount curve with the bootstrapped values.
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} define the discount curve object using the }
+\PY{c+c1}{\PYZsh{} resulting discount factors (result.x)}
+\PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{ois\PYZus{}data}\PY{o}{.}\PY{n}{observation\PYZus{}date}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{result}\PY{o}{.}\PY{n}{x}\PY{p}{)}
+
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\PY{n}{curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2059}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{)}
+
+0.6278698804291626
+\end{Verbatim}
+\end{tcolorbox}
+
+With it compute the 50 years implied rate:
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} 50 years rate }
+\PY{k+kn}{import} \PY{n+nn}{math}
+\PY{o}{\PYZhy{}}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2059}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{)}\PY{p}{)} \PY{o}{/} \PY{l+m+mi}{50}
+
+0.009308446615020075
+\end{Verbatim}
+\end{tcolorbox}
