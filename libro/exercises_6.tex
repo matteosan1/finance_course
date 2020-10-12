@@ -29,7 +29,7 @@ This causes an error
 \end{Highlighting}
 \end{Shaded}
 
-Take the \texttt{df} function from Chapter 6 and modify it by adding some assertions to check that:
+Take the \texttt{df} function from Chapter 6 of the Lecture Notes and modify it by adding some assertions to check that:
 
 \begin{itemize}
 \tightlist
@@ -55,15 +55,13 @@ Then try using the function with some invalid data to make sure that your as ser
 \PY{k+kn}{import} \PY{n+nn}{numpy}
 \PY{k+kn}{import} \PY{n+nn}{math}
 
-\PY{c+c1}{\PYZsh{} define the input data}
 \PY{n}{today\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2017}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
 \PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2017}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
                 \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2018}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
                 \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
 \PY{n}{discount\PYZus{}factors} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.95}\PY{p}{,} \PY{l+m+mf}{0.8}\PY{p}{]}
 
-\PY{c+c1}{\PYZsh{} define the df function}
-\PY{k}{def} \PY{n+nf}{df}\PY{p}{(}\PY{n}{t}\PY{p}{)}\PY{p}{:}
+\PY{k}{def} \PY{n+nf}{df}\PY{p}{(}\PY{n}{t, pillar_dates, discount_factors}\PY{p}{)}\PY{p}{:}
     \PY{c+c1}{\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{} CHECKS \PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}}
     \PY{k}{assert} \PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)} \PY{o}{\PYZgt{}}\PY{o}{=} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ need at least 2 pillar dates}\PY{l+s+s2}{\PYZdq{}}
     
@@ -93,7 +91,7 @@ Then try using the function with some invalid data to make sure that your as ser
     
     \PY{k}{return} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{interpolated\PYZus{}log\PYZus{}discount\PYZus{}factor}\PY{p}{)}
 
-\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
+\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{), pillar_dates, discount_factors}\PY{p}{)}
 
 0.9097285910181567
 \end{Verbatim}
@@ -101,7 +99,7 @@ Then try using the function with some invalid data to make sure that your as ser
 \end{Answer}
 
 \begin{Exercise}[label={ex:BS3}]
-Create a file \texttt{finmarket.py} and copy into it the function used to compute Black Scholes formula used in Exercise~\ref{ex:BS2}. This is the intial implementation of our financial library. Repeat Exercise~\ref{ex:BS2} now using the version of the Black and Scholes formula in the finmarket module.
+Copy into the file \texttt{finmarkets.py} the function used to compute Black Scholes formula used in Exercise~\ref{ex:BS2}. This is the implementation of our financial library. Repeat Exercise~\ref{ex:BS2} now using the version of the Black and Scholes formula in the finmarket module.
 \end{Exercise}
 
 \begin{Answer}
@@ -184,7 +182,48 @@ Create a file \texttt{finmarket.py} and copy into it the function used to comput
 \end{tcolorbox}
 \end{Answer}
 
+\begin{Exercise}[title={(Forward rate curve class)}]
+Write a ForwardRateCurve class (for EURIBOR/LIBOR rate curve) which
+doesn't compute discount factors but only interplatates forward rates;
+then add it to the \texttt{finmarkets} module (this function is used to
+define the LIBOR curve needed throughout future lessons).
+\end{Exercise}
 
+\begin{Answer}
+In this case it is enough to write a new \texttt{class} that has three
+attributes: a today date, a set of pillar\_dates and the corresponding
+rates. There will be just a single method \texttt{forward\_rate} which
+returns the corresponding interpolated rate.
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{numpy}
+        
+\PY{c+c1}{\PYZsh{} an EURIBOR or LIBOR rate curve}
+\PY{c+c1}{\PYZsh{} doesn\PYZsq{}t calculate discount factors, only interpolates forward rates}
+\PY{k}{class} \PY{n+nc}{ForwardRateCurve}\PY{p}{(}\PY{n+nb}{object}\PY{p}{)}\PY{p}{:}
+   
+   \PY{c+c1}{\PYZsh{} the special \PYZus{}\PYZus{}init\PYZus{}\PYZus{} method defines how to}
+   \PY{c+c1}{\PYZsh{} construct instances of the class}
+   \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{rates}\PY{p}{)}\PY{p}{:}
+       
+       \PY{c+c1}{\PYZsh{} we just store the arguments as attributes of the instance}
+       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today} \PY{o}{=} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
+       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rates} \PY{o}{=} \PY{n}{rates}
+       
+       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days} \PY{o}{=} \PY{p}{[}
+           \PY{p}{(}\PY{n}{pillar\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days}
+           \PY{k}{for} \PY{n}{pillar\PYZus{}date} \PY{o+ow}{in} \PY{n}{pillar\PYZus{}dates}
+       \PY{p}{]}
+       
+       
+   \PY{c+c1}{\PYZsh{} interpolates the forward rates stored in the instance}
+   \PY{k}{def} \PY{n+nf}{forward\PYZus{}rate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{d}\PY{p}{)}\PY{p}{:}
+       \PY{n}{d\PYZus{}days} \PY{o}{=} \PY{p}{(}\PY{n}{d} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days}
+       \PY{k}{return} \PY{n}{numpy}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{d\PYZus{}days}\PY{p}{,} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days}\PY{p}{,} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rates}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+\end{Answer}
 
 
   
