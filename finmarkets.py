@@ -1,4 +1,4 @@
-import math, numpy
+import math, numpy, json
 
 from datetime import date
 from dateutil.relativedelta import relativedelta
@@ -423,11 +423,10 @@ class CreditDefaultSwap:
         npv = 0
         for i in range(1, len(self.payment_dates)):
             npv += (
-                self.fixed_spread *
                 discount_curve.df(self.payment_dates[i]) *
                 credit_curve.ndp(self.payment_dates[i])
             )
-        return npv * self.notional
+        return npv * self.notional * self.fixed_spread
     
     def default_leg_npv(self, discount_curve, credit_curve):
         """
@@ -463,3 +462,26 @@ class CreditDefaultSwap:
         """
         return self.default_leg_npv(discount_curve, credit_curve) - \
                self.premium_leg_npv(discount_curve, credit_curve)
+
+    def breakevenRate(self, discount_curve, credit_curve):
+        num = self.default_leg_npv(discount_curve, credit_curve)
+        den = self.premium_leg_npv(discount_curve, credit_curve)/self.fixed_spread
+        return num/den
+
+
+class GaussianQuadrature:
+    def __init__(self, filename="gaussian_quadrature.json"):
+        with open(filename, "r") as f:
+            self.params = json.load(f)
+
+    def M(self, n):
+        n = str(n)
+        if n not in self.params.keys():
+            print ("N={} not available.".format(n))
+            return None, None
+        else:
+            values = self.params[str(n)]['value']
+            weight = self.params[str(n)]['weight']
+            return values, weight
+        
+                                 
