@@ -18,7 +18,12 @@ The function we are writing will go in \texttt{finmarkets} module and will be us
     \PY{n}{dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{months}\PY{o}{=}\PY{n}{n\PYZus{}months}\PY{p}{)}\PY{p}{)}
     
     \PY{k}{return} \PY{n}{dates}
-\end{Verbatim}
+
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{25}\PY{p}{)}\PY{p}{)}
+
+[datetime.date(2020, 10, 20), datetime.date(2021, 10, 20), datetime.date(2022,
+10, 20), datetime.date(2022, 11, 20)]
+    \end{Verbatim}
 \end{tcolorbox}
 
 \section{Overnight Index Swap}\label{overnight-index-swap}
@@ -156,7 +161,7 @@ factors can be determined from their prices (market quotes).
             \PY{n}{tau} \PY{o}{=} \PY{p}{(}\PY{n}{end\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{start\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{360}
             \PY{n}{df} \PY{o}{=} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{end\PYZus{}date}\PY{p}{)}
             \PY{n}{npv} \PY{o}{=} \PY{n}{npv} \PY{o}{+} \PY{n}{df} \PY{o}{*} \PY{n}{tau}
-            \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{*} \PY{n}{npv}
+        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{*} \PY{n}{npv}
     \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
         \PY{l+s+sd}{\PYZdq{}\PYZdq{}\PYZdq{}}
 \PY{l+s+sd}{        npv: computes the total npv of the swap.}
@@ -200,7 +205,7 @@ OIS product.
 
 \PY{n}{ois}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{curve}\PY{p}{)}
 
--10990.364227052869
+105332.192377
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -307,7 +312,7 @@ To illustrate bootstrapping let's consider the following example which can be pa
 
 Putting all together we can construct a system of equations (now omitting the currency symbol for simplicity):
 
-\begin{equation*}
+\begin{equation}
 \begin{cases}
 100 = \cfrac{104}{(1 + S_{1y})} \\
 100 = \cfrac{5}{(1 + S_{1y})} + \cfrac{105}{(1 + S_{2y})^{2}} \\
@@ -315,7 +320,8 @@ Putting all together we can construct a system of equations (now omitting the cu
 100 = \cfrac{7} {(1 + S_{1y})} + \cfrac{7} {(1 + S_{2y})^{2}} + \cfrac{7} {(1 + S_{3y})^{3}} + \cfrac{107} {(1 + S_{4y})^{4}} \\
 100 = \cfrac{8} {(1 + S_{1y})} + \cfrac{8} {(1 + S_{2y})^{2}}+ \cfrac{8} {(1 + S_{3y})^{3}} + \cfrac{8} {(1 + S_{4y})^{4}} + \cfrac{108} {(1 + S_{5y})^{5}}
 \end{cases}
-\end{equation*}
+\label{eq:fifth_year_rate}
+\end{equation}
 
 This system can be solved quite easily: from the first equation can be derived $S_{1y}$, from the second $S_{2y}$, from the third $S_{3y}$ and so on. So
 
@@ -331,11 +337,10 @@ Moving to the second equation:
 \end{equation*}
 where the first solution has been discarded because negative.
 
-From the third one on it is not as simple to solve them analytically since involve third order (or more) equations. 
-Anyway it is possible to solve them numerically.
-Follows the table with the result up to to the 4 year rate:
+From the third one on it is not as simple to solve them analytically since involve third order (or more) equations, anyway it is possible to solve them numerically.
+Assume we have found all the rates up to the fourth year (they are reported in Table~\ref{tab:rates}) and let's try to determine the last one.
 
-\begin{table}[htp]
+\begin{table}[htb]
 \begin{center}
 \begin{tabular}{|c|c|c|c|}
 \hline
@@ -353,10 +358,19 @@ Follows the table with the result up to to the 4 year rate:
 \hline
 \end{tabular}
 \end{center}
-\label{default}
+\caption{Table reporting maturity, coupon, bond price and implied spot rate for the example outlined in the text.}
+\label{tab:rates}
 \end{table}
-The last column of the table provide us with the terms to fill the zero-coupon yield curve.
-Below the pythonic solution of the last equation:
+The last column of Table~\ref{tab:rates} provides with the terms to fill the zero-coupon yield curve.
+To solve the last equation numerically we can use the \texttt{scipy.optimize.brentq} function which finds the zeros of a user-defined function given a validity interval.
+In Figure~\ref{fig:fifth_year_rate} the function to determine the 5 year rate expressed in the last of Eqs.~\ref{eq:fifth_year_rate} is shown. From the plot we expect tha rate to be around 8\%.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.7\textwidth]{lesson3_files/lesson3_13_0.png}
+  \caption{Plot of the discounted cash flow of bond 5 as a function of the 5 year spot rate.}
+  \label{fig:fifth_year_rate}
+\end{figure}
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -431,10 +445,12 @@ A minimization algorithm follows these steps:
   minimization process is completed !).
 \end{itemize}
 
+Let's see with a couple of example how minimization can be implemented in \texttt{python} using the function \texttt{scipy.optimize.minimize}.
+
 \subsubsection{Example}\label{example}
 
-Find the dimensions that will minimize the cost of the metal to
-manufacture a circular cylindrical can of volume, \(33~\mathrm{cm}^3\), see Figure~\ref{fig:cylinder}.
+Find the dimensions that will minimize the cost to
+manufacture a circular cylindrical can of volume, \(330~\mathrm{cm}^3\), see Figure~\ref{fig:cylinder}.
 
 \begin{figure}[h]
 \centering
@@ -448,14 +464,14 @@ surface, given the required volume.
 
 \[ S = 2\pi rh + 2\cdot(\pi r^2) \]
 
-On the other hand we want the volume to be \(33~\mathrm{cm}^3\) so we
+On the other hand we want the volume to be \(330~\mathrm{cm}^3\) so we
 can remove \(h\) from the previous equation:
 
-\[ V = \pi r^2 h = 33\quad\implies h = \cfrac{33}{\pi r^2} \]
+\[ V = \pi r^2 h = 330\quad\implies h = \cfrac{330}{\pi r^2} \]
 
 So in the end the surface function to be minimized is:
 
-\[ S = 2\pi rh + 2\cdot(\pi r^2) = \cfrac{2\cdot 33}{r} + 2\cdot(\pi r^2)\]
+\[ S = 2\pi rh + 2\cdot(\pi r^2) = \cfrac{2\cdot 330}{r} + 2\cdot(\pi r^2)\]
 
 So we implement the objective function, \(\tt{x[0]}\) is the can radius:
 
@@ -464,7 +480,7 @@ So we implement the objective function, \(\tt{x[0]}\) is the can radius:
 \PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{pi}
 
 \PY{k}{def} \PY{n+nf}{of}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{l+m+mi}{2}\PY{o}{*}\PY{l+m+mi}{33}\PY{o}{/}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{+} \PY{l+m+mi}{2}\PY{o}{*}\PY{n}{pi}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}
+    \PY{k}{return} \PY{l+m+mi}{2}\PY{o}{*}\PY{l+m+mi}{330}\PY{o}{/}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{+} \PY{l+m+mi}{2}\PY{o}{*}\PY{n}{pi}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -484,21 +500,20 @@ Set the limits to our unknown variable and its initial value:
 \PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{of}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
 \PY{n+nb}{print} \PY{p}{(}\PY{n}{r}\PY{p}{)}
 
-      fun: 56.95394839811317
+      fun: 264.356810914805
  hess\_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
-      jac: array([0.])
+      jac: array([5.68434189e-06])
   message: b'CONVERGENCE: NORM\_OF\_PROJECTED\_GRADIENT\_<=\_PGTOL'
-     nfev: 18
-      nit: 6
+     nfev: 24
+      nit: 9
    status: 0
   success: True
-        x: array([1.73824646])
+        x: array([3.7449385])
     \end{Verbatim}
 \end{tcolorbox}
 
     So to minimize the cost the company should produce cans with a radius of
-about 1.74 cm (so clearly Coke doesn't care about costs of can
-production).
+about 3.745 cm (I suspect that Coke have done a similar calculation...).
 
 \subsubsection{Example with Constraint}\label{example-with-constraint}
 
@@ -566,7 +581,7 @@ fence has to cost \$700
 \end{Verbatim}
 \end{tcolorbox}
 
-    Finally we can call the minimizer.
+    Now we can call the minimizer.
 
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -636,7 +651,6 @@ So let's implement the method with the swaps we have just created, of course we 
   define the objective function: the sum of the squared NPVs of the OIS
 
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\prompt{In}{incolor}{13}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k}{def} \PY{n+nf}{objective\PYZus{}function}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
     \PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,}
@@ -657,7 +671,6 @@ So let's implement the method with the swaps we have just created, of course we 
   \([1, 1]\))
 
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\prompt{In}{incolor}{14}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{]}
 
@@ -671,7 +684,6 @@ So let's implement the method with the swaps we have just created, of course we 
   (\(x\))
 
     \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\prompt{In}{incolor}{16}{\boxspacing}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
 
