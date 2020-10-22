@@ -1,5 +1,86 @@
 \chapter{Credit Default Swaps}
 
+\section{Cumulative Distribution and Quantile Functions}\label{quantile-function}
+
+In probability theory and statistics, the \emph{cumulative distribution function} (CDF) \(F\) of a random variable \(X\), evaluated at \(x\), is the probability that \(X\) will take a value less than or equal to \(x\)
+
+\[F_X(x) = \mathbb{P}(X \le x)\qquad\mathrm{or~equivalently}~\int_{-\infty}^{x}{f(X)dX}\]
+so it gives the area under the probability density function \(f\) from
+minus infinity to \(x\).
+The probability that \(X\) lies in the interval \((a,b]\) is therefore
+
+\[\mathbb{P}(a\lt X \le b)=F_{X}(b)-F_{X}(a)\qquad\mathrm{or}~\int_a^b{f(X)dX}\]
+
+With reference to a continuous and strictly monotonic distribution
+function, for example the cumulative distribution function \(F_X\), the
+\emph{quantile function} \(Q\) returns a threshold value \(x\) below
+which random draws from the given CDF would fail \(p\) percent of the
+time.
+
+In terms of the distribution function \(F\), the quantile function \(Q\)
+returns the value \(x_p\) such that $F_{X}(x_p):=\mathbb{P}(X\le x_p)=p$
+
+So the quantile function does the opposite of the cumulative
+distribution function: given a probability \(p\) (or a value of the CDF)
+it returns the \(x\) at which the CDF reaches this probability (or this
+value) \[Q=F^{-1}\]
+
+In Fig.~\ref{fig:percentile} an example related to the
+Gaussian distribution is shown. On the left side the Gaussian PDF is drawn,
+the red area represent the 30\% of the total area (which is 1 since the
+PDF is normalized). On the right the corresponding CDF is represented,
+in the plot it is highlighted the point at which the CDF reaches
+30\%. The corresponding quantile value is also indicated and is -0.5244.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=1.\textwidth]{percentile.png}
+	\caption{On the left a standard normal distribution, the filled region represent the 30\% of the total area
+		under the curve. On the right the corresponding CDF with the 30\% point and the relative quantile highlighted.}
+	\label{fig:percentile}
+\end{figure}
+
+The computation of CDF and quantiles is quite simple in \(\tt{python}\).
+Many distribution implementations are available in \(\tt{scipy.stats}\)
+module and for each of them the methods \(\tt{cdf(x)}\) and
+\(\tt{ppf(x)}\) are available to evaulate CDF and quantile respectively.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+	\begin{Verbatim}[commandchars=\\\{\}]
+	\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
+	
+	\PY{n}{quantile} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{l+m+mf}{0.3}\PY{p}{)}
+	\PY{n}{cdf} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{quantile}\PY{p}{)}
+	
+	\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{30}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZhy{}quantile of standard normal is }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{quantile}\PY{p}{)}\PY{p}{)}
+	\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CDF value at }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{quantile}\PY{p}{,} \PY{n}{cdf}\PY{p}{)}\PY{p}{)}
+	
+	30\%-quantile of standard normal is -0.5244005127080409
+	CDF value at -0.5244005127080409: 0.29999999999999993
+	\end{Verbatim}
+\end{tcolorbox}
+
+If instead of a distribution you have a dataset the quantile can be
+determined using the function \(\tt{numpy.percentile}\) (this will be
+useful when estimating VaR). Notice that in this case we are talking
+about \emph{percentile} which is the \emph{quantile} times 100
+(e.g.~50-percentile is equivalent to 0.5-quantile).
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+	\begin{Verbatim}[commandchars=\\\{\}]
+	\PY{k+kn}{import} \PY{n+nn}{numpy}
+	\PY{n}{dist} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{7}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{l+m+mi}{9}\PY{p}{]}
+	
+	\PY{c+c1}{\PYZsh{} first argument the dataset}
+	\PY{c+c1}{\PYZsh{} second argument a list of percentiles}
+	\PY{n}{perc} \PY{o}{=} \PY{n}{numpy}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{dist}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{50}\PY{p}{]}\PY{p}{)}
+	
+	\PY{n+nb}{print} \PY{p}{(}\PY{n}{perc}\PY{p}{)}
+	
+	[1.08 5.  ]
+	\end{Verbatim}
+\end{tcolorbox}
+
 \section{Credit curves}\label{credit-curves}
 
 Just like a discount curve is a way of representing the underlying
@@ -21,24 +102,27 @@ agreement.
 In any case, we will generically call a credit event a \emph{default},
 and talk about \textbf{non-default probabilities} (\textbf{NDP}, or
 survival probability), i.e.~the probability that the issuer will
-not suffer a credit event \textbf{before} a given value date.
+not suffer a credit event \textbf{before} a given value date. Non-default probability is a cumulative probability.
 
 NDPs are the equivalent for credit curves of discount factors for
 discount curves. Just like discount curves, credit curves are built by
-specifying a pricing/observation date, a sequence of pillar dates and a
-sequence of NDPs. We will then implement a \texttt{CreditCurve} class
-that provides a method which interpolates these pillar NDPs
-to return the NDP at an arbitrary value date.
+specifying a observation date, a sequence of pillar dates and a
+sequence of NDPs. 
+Keeping this parallel we will implement a \texttt{CreditCurve} class
+that provides a method which interpolates these NDPs
+to return the non-default probability at an arbitrary date.
 
 In addition, we'll also write a method which returns the \textbf{hazard
 rate} at an arbitrary value date. The hazard rate is the credit curve
 equivalent of the short rate or overnight rate for discount curves. It
 represents the instantaneous probability of the issuer defaulting
 conditioned on it not having defaulted until that moment (in
-practice we'll calculate it numerically, and therefore it'll be the, annualised,
-conditional probability of the issuer defaulting between
-the value date and the day after.
+practice we'll calculate it numerically, and therefore it'll be the, \emph{annualised}, conditional probability of the issuer defaulting between
+the value date and the day after).
 
+Table~\ref{tab:discount_vs_credit} reports the analogies between discount curve and credit curve.
+
+\begin{table}
 \begin{center}
   \begin{tabular}{|| c | c ||}
     \hline
@@ -53,6 +137,9 @@ the value date and the day after.
     \hline  
   \end{tabular}
 \end{center}
+\caption{List of analogies between discount and credit curves.}
+\label{tab:discount_vs_credit}
+\end{table}
 
 \subsection{Hazard Rate}\label{hazard-rate}
 
@@ -64,45 +151,49 @@ Conditional probability answers to the question ``how should you update
 probabilities of events when there is additional information available
 ?''. To derive the general formula let's start with an example.
 
-A fair die is rolled. Let \(A\) be the event that the outcome is an odd
-number (\(A={1,3,5}\)). Also let \(B\) be the event that the outcome is
+A fair die is rolled. Let \(A\) be the event set that the outcome is an odd
+number (\(A={1,3,5}\)). Also let \(B\) be the event set that the outcome is
 less than or equal to \(3\) (\(B={1,2,3}\)). What is the probability of
-\(A\) (\(P(A)\)) ? What is the probability of \(A\) given \(B\)
-(\(P(A|B)\)) ?
+\(A\) (\(\mathbb{P}(A)\)) ? What is the probability of \(A\) given \(B\), the probability we get $A$ conditioned to having also $B$
+(\(\mathbb{P}(A|B)\)) ?
 
 Being a simple example we can compute the result by hand:
 
-\[P(A) = \cfrac{|A|}{|S|} = \cfrac{|\{1,3,5\}|}{6} = \cfrac{1}{2}\;\;\textrm{(where S is the entire sample space)}\]
+\[\mathbb{P}(A) = \cfrac{|A|}{|S|} = \cfrac{|\{1,3,5\}|}{6} = \cfrac{1}{2}\qquad\textrm{(where S is the entire sample space)}\]
 
 Now let's find the conditional probability of \(A\) given that \(B\)
 occurred. If we know \(B\) has occurred, the outcome must be among
 \(\{1,2,3\}\). For \(A\) to also happen the outcome must be in
 \(A\cap B = \{1,3\}\). Since all die rolls are equally likely, we argue
-that \(P(A|B)\) must be equal to
+that \(\mathbb{P}(A|B)\) must be equal to
 
-\[P(A|B) = \cfrac{|A\cap B|}{|B|} = \cfrac{2}{3}\]
+\[\mathbb{P}(A|B) = \cfrac{|A\cap B|}{|B|} = \cfrac{2}{3}\]
 
 To generalise our example we can rewrite the calculation by dividing the
 numerator and denominator by the entire space of the events \(|S|\)
 hence:
 
-\[P(A|B) = \cfrac{|A\cap B|}{|B|} = \cfrac{\cfrac{|A\cap B|}{|S|}}{\cfrac{|B|}{|S|}} = \cfrac{P(A\cap B)}{P(B)}\]
+\[\mathbb{P}(A|B) = \cfrac{|A\cap B|}{|B|} = \cfrac{\cfrac{|A\cap B|}{|S|}}{\cfrac{|B|}{|S|}} = \cfrac{\mathbb{P}(A\cap B)}{\mathbb{P}(B)}\]
 
 \begin{figure}[tb]
 \centering
 \includegraphics[width=0.7\linewidth]{conditional_b.png}
-\caption{Graphical representation of conditional probability (the grey shaded area).}
+\caption{Graphical representation of conditional probability (the gray shaded area).}
 \end{figure}
 
-In formula if the non-default probability is indicated by \(N\) and the
-hazard rate by \(\lambda\):
+Going back to the hazard rate ($\lambda$) we can now compute the instantaneous default probability conditional to no previous default 
 
-\[\lambda = \cfrac{P(\tau\in (t, t+dt))}{P(\tau>t)} = \cfrac{\cfrac{d(1-N)}{dt}}{N(t_0, t_1)} = -\cfrac{dN}{dt}\cdot\frac{1}{N(t_0, t_1)}.\]
-Conversely given the hazard rate the non-default probability can be
+\[\lambda = \cfrac{\mathbb{P}(A\cap B)}{\mathbb{P}(B)} = \cfrac{\mathbb{P}(\tau\in (t, t+dt))}{\mathbb{P}(\tau>t)} = \cfrac{\cfrac{d(1-N)}{dt}}{N(t_0, t_1)} = -\cfrac{dN}{dt}\cdot\frac{1}{N(t_0, t_1)}.\]
+where $N$ is the non-default probability and $\tau$ indicates the time at which the credit event occurred. Also remember that $\mathbb{P}(t) = 1 - N(t)$ or that the probability of default at $t$ is equal to 1 minus the non-default probability.
+Conversely, given the hazard rate, the non-default probability can be
 determined as:
 
-\[\lambda = -\cfrac{1}{dt}\cdot\cfrac{dN}{N} = -\cfrac{d(\textrm{log}N)}{dt} \implies N(t_0, t) = e^{-\int_{t_0}^{t}\lambda dt}\]
+\[\lambda = -\cfrac{1}{dt}\cdot\cfrac{dN}{N} = -\cfrac{d(\textrm{log}N)}{dt} \implies d(\textrm{log}N) = -\lambda dt \implies N(t_0, t) = e^{-\int_{t_0}^{t}\lambda dt}\]
 
+\subsection{\texttt{CreditCurve} class}
+
+In this Section we develop a \texttt{CreditCurve} class which will be characterized by a list of pillar dates and a corresponding list of non-default probabilities. It has also methods to compute non-default probabilities at arbitrary date by interpolation and the hazard rate.
+  
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{import} \PY{n+nn}{math}
@@ -110,23 +201,19 @@ determined as:
 
 \PY{k}{class} \PY{n+nc}{CreditCurve}\PY{p}{(}\PY{n+nb}{object}\PY{p}{)}\PY{p}{:}
     
-    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{pillar\PYZus{}ndps}\PY{p}{)}\PY{p}{:}    
+    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{ndps}\PY{p}{)}\PY{p}{:}    
         \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{n}{pillar\PYZus{}dates}
         \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days} \PY{o}{=} \PY{p}{[}
             \PY{p}{(}\PY{n}{pd} \PY{o}{\PYZhy{}} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{days}
             \PY{k}{for} \PY{n}{pd} \PY{o+ow}{in} \PY{n}{pillar\PYZus{}dates}
         \PY{p}{]}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{log\PYZus{}ndps} \PY{o}{=} \PY{p}{[}
-            \PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{ndp}\PY{p}{)}
-            \PY{k}{for} \PY{n}{ndp} \PY{o+ow}{in} \PY{n}{pillar\PYZus{}ndps}
-        \PY{p}{]}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{ndps} \PY{o}{=} \PY{n}{ndps}
         
     \PY{k}{def} \PY{n+nf}{ndp}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{value\PYZus{}date}\PY{p}{)}\PY{p}{:}
         \PY{n}{value\PYZus{}days} \PY{o}{=} \PY{p}{(}\PY{n}{value\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{days}
-        \PY{k}{return} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}
-            \PY{n}{numpy}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{value\PYZus{}days}\PY{p}{,}
-                         \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days}\PY{p}{,}
-                         \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{log\PYZus{}ndps}\PY{p}{)}\PY{p}{)}
+        \PY{k}{return} \PY{n}{interp}\PY{p}{(}\PY{n}{value\PYZus{}days}\PY{p}{,}
+                      \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days}\PY{p}{,}
+                      \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{ndps}\PY{p}{)}
     
     \PY{k}{def} \PY{n+nf}{hazard}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{value\PYZus{}date}\PY{p}{)}\PY{p}{:}
         \PY{n}{ndp\PYZus{}1} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{value\PYZus{}date}\PY{p}{)}
@@ -134,11 +221,16 @@ determined as:
         \PY{n}{delta\PYZus{}t} \PY{o}{=} \PY{l+m+mf}{1.0} \PY{o}{/} \PY{l+m+mf}{365.0}
         \PY{n}{h} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{l+m+mf}{1.0} \PY{o}{/} \PY{n}{ndp\PYZus{}1} \PY{o}{*} \PY{p}{(}\PY{n}{ndp\PYZus{}2} \PY{o}{\PYZhy{}} \PY{n}{ndp\PYZus{}1}\PY{p}{)} \PY{o}{/} \PY{n}{delta\PYZus{}t}
         \PY{k}{return} \PY{n}{h}
+\end{Verbatim}
+\end{tcolorbox}    
 
+Let's test the newly created class with some inputs.
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+	\begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
 \PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
-\PY{k+kn}{from} \PY{n+nn}{curve\PYZus{}data} \PY{k}{import} \PY{n}{pricing\PYZus{}date}
-        
+
+\PY{n}{pricing\PYZus{}date = date.today()}        
 \PY{n}{cc} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}
       \PY{p}{[}\PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{n}{pricing\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{]}\PY{p}{,}
       \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.8}\PY{p}{]}
@@ -159,7 +251,10 @@ Once we have implemented a \texttt{CreditCurve} class which allows us to
 interpolate non-default probabilities (NDPs) and also to calculate the hazard rate at arbitrary
 dates, we can use it to price \textbf{credit default swaps} (CDSs).
 
-CDSs are made up of two legs:
+A credit default swap is a financial agreement that the seller of the CDS will compensate the buyer in the event of a debt default or other credit event. 
+That is, the seller of the CDS insures the buyer against some reference asset defaulting. The buyer of the CDS makes a series of payments (the CDS \emph{spread}) to the seller and, in exchange, may expect to receive a payoff if the asset defaults.
+
+Credit default swaps are made up of two legs:
 
 \begin{itemize}
 \tightlist
@@ -180,12 +275,10 @@ In the calculation of the premium leg, we'll use the following notation:
 \item
   \(d\) today's date;
 \item
-  \(d_0\) the start date of the CDS (could be different from \(d\));
+  \(d_0\) the start date of the CDS (could be different from today's date);
 \item
   \(d_1, ..., d_n\) the payment dates of the premium leg, which occur at
-  a n-month frequency;
-\item
-  we assume that \(d_n\) is the end date of the CDS;
+  a n-month frequency. We assume that \(d_n\) is the end date of the CDS;
 \item
   \(D(d')\) the discount factor between \(d\) and \(d'\);
 \item
@@ -195,55 +288,70 @@ In the calculation of the premium leg, we'll use the following notation:
 \end{itemize}
 
 At each payment date \(d_i\), a flow of \(S\) is paid if and only if the
-credit event has \emph{not} occurred before that date. Therefore the NPV of the
+credit event has \emph{not} occurred before that date. Therefore the NPV of
 each flow is
 
 \[
-\def\1{\mathbb{1}}
-\def\set#1{\!\left\{ #1 \right\}}
-\mathbb{E}\left[ S \times D(d_i) \times \1\set{\tau > d_i} \right] = S \cdot D(d_i) \cdot N(d_i)
+f_{\mathrm{premium}}^i = \mathbb{E}\left[ S \times D(d_i) \times \mathbb{1}\{\tau > d_i\} \right]
 \]
-therefore the NPV of the premium leg is simply the sum, over the payment
+where $\mathbb{1}\{\tau > d_i\}$ means that the expectation value has to be evaluated only when $\tau > d_i$ which happens with a probability equal to the non-default probability $N(d_i)$, hence 
+
+\[
+f_{\mathrm{premium}}^i = \mathbb{E}\left[ S \times D(d_i) \times \mathbb{1}\{\tau > d_i\} \right] = S \cdot D(d_i) \cdot N(d_i)
+\]
+ 
+Therefore the NPV of the premium leg is simply the sum, over the payment
 dates, of these terms:
 
-\[\textrm{NPV}_{premium} = \sum_{i=1}^{n} S \cdot D(d_i) \cdot N(d_i)\]
+\[\mathrm{NPV_{premium}} = \sum_{i=1}^{n} S \cdot D(d_i) \cdot N(d_i)\]
 
 \subsubsection{Default leg}\label{default-leg}
 
-The LGD \((1-R)\) is paid out on the same date on which the credit event
-occurs, i.e.~it can potentially be paid out on any date between \(d_0\)
-and \(d_n\). Mathematically, therefore, the NPV of the premium leg can
-be expressed as follows:
+Concerning the default leg, as soon as a credit event occurs (at a time $\tau$) the LGD \((1-R)\) is paid out on the same date, i.e.~it can potentially be paid on any date between \(d_0\) and \(d_n\). Mathematically, therefore, the NPV of the default leg can be expressed as follows:
 
 \[
-\mathbb{E}[(1-R) \times D(\tau) \times \mathbb{1} \{\tau \leq d_n\} ]
+\mathrm{NPV_{default}} =\mathbb{E}[(1-R) \times D(\tau) \times \mathbb{1} \{\tau \leq d_n\} ]
 \]
 
-Using the law of total probability, we can break this down into the sum
-of ``daily NPVs'' calculated as a function of the daily forward default
-probabilities ($P$):
+Also in this case we are dealing with a probabilistic event so the expectation value has to be computed taking into account the payments $(1-R)\times D(\tau)$ averaged over the default probability space $\mathbb{P}(\tau)$. 
+
+Using the law of total probability, we can break the previous expression down into the sum
+of "daily NPVs" calculated as a function of the \emph{daily} default
+probabilities:
 
 \begin{align*}
-\mathbb{E}[(1-R) \times D(\tau) \times \mathbb{1}\{\tau \leq d_n\} ]
-&= \sum_{d'=d_0}^{d_n} \mathbb{E}[ (1-R) \times D(\tau) \mid \tau = d'] P(\tau = d') \\
-&= (1-R) \sum_{d'=d_0}^{d_n} D(d') \left(P(\tau \geq d') - P( \tau \geq d'+1) \right) \\
+\mathrm{NPV_{default}} &= \mathbb{E}[(1-R) \times D(\tau) \times \mathbb{1}\{\tau \leq d_n\} ] \\
+&= \sum_{d'=d_0}^{d_n} \mathbb{E}[ ((1-R) \times D(\tau)) \mid \tau = d'] \mathbb{P}(\tau = d') \\
+&= (1-R) \sum_{d'=d_0}^{d_n} D(d') \left(\mathbb{P}(\tau \geq d') - \mathbb{P}( \tau \geq d'+1) \right) \\
 &= (1-R) \sum_{d'=d_0}^{d_n} D(d') \left( N(d') - N(d'+1) \right)
 \end{align*}
-where the last step holds since $P(\tau\geq d^{'}) = 1 - P(\tau < d^{'}) = 1 - (1-N(d^{'})) = N(d^{'})$.
+where the last step holds since $\mathbb{P}(\tau\geq d^{'}) = 1 - \mathbb{P}(\tau < d^{'}) = 1 - (1-N(d^{'})) = N(d^{'})$. 
+
+Figure~\ref{fig:default_p} illustrates graphically the step to convert the daily default probability $\mathbb{P}(\tau=d')$.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{timeline.png}
+	\caption{The probability that a default occurs at a time $\tau = d'+\Delta t$ is equivalent to the default probability at $\tau > d'$ minus the default probability at $\tau>d'+\Delta t$.}
+	\label{fig:default_p}
+\end{figure}
+
+\subsection{Valuation of CDS}
+
+A for the other kind of contracts a \texttt{CreditDefaultSwap} class is developed in this Section. In this case the class has methods to compute NPVs for the premium and default legs.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
         
 \PY{k}{class} \PY{n+nc}{CreditDefaultSwap}\PY{p}{:}
-    
-    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{notional}\PY{p}{,} \PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{nyears}\PY{p}{,} \PY{n}{fixed\PYZus{}spread}\PY{p}{,} \PY{n}{recovery}\PY{o}{=}\PY{l+m+mf}{0.4}\PY{p}{)}\PY{p}{:}
+    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{notional}\PY{p}{,} \PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{maturity_y}\PY{p}{,} \PY{n}{fixed\PYZus{}spread}\PY{p}{,} \PY{n}{recovery}\PY{o}{=}\PY{l+m+mf}{0.4}\PY{p}{)}\PY{p}{:}
         \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{=} \PY{n}{notional}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates} \PY{o}{=} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{nyears}\PY{o}{*}\PY{l+m+mi}{12}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{)}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates} \PY{o}{=} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{maturity_y}\PY{o}{*}\PY{l+m+mi}{12}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{)}
         \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}spread} \PY{o}{=} \PY{n}{fixed\PYZus{}spread}
         \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{recovery} \PY{o}{=} \PY{n}{recovery}
     
-    \PY{k}{def} \PY{n+nf}{premium\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{:}
+    \PY{k}{def} \PY{n+nf}{npv\PYZus{}premium\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{:}
         \PY{n}{npv} \PY{o}{=} \PY{l+m+mi}{0}
         \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
             \PY{n}{npv} \PY{o}{+}\PY{o}{=} \PY{p}{(}
@@ -253,7 +361,7 @@ where the last step holds since $P(\tau\geq d^{'}) = 1 - P(\tau < d^{'}) = 1 - (
             \PY{p}{)}
         \PY{k}{return} \PY{n}{npv} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional}
     
-    \PY{k}{def} \PY{n+nf}{default\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{:}
+    \PY{k}{def} \PY{n+nf}{npv\PYZus{}default\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{:}
         \PY{n}{npv} \PY{o}{=} \PY{l+m+mi}{0}
         \PY{n}{d} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
         
@@ -266,37 +374,98 @@ where the last step holds since $P(\tau\geq d^{'}) = 1 - P(\tau < d^{'}) = 1 - (
         \PY{k}{return} \PY{n}{npv} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{recovery}\PY{p}{)}
     
     \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{default\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)} \PY{o}{\PYZhy{}} \PYZbs{}
-               \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{premium\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-
-
-\PY{k+kn}{from} \PY{n+nn}{curve\PYZus{}data} \PY{k}{import} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{pricing\PYZus{}date}
-\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
-        
-\PY{n}{credit\PYZus{}curve} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{p}{[}\PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{n}{pricing\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{months}\PY{o}{=}\PY{l+m+mi}{36}\PY{p}{)}\PY{p}{]}\PY{p}{,} 
-                           \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.7}\PY{p}{]}\PY{p}{)}
-        
-\PY{n}{cds} \PY{o}{=} \PY{n}{CreditDefaultSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,} \PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mf}{0.03}\PY{p}{)}
-\PY{n}{cds}\PY{o}{.}\PY{n}{premium\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-
-300505.06774906756
-
-\PY{n}{cds}\PY{o}{.}\PY{n}{default\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-
-181369.30417135215
-
-\PY{n}{cds}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-
--119135.7635777154
+        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}default\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)} \PY{o}{\PYZhy{}} \PYZbs{}
+               \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}premium\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}    
+
+To test the class data contained in \href{https://drive.google.com/file/d/14R22r7m-6VpQ_P79D3qHdK0QN_mOQ_UB/view?usp=sharing}{discount\_curve.xlsx} is used.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
+	
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}
+	
+\PY{n}{dc\PYZus{}data} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{discount\PYZus{}curve.xlsx}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{dc\PYZus{}data}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}
+	
+\PY{n}{pricing\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
+\PY{n}{discount\PYZus{}curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{pricing\PYZus{}date}\PY{p}{,} 
+                                \PY{n}{dc\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{pillars}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{dt}\PY{o}{.}\PY{n}{date}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,}
+                                \PY{n}{dc\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{discount\PYZus{}factors}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+	
+\PY{n}{credit\PYZus{}curve} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{p}{[}\PY{n}{pricing\PYZus{}date}\PY{p}{,} 
+\PY{n}{pricing\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{months}\PY{o}{=}\PY{l+m+mi}{36}\PY{p}{)}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.7}\PY{p}{]}\PY{p}{)}
+\PY{n}{cds} \PY{o}{=} \PY{n}{CreditDefaultSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,} \PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{l+m+mf}{0.03}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{cds}\PY{o}{.}\PY{n}{npv\PYZus{}default\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{cds}\PY{o}{.}\PY{n}{npv\PYZus{}premium\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{cds}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{)}
+
+181342.30550411102
+303785.6765960539
+-122443.37109194286
+\end{Verbatim}
+\end{tcolorbox}
+
+\subsection{Breakeven Spread}
+The breakeven spread of a credit default swap is the value of the fixed rate paid in the premium leg that makes the CDS net present value 0.
+
+In this Section a new method to compute the breakeven spread of a CDS will be added to the \texttt{CreditDefaultSwap} class.
+
+To determine the breakeven spread is enough to impose that the NPV of the premium and default legs are equal:
+
+\[
+S \cdot\sum_{i=1}^{n} D(d_i) \cdot N(d_i)
+= (1-R) \sum_{d'=d_0}^{d_n} D(d') \left( N(d') - N(d'+1) \right)
+\]
+solving for $S$ we obtained the wanted spread
+
+\[
+S_{\mathrm{breakeven}} = \cfrac{(1-R) \sum_{d'=d_0}^{d_n} D(d') \left( N(d') - N(d'+1) \right)}{\sum_{i=1}^{n} D(d_i) \cdot N(d_i)}
+\]
+
+The implementation is relatively easy:
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+  \PY{k}{def} \PY{n+nf}{breakevenRate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{:}
+    \PY{n}{num} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}default\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
+    \PY{n}{den} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}premium\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{o}{/}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}spread}
+    \PY{k}{return} \PY{n}{num}\PY{o}{/}\PY{n}{den}
+\end{Verbatim}
+\end{tcolorbox}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 \section{Credit Ratings}\label{credit-ratings}
 
 A credit rating is a quantified assessment of the creditworthiness of a
 borrower either in general terms or with respect to a particular debt or
 financial obligation. A credit rating can be assigned to any entity that
-seeks to borrow money (e.g.~an individual, corporation, state or
+seeks to borrow money (e.g. an individual, corporation, state or
 provincial authority, or sovereign government).
 
 A loan is a essentially a promise and the credit rating determines the
@@ -306,20 +475,19 @@ paying back the loan in its entirety without any issues; a poor credit
 rating suggests that the borrower has had trouble paying back loans in
 the past and might follow the same pattern in the future.
 
-Individual credit is scored from credit bureaus (e.g.~Experian and
+Individual credit is scored from credit bureaus (e.g. Experian and
 TransUnion) and it is reported as a number, generally ranging from 300
 to 850.
 
 Credit assessment and evaluation for companies and governments instead
-is generally done by credit rating agencies (e.g.~Standard \& Poor's
+is generally done by credit rating agencies (e.g. Standard \& Poor's
 (S\&P), Moody's, or Fitch), which typically assign letter grades to
 indicate ratings. Standard \& Poor's, for instance, has a credit rating
 scale ranging from AAA (excellent) to C and D. A debt instrument with a
 rating below BB is considered to be a speculative grade or a junk bond,
 which means it is more likely to default on loans.
 
-\subsubsection{Why Credit Ratings Are
-Important}\label{why-credit-ratings-are-important}
+\subsection{Why Credit Ratings Are Important}\label{why-credit-ratings-are-important}
 
 A borrowing entity will strive to have the highest possible credit
 rating since it has a major impact on interest rates charged by lenders.
@@ -330,7 +498,7 @@ the debt.
 A credit rating not only determines whether or not a borrower will be
 approved for a loan but also determines the interest rate at which the
 loan will need to be repaid. Since companies depend on loans for many
-start-up and other expenses, being denied a loan could spell disaster,
+expenses, being denied a loan could spell disaster, and
 in any case a high interest rate is much more difficult to pay back.
 Credit ratings also play a large role in a potential investor's
 determining whether or not to purchase bonds. A poor credit rating is a
@@ -340,47 +508,45 @@ will be unable to make its bond payments.
 It is important for a borrower to remain diligent in maintaining a high
 credit rating. Credit ratings are never static; in fact, they change all
 the time based on the newest data, and one negative debt will bring down
-even the best score. Credit also takes time to build up. An entity with
+even the best score. 
+Credit also takes time to build up. An entity with
 good credit but a short credit history is not seen as positively as
 another entity with the same quality of credit but a longer history.
 Debtors want to know a borrower can maintain good credit consistently
 over time.
-
-\begin{center}
-\includegraphics[width=0.75\linewidth]{timeline.png}
-\end{center}
 
 \section{Bonds}\label{bonds}
 
 A bond is an instrument that represents a loan made by an investor to a
 borrower (typically corporate or governmental). Bonds are used by
 companies, municipalities, states, and sovereign governments to finance
-projects and operations. Owners of bonds are debt-holders, or creditors,
-of the issuer. Bond details include the end date when the principal of
-the loan is due to be paid to the bond owner and usually includes the
+projects and operations. 
+
+Owners of bonds are debt-holders, or creditors,
+of the issuer. Bond details include the end date (when the principal of
+the loan is due to be paid to the bond owner) and usually includes the
 terms for variable or fixed interest payments made by the borrower.
 
-The coupon is the interest rate that the issuer pays to the holder.
+The \emph{coupon} is the interest rate that the issuer pays to the holder.
 This rate can be fixed throughout the life of the bond but it can also
 vary with a money market index, such as LIBOR, or it can be even more
 exotic.
 
-\subsection{Pricing}\label{pricing}
+\subsection{Valuing a Bond}\label{sec:bond_pricing}
 
-The price of a bond can be computed as the present discounted value of
+The value of a bond can be computed as the present discounted value of
 future cash flows generated by the bond itself.
 
-For example consider a 3-years bond with a face value of 100 EUR
-providing coupons at a 6\% rate annualy. Assume also that the interest
-rates are 5.0\% 5.8\% 6.4\% and 6.8\% for 1, 2, 3, 4 year maturities. To
-compute the present value of the first copuon we need to discount it at
+For example consider a 3-years bond with a face value of \euro{100}
+providing coupons at a 6\% rate annually. Assume also that the spot
+rates are 5.0\% 5.8\% and 6.4\% for 1, 2, 3 year maturities. To
+compute the present value of the first coupon we need to discount it at
 5.0\% for 1 year, for the second the discount has to be at 5.8\% and so
-on. The price will be then:
+on. The value will be then:
 
-\[6e^{-0.05\times 1}+6e^{-0.058\times 2}+106e^{-0.064\times 3} = 98.53~\textrm{EUR}\]
+\[P_{\mathrm{bond}}=6e^{-0.05\cdot 1}+6e^{-0.058\cdot 2}+106e^{-0.064\cdot 3} = \textrm{\euro{98.53}}\]
 
-    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\prompt{In}{incolor}{6}{\boxspacing}
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{exp}
 \PY{n}{rates} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.05}\PY{p}{,} \PY{l+m+mf}{0.058}\PY{p}{,} \PY{l+m+mf}{0.064}\PY{p}{,} \PY{l+m+mf}{0.068}\PY{p}{]}
@@ -395,28 +561,27 @@ on. The price will be then:
 \PY{n}{price} \PY{o}{+}\PY{o}{=} \PY{n}{N} \PY{o}{*} \PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{rates}\PY{p}{[}\PY{n}{maturity} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}\PY{p}{]} \PY{o}{*} \PY{n}{maturity}\PY{p}{)}
     
 \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{price}\PY{p}{)}\PY{p}{)}
+
+98.53 EUR
 \end{Verbatim}
 \end{tcolorbox}
 
-    \begin{Verbatim}[commandchars=\\\{\}]
-98.53 EUR
-    \end{Verbatim}
-
- \subsection{Implied Probability of Default on Coupon Bonds}\label{default-probabilities-and-bond-prices}
+\subsection{Implied Probability of Default on Coupon Bonds}\label{default-probabilities-and-bond-prices}
 
 The price of a bond issued by a party is directly linked to the credit
-rating of that party, since there is always a default risk associated
-with a bond, which means that the borrower might not be able to pay the
-full or partial amount of the loan taken. So, bonds with low ratings,
-called junk bonds, are sold at lower prices and those with higher
-ratings, called investment-grade bonds, are sold at higher prices.
+rating of that party, since there is always an associated default risk, which means that the borrower might not be able to repay
+fully or partially the amount of the taken loan. 
 
-We can then estimate the probability of a company default directly from
-the prices of the bonds issued by it. You can imagine that the spread
+Bonds with low ratings, called junk bonds, are sold at lower prices (since riskier) while those with higher ratings, called investment-grade bonds, are sold at higher prices.
+
+The probability of a company default can be estimated directly from
+the prices of its issued bonds. Imagine that the spread $s$
 between a corporate bond over the risk-free rate should compensate for
-the loss in case of default, so naively:
+the losses in case of default, so naively:
 
 \[\lambda = \frac{s}{1-R}\]
+where $\lambda$ is the annualised hazard rate and $R$ the recovery rate.
+
 
 In a more detailed way let $X$ represent the present value of a bond cash flow stream. When you
 have a default probability then $X$ becomes a random variable with a range
@@ -426,37 +591,37 @@ by its probability and sum the results. In other words the value of the bond
 should equal the mathematical expectation of $X$.
 
 To illustrate the idea, consider the case of a bond with 4 coupon payments
-until maturity. Let $p$ be the probability that the bond survives from one
+until maturity. Let $S$ be the probability that the bond \emph{survives} from one
 coupon payment to the next and let $X_i$ ($i$ = 0, 1, 2, 3, 4) be the value of
 $X$ given that the bond defaults after making its $i$-th coupon payment. 
 The expectation of $X$ can then be expressed as:
 
 \begin{align*}
-\mathbb{E}(X) &= X_0(1-p) + X_1 p(1-p) + X_2 p^2 (1-p) + X_3 p^3 (1-p) + X_4 p^4 \\
-&= X_0 + (X_1 - X_0)p + (X_2 - X_1)p^2 + (X_3 - X_2)p^3 + (X_4 - X_3)p^4
+\mathbb{E}(X) &= X_0(1-S) + X_1 S(1-S) + X_2 S^2 (1-S) + X_3 S^3 (1-S) + X_4 S^4 \\
+&= X_0 + (X_1 - X_0)S + (X_2 - X_1)S^2 + (X_3 - X_2)S^3 + (X_4 - X_3)S^4
 \end{align*}
 
 Assuming a constant recovery value $R$ the values $X_i$ are:
 
 \begin{align*}
-X_0 &= RN \\
-X_1 &= (C + RN)/D \\
-X_2 &= C/D + (C + RN)/D^2 \\
-X_3 &= C/D + C/D^2 + (C + RN)/D^3 \\
-X_4 &= C/D + C/D^2 + C/D^3 + (C + N)/D^4 \\
+X_0 &= RF \\
+X_1 &= (C + RF)\cdot D \\
+X_2 &= C\cdot D + (C + RF)\cdot D^2 \\
+X_3 &= C\cdot D + C\cdot D^2 + (C + RF)\cdot D^3 \\
+X_4 &= C\cdot D + C\cdot D^2 + C\cdot D^3 + (C + F)\cdot D^4 \\
 \end{align*}
-
+where $D$ represent the proper discount factor and $F$ the bond face value.
 Substituting into the expectation formula:
 
 \begin{align*}
-\mathbb{E}(X) &= C((p/D) + (p/D)^2 + (p/D)^3 + (p/D)^4) + \\
-&RN(1-p)(1+(p/D)+(p/D)^2 + (p/D)^3) + \\
-&N(p/d)^4 
+\mathbb{E}(X) &= C((SD) + (SD)^2 + (SD)^3 + (SD)^4) + \\
+&RF(1-S)(1+(SD)+(SD)^2 + (SD)^3) + \\
+&F(SD)^4 
 \end{align*}
 
 It is now easy to generalise to the case of $N$ coupons:
 
-\[ \mathbb{E}(X) = C \sum_{k=1}^{N}{(p/D)^k} + RN(1-p)\sum_{k=1}^{N-1}{(p/D)^k} + N(p/D)^N \]
+\[ \mathbb{E}(X) = C \sum_{k=1}^{N}{(SD)^k} + RF(1-S)\sum_{k=1}^{N-1}{(SD)^k} + F(SD)^N \]
 
 Each of the sums in this s formula is a geometric series that can be collapsed
 into a single term. The formula for collapsing a general geometric series is 
@@ -466,28 +631,54 @@ into a single term. The formula for collapsing a general geometric series is
 Hence we get:
 
 \begin{align*}
-\mathbb{E}(X) &= C(p/D) \cfrac{1-(p/D)^N}{1-(p/D)}+RN(1-p)\cfrac{1-(p/D)^N}{1-(p/D)} + N(p/D)^N \\
-&= \Big(C(p/D) + RN(1-p)\Big)\cfrac{1-(p/D)^N}{1-(p/D)} + N(p/D)^N 
+\mathbb{E}(X) &= (CSD) \cfrac{1-(SD)^N}{1-(SD)}+RF(1-S)\cfrac{1-(SD)^N}{1-(SD)} + F(SD)^N \\
+&= \Big(CSD + RF(1-S)\Big)\cfrac{1-(SD)^N}{1-(SD)} + F(SD)^N 
 \end{align*}
 
-With $\mathbb{E}(X)$ equal to the price of the bond, this equation can be solved numerically for the 
-survival probability $p$.
+With $\mathbb{E}(X)$ equal to the price of the bond, this equation can be solved numerically for the survival probability $S$.
 
 To get the default probability for the bond, simply subtract the survival
-probability from 1, default probability =~$1 - p$. The cumulative default
+probability from 1, default probability =~$1 - S$. The cumulative default
 probability, or the probability that the bond defaults anytime within the
-next $n$ coupon periods is $(1 - p)^n$.
+next $k$ coupon periods is $(1 - S)^k$.
 
 There are several ways to test the formula for logical consistency. First look
-at the case where the survival probability is zero so that with $p = 0$ the
+at the case where the survival probability is zero so that with $S = 0$ the
 formula reduces to:
 
-\[\mathbb{E}(X) = RN\]
+\[\mathbb{E}(X) = RF\]
 this is logical since when default is immanent the price should just equal the
 recovery amount.
 In the case where survival is certain and the risk free rate is zero you have
-$p = 1$ and $D=1$:
+$S = 1$ and $D=1$:
 
 \[\mathbb{E}(X) = NC + F \]
 The price here is equal to the total of the coupon payments plus the face
 value, as you would expect.
+
+Next an example with a \texttt{python} implementation which uses \texttt{brentq}.
+
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{brentq}
+	
+\PY{n}{C} \PY{o}{=} \PY{l+m+mf}{0.05} \PY{c+c1}{\PYZsh{} coupon}
+\PY{n}{r} \PY{o}{=} \PY{l+m+mf}{0.03} \PY{c+c1}{\PYZsh{} risk\PYZhy{}free rate}
+\PY{n}{D} \PY{o}{=} \PY{l+m+mi}{1}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{n}{r}\PY{p}{)} \PY{c+c1}{\PYZsh{} discount factor}
+\PY{n}{F}\PY{o}{=}\PY{l+m+mi}{100} \PY{c+c1}{\PYZsh{} bond face value}
+\PY{n}{R}\PY{o}{=}\PY{l+m+mf}{0.4} \PY{c+c1}{\PYZsh{} recovery}
+\PY{n}{N}\PY{o}{=}\PY{l+m+mi}{4} \PY{c+c1}{\PYZsh{} maturity}
+\PY{n}{trading\PYZus{}price} \PY{o}{=} \PY{l+m+mi}{80}
+	
+\PY{k}{def} \PY{n+nf}{func}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
+	\PY{c+c1}{\PYZsh{} x survival probability between two coupons}
+	\PY{k}{return} \PY{n}{C}\PY{o}{*}\PY{n}{x}\PY{o}{*}\PY{n}{D} \PY{o}{+} \PY{n}{R}\PY{o}{*}\PY{n}{F}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{x}\PY{p}{)}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{p}{(}\PY{n}{x}\PY{o}{*}\PY{n}{D}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{n}{N}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{x}\PY{o}{*}\PY{n}{D}\PY{p}{)}\PY{o}{+}\PY{n}{F}\PY{o}{*}\PY{p}{(}\PY{n}{x}\PY{o}{*}\PY{n}{D}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{n}{N}\PY{o}{\PYZhy{}}\PY{n}{trading\PYZus{}price}
+	
+\PY{n}{res} \PY{o}{=} \PY{n}{brentq}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{P\PYZhy{}default before next coupon: }\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{res}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+
+P-default before next coupon: 4.7\%
+\end{Verbatim}
+\end{tcolorbox}
+

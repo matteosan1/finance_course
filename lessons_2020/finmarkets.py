@@ -3,6 +3,78 @@ import math, numpy
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
+def d1(S_k, r, vol, ttm):
+    """
+    d1: function to compute d1 in Black-Scholes formula.
+
+    Params:
+    -------
+    S_k: float
+        Strike of the option.
+    r: float
+        Interest rate.
+    vol: float
+        Volatility of the underlying.
+    ttm: float
+        Time to maturity.
+    """
+    num = math.log(S_k) + (r + 0.5*pow(vol, 2)) * ttm
+    den = vol * math.sqrt(ttm)
+    if den == 0:
+        return 100000000.
+    return num/den
+
+def d2(S_k, r, vol, ttm):
+    """
+    d2: function to compute d2 in Black-Scholes formula.
+
+    Params:
+    -------
+    S_k: float
+        Strike of the option.
+    r: float
+        Interest rate.
+    vol: float
+        Volatility of the underlying.
+    ttm: float
+        Time to maturity.
+    """
+    return d1(S_k, r, vol, ttm) - vol * math.sqrt(ttm)
+
+def call(S_k, r, vol, ttm):
+        """
+    call: function to compute the call price with Black-Scholes formula.
+
+    Params:
+    -------
+    S_k: float
+        Strike of the option.
+    r: float
+        Interest rate.
+    vol: float
+        Volatility of the underlying.
+    ttm: float
+        Time to maturity.
+    """
+    return S_k * norm.cdf(d1(S_k, r, vol, ttm)) - math.exp(-r * ttm) * norm.cdf(d2(S_k, r, vol, ttm))
+
+def put(S_k, r, vol, ttm):
+    """
+    put: function to compute the put price with Black-Scholes formula.
+
+    Params:
+    -------
+    S_k: float
+        Strike of the option.
+    r: float
+        Interest rate.
+    vol: float
+        Volatility of the underlying.
+    ttm: float
+        Time to maturity.
+    """
+    return math.exp(-r * ttm) * norm.cdf(-d2(S_k, r, vol, ttm)) - S_k * norm.cdf(-d1(S_k, r, vol, ttm))
+
 def generate_swap_dates(start_date, n_months):
     """
     generate_swap_dates: computes a set of dates given starting date and length in months.

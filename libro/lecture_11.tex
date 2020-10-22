@@ -1,90 +1,9 @@
 \chapter{Modelling Correlation Between Risks}
 
-Copulae are an interesting mathematical tool to represent correlations between probability distributions. They can be used to represent complex dependencies in multivariate risk models, when more basic tools such as multivariate gaussian distributions are inappropriate. One commonly used application is sampling from correlated random variables.
+Copulae are an interesting mathematical tool to represent correlations between probability distributions. They can be used to represent complex dependencies in multivariate risk models, when more basic tools such as multivariate Gaussian distributions are inappropriate. One commonly used application is sampling from correlated random variables.
 %The concept will be described in this chapter together with practical applications in computing default probabilities in multinamed contracts like CDOs and Basket Default Swaps.
 
-\section{Quantile Function}\label{quantile-function}
-
-In probability theory and statistics, the \emph{cumulative distribution function} (CDF) \(F\) of a random variable \(X\), evaluated at \(x\), is the probability that \(X\) will take a value less than or equal to \(x\)
-
-\[F_X(x) = \mathbb{P}(X \le x)\qquad\mathrm{or~equivalently}~\int_{-\infty}^{x}{f(X)dX}\]
-so it gives the area under the probability density function \(f\) from
-minus infinity to \(x\).
-The probability that \(X\) lies in the interval \((a,b]\) is therefore
-
-\[\mathbb{P}(a\lt X \le b)=F_{X}(b)-F_{X}(a)\qquad\mathrm{or}~\int_a^b{f(X)dX}\]
-
-With reference to a continuous and strictly monotonic distribution
-function, for example the cumulative distribution function \(F_X\), the
-\emph{quantile function} \(Q\) returns a threshold value \(x\) below
-which random draws from the given CDF would fail \(p\) percent of the
-time.
-
-In terms of the distribution function \(F\), the quantile function \(Q\)
-returns the value \(x_p\) such that $F_{X}(x_p):=\mathbb{P}(X\le x_p)=p$
-
-So the quantile function does the opposite of the cumulative
-distribution function: given a probability \(p\) (or a value of the CDF)
-it returns the \(x\) at which the CDF reaches this probability (or this
-value) \[Q=F^{-1}\]
-
-In Fig.~\ref{fig:percentile} an example related to the
-Gaussian distribution is shown. On the left side the Gaussian PDF is drawn,
-the red area represent the 30\% of the total area (which is 1 since the
-PDF is normalized). On the right the corresponding CDF is represented,
-in the plot it is highlighted the point at which the CDF reaches
-30\%. The corresponding quantile value is also indicated and is -0.5244.
-
-\begin{figure}[htb]
-  \centering
-  \includegraphics[width=1.\textwidth]{percentile.png}
-  \caption{On the left a standard normal distribution, the filled region represent the 30\% of the total area
-  under the curve. On the right the corresponding CDF with the 30\% point and the relative quantile highlighted.}
-  \label{fig:percentile}
-\end{figure}
-
-The computation of CDF and quantiles is quite simple in \(\tt{python}\).
-Many distribution implementations are available in \(\tt{scipy.stats}\)
-module and for each of them the methods \(\tt{cdf(x)}\) and
-\(\tt{ppf(x)}\) are available to evaulate CDF and quantile respectively.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
-
-\PY{n}{quantile} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{l+m+mf}{0.3}\PY{p}{)}
-\PY{n}{cdf} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{quantile}\PY{p}{)}
-
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{30}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZhy{}quantile of standard normal is }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{quantile}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CDF value at }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{quantile}\PY{p}{,} \PY{n}{cdf}\PY{p}{)}\PY{p}{)}
-
-30\%-quantile of standard normal is -0.5244005127080409
-CDF value at -0.5244005127080409: 0.29999999999999993
-    \end{Verbatim}
-\end{tcolorbox}
-
-    If instead of a distribution you have a dataset the quantile can be
-determined using the function \(\tt{numpy.percentile}\) (this will be
-useful when estimating VaR). Notice that in this case we are talking
-about \emph{percentile} which is the \emph{quantile} times 100
-(e.g.~50-percentile is equivalent to 0.5-quantile).
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy}
-\PY{n}{dist} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{7}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{l+m+mi}{9}\PY{p}{]}
-
-\PY{c+c1}{\PYZsh{} first argument the dataset}
-\PY{c+c1}{\PYZsh{} second argument a list of percentiles}
-\PY{n}{perc} \PY{o}{=} \PY{n}{numpy}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{dist}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{50}\PY{p}{]}\PY{p}{)}
-
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{perc}\PY{p}{)}
-
-[1.08 5.  ]
-    \end{Verbatim}
-\end{tcolorbox}
-
-\subsection{Distribution Transformation}\label{distribution-transformation}
+\section{Distribution Transformation}\label{distribution-transformation}
 
 Distribution transformation is a very useful tool which will be
 extensively used with the copula concept that we discuss in the next
@@ -301,7 +220,7 @@ The plots shown in Fo.~\ref{fig:copula} are usually how copulas are visualized.
 
     \begin{figure}
     \centering
-    \includegraphics[width=0.45\textwidth]{copula_files/copula_17_0.png}
+    %\includegraphics[width=0.45\textwidth]{copula_files/copula_17_0.png}
     \quad
     \includegraphics[width=0.5\textwidth]{copula_3d.png}
     \caption{Graphical representations of the copula, 2D on the left, 3D on the right.}
@@ -324,7 +243,7 @@ Figure~\ref{fig:gumbel_beta_with_corr} shows the two marginal and the joint dist
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[width=0.5\textwidth]{copula_files/copula_19_0.png}
+%  \includegraphics[width=0.5\textwidth]{copula_files/copula_19_0.png}
   \caption{Marginalized Gumbel and Beta distributions and their joint with Gaussian copula correlation.}
   \label{fig:gumbel_beta_with_corr}
 \end{figure}
@@ -344,7 +263,7 @@ Figure~\ref{fig:gumbel_beta_with_corr} shows the two marginal and the joint dist
 
 \begin{figure}[htb]
   \centering
-  \includegraphics[width=0.5\textwidth]{copula_files/copula_21_0.png}
+%  \includegraphics[width=0.5\textwidth]{copula_files/copula_21_0.png}
   \caption{Marginalized Gumbel and Beta distributions and their joint without correlation.}
   \label{fig:gumbel_beta_without_corr}
 \end{figure}

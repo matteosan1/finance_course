@@ -340,7 +340,7 @@ class CreditCurve(object):
     ndps: list of floats
         List of non-default probabilities.
     """    
-    def __init__(self, pillar_dates, pillar_ndps):
+    def __init__(self, pillar_dates, ndps):
         self.pillar_dates = pillar_dates
         
         self.pillar_days = [
@@ -348,10 +348,7 @@ class CreditCurve(object):
             for pd in pillar_dates
         ]
         
-        self.log_ndps = [
-            math.log(ndp)
-            for ndp in pillar_ndps
-        ]
+        self.ndps = ndps
         
     def ndp(self, value_date):
         """
@@ -363,10 +360,9 @@ class CreditCurve(object):
             The date of the interpolation.
         """
         value_days = (value_date - self.pillar_dates[0]).days
-        return math.exp(
-            numpy.interp(value_days,
-                         self.pillar_days,
-                         self.log_ndps))
+        return numpy.interp(value_days,
+                            self.pillar_days,
+                            self.ndps)
     
     def hazard(self, value_date):
         """
@@ -409,9 +405,9 @@ class CreditDefaultSwap:
         self.fixed_spread = fixed_spread
         self.recovery = recovery
     
-    def premium_leg_npv(self, discount_curve, credit_curve):
+    def npv_premium_leg(self, discount_curve, credit_curve):
         """
-        premium_leg_npv: valuate the premium leg.
+        npv_premium_leg: valuate the premium leg.
 
         Params:
         -------
@@ -428,9 +424,9 @@ class CreditDefaultSwap:
             )
         return npv * self.notional * self.fixed_spread
     
-    def default_leg_npv(self, discount_curve, credit_curve):
+    def npv_default_leg(self, discount_curve, credit_curve):
         """
-        default_leg_npv: valuate the default leg.
+        npv_ default_leg: valuate the default leg.
 
         Params:
         -------
@@ -460,12 +456,12 @@ class CreditDefaultSwap:
         credit_curve: CreditCurve
             The curve to extract the default probabilities.
         """
-        return self.default_leg_npv(discount_curve, credit_curve) - \
-               self.premium_leg_npv(discount_curve, credit_curve)
+        return self.npv_default_leg(discount_curve, credit_curve) - \
+               self.npv_premium_leg(discount_curve, credit_curve)
 
     def breakevenRate(self, discount_curve, credit_curve):
-        num = self.default_leg_npv(discount_curve, credit_curve)
-        den = self.premium_leg_npv(discount_curve, credit_curve)/self.fixed_spread
+        num = self.npv_default_leg(discount_curve, credit_curve)
+        den = self.npv_premium_leg(discount_curve, credit_curve)/self.fixed_spread
         return num/den
 
 
