@@ -1,8 +1,8 @@
 \chapter{Modelling Correlation Between Risks}
 
-Copulae (or couplas) are an interesting mathematical tool to represent correlations between probability distributions. They can be used to represent complex dependencies in multivariate risk models, when more basic tools such as multivariate Gaussian distributions are inappropriate. Another commonly used application is sampling from correlated random variables.
+Copulae (or couplas) are an interesting mathematical tool to represent correlations between probability distributions. They can be used to describe complex dependencies in multivariate risk models, when more basic tools such as multivariate Gaussian distributions are inappropriate. Another commonly used application is sampling from correlated random variables.
 
-In this Chapter the copula concept is reviewed and some example application are shown. However before going into the copulas we need to learn how to transform a distribution into another using the \emph{probability integral transform}. 
+In this Chapter the copula concept is reviewed and some example applications are shown. However before going into the copulas we need to learn how to transform a distribution into another using the \emph{probability integral transform}. 
 
 %The concept will be described in this chapter together with practical applications in computing default probabilities in multinamed contracts like CDOs and Basket Default Swaps.
 
@@ -17,20 +17,22 @@ transform).
 
 Computationally, this method involves computing the quantile function (see Section~\ref{quantile-function}) of
 a distribution, in other words, computing the cumulative
-distribution function (CDF) of a distribution (which maps a number in
-the domain to a probability between 0 and 1) and then inverting that
+distribution function (CDF) of a distribution (which maps a number
+to a probability between 0 and 1) and then inverting that
 function. We won't go into the details but we will just show few
 examples of how this can be done in \(\tt{python}\).
 
-Imagine we want to 
+Imagine we want to transform an uniform distribution into a Gaussian.
 The transformation takes uniform samples of a number \(u\) between 0 and
 1, interpreted as a probability, and then returns the largest number
 \(x\) from the domain of the distribution \(\mathbb{P}(X)\) such that
-\(\mathbb{P}(-\infty <X<x)\le u\). For example, imagine that
-\(\mathbb{P}(X)\) is the standard normal distribution with mean zero and
-standard deviation one. Table~\ref{tab:transformation} below shows samples taken from the
+\(\mathbb{P}(-\infty <X<x)\le u\). For example, if \(\mathbb{P}(X)\) is the 
+standard normal distribution with mean zero and
+standard deviation one. 
+
+Table~\ref{tab:transformation} shows samples taken from the
 uniform distribution and their representation on the standard normal
-distribution.
+distribution determined using the algorithm explained above.
 
 \begin{table}[h]
   \centering
@@ -39,21 +41,21 @@ distribution.
     \(\mathbf{u}\) & \(\mathbf{F^{-1}(u)}\) \\
     \hline
     0.5 & 0 \\
-        \hline
-        .975 & 1.95996 \\
-            \hline
-            .995 & 2.5758 \\
-                \hline
-                .999999 & 4.75342 \\
-                    \hline
-                    \(1-2^{-52}\) & 8.12589 \\
-                        \hline
+    \hline
+    .975 & 1.95996 \\
+    \hline
+    .995 & 2.5758 \\
+    \hline
+    .999999 & 4.75342 \\
+    \hline
+    \(1-2^{-52}\) & 8.12589 \\
+    \hline
   \end{tabular}
   \caption{Comparison of values of the uniform distribution and the corresponding Gaussian quantiles.}
 \label{tab:transformation}
 \end{table}
 
-Now let's see how this can be done with \texttt{python}, the first step is to sample
+Now let's see how this can be done with \texttt{python}. The first step is to sample
 uniformly distributed values between 0 and 1, in the left plot of Fig.~\ref{fig:uniform_and_gauss} the resulting distribution is shown:
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
@@ -64,9 +66,12 @@ uniformly distributed values between 0 and 1, in the left plot of Fig.~\ref{fig:
 \end{tcolorbox}
 
     Next we want to transform these samples so that instead of uniform they
-are normally distributed. As we have seen the transform that does this
+are normally distributed. As we have seen, see Section~\ref{quantile-function} the transform that does this
 is the inverse of the cumulative density function (CDF) of the normal
-distribution the \((\tt{ppf(x))}\). In the right plot of Fig.~\ref{fig:uniform_and_gauss} the Gaussian transform is shown
+distribution, the \((\tt{ppf(x))}\). 
+
+In the right plot of Fig.~\ref{fig:uniform_and_gauss} the Gaussian transform obtained 
+with the code below is shown
 
 \begin{figure}[h]
   \centering
@@ -78,64 +83,71 @@ distribution the \((\tt{ppf(x))}\). In the right plot of Fig.~\ref{fig:uniform_a
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{norm} \PY{o}{=} \PY{n}{stats}\PY{o}{.}\PY{n}{distributions}\PY{o}{.}\PY{n}{norm}\PY{p}{(}\PY{p}{)} 
+\PY{n}{norm} \PY{o}{=} \PY{n}{stats}\PY{o}{.}\PY{n}{norm}\PY{p}{(}\PY{p}{)} 
 \PY{n}{x\PYZus{}trans} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
-    If we plot them togheter in a 2D plot we can get a sense of what is
+    If we plot them together in a 2D plot we can get a sense of what is
 going on using the inverse CDF transformation.
 The inverse CDF stretches the outer regions of the uniform to yield a
 normal distribution. The transformation is shown in Fig.~\ref{fig:uniform_to_gauss}. 
     
-\begin{figure}[htb]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.5\textwidth]{copula_files/copula_9_0.png}
   \caption{2D plot showing the transformation that maps our initial uniform distribution to the resulting Gaussian.}
   \label{fig:uniform_to_gauss}
 \end{figure}
     
-The nice thing of the technique is that it can be
-done for any arbitrary (univariate) probability distributions, like for
+The nice thing of this technique is that it can be used
+for any arbitrary (uni-variate) probability distributions, like for
 example \href{https://en.wikipedia.org/wiki/Student\%27s\_t-distribution}{t-Student}
 or \href{https://en.wikipedia.org/wiki/Gumbel_distribution}{Gumbel}.
 A similar transformation from Uniform to t-Student distribution is shown in Fig.~\ref{fig:uniform_to_tstudent}.
 
-\begin{figure}[htb]
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{t} \PY{o}{=} \PY{n}{stats}\PY{o}{.}\PY{n}{t}\PY{p}{(4}\PY{p}{)} 
+\PY{n}{x\PYZus{}trans} \PY{o}{=} \PY{n}{t}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.5\textwidth]{copula_files/copula_11_0.png}
   \caption{2D plot showing the transformation that maps a uniform distribution to a t-Student.}
   \label{fig:uniform_to_tstudent}
 \end{figure}
 
-    Clearly to do the opposite transformation from an arbitray distribution
-to the uniform(0, 1) we can just apply the inverse of the inverse CDF,
-the CDF itself\ldots{}
-
+    Clearly to do the opposite transformation from an arbitrary distribution
+to the Uniform(0, 1) we can just apply the inverse of the inverse CDF,
+the CDF itself\ldots
+In such a way we can go from distribution A to distribution B passing through 
+a uniform distribution.
 
 \section{Copula}\label{copula}
 
 In probability theory a \emph{copula} \(C(U_1, U_2, \ldots, U_n, \rho)\)
 is a multivariate (multidimensional) cumulative distribution function
-for which the marginal probability distribution (the probability
-distribution of each dimension) of each variable is uniform on the
+for which the marginal probability distributions (the probability
+distribution of each dimension) are uniform on the
 interval \([0, 1]\) (\(U_i \approx\)Uniform(0,1)).
 \(\rho\) represent the correlation between each variable.
 
 \emph{Sklar's theorem} states that any multivariate joint distribution
-can be written in terms of univariate marginal distribution functions
+can be written in terms of uni-variate marginal distribution functions
 and a copula which describes the dependence structure between the
 variables.
 
-Copulas are used to describe the dependence between random variables and
-have been used widely in quantitative finance to model and minimize tail
-risk and portfolio-optimization applications. Copulas are popular since
-they allow one to easily model and estimate the distribution of random
-vectors by estimating marginals and copulae separately.
+Copulas are used to describe the dependencies between random variables and
+have been used widely in quantitative finance to model risk and in portfolio-optimization 
+applications. Copulas are popular since
+they allow to easily model and estimate the distribution of random
+vectors by estimating marginals and their correlation separately.
 
-Despite the obscure and daunting definition the conceptof copula is
+Despite the obscure and daunting definition the concept of copula is
 quite simple so let's try to clarify it a bit with a practical example.
-Later we will see what role copulas played in the 2008 financial crisis.
 
 \subsection{Example Problem Case}\label{example-problem-case}
 
@@ -147,15 +159,15 @@ caused flooding.
 
 For the probability distribution of the maximum level of the river we
 know that maximums are Gumbel distributed, while the number of flooding
-can be modelled according to a
+can be modeled according to a
 \href{https://en.wikipedia.org/wiki/Beta_distribution}{\emph{Beta}}
 distribution.
 
 Clearly it is pretty reasonable to assume that the maximum level and the
-number of floodings is going to be correlated, however we don't know how
+number of floods is going to be correlated, however we don't know how
 we could model that correlated probability distribution. Above we only
 specified the distributions for individual variables, irrespective of
-the other one (i.e.~the marginals), in reality we are dealing with a
+the other one (i.e. the marginals), in reality we are dealing with a
 joint distribution of both of these together.
 
 And here is where copulas come to our rescue.
@@ -166,32 +178,32 @@ function which couples (hence the name) them together and thus allows us
 to specify the correlation separately. The copula is that coupling
 function.
 
-\subsection{Adding Correlation with Gaussian
-Copulas}\label{adding-correlation-with-gaussian-copulas}
+\subsection{Adding Correlation with Gaussian Copulas}\label{adding-correlation-with-gaussian-copulas}
 
 How does this help us with our problem of creating a custom joint
-probability distriution ?
+probability distribution ?
 
 We are actually almost done already, we saw before how to convert
 anything uniformly distributed to an arbitrary probability distribution.
 So that means we need to generate uniformly distributed data with the
 correlation we want and then transform the marginals into the desired
-distributions.
+distributions (Gumbel and Beta in our example).
 
 How do we do that ?
 
 \begin{itemize}
 \tightlist
 \item
-  simulate from a multivariarte Gaussian with the specific corrrelation
+  simulate a sample from a multivariate Gaussian with the specific correlation
   structure;
 \item
-  transform so that the marginals are uniform
+  transform so that the marginals are uniform;
 \item
   finally transform the uniform marginals to whatever we like.
 \end{itemize}
 
-So let's sample from a multivariate normal (2D) with a 0.5 correlation, see Fig.~ \ref{fig:multivariate_with_correlation}.
+So let's sample from a multivariate ()2D) normal with a 0.5 correlation, 
+see Fig.~ \ref{fig:multivariate_with_correlation}.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -206,12 +218,12 @@ So let's sample from a multivariate normal (2D) with a 0.5 correlation, see Fig.
   \includegraphics[width=0.5\textwidth]{copula_files/copula_15_0.png}
   \caption{2D multivariate normal distribution with a correlation factor of 0.5.}
   \label{fig:multivariate_with_correlation}
-    \end{figure}
+\end{figure}
     
-    Now use what we have just seen to \emph{uniformify} the marginals using
-the \(\tt{cdf}\) function of the normal distribution (\(x\) is a 2D
-vector, but in the code we can treat it as a vector, \(\tt{cdf}\) will
-be applied separately on each component):
+Now use what we have just seen to make the marginals uniform using
+the \(\tt{cdf}\) function of the normal distribution ($x$ is a 2D
+vector, but in the code we pass it directly to the function \(\tt{cdf}\),
+it will be applied separately on each component):
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -220,19 +232,19 @@ be applied separately on each component):
 \end{Verbatim}
 \end{tcolorbox}
 
-The plots shown in Fo.~\ref{fig:copula} are usually how copulas are visualized.
+The plots shown in Fig.~\ref{fig:copula} are usually how copulas are visualized.
 
-    \begin{figure}
-    \centering
-    %\includegraphics[width=0.45\textwidth]{copula_files/copula_17_0.png}
-    \quad
-    \includegraphics[width=0.5\textwidth]{copula_3d.png}
-    \caption{Graphical representations of the copula, 2D on the left, 3D on the right.}
-    \label{fig:copula}
-    \end{figure}
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.45\textwidth]{copula_files/copula_17_0.png}
+\quad
+\includegraphics[width=0.5\textwidth]{copula_3d.png}
+\caption{Graphical representations of the copula, 2D on the left, 3D on the right.}
+\label{fig:copula}
+\end{figure}
 
-Finally we can just transform the marginals again from uniform to what we want
-(i.e.~Gumbel and Beta in our river example):
+Finally we can just transform the obtained marginals again from uniform to what we want
+(i.e. Gumbel and Beta in our river example):
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -243,18 +255,17 @@ Finally we can just transform the marginals again from uniform to what we want
 \end{Verbatim}
 \end{tcolorbox}
 
-Figure~\ref{fig:gumbel_beta_with_corr} shows the two marginal and the joint distribution.
+Figure~\ref{fig:gumbel_beta_with_corr} shows the two marginals and the joint distribution.
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
   \centering
-%  \includegraphics[width=0.5\textwidth]{copula_files/copula_19_0.png}
+  \includegraphics[width=0.5\textwidth]{copula_files/copula_19_0.png}
   \caption{Marginalized Gumbel and Beta distributions and their joint with Gaussian copula correlation.}
   \label{fig:gumbel_beta_with_corr}
 \end{figure}
     
-    To see that it is actually working as expected we should now compare the joint
-    distribution with and without correlation. Compare Fig.~\ref{fig:gumbel_beta_with_corr} and~\ref{fig:gumbel_beta_without_corr} to see the
-    difference.
+To see that it is actually working as expected we should now compare the joint
+distribution with and without correlation. Compare Fig.~\ref{fig:gumbel_beta_with_corr} and~\ref{fig:gumbel_beta_without_corr} to spot the difference.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -265,16 +276,16 @@ Figure~\ref{fig:gumbel_beta_with_corr} shows the two marginal and the joint dist
 \end{Verbatim}
 \end{tcolorbox}
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
   \centering
-%  \includegraphics[width=0.5\textwidth]{copula_files/copula_21_0.png}
+  \includegraphics[width=0.5\textwidth]{copula_files/copula_21_0.png}
   \caption{Marginalized Gumbel and Beta distributions and their joint without correlation.}
   \label{fig:gumbel_beta_without_corr}
 \end{figure}
     
-    Using the uniform distribution as a common base for our transformations
+Using the uniform distribution as a common base for our transformations
 we can easily introduce correlations and flexibly construct complex
-probability distributions. Clearly this is directly extendeable to
+probability distributions. Clearly this is directly extendable to
 higher dimensional distributions as well.
 
 \subsubsection{Generate Correlated Distributions}\label{generate-correlated-distributions}
