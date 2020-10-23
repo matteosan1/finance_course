@@ -1,4 +1,4 @@
-\chapter{Modelling Correlation Between Risks}
+\chapter{Copulas and Its Applications}
 
 Copulae (or couplas) are an interesting mathematical tool to represent correlations between probability distributions. They can be used to represent complex dependencies in multivariate risk models, when more basic tools such as multivariate Gaussian distributions are inappropriate. Another commonly used application is sampling from correlated random variables.
 
@@ -83,7 +83,7 @@ distribution the \((\tt{ppf(x))}\). In the right plot of Fig.~\ref{fig:uniform_a
 \end{Verbatim}
 \end{tcolorbox}
 
-    If we plot them togheter in a 2D plot we can get a sense of what is
+    If we plot them togeter in a 2D plot we can get a sense of what is
 going on using the inverse CDF transformation.
 The inverse CDF stretches the outer regions of the uniform to yield a
 normal distribution. The transformation is shown in Fig.~\ref{fig:uniform_to_gauss}. 
@@ -294,14 +294,82 @@ follow the same steps as before:
   transform again each \(U_i(x_i)\) to the desired marginal
   distributions using \(\tt{ppf}\);
 \item
-  each component of the vector \(\mathbf{x}\) will be converted to a set
+  each component of the vector \(\mathbf{x}\) could be converted to a set
   of random numbers drawn from the desired distributions, with the
   appropriate correlation.
 \end{itemize}
 
-METTERCI UN QUALCHE ESEMPIO CHE ABBIA SENSO 
+A practical application concerns the probability of default. 
+Imagine there are three companies ($A$, $B$ and $C$) which have a
+cumulative probability of defaulting within the next two years of 10\%.
+Let's try to compute the probabilities to have the three of them all
+defaulting within the next three years in the case where the default
+probabilities are independent and in the, similar unrealistic, case where
+they are perfectly correlated.
 
-\subsection{Complex Correlation Structures and the Financial
+In the first case (independent probabilities), the
+odds to get three defaults within two years will be the product
+of the single probabilities, hence:
+
+\[\mathbb{P}_{\mathrm{uncorr}} = 10\% \cdot 10\% \cdot 10\% = 0.1 \%\]
+
+We can verify this in \(\tt{python}\) by applying the method outlined
+above: generate a random sample from an uncorrelated multivariate normal
+distribution, then transform each sample (\([x_A, x_B, x_C]\)) into the
+uniform distribution with the \(\tt{norm.cdf}\) function (i.e. we
+convert the samples into probabilities) and then count how many times the
+three of them are lower than 10\%.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{multivariate\PYZus{}normal}\PY{p}{,} \PY{n}{uniform}\PY{p}{,} \PY{n}{norm}
+\PY{k+kn}{import} \PY{n+nn}{numpy}
+	
+\PY{n}{numpy}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{)}
+\PY{n}{trials} \PY{o}{=}\PY{l+m+mi}{10000}
+\PY{n}{mvnorm\PYZus{}no\PYZus{}corr} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{cov}\PY{o}{=}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}
+                                                          \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}
+                                                          \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+	
+\PY{n}{defaults} \PY{o}{=} \PY{l+m+mi}{0}
+\PY{n}{x} \PY{o}{=} \PY{n}{mvnorm\PYZus{}no\PYZus{}corr}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{trials}\PY{p}{)}
+\PY{n}{x\PYZus{}trans} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{x\PYZus{}trans}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+    \PY{k}{if} \PY{n}{x\PYZus{}trans}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1} \PY{o+ow}{and} \PY{n}{x\PYZus{}trans}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1} \PY{o+ow}{and} \PY{n}{x\PYZus{}trans}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1}\PY{p}{:}
+	\PY{n}{defaults} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
+	
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Defaults w/o correlation: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{defaults}\PY{o}{/}\PY{n}{trials}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+
+Defaults w/o correlation: 0.10\%
+\end{Verbatim}
+\end{tcolorbox}
+The result is 0.1\% as expected.
+
+If we repeat the same Monte Carlo experiment with perfectly correlated
+default probabilities we have
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{mvnorm\PYZus{}corr} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{cov}\PY{o}{=}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{]}\PY{p}{,}
+                                                     \PY{p}{[}\PY{l+m+mf}{0.999999}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{]}\PY{p}{,}
+                                                     \PY{p}{[}\PY{l+m+mf}{0.999999}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+\PY{n}{defaults} \PY{o}{=} \PY{l+m+mi}{0}
+\PY{n}{x} \PY{o}{=} \PY{n}{mvnorm\PYZus{}corr}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{trials}\PY{p}{)}
+\PY{n}{x\PYZus{}trans} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{x\PYZus{}trans}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+    \PY{k}{if} \PY{n}{x\PYZus{}trans}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1} \PY{o+ow}{and} \PY{n}{x\PYZus{}trans}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1} \PY{o+ow}{and} \PY{n}{x\PYZus{}trans}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1}\PY{p}{:}
+        \PY{n}{defaults} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
+
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Defaults w/ correlation: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{defaults}\PY{o}{/}\PY{n}{trials}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+
+Defaults w/ correlation: 9.89\%
+\end{Verbatim}
+\end{tcolorbox}
+In this case the result is 10\%, like we had only one single company,
+indeed being perfectly correlated either there is no default or three
+"simultaneous" defaults with 10\% probability.
+
+\section{Complex Correlation Structures and the Financial
 Crisis}\label{complex-correlation-structures-and-the-financial-crisis}
 
 In the example above we have used the multivariate normal which gave

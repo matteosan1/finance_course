@@ -176,15 +176,8 @@ class OvernightIndexSwap:
         discount_curve: DiscountCurve
             Discount curve object used for npv calculation.
         """
-        den = 0
-        for i in range(1, len(self.payment_dates)):
-            start_date = self.payment_dates[i-1]
-            end_date = self.payment_dates[i]
-            tau = (end_date - start_date).days / 360
-            df = discount_curve.df(end_date)
-            den += df * tau
-            num = (discount_curve.df(self.payment_dates[0]) -
-                   discount_curve.df(self.payment_dates[-1]))
+        den = self.npv_fixed_leg(discount_curve)/self.fixed_rate
+        num = self.npv_floating_leg(discount_curve)
         return num/den
     
 class InterestRateSwap:
