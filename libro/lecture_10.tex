@@ -1,4 +1,4 @@
-\chapter{Credit Default Swaps}
+\chapter{Credit Default Swaps}\label{credit_default_swaps}
 
 \section{Cumulative Distribution and Quantile Functions}\label{quantile-function}
 
@@ -438,28 +438,6 @@ The implementation is relatively easy:
 \end{Verbatim}
 \end{tcolorbox}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 \section{Credit Ratings}\label{credit-ratings}
 
 A credit rating is a quantified assessment of the creditworthiness of a
@@ -515,7 +493,10 @@ another entity with the same quality of credit but a longer history.
 Debtors want to know a borrower can maintain good credit consistently
 over time.
 
-\section{Bonds}\label{bonds}
+\section{Determine Default Probabilities from Market Quotes}
+In this Section we will see how we can derive default probabilities implied by market quotes. We will derive them both from bonds and credit default swaps.
+
+\subsection{Bonds}\label{bonds}
 
 A bond is an instrument that represents a loan made by an investor to a
 borrower (typically corporate or governmental). Bonds are used by
@@ -566,7 +547,7 @@ on. The value will be then:
 \end{Verbatim}
 \end{tcolorbox}
 
-\subsection{Implied Probability of Default on Coupon Bonds}\label{default-probabilities-and-bond-prices}
+\subsection{Implied Probability of Default from Coupon Bonds}\label{default-probabilities-and-bond-prices}
 
 The price of a bond issued by a party is directly linked to the credit
 rating of that party, since there is always an associated default risk, which means that the borrower might not be able to repay
@@ -581,7 +562,6 @@ the losses in case of default, so naively:
 
 \[\lambda = \frac{s}{1-R}\]
 where $\lambda$ is the annualised hazard rate and $R$ the recovery rate.
-
 
 In a more detailed way let $X$ represent the present value of a bond cash flow stream. When you
 have a default probability then $X$ becomes a random variable with a range
@@ -679,6 +659,122 @@ Next an example with a \texttt{python} implementation which uses \texttt{brentq}
 \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{P\PYZhy{}default before next coupon: }\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{res}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
 
 P-default before next coupon: 4.7\%
+\end{Verbatim}
+\end{tcolorbox}
+
+\subsection{Implied Probability of Default from CDS}\label{default-probabilities-and-cds}
+
+In order to derive default probabilities from credit default swap market quotes we can exploit the \emph{bootstrap technique}. If we consider again the parallelism between discount and credit curves indeed we can follow the same steps applied in Chapter~\ref{swaps-and-bootstrapping---practical-lesson-5} when deriving the discount factors from overnight index swaps.
+
+Let's summarize the procedure: 
+\begin{itemize}
+\tightlist
+\item create a CDS contracts for each available market quote;
+\item implement an objective function to minimize the squared sum of the CDS
+	NPVs, the function has to implement also a \texttt{CreditCurve} with
+	the unknown (to be determined survival probabilities) and a list of pillars corresponding to the CDS expiry dates;
+\item set initial guesses and boundary conditions for the
+	unknown parameters (the first survival probability has to be set to 1
+	since no default happened !, the others free to move between $[0.01, 1]$ because they are probabilities);
+\item using the \texttt{scipy.optimize.minimize} to find the curve.
+\end{itemize}
+
+As it is clear those are almost exactly the same steps already seen for the discount factors.
+
+We will now implement again the bootstrapping from the market quotes saved in \href{https://drive.google.com/file/d/1BOtwCFYk0CUwYkMhnowWTj0HNOpBefd_/view?usp=sharing}{cds\_quotes.xlsx} and for the discount curve \href{}{discount\_curve\_2.xlsx}.
+
+So first load the market data and create a discount curve and the swaps with it.
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{CreditDefaultSwap}\PY{p}{,} \PY{n}{CreditCurve}\PY{p}{,} \PY{n}{DiscountCurve}
+	
+\PY{c+c1}{\PYZsh{} load market data}
+\PY{n}{dc} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{discount\PYZus{}curve\PYZus{}2.xlsx}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{mq} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{cds\PYZus{}quotes.xlsx}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{c+c1}{\PYZsh{} always check what you are using}
+\PY{c+c1}{\PYZsh{} print(mq.head())}
+	
+\PY{c+c1}{\PYZsh{} create DiscountCurve}
+\PY{n}{discount\PYZus{}curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{pricing\PYZus{}date}\PY{p}{,}
+                               \PY{n}{dc}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{pillars}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{dt}\PY{o}{.}\PY{n}{date}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,}
+                               \PY{n}{dc}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{discount\PYZus{}factors}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+	
+\PY{c+c1}{\PYZsh{} create CDS from quotes}
+\PY{n}{pricing\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
+\PY{n}{cdswaps} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{pricing\PYZus{}date}\PY{p}{]}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{mq}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+    \PY{n}{cds} \PY{o}{=} \PY{n}{CreditDefaultSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,}
+                            \PY{n}{pricing\PYZus{}date}\PY{p}{,}
+                            \PY{n}{mq}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{quote}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{,}
+                            \PY{n}{mq}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{months}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{/}\PY{o}{/}\PY{l+m+mi}{12}\PY{p}{)}
+    \PY{n}{cdswaps}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{cds}\PY{p}{)}
+    \PY{n}{pillar\PYZus{}dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{cds}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+Then the objective function:
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{objective\PYZus{}function}\PY{p}{(}\PY{n}{unknown\PYZus{}ndps}\PY{p}{)}\PY{p}{:}
+    \PY{n}{credit\PYZus{}curve} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{,} 
+                               \PY{n}{unknown\PYZus{}ndps}\PY{p}{)}
+	
+    \PY{n}{sum\PYZus{}sq} \PY{o}{=} \PY{l+m+mi}{0}
+    \PY{k}{for} \PY{n}{cds} \PY{o+ow}{in} \PY{n}{cdswaps}\PY{p}{:}
+        \PY{n}{sum\PYZus{}sq} \PY{o}{+}\PY{o}{=} \PY{n}{cds}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} 
+                          \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}
+    \PY{k}{return} \PY{n}{sum\PYZus{}sq}
+\end{Verbatim}
+\end{tcolorbox}
+
+The guess values and the boundaries
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{ndp\PYZus{}guess} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.01} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{]}
+\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{]}
+\PY{n}{bounds}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+And finally we can run the minimizer
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
+\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{objective\PYZus{}function}\PY{p}{,} \PY{n}{ndp\PYZus{}guess}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{r}\PY{p}{)}
+
+fun: 4.046279903873944e-05
+hess\_inv: <7x7 LbfgsInvHessProduct with dtype=float64>
+jac: array([ 3.68076297e+04,  1.31881916e-01, -2.41176850e-02,
+2.79451870e-01,
+-1.41296672e-01, -1.14049675e-01, -1.14108073e-01])
+message: b'CONVERGENCE: REL\_REDUCTION\_OF\_F\_<=\_FACTR*EPSMCH'
+nfev: 184
+nit: 11
+status: 0
+success: True
+x: array([1.        , 0.90794483, 0.80382796, 0.70843568, 0.48034258,
+0.29174458, 0.06684027])
+\end{Verbatim}
+\end{tcolorbox}
+
+After the minimization we get the list of non-default probabilities corresponding to the expiry dates of our CDSs.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{for} \PY{n}{i}\PY{p}{,} \PY{n}{p} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{p}\PY{p}{,} \PY{n}{r}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}
+
+2020-10-23 1.0
+2021-10-23 0.9079448296811671
+2022-10-23 0.803827958998726
+2023-10-23 0.7084356808301403
+2026-10-23 0.4803425824760368
+2030-10-23 0.2917445762155599
+2040-10-23 0.06684026681860292
 \end{Verbatim}
 \end{tcolorbox}
 
