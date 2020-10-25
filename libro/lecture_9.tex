@@ -1,8 +1,10 @@
 \chapter{Interest Rate Swaps and Swaptions}\label{interest-rate-swaps-and-swaptions}
 
+In the previous Chapters we have already introduces a particular type of swap, the Overnight Index Swap, here we will introduce a more general Interest Rate Swap and see how it can underlying a Swaption, the analogous of the European options for interest rate market.
+
 \subsection{Interest Rate Swaps}\label{interest-rate-swaps}
 
-Interest rate swaps (IRS) consist of a floating leg and a fixed leg. The
+Interest rate swaps (IRS) consist of two legs a floating and a fixed. The
 contract parameters are:
 
 \begin{itemize}
@@ -20,21 +22,23 @@ contract parameters are:
 \end{itemize}
 
 The floating leg pays the reference LIBOR fixing at a frequency equal to
-the tenor of the floating rate - so for example an IRS on a 3-month
+the tenor of the floating rate, so for example an IRS on a 3-month
 LIBOR will pay a floating coupon every three months, an IRS on 6-month
 EURIBOR pays the floating coupon every six months and so on.
 
 The fixed leg pays a predetermined cash flow at annual frequency,
-regardless of the tenor of the underlying floating rate. For simplicity
-we will only consider swaps with maturities which are multiples of 1
+regardless of the tenor of the underlying floating rate. 
+
+For simplicity we will only consider swaps with maturities which are multiples of 1
 year.
 
-    Before going into the details of the valuation of IRSs, we need to
+Before going into the details of the valuation of IRSs, we need to
 modify the \texttt{generate\_swap\_dates} function in our
 \texttt{finmarkets} module to generate the payment dates for both the
-fixed and floating legs, as follows:
+fixed and floating legs. The modification consists of the addition of a new input
+parameter, the tenor, which was previously set to 12 months.
 
-    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
 \PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
@@ -59,7 +63,9 @@ fixed and floating legs, as follows:
 \end{tcolorbox}
         
 Using this function and the contract parameters we will be able to
-determine a sequence of payment dates for each of the two legs.
+determine a sequence of payment dates for each leg of the IRS.
+
+\subsection{IRS Valuation}\label{irs-valuation}
 
 Let \(d_0=d_0^{\mathrm{fixed}},...,d_p^{\mathrm{fixed}}\) be the fixed
 leg payment dates and
@@ -77,8 +83,6 @@ leg payment dates, and let's use the following notation:
   \(F(d, d', d'')\) the forward rate observed in date \(d\) for the
   period \([d', d'']\). The rate tenor is \(\tau = d'' - d'\).
 \end{itemize}
-
-\subsection{IRS Valuation}\label{irs-valuation}
 
 The NPV of the fixed leg is calculated as follows:
 
@@ -106,12 +110,13 @@ as:
 \[S=\frac{\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360}
 \cdot D(d, d_{i}^{\mathrm{float}})}{\sum_{i=1}^{n}D(d, d_i^{\mathrm{fixed}})} \]
 
-    Once we have calculated \(S\), we can express the \(\mathrm{NPV}\) of an
+Once we have calculated \(S\), we can express the \(\mathrm{NPV}\) of an
 IRS as follows:
 
-\begin{align*}&\mathrm{NPV}(d; K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d; K) = & \\ \\ &= \underbrace{\mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d; S)}_{\mathrm{=\;0}} + \mathrm{NPV}_{\mathrm{fixed}}(d;S) - \mathrm{NPV}_{\mathrm{fixed}}(d;K) & \\ & = N\cdot(S-K)\cdot\underbrace{\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})}_{\mathrm{'annuity'}}\end{align*}
+\begin{align*}&\mathrm{NPV}(d; K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d; K) = & \\ \\ &= \underbrace{\mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d; S)}_{\mathrm{=\;0}} + \mathrm{NPV}_{\mathrm{fixed}}(d;S) - \mathrm{NPV}_{\mathrm{fixed}}(d;K) & \\ & = N\cdot(S-K)\cdot\underbrace{\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})}_{\mathrm{'annuity'}}
+\end{align*}
 
-For convenience the relevant inputs that will be used later (libor and discount curve definitions) have been saved in the files \href{https://drive.google.com/file/d/1dm5oZnZKmJM6UrV0L32OcqD5Tzs9SI9A/view?usp=sharing}{libor.xlsx} and \href{https://drive.google.com/file/d/14R22r7m-6VpQ_P79D3qHdK0QN_mOQ_UB/view?usp=sharing}{discount\_curve.xlsx} respectively.
+For convenience the relevant inputs that will be used later (LIBOR and discount curve definitions) have been saved in the files \href{https://drive.google.com/file/d/1dm5oZnZKmJM6UrV0L32OcqD5Tzs9SI9A/view?usp=sharing}{libor\_curve.xlsx} and \href{https://drive.google.com/file/d/14R22r7m-6VpQ_P79D3qHdK0QN_mOQ_UB/view?usp=sharing}{discount\_curve.xlsx} respectively.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -182,7 +187,7 @@ contracts.
 \end{tcolorbox}
 
 Let's test our class instantiating an IRS with 1M notional, fixed rate
-of 5\%, 6 month tenor and a maturity of 4 years; discount and libor
+of 5\%, 6 month tenor and a maturity of 4 years; discount and LIBOR
 curves are the same as before.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
@@ -286,10 +291,9 @@ The base (or parent) class will be \texttt{GenericSwap} and it will implement ju
 \end{Verbatim}
 \end{tcolorbox}
 
-This is just an example, actually is sort of an overkill to use inheritance here, since there is not much of code to share between the classes (the implementation of the npv calculation is different in each of them).
+This is just an example. Actually may be an overkill to use inheritance here, since there is not much of code to share between the classes (the implementation of the NPV calculation is different in each of them).
 Anyway this is a practical application to show how it works.
 
->>>>>>> a3529626a21006e33f76fcada45c64091e6856ad
 \section{Swaptions}\label{interest-rate-swaptions}
 
 Swaptions are the equivalent of European options for the interest rate
@@ -360,7 +364,7 @@ Swaption NPV with BS: 3330.741 EUR
 
 In this second case we start from the current swap rate \(S(d)\)
 evaluated at the pricing date \(d\), and assume that it follows a
-log-normal stochastic process, i.e.~its distribution at
+log-normal stochastic process, i.e. its distribution at
 \(d_{\mathrm{ex}}\) (exercise date) is
 \(S(d_{\mathrm{ex}}) = S(d)\mathrm{exp}(-\frac{1}{2}\sigma^{2}T+\sigma\sqrt{T}\epsilon)\)
 where \(\epsilon\approx\mathcal{N}(0,1)\). Notice that it is assumed
@@ -411,15 +415,9 @@ to perform the simulation we can:
 \PY{c+c1}{\PYZsh{} by taking the average of the discounted }
 \PY{c+c1}{\PYZsh{} payoffs across all the scenarios}
 \PY{n}{npv\PYZus{}mc} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{discounted\PYZus{}payoffs}\PY{p}{)}
-    
-\PY{c+c1}{\PYZsh{} calculate the MC error estimate as}
-\PY{c+c1}{\PYZsh{} 99\PYZpc{} confidence interval}
-\PY{n}{npv\PYZus{}error} \PY{o}{=} \PY{l+m+mf}{2.57} \PY{o}{*} \PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{discounted\PYZus{}payoffs}\PY{p}{)}\PY{o}{/}\PY{n}{sqrt}\PY{p}{(}\PY{n}{n\PYZus{}scenarios}\PY{p}{)}
+\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Swaption NPV: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{npv\PYZus{}mc}\PY{p}{)}\PY{p}{)}
 
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Swaption NPV: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR (+/- }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR with 99}\PY{l+s+si}{\PYZpc{} confidence)}\PY{l+s+s2}{\PYZdq{}}\PYZbs{}
-      \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{npv\PYZus{}mc}\PY{p}{,} \PY{n}{npv\PYZus{}error}\PY{p}{)}\PY{p}{)}
-
-Swaption NPV: 3351.42 EUR (+/- 56.66 EUR with 99\% confidence)
+Swaption NPV: 3351.42 EUR
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -434,9 +432,96 @@ difference for the result, since
 
 \[ DF\cdot \mathrm{max}(0, \mathrm{SwapNPVAtExpiry}) = \mathrm{max}(0, DF \cdot\mathrm{SwapNPVAtExpiry}) \]
 
-The NPV calculated via the Black-Scholes-Merton formula falls within the
-confidence interval produced by the Monte Carlo simulation, so we can
-assert that the two methods are in agreement:
+\subsection{Confidence interval}\label{confidence-interval}
+
+By the \href{https://en.wikipedia.org/wiki/Central_limit_theorem}{central limit theorem} we know that 
+
+\[ \hat{\mu}_n = \frac{1}{n}\sum_{i=1}^{n}Y_i\]
+is approximately distributed like a normal distribution around the true value $\mu$ and variance $\sigma^2 /n$ ($\mathcal{N}(\mu ,\sigma^2 /n)$). 
+This means
+that if ones repeats the swaption MC experiment (e.g.~changing the seed
+of the random number generator) she would obtain results normally
+distributed around the the \emph{true} value \(\mu\), see Fig.~\ref{fig:repeated_MC}
+The higher is \(n\) the narrower is the distribution of the results
+around \(\mu\).
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{lesson4_files/lesson4_33_0.png}
+	\caption{Distribution of a series of ten Monte Carlo experiments around the \emph{true} value $\mu$.}
+	\label{fig:repeated_MC}
+\end{figure}
+
+Therefore \( \hat{\mu}_n - \mu \) is approximately distributed as 
+\[ \hat{\mu}_n - \mu \approx \frac{\sigma}{\sqrt{n}}Z \]
+where $Z=\mathcal{N}(0, 1)$ is the standard Gaussian.
+
+This means that given a Monte Carlo experiment the true value $\mu$ will lay in the interval $\hat{\mu}_n \pm  \frac{\sigma}{\sqrt{n}}Z$ around our best estimate. 
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\textwidth]{confidence_interval.png}
+	\caption{Confidence interval graphical explanation.}
+	\label{fig:confidence}
+\end{figure}
+Referring to Fig.~\ref{fig:confidence} we can write:
+\[\mathbb{P}\Big(\hat{\mu}_n - \frac{1.96\sigma}{\sqrt{n}} \le \mu \le \hat{\mu}_n + \frac{1.96\sigma}{\sqrt{n}}\Big) = 0.95 \]
+which corresponds to the shaded area.
+
+The interval above is called 95\% \textbf{confidence interval}. If a variable $X$ is distributed as a Gaussian $\mathcal{N}(\mu, \sigma^2)$ then
+\[\mathbb{P}(\mu - 1.96\sigma \le X \le \mu+ 1.96\sigma) = 0.95 \]
+because the interval $\pm 1.96\sigma$ covers 95\% of the total area under the Gaussian, in formula $\Phi(1.96)=0.975$ where $\Phi$ is the Gaussian cumulative distribution function.
+
+To construct a confidence interval with a confidence level $\alpha$ different from 0.95, we have to find a number $A$ such that
+\begin{equation}
+	\Phi(A) = 1 - \frac{1-\alpha}{2}\quad\implies\quad A = \Phi^{-1}\left(\cfrac{1+\alpha}{2}\right)
+	\label{for:A}
+\end{equation}
+then the $\alpha$-confidence interval
+\[\mathbb{P}(\mu - A\sigma \le X \le \mu+ A\sigma) = \alpha \]
+
+The width of the confidence interval is a measure of the accuracy of our estimate.
+$\alpha$-confidence interval can be expressed in terms of repeated
+experiments like the following: if you repeat many time a simulation,
+the fraction of calculated confidence intervals (which would differ for each sample) that contains
+the true parameter would tend toward $\alpha \%$ (beware! anyway in $1-\alpha\%$ of cases it is outside the interval!).
+
+Below an example of how to compute a confidence level in \texttt{python} given a set of fake simulations. To note that the inverse of the Gaussian CDF $\Phi^{-1}$, used in Equation~\ref{for:A}, is computed with the method \texttt{norm.ppf()} (more details on CDF in Chapter~\ref{quantile-function}).
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
+		
+\PY{n}{samples} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{p}{,}\PY{l+m+mf}{2.}\PY{p}{,}\PY{l+m+mf}{3.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{5.}\PY{p}{,}\PY{l+m+mf}{5.}\PY{p}{,}\PY{l+m+mf}{5.}\PY{p}{,}\PY{l+m+mf}{5.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{6.}\PY{p}{,}\PY{l+m+mf}{7.}\PY{p}{,}\PY{l+m+mf}{8.}\PY{p}{]}
+\PY{n}{alpha} \PY{o}{=} \PY{l+m+mf}{0.95}
+		
+\PY{n}{X} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{n}{samples}\PY{p}{)}
+\PY{n}{A} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{+} \PY{n}{alpha}\PY{p}{)}\PY{o}{/}\PY{l+m+mi}{2}\PY{p}{)}
+\PY{n}{m}\PY{p}{,} \PY{n}{se} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{X}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{X}\PY{p}{)}
+\PY{n}{h} \PY{o}{=} \PY{n}{A}\PY{o}{*}\PY{n}{se}\PY{o}{/}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{samples}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.0f\PYZcb{}}\PY{l+s+si}{\PYZpc{} c}\PY{l+s+s2}{onfidence interval: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{ +\PYZhy{} }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{alpha}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{,} \PY{n}{m}\PY{p}{,} \PY{n}{h}\PY{p}{)}\PY{p}{)}
+		
+95\% confidence interval: 4.4375 +- 0.8119808363806419
+\end{Verbatim}
+\end{tcolorbox}
+
+Let's calculate the 95\% confidence level for the swaption simulation above.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{npv\PYZus{}error} \PY{o}{=} \PY{l+m+mf}{1.96} \PY{o}{*} \PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{discounted\PYZus{}payoffs}\PY{p}{)}\PY{o}{/}\PY{n}{sqrt}\PY{p}{(}\PY{n}{n\PYZus{}scenarios}\PY{p}{)}
+				
+\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Swaption NPV: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR (+/- }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR with 95}\PY{l+s+si}{\PYZpc{} c}\PY{l+s+s2}{onfidence)}\PY{l+s+s2}{\PYZdq{}}\PYZbs{}
+      \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{npv\PYZus{}mc}\PY{p}{,} \PY{n}{npv\PYZus{}error}\PY{p}{)}\PY{p}{)}
+
+Swaption NPV: 3351.42 EUR (+/- 74.06 EUR with 95\% confidence)
+\end{Verbatim}
+\end{tcolorbox}
+
+At this point we can check if the two estimated of the swaption payoff
+are compatible. The NPV calculated via the Black-Scholes-Merton formula
+falls within the confidence interval produced by the Monte Carlo
+simulation, so we can assert that the two methods are in agreement:
 
 \begin{itemize}
 \tightlist
@@ -445,13 +530,3 @@ assert that the two methods are in agreement:
 \item
   Swaption NPV (MC): \euro{3351.42}
 \end{itemize}
-
-%\subsubsection{Exercise 6.3}\label{exercise-6.3}}
-%
-%Using the function \texttt{normal} of \texttt{numpy.random} simulate the
-%price of a stock which evolves according to a log-normal stochastic
-%process with a daily rate of return \(\mu=0.1\) and a volatility
-%\(\sigma=0.15\) for 30 days.
-%
-%Also plot the price. Try to play with \(\mu\) and \(\sigma\) to see how
-%the plot changes.

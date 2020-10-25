@@ -572,7 +572,7 @@ fence has to cost \$700
 \[700 - l\cdot10 - l\cdot10 - w\cdot2 - w\cdot7 = 0\],
 \(\tt{fun}\) whose value is the constraint function.
 
-    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k}{def} \PY{n+nf}{cons}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
     \PY{k}{return} \PY{l+m+mi}{700} \PY{o}{\PYZhy{}} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{l+m+mi}{20} \PY{o}{\PYZhy{}} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{\PYZhy{}} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{*}\PY{l+m+mi}{7}
@@ -600,7 +600,73 @@ fence has to cost \$700
     \end{Verbatim}
 \end{tcolorbox}
 
-    So the field will come out \(17.5\)m long and \(38.9\)m wide.
+So the field will come out \(17.5\)m long and \(38.9\)m wide.
+
+\subsection{Local Minima}
+When the objective function has local minima the choice of the initial value of the parameters can be critical. 
+Assume we would like to minimize an objective function like 
+
+\[
+f(x) = \cfrac{\mathrm{cos}(3\pi x)}{x}
+\]
+This function is plotted in Fig.~\ref{fig:local_minima} in the range $[0, 2]$, and it is clear that it has many minima. 
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{lesson4_files/lesson4_39_0.png}
+\caption{Plot of an example function with many local minima. The red points highlights initial value and minimum found in a \emph{bad} minimization, green points for a good minimization.}
+\label{fig:local_minima}
+\end{figure}
+
+Let's try to find a minimum and set the initial value to $x=1.1$.
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
+\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.1}\PY{p}{]}
+\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{]}
+		
+\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
+\PY{n}{r}
+
+fun: array([-1.00569871])
+hess\_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
+jac: array([-4.4408921e-07])
+message: b'CONVERGENCE: NORM\_OF\_PROJECTED\_GRADIENT\_<=\_PGTOL'
+nfev: 16
+nit: 5
+status: 0
+success: True
+x: array([0.98865633])
+\end{Verbatim}
+\end{tcolorbox}
+The minimization worked perfectly and we found $x=0.98865633$ (i.e. the red point in Fig.~\ref{fig:local_minima}) but still from the same Figure it is clear that this is not the absolute minimum we would like to find. The problem arise since the algorithm has got stuck in this local minimum without any possibility to jump out from the well.
+
+If we repeat the minimization using as initial value $0.5$ instead
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
+\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.5}\PY{p}{]}
+\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{]}
+		
+\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
+\PY{n}{r}
+
+fun: array([-3.17151711])
+hess\_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
+jac: array([9.76996262e-07])
+message: b'CONVERGENCE: NORM\_OF\_PROJECTED\_GRADIENT\_<=\_PGTOL'
+nfev: 16
+nit: 5
+status: 0
+success: True
+x: array([0.29691798])
+\end{Verbatim}
+\end{tcolorbox}
+Now clearly the algorithm found the absolute minimum in $x=0.29691798$ (i.e. the green point in Fig.~\ref{fig:local_minima}) because there was no chance to find a local minimum during the iterations.
+
+This is clearly an example of what could happen, the possible solution is to make a \emph{scan} of the objective function to try to approximately determine where the global minimum is and choose the \emph{right} initial values for our parameters.
+There should be such an issue in the application of the bootstrapping algorithm though since the function that we are going to minimize is a sum of squared terms which has no local minima, just a global minimum (i.e. it is a parabola).
+
 
 \subsection{OIS Example}\label{ois-example}
 Back to our Overnight Index Swap, the general idea here is to get the discount curve \(\mathcal{C}\) such that it prices correctly each OIS by minimizing the sum of their NPV squared (our \(f_i\)):

@@ -42,7 +42,7 @@ def d2(S_k, r, vol, ttm):
     return d1(S_k, r, vol, ttm) - vol * math.sqrt(ttm)
 
 def call(S_k, r, vol, ttm):
-        """
+    """
     call: function to compute the call price with Black-Scholes formula.
 
     Params:
