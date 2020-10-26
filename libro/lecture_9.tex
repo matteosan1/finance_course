@@ -86,7 +86,7 @@ leg payment dates, and let's use the following notation:
 
 The NPV of the fixed leg is calculated as follows:
 
-\[\mathrm{NPV}_{\mathrm{fixed}}(d; K) = N\cdot K\cdot\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})\]
+\[\mathrm{NPV}_{\mathrm{fixed}}(d, K) = N\cdot K\cdot\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})\]
 while the NPV of the floating leg is calculated as follows:
 
 \[\mathrm{NPV}_{\mathrm{float}}(d) = N\cdot\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360}
@@ -95,7 +95,7 @@ while the NPV of the floating leg is calculated as follows:
 Therefore the NPV of the swap (seen from the point of view of the
 counter-party which receives the floating leg) is
 
-\[\mathrm{NPV}(d; K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d;K)\]
+\[\mathrm{NPV}(d, K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, K)\]
 
 For reasons which will become apparent later, it's actually more
 convenient to express the NPV of an IRS as a function of the fair value
@@ -105,7 +105,7 @@ is the value of K which makes \(\mathrm{NPV}(d)=0\).
 On the basis of the previous expressions, we can easily calculate \(S\)
 as:
 
-\[\mathrm{NPV}_{\mathrm{fixed}}(d;S) = \mathrm{NPV}_{\mathrm{float}}(d)\]
+\[\mathrm{NPV}_{\mathrm{fixed}}(d, S) = \mathrm{NPV}_{\mathrm{float}}(d)\]
 \[N\cdot S\cdot\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}}) = N\cdot\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360} \cdot D(d, d_{i}^{\mathrm{float}})\]
 \[S=\frac{\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360}
 \cdot D(d, d_{i}^{\mathrm{float}})}{\sum_{i=1}^{n}D(d, d_i^{\mathrm{fixed}})} \]
@@ -113,7 +113,7 @@ as:
 Once we have calculated \(S\), we can express the \(\mathrm{NPV}\) of an
 IRS as follows:
 
-\begin{align*}&\mathrm{NPV}(d; K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d; K) = & \\ \\ &= \underbrace{\mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d; S)}_{\mathrm{=\;0}} + \mathrm{NPV}_{\mathrm{fixed}}(d;S) - \mathrm{NPV}_{\mathrm{fixed}}(d;K) & \\ & = N\cdot(S-K)\cdot\underbrace{\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})}_{\mathrm{'annuity'}}
+\begin{align*}&\mathrm{NPV}(d, K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) = & \\ \\ &= \underbrace{\mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, S)}_{\mathrm{=\;0}} + \mathrm{NPV}_{\mathrm{fixed}}(d, S) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) & \\ & = N\cdot(S-K)\cdot\underbrace{\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})}_{\mathrm{'annuity'}}
 \end{align*}
 
 For convenience the relevant inputs that will be used later (LIBOR and discount curve definitions) have been saved in the files \href{https://drive.google.com/file/d/1dm5oZnZKmJM6UrV0L32OcqD5Tzs9SI9A/view?usp=sharing}{libor\_curve.xlsx} and \href{https://drive.google.com/file/d/14R22r7m-6VpQ_P79D3qHdK0QN_mOQ_UB/view?usp=sharing}{discount\_curve.xlsx} respectively.
@@ -124,10 +124,7 @@ For convenience the relevant inputs that will be used later (LIBOR and discount 
 \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
 \PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}\PY{p}{,} \PY{n}{ForwardRateCurve}
 
-\PY{n}{pricing\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}
-\PY{n}{start\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}
-\PY{n}{exercise\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}
-
+\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{date.today()}
 \PY{n}{discount\PYZus{}data} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{discount\PYZus{}curve.xlsx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
 \PY{n}{libor\PYZus{}data} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{libor.xlsx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
 
@@ -138,11 +135,11 @@ For convenience the relevant inputs that will be used later (LIBOR and discount 
 \PY{n}{fr} \PY{o}{=} \PY{n}{ForwardRateCurve}\PY{p}{(}\PY{n}{libor\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{date}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{dt}\PY{o}{.}\PY{n}{date}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,}
                       \PY{n}{libor\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rate}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{)}
 
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{dc}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{fr}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print}\PY{p}{(}\PY{n}{dc}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{fr}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
 
-1.0003778376026249
-0.01000266393442623
+1.0041959227522805
+0.060712328767123284
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -192,24 +189,24 @@ curves are the same as before.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{pricing\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}
+\PY{n}{start\PYZus{}date} \PY{o}{=} \PY{n}{date.today() + relativedelta(months=1)}
 \PY{n}{irs} \PY{o}{=} \PY{n}{InterestRateSwap}\PY{p}{(}\PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{l+m+mf}{1e6}\PY{p}{,} \PY{l+m+mf}{0.05}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{)}
 \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{irs}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{dc}\PY{p}{,} \PY{n}{fr}\PY{p}{)}\PY{p}{)}\PY{p}{)}
 
--160130.58 EUR
+17462.011242146258 EUR
 \end{Verbatim}
 \end{tcolorbox}
 
-\textbf{Can you guess what could be the swap rate given that the NPV is negative ?}
+\textbf{Can you guess what could be the \textbf{swap rate} given that the NPV obtained above ?}
 
-(Remember that we are looking at this contracts from the point of view
-of the receiver of the floating leg\ldots{})
+Since we are looking at this contracts from the point of view
+of the receiver of the floating leg and that the swap rate is the rate that makes the total NPV equal to 0, the NPV of the fixed leg has to be increased to balance the value of the floating leg so the swap rate will be higher than the fixed rate of the IRS.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{irs}\PY{o}{.}\PY{n}{swap\PYZus{}rate}\PY{p}{(}\PY{n}{dc}\PY{p}{,} \PY{n}{fr}\PY{p}{)}\PY{p}{)}\PY{p}{)}
 
-0.010254255993254186
+0.05346753499709627
 \end{Verbatim}
 \end{tcolorbox}
     
@@ -219,10 +216,10 @@ rate and print its NPV, it should come very close to 0.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{irs2} \PY{o}{=} \PY{n}{InterestRateSwap}\PY{p}{(}\PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{l+m+mf}{1e6}\PY{p}{,} \PY{l+m+mf}{0.01025425}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{)}
+\PY{n}{irs2} \PY{o}{=} \PY{n}{InterestRateSwap}\PY{p}{(}\PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{l+m+mf}{1e6}\PY{p}{,} \PY{l+m+mf}{0.05346753499709627}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{)}
 \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{irs2}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{dc}\PY{p}{,} \PY{n}{fr}\PY{p}{)}\PY{p}{)}\PY{p}{)}
 
-0.02 EUR
+0.0 EUR
 \end{Verbatim}
 \end{tcolorbox}
     
@@ -306,7 +303,7 @@ underlying swap at \(d_{ex}\) is positive - looking at the expression
 for the NPV of the IRS in terms of the swap rate \(S\) therefore, we can
 see that the payoff of the swaption is
 
-\[N\cdot \mathrm{max}(0, S(d_{\mathrm{ex}}) - K)\cdot\sum D(d_{\mathrm{ex}}, d_i^{\mathrm{fixed}})\]
+\[\mathrm{payoff} = N\cdot \mathrm{max}(0, S(d_{\mathrm{ex}}) - K)\cdot\sum D(d, d_i^{\mathrm{fixed}})\]
 
 The key issue is now to estimate \(S(d_{\mathrm{ex}})\) in order to
 evaluate the payoff of a swaption. This will be shown with two
@@ -317,8 +314,8 @@ alternative approaches.
 In this case, to evaluate the NPV of this payoff, we'll use a
 generalization of the Black-Scholes-Merton formula applied to swaptions:
 
-\[\mathrm{NPV} = N\cdot A\cdot [S \mathcal{N}(d_+) - K\mathcal{N}(d_-)]\]
-where \(\mathcal{N}\) represent a normal distribution
+\[\mathrm{payoff} = N\cdot A\cdot [S \Phi(d_+) - K\Phi(d_-)]\]
+where \(\Phi\) represents the cumulative distribution function of the normal distribution
 
 \[d_{\pm} = \frac{\mathrm{log}(\frac{S}{K}) \pm \frac{1}{2}\sigma^{2}T}{\sigma\sqrt{T}}\qquad(\sigma~\textrm{is the volatility of the swap rate})\\\]
 \[A =\sum_{i=1}^{p}D(d, d_{i}^{\mathrm{fixed}})\qquad\mathrm{(annuity})\]
@@ -334,11 +331,8 @@ addition we assume a volatility associated to the swap rate of about
 \PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm} 
 \PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
 
-\PY{k}{def} \PY{n+nf}{npvSwaptionBS}\PY{p}{(}\PY{n}{irs}\PY{p}{,} \PY{n}{sigma}\PY{p}{,} 
-                  \PY{n}{pricing\PYZus{}date}\PY{p}{,}
-                  \PY{n}{exercise\PYZus{}date}\PY{p}{,} 
+\PY{k}{def} \PY{n+nf}{npvSwaptionBS}\PY{p}{(}\PY{n}{irs}\PY{p}{,} \PY{n}{sigma}\PY{p}{, }\PY{n}{irs} 
                   \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-    \PY{n}{T} \PY{o}{=} \PY{p}{(}\PY{n}{exercise\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{pricing\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{365}
     \PY{n}{A} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{annuity}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
     \PY{n}{S} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{swap\PYZus{}rate}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}
     \PY{n}{K} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{fixed\PYZus{}rate}
@@ -350,13 +344,13 @@ addition we assume a volatility associated to the swap rate of about
 
 \PY{n}{sigma} \PY{o}{=} \PY{l+m+mf}{0.07}
 \PY{n}{irs} \PY{o}{=} \PY{n}{InterestRateSwap}\PY{p}{(}\PY{n}{pricing\PYZus{}date}\PY{p}{,} \PY{l+m+mf}{1e6}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{)}
-\PY{n}{exercise\PYZus{}date} \PY{o}{=} \PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{l+m+mi}{4}\PY{p}{)}
+\PY{n}{exercise\PYZus{}date} \PY{o}{=} \PY{n}{start\PYZus{}date} 
+\PY{n}{T} \PY{o}{=} \PY{p}{(}\PY{n}{exercise\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{pricing\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{365}
+\PY{n}{npv} \PY{o}{=} \PY{n}{npvSwaptionBS}\PY{p}{(}\PY{n}{irs}\PY{p}{,} \PY{n}{sigma}\PY{p}{,} \PY{n}{observation\PYZus{}date}\PY{p}{,}  \PY{n}{T}\PY{p}{,} \PY{n}{dc}\PY{p}{,} \PY{n}{fr}\PY{p}{)}
 
-\PY{n}{npv} \PY{o}{=} \PY{n}{npvSwaptionBS}\PY{p}{(}\PY{n}{irs}\PY{p}{,} \PY{n}{sigma}\PY{p}{,} \PY{n}{pricing\PYZus{}date}\PY{p}{,} 
-                    \PY{n}{exercise\PYZus{}date}\PY{p}{,} \PY{n}{dc}\PY{p}{,} \PY{n}{fr}\PY{p}{)}
 \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Swaption NPV with BS: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{npv}\PY{p}{)}\PY{p}{)}
 
-Swaption NPV with BS: 3330.741 EUR
+Swaption NPV with BS: 218896.30109668602 EUR
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -371,7 +365,7 @@ where \(\epsilon\approx\mathcal{N}(0,1)\). Notice that it is assumed
 that the \emph{drift} rate in the evolution of the swap rate is zero.
 Given that the discounted payoff is given by:
 
-\[N\cdot \mathrm{max}(0, S(d_{\mathrm{ex}}) - K)\cdot\sum D(d_{\mathrm{ex}}, d_i^{\mathrm{fixed}})\]
+\[N\cdot \mathrm{max}(0, S(d_{\mathrm{ex}}) - K)\cdot\sum D(d, d_i^{\mathrm{fixed}})\]
 to perform the simulation we can:
 
 \begin{itemize}
@@ -393,11 +387,11 @@ to perform the simulation we can:
 \PY{k+kn}{from} \PY{n+nn}{numpy}\PY{n+nn}{.}\PY{n+nn}{random} \PY{k}{import} \PY{n}{normal}\PY{p}{,} \PY{n}{seed}
 
 \PY{c+c1}{\PYZsh{} define the number of Monte Carlo scenarios}
-\PY{n}{n\PYZus{}scenarios} \PY{o}{=} \PY{l+m+mi}{50000}
+\PY{n}{n\PYZus{}scenarios} \PY{o}{=} \PY{l+m+mi}{10000}
 \PY{n}{discounted\PYZus{}payoffs} \PY{o}{=} \PY{p}{[}\PY{p}{]}
 \PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
 
-\PY{n}{T} \PY{o}{=} \PY{p}{(}\PY{n}{exercise\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{pricing\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{365}
+\PY{n}{T} \PY{o}{=} \PY{p}{(}\PY{n}{exercise\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{observation\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{365}
 \PY{n}{A} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{annuity}\PY{p}{(}\PY{n}{dc}\PY{p}{)}
 \PY{n}{S} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{swap\PYZus{}rate}\PY{p}{(}\PY{n}{dc}\PY{p}{,} \PY{n}{fr}\PY{p}{)}
     
@@ -417,7 +411,7 @@ to perform the simulation we can:
 \PY{n}{npv\PYZus{}mc} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{discounted\PYZus{}payoffs}\PY{p}{)}
 \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Swaption NPV: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{npv\PYZus{}mc}\PY{p}{)}\PY{p}{)}
 
-Swaption NPV: 3351.42 EUR
+Swaption NPV: 218833.40967569317 EUR
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -505,7 +499,8 @@ Below an example of how to compute a confidence level in \texttt{python} given a
 \end{Verbatim}
 \end{tcolorbox}
 
-Let's calculate the 95\% confidence level for the swaption simulation above.
+Using the confidence interval we can check whether the Monte Carlo estimate of the swaption payoff is in agreement with what computed using the Black-Scholes formula.
+Let's then calculate the 95\% confidence level for the swaption simulation:
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -514,19 +509,19 @@ Let's calculate the 95\% confidence level for the swaption simulation above.
 \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Swaption NPV: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR (+/- }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR with 95}\PY{l+s+si}{\PYZpc{} c}\PY{l+s+s2}{onfidence)}\PY{l+s+s2}{\PYZdq{}}\PYZbs{}
       \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{npv\PYZus{}mc}\PY{p}{,} \PY{n}{npv\PYZus{}error}\PY{p}{)}\PY{p}{)}
 
-Swaption NPV: 3351.42 EUR (+/- 74.06 EUR with 95\% confidence)
+Swaption NPV: 218833.40967569317 EUR (+/- 108.1575900210255 EUR with 95\% confidence)
 \end{Verbatim}
 \end{tcolorbox}
 
-At this point we can check if the two estimated of the swaption payoff
-are compatible. The NPV calculated via the Black-Scholes-Merton formula
-falls within the confidence interval produced by the Monte Carlo
-simulation, so we can assert that the two methods are in agreement:
+The NPV calculated via the Black-Scholes formula
+falls well within the confidence interval produced by the Monte Carlo
+simulation
 
 \begin{itemize}
 \tightlist
 \item
-  Swaption NPV (BS): \euro{3330.74}
+  Swaption NPV (BS): \euro{218896}
 \item
-  Swaption NPV (MC): \euro{3351.42}
+  Swaption NPV (MC): \euro{218833}
 \end{itemize}
+so we can assert that the two estimates are in agreement at the 95\% confidence level.
