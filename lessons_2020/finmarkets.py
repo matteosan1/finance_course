@@ -75,10 +75,9 @@ def put(S_k, r, vol, ttm):
     """
     return math.exp(-r * ttm) * norm.cdf(-d2(S_k, r, vol, ttm)) - S_k * norm.cdf(-d1(S_k, r, vol, ttm))
 
-def generate_swap_dates(start_date, n_months):
+def generate_swap_dates(start_date, n_months, tenor=12):
     """
     generate_swap_dates: computes a set of dates given starting date and length in months.
-                         The tenor is by construction 12 months.
 
     Params:
     -------
@@ -86,9 +85,11 @@ def generate_swap_dates(start_date, n_months):
         The start date of the set of dates.
     n_months: int
         Number of months that define the length of the list of dates.
+    tenor: int
+        Frequency of the dates.
     """
     dates = []
-    for i in range(0, n_months, 12):
+    for i in range(0, n_months, tenor):
         dates.append(start_date + relativedelta(months=i))
     dates.append(start_date + relativedelta(months=n_months))
     
