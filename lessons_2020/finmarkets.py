@@ -112,7 +112,7 @@ class DiscountCurve:
         self.today = today
         self.pillar_dates = pillar_dates
         self.discount_factors = discount_factors
-        
+                
     def df(self, d):
         """
         df: method to get interpolated discoutn factor at `d`.
