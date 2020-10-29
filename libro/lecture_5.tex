@@ -138,17 +138,6 @@ dtype: bool
 \end{Verbatim}
 \end{tcolorbox}
 
-
-
-
-
-
-
-
-
-
-
-
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Initial number of rows: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{df1}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
@@ -466,171 +455,768 @@ Again it is straightforward to do it in \texttt{pandas}:
 
 As we have just seen \texttt{pandas} allows to quickly draw histograms of dataframe columns, but during an analysis we may want to plot distributions from \texttt{list} or objects not stored in a dataframe. Furthermore the simple and very useful provided interface doesn't grant full access to all histogram features that we need to produce nice and informative plots.
 
-In order to do so we can use the \texttt{matplotlib} module which is specifically dedicated to plotting (pandas interface is based on the same module indeed). Let's look briefly to its capability by examples.
+In order to do so we can use the \texttt{matplotlib} module which is specifically dedicated to plotting (pandas interface is based on the same module indeed). 
 
-\subsection{Plot a graph given \(x\) and \(y\) values (scatter-plot)}\label{plot-a-graph-given-x-and-y-values}
+In the next Sections we will look briefly to its capabilities. For those interested a more detailed and comprehensive documentation can be found at
+\href{https://matplotlib.org}{this page}.
+
+\subsection{Canvas}\label{canvas}
+
+The first element we need to plot is a \emph{canvas}, the white
+rectangular space where we draw our data. \(\tt{Matplotlib}\) provides a
+default canvas if no specific command is given (a 640x480 pixels space)
+but you can customize it by specifying many different parameters, the
+most commonly are:
+
+\begin{itemize}
+	\tightlist
+	\item
+	\(\tt{figsize}\): width, height in inches. If not provided, defaults
+	to \([6.4, 4.8]\);
+	\item
+	\(\tt{dpi}\): resolution of the figure. If not provided, defaults to
+	100;
+	\item
+	\(\tt{facecolor}\): the background color. If not provided, defaults to
+	\(\tt{'white'}\), or \(\tt{'w'}\).
+\end{itemize}
+
+In the following example we create a canvas (8 inches x 5 inches) with a
+resolution of 80 dots per inches (dpi) and a green background color.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
+\PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{8}\PY{p}{,}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{,} \PY{n}{dpi}\PY{o}{=}\PY{l+m+mi}{80}\PY{p}{,} \PY{n}{facecolor}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{green}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
 
-\PY{n}{x} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{]}
-\PY{n}{y} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.3}\PY{p}{,} \PY{l+m+mf}{0.4}\PY{p}{,} \PY{l+m+mf}{0.6}\PY{p}{]}
- 
-\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{o}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)} \PY{c+c1}{\PYZsh{} we are using circle markers}
-\PY{n}{plt}\PY{o}{.}\PY{n}{grid}\PY{p}{(}\PY{k+kc}{True}\PY{p}{)}               \PY{c+c1}{\PYZsh{} this line activate grid drawing}
+Once we have a canvas we cannot even draw it unless we a some plot to
+show. So let's see the most used type of plots we can use.
+
+\subsection{Chart Object}\label{chart-object}
+
+Below a concise list of the main chart objects that are commonly used
+when presenting financial data.
+
+\subsubsection{Histograms}\label{histograms}
+
+A histogram is an approximate representation of the distribution of
+numerical data. To construct a histogram, the first step is to \emph{bin}
+(or \emph{bucket}) the range of values (i.e. divide the entire range of
+values into a series of intervals) and then count how many values fall
+into each interval.
+
+If the bins are of equal size, a rectangle is erected over the bin with
+height proportional to the frequency (i.e. the number of cases in each
+bin).
+
+However, bins need not be of equal width; in that case, the erected
+rectangle is defined to have its area proportional to the frequency of
+cases in the bin. The vertical axis is then not the frequency but
+frequency density (i.e. the number of cases per unit of the variable on
+the horizontal axis).
+
+To create an histogram with \(\tt{matplotlib}\) it is enough to pass the
+a list (or a \(\tt{numpy.array}\)) with data to represent to the
+function \(\tt{hist}\) and then call \(\tt{show()}\) to actually draw
+the plot (I have also used the previously defined canvas just to show
+the results).
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{y1} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{40.9}\PY{p}{,} \PY{l+m+mf}{49.6}\PY{p}{,} \PY{l+m+mf}{36.5}\PY{p}{,} \PY{l+m+mf}{43.7}\PY{p}{,} \PY{l+m+mf}{52.4}\PY{p}{,} \PY{l+m+mf}{37.0}\PY{p}{,} \PY{l+m+mf}{42.4}\PY{p}{,} \PY{l+m+mf}{38.4}\PY{p}{,} \PY{l+m+mf}{39.9}\PY{p}{,} \PY{l+m+mf}{40.6}\PY{p}{,} \PY{l+m+mf}{35.7}\PY{p}{,} \PY{l+m+mf}{42.4}\PY{p}{,} 
+\PY{l+m+mf}{47.7}\PY{p}{,} \PY{l+m+mf}{40.6}\PY{p}{,} \PY{l+m+mf}{47.6}\PY{p}{,} \PY{l+m+mf}{38.3}\PY{p}{,} \PY{l+m+mf}{43.6}\PY{p}{,} \PY{l+m+mf}{38.5}\PY{p}{,} \PY{l+m+mf}{43.5}\PY{p}{,} \PY{l+m+mf}{42.9}\PY{p}{,} \PY{l+m+mf}{42.1}\PY{p}{,} \PY{l+m+mf}{39.8}\PY{p}{,} \PY{l+m+mf}{35.8}\PY{p}{,} \PY{l+m+mf}{44.1}\PY{p}{,} 
+\PY{l+m+mf}{43.0}\PY{p}{,} \PY{l+m+mf}{45.4}\PY{p}{,} \PY{l+m+mf}{52.3}\PY{p}{,} \PY{l+m+mf}{41.5}\PY{p}{,} \PY{l+m+mf}{42.6}\PY{p}{,} \PY{l+m+mf}{45.4}\PY{p}{,} \PY{l+m+mf}{38.6}\PY{p}{,} \PY{l+m+mf}{37.3}\PY{p}{,} \PY{l+m+mf}{37.8}\PY{p}{,} \PY{l+m+mf}{48.1}\PY{p}{,} \PY{l+m+mf}{44.8}\PY{p}{,} \PY{l+m+mf}{32.7}\PY{p}{,} 
+\PY{l+m+mf}{42.3}\PY{p}{,} \PY{l+m+mf}{33.8}\PY{p}{,} \PY{l+m+mf}{43.1}\PY{p}{,} \PY{l+m+mf}{40.3}\PY{p}{]}
+	
+\PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{8}\PY{p}{,}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{,} \PY{n}{dpi}\PY{o}{=}\PY{l+m+mi}{80}\PY{p}{,} \PY{n}{facecolor}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{green}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{hist}\PY{p}{(}\PY{n}{y1}\PY{p}{)}
 \PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
 \begin{figure}[h]
-\centering
-  \includegraphics[width=0.6\textwidth]{figures/Untitled_43_0.png}
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/matplotlib_3_0.png}
 \end{figure}
-%    { \hspace*{\fill} \\}
-    
+
+If you are not satisfied with the default binning and/or you want to
+change the range shown in the plot, those can be specified in the call
+to \(\tt{hist}\) like this
+
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} if we want to plot specific points too}
-
-\PY{n}{x} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{]}
-\PY{n}{y} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.3}\PY{p}{,} \PY{l+m+mf}{0.4}\PY{p}{,} \PY{l+m+mf}{0.6}\PY{p}{]}
- 
-\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{l+m+mf}{2.5}\PY{p}{,} \PY{l+m+mf}{0.5}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{X}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{ms}\PY{o}{=}\PY{l+m+mi}{12}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{l+m+mf}{1.5}\PY{p}{,} \PY{l+m+mf}{0.35}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{ms}\PY{o}{=}\PY{l+m+mi}{12}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{grid}\PY{p}{(}\PY{k+kc}{True}\PY{p}{)}              
+\PY{c+c1}{\PYZsh{} after data there is the number of equally spaced bins}
+\PY{c+c1}{\PYZsh{} to be used, then the range}
+\PY{n}{plt}\PY{o}{.}\PY{n}{hist}\PY{p}{(}\PY{n}{y}\PY{p}{,} \PY{l+m+mi}{50}\PY{p}{,} \PY{n+nb}{range}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{30}\PY{p}{,} \PY{l+m+mi}{50}\PY{p}{)}\PY{p}{)}
 \PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
 \begin{figure}[h]
-\centering
-  \includegraphics[width=0.6\textwidth]{figures/Untitled_44_0.png}
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/matplotlib_5_0.png}
 \end{figure}
-%    { \hspace*{\fill} \\}
-    
-\subsubsection{What if \(x\) values are dates ?}
+
+Passing other parameters it is possible to modify the style of the
+histogram, like its color. Colors can be specified by their names. For
+the basic built-in colors, you can use a single letter
+
+\begin{itemize}
+	\tightlist
+	\item
+	b: blue
+	\item
+	g: green
+	\item
+	r: red
+	\item
+	c: cyan
+	\item
+	m: magenta
+	\item
+	y: yellow
+	\item
+	k: black
+	\item
+	w: white
+\end{itemize}
+
+Plotting multiple histograms on the same canvas is as easy as calling
+various times \(\tt{hist}\) (binning should be the same for each
+histogram).
+
+To each object that is plotted can be associated a label, passing the
+corresponding parameter to the object call, so that we can build a
+legend. Latex symbols can be used whenever text is used, the characters
+have to enclosed between dollar symbols (i.e. \$\\mu\$). Legend that
+will be shown on the canvas with the command \(\tt{legend()}\).
+
+A grid can be added to the plot with \(\tt{plt.grid(True)}\) for a nicer
+look.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{datetime}
-\PY{k+kn}{import} \PY{n+nn}{matplotlib}\PY{n+nn}{.}\PY{n+nn}{dates} \PY{k}{as} \PY{n+nn}{mdates}
-
-\PY{n}{x} \PY{o}{=} \PY{p}{[}\PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{7}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{,}  \PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{7}\PY{p}{,} \PY{l+m+mi}{30}\PY{p}{)}\PY{p}{,} 
-     \PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,}  \PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{]}
-     
-\PY{n}{y} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{,} \PY{l+m+mi}{34}\PY{p}{,} \PY{l+m+mi}{45}\PY{p}{]}
-\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{o}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{c+c1}{\PYZsh{} this line tells matplotlib we have dates on x axis}
-\PY{n}{plt}\PY{o}{.}\PY{n}{gca}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{xaxis}\PY{o}{.}\PY{n}{set\PYZus{}major\PYZus{}formatter}\PY{p}{(}\PY{n}{mdates}\PY{o}{.}\PY{n}{DateFormatter}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{Y\PYZhy{}}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{m\PYZhy{}}\PY{l+s+si}{\PYZpc{}d}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{)}
-\PY{c+c1}{\PYZsh{} this one instead rotate labels to avoid superimposition}
-\PY{n}{plt}\PY{o}{.}\PY{n}{xticks}\PY{p}{(}\PY{n}{rotation}\PY{o}{=}\PY{l+m+mi}{45}\PY{p}{)}
+\PY{n}{y2} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{40.6}\PY{p}{,} \PY{l+m+mf}{40.5}\PY{p}{,} \PY{l+m+mf}{37.3}\PY{p}{,} \PY{l+m+mf}{37.6}\PY{p}{,} \PY{l+m+mf}{39.0}\PY{p}{,} \PY{l+m+mf}{38.5}\PY{p}{,} \PY{l+m+mf}{36.0}\PY{p}{,} \PY{l+m+mf}{39.0}\PY{p}{,} \PY{l+m+mf}{36.8}\PY{p}{,} \PY{l+m+mf}{41.4}\PY{p}{,} \PY{l+m+mf}{41.9}\PY{p}{,} \PY{l+m+mf}{39.9}\PY{p}{,} 
+\PY{l+m+mf}{39.0}\PY{p}{,} \PY{l+m+mf}{37.7}\PY{p}{,} \PY{l+m+mf}{35.0}\PY{p}{,} \PY{l+m+mf}{37.9}\PY{p}{,} \PY{l+m+mf}{35.2}\PY{p}{,} \PY{l+m+mf}{39.5}\PY{p}{,} \PY{l+m+mf}{37.7}\PY{p}{,} \PY{l+m+mf}{38.4}\PY{p}{,} \PY{l+m+mf}{42.4}\PY{p}{,} \PY{l+m+mf}{38.1}\PY{p}{,} \PY{l+m+mf}{39.0}\PY{p}{,} \PY{l+m+mf}{34.7}\PY{p}{,} 
+\PY{l+m+mf}{37.1}\PY{p}{,} \PY{l+m+mf}{36.6}\PY{p}{,} \PY{l+m+mf}{37.0}\PY{p}{,} \PY{l+m+mf}{40.8}\PY{p}{,} \PY{l+m+mf}{39.0}\PY{p}{,} \PY{l+m+mf}{41.5}\PY{p}{]}
+	
+\PY{n}{plt}\PY{o}{.}\PY{n}{hist}\PY{p}{(}\PY{n}{y1}\PY{p}{,} \PY{l+m+mi}{50}\PY{p}{,} \PY{n+nb}{range}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{30}\PY{p}{,} \PY{l+m+mi}{50}\PY{p}{)}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Red Hist}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{hist}\PY{p}{(}\PY{n}{y2}\PY{p}{,} \PY{l+m+mi}{50}\PY{p}{,} \PY{n+nb}{range}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{30}\PY{p}{,} \PY{l+m+mi}{50}\PY{p}{)}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{yellow}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Yellow Hist}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
 \PY{n}{plt}\PY{o}{.}\PY{n}{grid}\PY{p}{(}\PY{k+kc}{True}\PY{p}{)}
 \PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
 \begin{figure}[h]
-\centering
-  \includegraphics[width=0.6\textwidth]{figures/Untitled_46_0.png}
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/matplotlib_7_0.png}
 \end{figure}
-%    { \hspace*{\fill} \\}
-    
-\subsection{Plotting an Histogram}\label{plotting-an-histogram}
+
+\subsubsection{Scatter Plot}\label{scatter}
+
+A scatter plot is a type of plot using Cartesian coordinates to display
+values for typically two variables for a set of data. If the points are
+coded (color/shape/size), one additional variable can be displayed.
+
+The data are displayed as a collection of points, each having the value
+of one variable determining the position on the horizontal axis and the
+value of the other variable determining the position on the vertical
+axis.
+
+To create such an object it is enough to call \(\tt{scatter}\) and pass
+the \(x\) and \(y\) lists .
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{random} 
-\PY{n}{numbers} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1000}\PY{p}{)}\PY{p}{:}
-  \PY{n}{numbers}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{randint}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{)}
-
-\PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
-
-\PY{c+c1}{\PYZsh{} Here we define the binning}
-\PY{c+c1}{\PYZsh{} 6 is the number of bins, going from 0 to 10}
-\PY{n}{plt}\PY{o}{.}\PY{n}{hist}\PY{p}{(}\PY{n}{numbers}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{n+nb}{range}\PY{o}{=}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{]}\PY{p}{)} 
+\PY{n}{y1} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{26.2}\PY{p}{,} \PY{l+m+mf}{5.4}\PY{p}{,} \PY{l+m+mf}{7.7}\PY{p}{,} \PY{l+m+mf}{3.8}\PY{p}{,} \PY{l+m+mf}{24.7}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mf}{5.5}\PY{p}{,} \PY{l+m+mf}{36.4}\PY{p}{,} \PY{l+m+mf}{12.9}\PY{p}{,} \PY{l+m+mf}{25.2}\PY{p}{,} \PY{l+m+mf}{21.0}\PY{p}{,} \PY{l+m+mf}{39.6}\PY{p}{,} 
+\PY{l+m+mf}{5.9}\PY{p}{,} \PY{l+m+mf}{24.8}\PY{p}{,} \PY{l+m+mf}{25.7}\PY{p}{,} \PY{l+m+mf}{42.3}\PY{p}{,} \PY{l+m+mf}{21.5}\PY{p}{,} \PY{l+m+mf}{32.3}\PY{p}{,} \PY{l+m+mf}{26.7}\PY{p}{,} \PY{l+m+mf}{37.4}\PY{p}{,} \PY{l+m+mf}{44.3}\PY{p}{,} \PY{l+m+mf}{29.0}\PY{p}{,} 
+\PY{l+m+mf}{52.9}\PY{p}{,} \PY{l+m+mf}{52.0}\PY{p}{,} \PY{l+m+mf}{49.5}\PY{p}{,} \PY{l+m+mf}{55.0}\PY{p}{,} \PY{l+m+mf}{40.7}\PY{p}{,} \PY{l+m+mf}{47.8}\PY{p}{,} \PY{l+m+mf}{41.1}\PY{p}{,} \PY{l+m+mf}{49.3}\PY{p}{,} \PY{l+m+mf}{58.8}\PY{p}{,} \PY{l+m+mf}{48.1}\PY{p}{,} 
+\PY{l+m+mf}{52.5}\PY{p}{,} \PY{l+m+mf}{51.1}\PY{p}{,} \PY{l+m+mf}{51.0}\PY{p}{,} \PY{l+m+mf}{54.3}\PY{p}{,} \PY{l+m+mf}{62.4}\PY{p}{,} \PY{l+m+mf}{52.8}\PY{p}{,} \PY{l+m+mf}{67.8}\PY{p}{,} \PY{l+m+mf}{83.6}\PY{p}{,} \PY{l+m+mf}{75.9}\PY{p}{]}
+	
+\PY{n}{x} \PY{o}{=} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{y1}\PY{p}{)}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y1}\PY{p}{)}
 \PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
 \begin{figure}[h]
-\centering
-  \includegraphics[width=0.55\textwidth]{figures/Untitled_48_0.png}
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/matplotlib_9_0.png}
 \end{figure}
- %   { \hspace*{\fill} \\}
-    
-\subsubsection{Plotting a Function}\label{plotting-a-function}
 
-In this case let's try to make the plot prettier adding labels, legend\ldots{}
-All the commands apply also to the previous examples.
+Other parameters can be passes to \(\tt{scatter}\) the most useful are
+
+\begin{itemize}
+	\tightlist
+	\item
+	\(\tt{label}\): label the scatter plot fot the legend;
+	\item
+	\(\tt{color}\): set the color of the marker;
+	\item
+	\(\tt{marker}\): set the sityle of the marker defined with a single
+	character (+,*, o, x\ldots{});
+	\item
+	\(\tt{s=}\): set the size of the marker.
+\end{itemize}
+
+And of course multiple scatter plot can be shown together in the same
+canvas calling \(\tt{scatter}\) accordingly.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{import} \PY{n+nn}{matplotlib}\PY{n+nn}{.}\PY{n+nn}{pyplot} \PY{k}{as} \PY{n+nn}{plt}
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
-
-\PY{c+c1}{\PYZsh{} define the functions to plot}
-\PY{c+c1}{\PYZsh{} a gaussian with mean=0  and sigma=1}
-\PY{c+c1}{\PYZsh{} in scipy module this is called norm}
-\PY{n}{mu}\PY{o}{=}\PY{l+m+mi}{0}
-\PY{n}{sigma} \PY{o}{=} \PY{l+m+mi}{1}
-\PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{10}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mf}{1.645}\PY{p}{,} \PY{l+m+mf}{0.001}\PY{p}{)}
-\PY{n}{x\PYZus{}all} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mf}{0.001}\PY{p}{)}
-\PY{n}{y} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{pdf}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{y\PYZus{}all} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{pdf}\PY{p}{(}\PY{n}{x\PYZus{}all}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-
-\PY{c+c1}{\PYZsh{} draw the gaussian}
-\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x\PYZus{}all}\PY{p}{,} \PY{n}{y\PYZus{}all}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Gaussian}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-
-\PY{c+c1}{\PYZsh{} fill with different alpha using x\PYZus{}all and y\PYZus{}all as limits}
-\PY{c+c1}{\PYZsh{} alpha set the transparency level: 0 trasparent, 1 solid}
-\PY{n}{plt}\PY{o}{.}\PY{n}{fill\PYZus{}between}\PY{p}{(}\PY{n}{x\PYZus{}all}\PY{p}{,} \PY{n}{y\PYZus{}all}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{n}{alpha}\PY{o}{=}\PY{l+m+mf}{0.1}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{blue}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Gaussian CDF}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-
-\PY{c+c1}{\PYZsh{} fill with color red using x and y as limits}
-\PY{c+c1}{\PYZsh{} label associate text to the object for the legend}
-\PY{n}{plt}\PY{o}{.}\PY{n}{fill\PYZus{}between}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{n}{alpha}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{5}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{ tail}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-
-\PY{c+c1}{\PYZsh{} set x axis limits}
-\PY{n}{plt}\PY{o}{.}\PY{n}{xlim}\PY{p}{(}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{]}\PY{p}{)}
-
-\PY{c+c1}{\PYZsh{} add a label for X axis}
-\PY{n}{plt}\PY{o}{.}\PY{n}{xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Changes of value}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-
-\PY{c+c1}{\PYZsh{} add a label to y axis}
-\PY{n}{plt}\PY{o}{.}\PY{n}{ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Gaussian values}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-
-\PY{c+c1}{\PYZsh{} add histogram title}
-\PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Distribution of changes of value}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-
-\PY{c+c1}{\PYZsh{} draw a vertical line at x=\PYZhy{}1.645}
-\PY{c+c1}{\PYZsh{} y limits are in percent w.r.t. to y axis length}
-\PY{n}{plt}\PY{o}{.}\PY{n}{axvline}\PY{p}{(}\PY{n}{x}\PY{o}{=}\PY{o}{\PYZhy{}}\PY{l+m+mf}{1.645}\PY{p}{,} \PY{n}{ymin}\PY{o}{=}\PY{l+m+mf}{0.1}\PY{p}{,} \PY{n}{ymax}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{linestyle}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{:}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{linewidth}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{color} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-
-\PY{c+c1}{\PYZsh{} write some text to explain the line}
-\PY{n}{plt}\PY{o}{.}\PY{n}{text}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mf}{1.9}\PY{p}{,} \PY{o}{.}\PY{l+m+mi}{12}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{95}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{ percentile (VaR loss)}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}\PY{n}{fontsize}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{,} \PY{n}{rotation}\PY{o}{=}\PY{l+m+mi}{90}\PY{p}{,} 
-                                    \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-
+\PY{n}{y2} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{22.2}\PY{p}{,} \PY{l+m+mf}{3.4}\PY{p}{,} \PY{l+m+mf}{7.7}\PY{p}{,} \PY{l+m+mf}{5.8}\PY{p}{,} \PY{l+m+mf}{28.7}\PY{p}{,} \PY{l+m+mf}{0.5}\PY{p}{,} \PY{l+m+mf}{44.4}\PY{p}{,} \PY{l+m+mf}{22.9}\PY{p}{,} \PY{l+m+mf}{37.2}\PY{p}{,} \PY{l+m+mf}{35.0}\PY{p}{,} \PY{l+m+mf}{55.6}\PY{p}{,} 
+\PY{l+m+mf}{23.9}\PY{p}{,} \PY{l+m+mf}{44.8}\PY{p}{,} \PY{l+m+mf}{47.7}\PY{p}{,} \PY{l+m+mf}{66.3}\PY{p}{,} \PY{l+m+mf}{47.5}\PY{p}{,} \PY{l+m+mf}{60.3}\PY{p}{,} \PY{l+m+mf}{56.7}\PY{p}{,} \PY{l+m+mf}{69.4}\PY{p}{,} \PY{l+m+mf}{78.3}\PY{p}{,} \PY{l+m+mf}{65.0}\PY{p}{,} 
+\PY{l+m+mf}{90.9}\PY{p}{,} \PY{l+m+mf}{92.0}\PY{p}{,} \PY{l+m+mf}{91.5}\PY{p}{,} \PY{l+m+mf}{99.0}\PY{p}{,} \PY{l+m+mf}{86.7}\PY{p}{,} \PY{l+m+mf}{95.8}\PY{p}{,} \PY{l+m+mf}{91.1}\PY{p}{,} \PY{l+m+mf}{101.3}\PY{p}{,} \PY{l+m+mf}{112.8}\PY{p}{,} 
+\PY{l+m+mf}{104.1}\PY{p}{,} \PY{l+m+mf}{110.5}\PY{p}{,} \PY{l+m+mf}{111.1}\PY{p}{,} \PY{l+m+mf}{113.0}\PY{p}{,} \PY{l+m+mf}{118.3}\PY{p}{,} \PY{l+m+mf}{128.4}\PY{p}{,} \PY{l+m+mf}{120.8}\PY{p}{,} \PY{l+m+mf}{137.8}\PY{p}{,} \PY{l+m+mf}{155.6}\PY{p}{,} \PY{l+m+mf}{149.9}\PY{p}{]}
+	
+\PY{n}{plt}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{y1}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{y1}\PY{p}{,} \PY{n}{s}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{o}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{lightblue}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1st Scatter}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{y2}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{y2}\PY{p}{,} \PY{n}{s}\PY{o}{=}\PY{l+m+mi}{30}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{*}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{brown}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2nd Scatter}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
 \PY{n}{plt}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
 \PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
-\begin{figure}[htp]
-\centering
-  \includegraphics[width=0.55\textwidth]{figures/Untitled_50_0.png}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.65\textwidth]{figures/matplotlib_11_0.png}
 \end{figure}
-%    { \hspace*{\fill} \\}
-    \clearpage
-If you are particularly satisfied by your work you can save the graph to a file:
+
+\subsubsection{Plot}\label{plot}
+
+If you want to still plot \(x\) and \(y\) points but they should be
+connected with a line you can use the function \(\tt{plot}\). It acts
+similarly to \(\tt{scatter}\) but the graphical result will be
+different.
+
+For example below the same two scatter plots of the previous example are
+plotted with \(\tt{plot}\)
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{plt}\PY{o}{.}\PY{n}{savefig}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{normal\PYZus{}curve.png}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-
-<Figure size 432x288 with 0 Axes>
-
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y1}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1st Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y2}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2nd Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.65\textwidth]{figures/matplotlib_13_0.png}
+\end{figure}
+
+In this case the parameters the parameters allow to control the line
+style and the possibility to add the marker at each point
+
+\begin{itemize}
+	\tightlist
+	\item
+	\(\tt{label}\): label the scatter plot fot the legend;
+	\item
+	\(\tt{color}\): set the color of the marker and the line;
+	\item
+	\(\tt{marker}\): set the sityle of the marker defined with a single
+	character (+,*, o, x\ldots{});
+	\item
+	\(\tt{s}\): set the size of the marker;
+	\item
+	\(\tt{linestyle}\): style of the line (`-', `--', `-.', `:');
+	\item
+	\(\tt{linewidth}\): thickness of the line.
+\end{itemize}
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y1}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{+}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linestyle}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{darkgreen}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1st Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y2}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linewidth}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{pink}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2nd Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/matplotlib_15_0.png}
+\end{figure}
+
+\subsubsection{Plotting a Function}\label{plotting-a-function}
+
+Functions can be plotted using the \(\tt{plot}\) method. They can be
+functions from \(\tt{python}\) modules or user-defined.
+
+As an example let's try to plot \(\mathrm{sin}(x/2)\), in the example we
+will use \(\tt{numpy.arange}\) function which extend the functionalities
+of the standard \(\tt{range}\) allowing for non integer steps.
+
+In such cases it is always recommended to use \(\tt{numpy}\) functions
+and not those defined in \(\tt{math}\) since they also accept arrays in
+input for a faster processing (i.e.~it is not need to loop over each
+\(x\) value to compute the value function since it is done
+automatically).
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{numpy} \PY{k}{import} \PY{n}{arange}\PY{p}{,} \PY{n}{sin}
+	
+\PY{k}{def} \PY{n+nf}{func}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{sin}\PY{p}{(}\PY{n}{x}\PY{o}{/}\PY{l+m+mi}{2}\PY{p}{)}
+	
+\PY{n}{xs} \PY{o}{=} \PY{n}{arange}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{)}
+	
+\PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{8}\PY{p}{,}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{xs}\PY{p}{,} \PY{n}{func}\PY{p}{(}\PY{n}{xs}\PY{p}{)}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.65\textwidth]{figures/matplotlib_17_0.png}
+\end{figure}
+
+\subsection{Axes}\label{axes}
+
+The axis of a any plot can be formatted with many options.
+
+First of all the axis range can be controlled with
+\(\tt{xlim(min, max}\) and \(\tt{ylim(min, max}\). Then labels can be
+added with \(\tt{xlabel(myLabel)}\) and \(\tt{ylabel(myLabel)}\). A
+global title to the plot can also be specified with
+\(\tt{plt.title(myTitle)}\).
+
+Referring to the previous example we can write
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{8}\PY{p}{,}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y1}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{+}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linestyle}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{darkgreen}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1st Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y2}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linewidth}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{pink}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2nd Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Plot Title}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{y label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.65\textwidth]{figures/matplotlib_19_0.png}
+\end{figure}
+
+It can also be specified if axis has to be in linear or log scale with
+\(\tt{xscale("log")}\) and/or \(\tt{yscale("log")}\).
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{8}\PY{p}{,}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y1}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{+}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linestyle}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{darkgreen}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1st Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y2}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linewidth}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{pink}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2nd Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Plot Title}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{y label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{xscale}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{log}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{yscale}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{log}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/matplotlib_21_0.png}
+\end{figure}
+
+\subsubsection{Date on Axis}\label{date-on-axis}
+
+A special need, very common in finance, is to have dates on the \(x\)
+axis. This can be done like shown in the next example:
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{datetime} \PY{k}{as} \PY{n+nn}{dt}
+\PY{k+kn}{import} \PY{n+nn}{matplotlib}\PY{n+nn}{.}\PY{n+nn}{dates} \PY{k}{as} \PY{n+nn}{mdates}
+	
+\PY{n}{dates} \PY{o}{=} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{01/02/1991}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{01/03/1991}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{01/04/1991}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
+\PY{n}{xd} \PY{o}{=} \PY{p}{[}\PY{n}{dt}\PY{o}{.}\PY{n}{datetime}\PY{o}{.}\PY{n}{strptime}\PY{p}{(}\PY{n}{d}\PY{p}{,}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{m/}\PY{l+s+si}{\PYZpc{}d}\PY{l+s+s1}{/}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{Y}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{o}{.}\PY{n}{date}\PY{p}{(}\PY{p}{)} \PY{k}{for} \PY{n}{d} \PY{o+ow}{in} \PY{n}{dates}\PY{p}{]}
+\PY{n}{yd} \PY{o}{=} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{xd}\PY{p}{)}\PY{p}{)}
+	
+\PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{8}\PY{p}{,}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{gca}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{xaxis}\PY{o}{.}\PY{n}{set\PYZus{}major\PYZus{}formatter}\PY{p}{(}\PY{n}{mdates}\PY{o}{.}\PY{n}{DateFormatter}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{m/}\PY{l+s+si}{\PYZpc{}d}\PY{l+s+s1}{/}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{Y}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{gca}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{xaxis}\PY{o}{.}\PY{n}{set\PYZus{}major\PYZus{}locator}\PY{p}{(}\PY{n}{mdates}\PY{o}{.}\PY{n}{DayLocator}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{xd}\PY{p}{,} \PY{n}{yd}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{gcf}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{autofmt\PYZus{}xdate}\PY{p}{(}\PY{p}{)} \PY{c+c1}{\PYZsh{} this makes a prettier formatting}
+\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.6\textwidth]{figures/matplotlib_23_0.png}
+\end{figure}
+
+\subsection{Subplots}\label{subplots}
+
+It may happen that we need to plot two or more plots side by side or in
+a grid fashion.
+
+The canvas can be then split into subcanvases with the \(\tt{subplot}\)
+commands which takes in input the number of rows, columns and the index
+of the current subplot. It returns the \emph{subcanvas} object that can
+be used to draw like previously shown.
+
+There is one complication though, some of the commands change when
+dealing with subplot, \(\tt{xlabel}\) and \(\tt{ylabel}\) for example
+becomes \(\tt{set_xlabel}\) and \(\tt{set_ylabel}\). Similarly for
+\(\tt{xlim}\) and \(\tt{ylim}\).
+
+As an example imagine that we want to plot the previous plots side by
+side on two canvases instead of together in the same
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{8}\PY{p}{,}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+	
+\PY{n}{sub1} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{subplot}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{sub1}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y1}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{+}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linestyle}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{darkgreen}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1st Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{sub1}\PY{o}{.}\PY{n}{set\PYZus{}xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{sub1}\PY{o}{.}\PY{n}{set\PYZus{}ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{y label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{sub1}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
+	
+\PY{n}{sub2} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{subplot}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{)}
+\PY{n}{sub2}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y2}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linewidth}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{pink}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2nd Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{sub2}\PY{o}{.}\PY{n}{set\PYZus{}xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{sub2}\PY{o}{.}\PY{n}{set\PYZus{}ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{y label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{sub2}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
+	
+\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+\newpage
+\begin{figure} [h]
+	\centering
+	\includegraphics[width=0.65\textwidth]{figures/matplotlib_25_0.png}
+\end{figure}
+
+Subplots can also be arranged in another way like
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{8}\PY{p}{,}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+	
+\PY{n}{sub1} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{subplot}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{sub1}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y1}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{+}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linestyle}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{darkgreen}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1st Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{sub1}\PY{o}{.}\PY{n}{set\PYZus{}xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{sub1}\PY{o}{.}\PY{n}{set\PYZus{}ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{y label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{sub1}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
+	
+\PY{n}{sub2} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{subplot}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{)}
+\PY{n}{sub2}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y2}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linewidth}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{pink}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2nd Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{sub2}\PY{o}{.}\PY{n}{set\PYZus{}xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{sub2}\PY{o}{.}\PY{n}{set\PYZus{}ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{y label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{sub2}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
+	
+\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.65\textwidth]{figures/matplotlib_27_0.png}
+\end{figure}
+
+\subsection{Lines and Text}\label{lines-and-text}
+
+To make plots more informative it can be useful to add text or lines on
+a plot.
+
+\subsubsection{Lines}\label{lines}
+
+Lines can be drawn with \(\tt{hlines}\) (for horizontal lines) and
+\(\tt{hvines}\) (for vertical lines). Both commands take in input the
+\(y\), \(x_{min}\), \(x_{max}\) and \(x\), \(y_{min}\), \(y_{max}\)
+respectively. Beware, coordinates are relative to the axis scale.
+
+Other parameters allow to format the line in terms of color, style,
+width\(\ldots\).
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{8}\PY{p}{,}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y1}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{+}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linestyle}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{darkgreen}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1st Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y2}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linewidth}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{pink}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2nd Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Plot Title}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{y label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{hlines}\PY{p}{(}\PY{l+m+mi}{65}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{37.5}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{linestyle}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{\PYZhy{}.}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Critical Thr.}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/matplotlib_29_0.png}
+\end{figure}
+
+Notice as the \(y\) value is 65 and \(x\) goes from 0 to 37.5 which
+corresponds to each axis.
+
+Analogously for a vertical line, except that we have to first specify
+the \(x\) value and then the \(y\) range.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{8}\PY{p}{,}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y1}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{+}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linestyle}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{darkgreen}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1st Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y2}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linewidth}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{pink}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2nd Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Plot Title}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{y label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{vlines}\PY{p}{(}\PY{l+m+mi}{22}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{120}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{gray}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Splitting Thr.}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/matplotlib_31_0.png}
+\end{figure}
+
+\subsubsection{Text}\label{text}
+
+Like lines text can be added to the plot with the command \(\tt{text}\).
+This function takes the \(x\) and \(y\) coordinates of starting point of
+the text and the actual text string. Like before coordinates are
+relative to the axis plot.
+
+Other options can be used to format the text style, their meaning should
+be straightforward:
+
+\begin{itemize}
+	\tightlist
+	\item
+	\(\tt{backgroundcolor}\);
+	\item
+	\(\tt{color}\);
+	\item
+	\(\tt{fontfamily}\): (FONTNAME, `serif', `sans-serif', `cursive',
+	`fantasy', `monospace');
+	\item
+	\(\tt{fontsize}\); (size in points, `xx-small', `x-small', `small',
+	`medium', `large', `x-large', `xx-large');
+	\item
+	\(\tt{fontstyle}\): (`normal', `italic', `oblique');
+	\item
+	\(\tt{horizontalalignment}\): (`center', `right', `left');
+	\item
+	\(\tt{rotation}\): takes the angle in degrees;
+	\item
+	\(\tt{verticalalignment}\): (`center', `top', `bottom', `baseline',
+	`center\_baseline').
+\end{itemize}
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{8}\PY{p}{,}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y1}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{+}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linestyle}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{darkgreen}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1st Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y2}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{linewidth}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{pink}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2nd Plot}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Plot Title}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{x label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{y label}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{vlines}\PY{p}{(}\PY{l+m+mi}{22}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{120}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{gray}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{text}\PY{p}{(}\PY{l+m+mi}{23}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Splitting Thr.}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{rotation}\PY{o}{=}\PY{l+m+mi}{90}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{hlines}\PY{p}{(}\PY{l+m+mi}{65}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{37.5}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{linestyle}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{\PYZhy{}.}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{text}\PY{p}{(}\PY{l+m+mi}{25}\PY{p}{,} \PY{l+m+mi}{75}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Critical Thr.}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{backgroundcolor}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{red}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{white}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
+\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/matplotlib_33_0.png}
+\end{figure}
+
+\subsection{Saving}\label{saving}
+
+A plot can be saved into a file for later usage with \(\tt{savefig}\)
+which takes in input the file name. The format of the file will be
+inferred from the file name extension (.jpg, .png, .gif\ldots{})
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{plt}\PY{o}{.}\PY{n}{savefig}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{myfigure.png}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+%\subsection{Plot a graph given \(x\) and \(y\) values (scatter-plot)}\label{plot-a-graph-given-x-and-y-values}
+%
+%\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+%\begin{Verbatim}[commandchars=\\\{\}]
+%\PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
+%
+%\PY{n}{x} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{]}
+%\PY{n}{y} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.3}\PY{p}{,} \PY{l+m+mf}{0.4}\PY{p}{,} \PY{l+m+mf}{0.6}\PY{p}{]}
+% 
+%\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{o}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)} \PY{c+c1}{\PYZsh{} we are using circle markers}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{grid}\PY{p}{(}\PY{k+kc}{True}\PY{p}{)}               \PY{c+c1}{\PYZsh{} this line activate grid drawing}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+%\end{Verbatim}
+%\end{tcolorbox}
+%
+%\begin{figure}[h]
+%\centering
+%  \includegraphics[width=0.6\textwidth]{figures/Untitled_43_0.png}
+%\end{figure}
+%%    { \hspace*{\fill} \\}
+%    
+%\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+%\begin{Verbatim}[commandchars=\\\{\}]
+%\PY{c+c1}{\PYZsh{} if we want to plot specific points too}
+%
+%\PY{n}{x} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{]}
+%\PY{n}{y} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.3}\PY{p}{,} \PY{l+m+mf}{0.4}\PY{p}{,} \PY{l+m+mf}{0.6}\PY{p}{]}
+% 
+%\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{l+m+mf}{2.5}\PY{p}{,} \PY{l+m+mf}{0.5}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{X}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{ms}\PY{o}{=}\PY{l+m+mi}{12}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{l+m+mf}{1.5}\PY{p}{,} \PY{l+m+mf}{0.35}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{x}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{ms}\PY{o}{=}\PY{l+m+mi}{12}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{grid}\PY{p}{(}\PY{k+kc}{True}\PY{p}{)}              
+%\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+%\end{Verbatim}
+%\end{tcolorbox}
+%
+%\begin{figure}[h]
+%\centering
+%  \includegraphics[width=0.6\textwidth]{figures/Untitled_44_0.png}
+%\end{figure}
+%%    { \hspace*{\fill} \\}
+%    
+%\subsubsection{What if \(x\) values are dates ?}
+%
+%\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+%\begin{Verbatim}[commandchars=\\\{\}]
+%\PY{k+kn}{import} \PY{n+nn}{datetime}
+%\PY{k+kn}{import} \PY{n+nn}{matplotlib}\PY{n+nn}{.}\PY{n+nn}{dates} \PY{k}{as} \PY{n+nn}{mdates}
+%
+%\PY{n}{x} \PY{o}{=} \PY{p}{[}\PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{7}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{,}  \PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{7}\PY{p}{,} \PY{l+m+mi}{30}\PY{p}{)}\PY{p}{,} 
+%     \PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{,}  \PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{8}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{]}
+%     
+%\PY{n}{y} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{,} \PY{l+m+mi}{34}\PY{p}{,} \PY{l+m+mi}{45}\PY{p}{]}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{o}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+%\PY{c+c1}{\PYZsh{} this line tells matplotlib we have dates on x axis}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{gca}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{xaxis}\PY{o}{.}\PY{n}{set\PYZus{}major\PYZus{}formatter}\PY{p}{(}\PY{n}{mdates}\PY{o}{.}\PY{n}{DateFormatter}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{Y\PYZhy{}}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{m\PYZhy{}}\PY{l+s+si}{\PYZpc{}d}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{)}
+%\PY{c+c1}{\PYZsh{} this one instead rotate labels to avoid superimposition}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{xticks}\PY{p}{(}\PY{n}{rotation}\PY{o}{=}\PY{l+m+mi}{45}\PY{p}{)}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{grid}\PY{p}{(}\PY{k+kc}{True}\PY{p}{)}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+%\end{Verbatim}
+%\end{tcolorbox}
+%
+%\begin{figure}[h]
+%\centering
+%  \includegraphics[width=0.6\textwidth]{figures/Untitled_46_0.png}
+%\end{figure}
+%%    { \hspace*{\fill} \\}
+%    
+%\subsection{Plotting an Histogram}\label{plotting-an-histogram}
+%
+%\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+%\begin{Verbatim}[commandchars=\\\{\}]
+%\PY{k+kn}{import} \PY{n+nn}{random} 
+%\PY{n}{numbers} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+%\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1000}\PY{p}{)}\PY{p}{:}
+%  \PY{n}{numbers}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{randint}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{)}
+%
+%\PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
+%
+%\PY{c+c1}{\PYZsh{} Here we define the binning}
+%\PY{c+c1}{\PYZsh{} 6 is the number of bins, going from 0 to 10}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{hist}\PY{p}{(}\PY{n}{numbers}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{n+nb}{range}\PY{o}{=}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{]}\PY{p}{)} 
+%\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+%\end{Verbatim}
+%\end{tcolorbox}
+%
+%\begin{figure}[h]
+%\centering
+%  \includegraphics[width=0.55\textwidth]{figures/Untitled_48_0.png}
+%\end{figure}
+% %   { \hspace*{\fill} \\}
+%    
+%\subsubsection{Plotting a Function}\label{plotting-a-function}
+%
+%In this case let's try to make the plot prettier adding labels, legend\ldots{}
+%All the commands apply also to the previous examples.
+%
+%\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+%\begin{Verbatim}[commandchars=\\\{\}]
+%\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+%\PY{k+kn}{import} \PY{n+nn}{matplotlib}\PY{n+nn}{.}\PY{n+nn}{pyplot} \PY{k}{as} \PY{n+nn}{plt}
+%\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
+%
+%\PY{c+c1}{\PYZsh{} define the functions to plot}
+%\PY{c+c1}{\PYZsh{} a gaussian with mean=0  and sigma=1}
+%\PY{c+c1}{\PYZsh{} in scipy module this is called norm}
+%\PY{n}{mu}\PY{o}{=}\PY{l+m+mi}{0}
+%\PY{n}{sigma} \PY{o}{=} \PY{l+m+mi}{1}
+%\PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{10}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mf}{1.645}\PY{p}{,} \PY{l+m+mf}{0.001}\PY{p}{)}
+%\PY{n}{x\PYZus{}all} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mf}{0.001}\PY{p}{)}
+%\PY{n}{y} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{pdf}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+%\PY{n}{y\PYZus{}all} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{pdf}\PY{p}{(}\PY{n}{x\PYZus{}all}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+%
+%\PY{c+c1}{\PYZsh{} draw the gaussian}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{x\PYZus{}all}\PY{p}{,} \PY{n}{y\PYZus{}all}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Gaussian}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+%
+%\PY{c+c1}{\PYZsh{} fill with different alpha using x\PYZus{}all and y\PYZus{}all as limits}
+%\PY{c+c1}{\PYZsh{} alpha set the transparency level: 0 trasparent, 1 solid}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{fill\PYZus{}between}\PY{p}{(}\PY{n}{x\PYZus{}all}\PY{p}{,} \PY{n}{y\PYZus{}all}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{n}{alpha}\PY{o}{=}\PY{l+m+mf}{0.1}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{blue}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Gaussian CDF}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+%
+%\PY{c+c1}{\PYZsh{} fill with color red using x and y as limits}
+%\PY{c+c1}{\PYZsh{} label associate text to the object for the legend}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{fill\PYZus{}between}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{n}{alpha}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{5}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{ tail}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+%
+%\PY{c+c1}{\PYZsh{} set x axis limits}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{xlim}\PY{p}{(}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{]}\PY{p}{)}
+%
+%\PY{c+c1}{\PYZsh{} add a label for X axis}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{xlabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Changes of value}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+%
+%\PY{c+c1}{\PYZsh{} add a label to y axis}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{ylabel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Gaussian values}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+%
+%\PY{c+c1}{\PYZsh{} add histogram title}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Distribution of changes of value}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+%
+%\PY{c+c1}{\PYZsh{} draw a vertical line at x=\PYZhy{}1.645}
+%\PY{c+c1}{\PYZsh{} y limits are in percent w.r.t. to y axis length}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{axvline}\PY{p}{(}\PY{n}{x}\PY{o}{=}\PY{o}{\PYZhy{}}\PY{l+m+mf}{1.645}\PY{p}{,} \PY{n}{ymin}\PY{o}{=}\PY{l+m+mf}{0.1}\PY{p}{,} \PY{n}{ymax}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{linestyle}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{:}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{linewidth}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{color} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+%
+%\PY{c+c1}{\PYZsh{} write some text to explain the line}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{text}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mf}{1.9}\PY{p}{,} \PY{o}{.}\PY{l+m+mi}{12}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{95}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{ percentile (VaR loss)}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}\PY{n}{fontsize}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{,} \PY{n}{rotation}\PY{o}{=}\PY{l+m+mi}{90}\PY{p}{,} 
+%                                    \PY{n}{color}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+%
+%\PY{n}{plt}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{p}{)}
+%\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+%\end{Verbatim}
+%\end{tcolorbox}
+%
+%\begin{figure}[htp]
+%\centering
+%  \includegraphics[width=0.55\textwidth]{figures/Untitled_50_0.png}
+%\end{figure}
+%%    { \hspace*{\fill} \\}
+%    \clearpage
+%If you are particularly satisfied by your work you can save the graph to a file:
+%
+%\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+%\begin{Verbatim}[commandchars=\\\{\}]
+%\PY{n}{plt}\PY{o}{.}\PY{n}{savefig}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{normal\PYZus{}curve.png}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+%
+%<Figure size 432x288 with 0 Axes>
+%
+%\end{Verbatim}
+%\end{tcolorbox}
