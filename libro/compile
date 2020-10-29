@@ -1,16 +1,31 @@
 #! /bin/bash
 
-if [[ $2 == "notes" ]]
-then
-    pdflatex "\input{main.tex}"
-    cp main.pdf lecture_notes_$1.pdf
-else
-    if [[ $# == 3 && $3 == "all" ]]
-    then
-	pdflatex "\def\isall{1} \input{exercise.tex}"
-	cp exercise.pdf exercises_with_solutions_$1.pdf
-    else
-	pdflatex "\input{exercise.tex}"
-	cp exercise.pdf exercises_no_solutions_$1.pdf
-    fi
-fi
+files=""
+prefix="lecture_"
+for (( i=1; i<=$1; i++ ))
+do
+    files=$files$prefix$i","
+done
+files="${files%?}"
+pdflatex "\def\myflag{$files} \input{main.tex}"
+mv main.pdf lecture_notes_$1.pdf
+
+files=""
+prefix="exercises_"
+for (( i=1; i<=$2; i++ ))
+do
+    files=$files$prefix$i","
+done
+files="${files%?}"
+pdflatex "\def\isall{1} \def\myflag{$files} \input{exercise.tex}"
+mv exercise.pdf exercises_with_solutions_$2.pdf
+
+files=""
+prefix="exercises_"
+for (( i=1; i<=$1; i++ ))
+do
+    files=$files$prefix$i","
+done
+files="${files%?}"
+pdflatex "\def\myflag{$files} \input{exercise.tex}"
+mv exercise.pdf exercises_no_solutions_$1.pdf
