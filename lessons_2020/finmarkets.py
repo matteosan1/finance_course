@@ -1,83 +1,12 @@
-import math, numpy
+import math, numpy, json
 
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
-def d1(S_k, r, vol, ttm):
-    """
-    d1: function to compute d1 in Black-Scholes formula.
-
-    Params:
-    -------
-    S_k: float
-        Strike of the option.
-    r: float
-        Interest rate.
-    vol: float
-        Volatility of the underlying.
-    ttm: float
-        Time to maturity.
-    """
-    num = math.log(S_k) + (r + 0.5*pow(vol, 2)) * ttm
-    den = vol * math.sqrt(ttm)
-    if den == 0:
-        return 100000000.
-    return num/den
-
-def d2(S_k, r, vol, ttm):
-    """
-    d2: function to compute d2 in Black-Scholes formula.
-
-    Params:
-    -------
-    S_k: float
-        Strike of the option.
-    r: float
-        Interest rate.
-    vol: float
-        Volatility of the underlying.
-    ttm: float
-        Time to maturity.
-    """
-    return d1(S_k, r, vol, ttm) - vol * math.sqrt(ttm)
-
-def call(S_k, r, vol, ttm):
-    """
-    call: function to compute the call price with Black-Scholes formula.
-
-    Params:
-    -------
-    S_k: float
-        Strike of the option.
-    r: float
-        Interest rate.
-    vol: float
-        Volatility of the underlying.
-    ttm: float
-        Time to maturity.
-    """
-    return S_k * norm.cdf(d1(S_k, r, vol, ttm)) - math.exp(-r * ttm) * norm.cdf(d2(S_k, r, vol, ttm))
-
-def put(S_k, r, vol, ttm):
-    """
-    put: function to compute the put price with Black-Scholes formula.
-
-    Params:
-    -------
-    S_k: float
-        Strike of the option.
-    r: float
-        Interest rate.
-    vol: float
-        Volatility of the underlying.
-    ttm: float
-        Time to maturity.
-    """
-    return math.exp(-r * ttm) * norm.cdf(-d2(S_k, r, vol, ttm)) - S_k * norm.cdf(-d1(S_k, r, vol, ttm))
-
-def generate_swap_dates(start_date, n_months, tenor=12):
+def generate_swap_dates(start_date, n_months, tenor_months=12):
     """
     generate_swap_dates: computes a set of dates given starting date and length in months.
+                         The tenor is by construction 12 months.
 
     Params:
     -------
@@ -85,11 +14,11 @@ def generate_swap_dates(start_date, n_months, tenor=12):
         The start date of the set of dates.
     n_months: int
         Number of months that define the length of the list of dates.
-    tenor: int
-        Frequency of the dates.
+    tenor_months: int
+        Set the tenor of the list of dates, by default it is 12 months.
     """
     dates = []
-    for i in range(0, n_months, tenor):
+    for i in range(0, n_months, tenor_months):
         dates.append(start_date + relativedelta(months=i))
     dates.append(start_date + relativedelta(months=n_months))
     
@@ -112,7 +41,7 @@ class DiscountCurve:
         self.today = today
         self.pillar_dates = pillar_dates
         self.discount_factors = discount_factors
-                
+        
     def df(self, d):
         """
         df: method to get interpolated discoutn factor at `d`.
@@ -179,7 +108,8 @@ class ForwardRateCurve(object):
 
 class OvernightIndexSwap:
     """
-    OvernightIndexSwap: a class to valuate Overnight Index Swaps7.1. OVERNIGHT INDEX SWAP
+    OvernightIndexSwap: a class to valuate Overnight Index Swaps
+
     Attributes:
     -----------
     notional: float
@@ -246,14 +176,301 @@ class OvernightIndexSwap:
         discount_curve: DiscountCurve
             Discount curve object used for npv calculation.
         """
-        den = 0
-        for i in range(1, len(self.payment_dates)):
-            start_date = self.payment_dates[i-1]
-            end_date = self.payment_dates[i]
-            tau = (end_date - start_date).days / 360
-            df = discount_curve.df(end_date)
-            den += df * tau
-            num = (discount_curve.df(self.payment_dates[0]) -
-                   discount_curve.df(self.payment_dates[-1]))
+        den = self.npv_fixed_leg(discount_curve)/self.fixed_rate
+        num = self.npv_floating_leg(discount_curve)
         return num/den
     
+class InterestRateSwap:
+    """
+    InterestRateSwap: a class to valuate Interest Rate Swaps
+
+    Attributes:
+    -----------
+    start_date: datetime.date
+        Starting date of the contract.
+    notional: float
+        Notional of the swap.
+    fixed_rate: float
+        Rate of the fixed leg of the swap.
+    tenor_months: int
+        Tenor of the contract in months.
+    maturity_years: int
+        Maturity of the swap in years.
+    """    
+    def __init__(self, start_date, notional, 
+                 fixed_rate, tenor_months, 
+                 maturity_years):
+        self.notional = notional
+        self.fixed_rate = fixed_rate
+        self.fixed_leg_dates = \
+            generate_swap_dates(start_date, 12 * maturity_years)
+        self.floating_leg_dates = \
+            generate_swap_dates(start_date, 12 * maturity_years,
+                                tenor_months)
+        
+    def annuity(self, discount_curve):
+        """
+        annuity: compute the annuity.
+
+        Params:
+        -------
+        discount_curve: DiscountCurve
+            Discount curve object used for the annuity.
+        """
+        a = 0
+        for i in range(1, len(self.fixed_leg_dates)):
+            a += discount_curve.df(self.fixed_leg_dates[i])
+        return a
+
+    def swap_rate(self, discount_curve, libor_curve):
+        """
+        swap_rate: compute the swap rate of the IRS.
+
+        Params:
+        -------
+        discount_curve: DiscountCurve
+            Discount curve object used for swap rate calculation.
+        libor_curve: ForwardRateCurve
+            Libor curve object used for swap rate calculation.
+        """
+        s = 0
+        for j in range(1, len(self.floating_leg_dates)):
+            F = libor_curve.forward_rate(self.floating_leg_dates[j-1])
+            tau = (self.floating_leg_dates[j] - \
+                   self.floating_leg_dates[j-1]).days / 360
+            P = discount_curve.df(self.floating_leg_dates[j])
+            s += F * tau * P
+        return s / self.annuity(discount_curve)
+        
+    def npv(self, discount_curve, libor_curve):
+        """
+        npv: compute the npv of the IRS.
+
+        Params:
+        -------
+        discount_curve: DiscountCurve
+            Discount curve object used for swap rate calculation.
+        libor_curve: ForwardRateCurve
+            Libor curve object used for swap rate calculation.
+        """
+        S = self.swap_rate(discount_curve, libor_curve)
+        A = self.annuity(discount_curve)
+        return self.notional * (S - self.fixed_rate) * A
+
+class InterestRateSwaption:
+    """
+    InterestRateSwaption: class to manage swaptions.
+
+    Attributes:
+    -----------
+    exercise_date: datetime.date
+        The exercise date of the swaptions.
+    irs: InterestRateSwap
+        The IRS underlying the swaptions.
+    """
+    def __init__(self, exercise_date, irs):
+        self.exercise_date = exercise_date
+        self.irs = irs
+        
+    def npv_bs(self, discount_curve, libor_curve, sigma):
+        """
+        npv_bs: estimate the swaption NPV using Black-Scholes formula.
+        
+        Params:
+        -------
+        discount_curve: DiscountCurve
+            The curve to discount the npv.
+        libor_curve: ForwardRateCurve
+            The libor curve to compute the swap rate.
+        simga: float
+            The volatility of the swap rate.
+        """
+        A = self.irs.annuity(discount_curve)
+        S = self.irs.swap_rate(discount_curve, libor_curve)
+        T = (self.exercise_date - discount_curve.today).days / 365
+        d1 = (math.log(S/self.irs.fixed_rate) + 0.5 * sigma**2 * T) / (sigma * T**0.5)
+        d2 = d1 - (sigma * T**0.5)
+        npv = self.irs.notional * A * (S * scipy.stats.norm.cdf(d1) -
+                                       self.irs.fixed_rate * scipy.stats.norm.cdf(d2))
+        return npv
+    
+    def npv_mc(self, discount_curve, libor_curve, sigma, n_scenarios=10000):
+        """
+        npv_bs: estimate the swaption NPV with Monte Carlo Simulation.
+        
+        Params:
+        -------
+        discount_curve: DiscountCurve
+            The curve to discount the npv.
+        libor_curve: ForwardRateCurve
+            The libor curve to compute the swap rate.
+        simga: float
+            The volatility of the swap rate.
+        n_scenarios: int
+            Number of Monte Carlo experiment to simulate.
+        """
+        A = self.irs.annuity(discount_curve)
+        S = self.irs.swap_rate(discount_curve, libor_curve)
+        T = (self.exercise_date - discount_curve.today).days / 365
+        discounted_payoffs = []
+        for i_scenario in range(n_scenarios):
+            S_simulated = S * math.exp(-0.5 * sigma * sigma * T +
+                                       sigma * math.sqrt(T) * numpy.random.normal())
+            swap_npv = self.irs.notional * (S_simulated - self.irs.fixed_rate) * A
+            discounted_payoffs.append(max(0, swap_npv))
+        npv_mc = numpy.mean(discounted_payoffs)
+        npv_error = 2.56 * numpy.std(discounted_payoffs) / math.sqrt(n_scenarios)
+        return npv_mc, npv_error
+
+class CreditCurve(object):
+    """
+    CreditCurve: a class to manage credit curves.
+
+    Attributes:
+    -----------
+    pillar_date: list of datetime.date
+        List of dates that forms the pillars of the curve.
+    ndps: list of floats
+        List of non-default probabilities.
+    """    
+    def __init__(self, pillar_dates, ndps):
+        self.pillar_dates = pillar_dates
+        
+        self.pillar_days = [
+            (pd - pillar_dates[0]).days
+            for pd in pillar_dates
+        ]
+        
+        self.ndps = ndps
+        
+    def ndp(self, value_date):
+        """
+        npd: method to interpolate non-default probability at arbitrary dates.
+
+        Params:
+        -------
+        value_date: datatime.date
+            The date of the interpolation.
+        """
+        value_days = (value_date - self.pillar_dates[0]).days
+        return numpy.interp(value_days,
+                            self.pillar_days,
+                            self.ndps)
+    
+    def hazard(self, value_date):
+        """
+        hazard: compute the annualized hazard rate.
+
+        Params:
+        -------
+        value_date: datetime.date
+            The date at which the hazard rate is computed.
+        """
+        ndp_1 = self.ndp(value_date)
+        ndp_2 = self.ndp(value_date + relativedelta(days=1))
+        delta_t = 1.0 / 365.0
+        h = -1.0 / ndp_1 * (ndp_2 - ndp_1) / delta_t
+        return h
+    
+class CreditDefaultSwap:
+    """
+    CreditDefaultSwap: a class to valuate Credit Default Swaps
+
+    Attributes:
+    -----------
+    notional: float
+        Notional of the swap.
+    start_date: datetime.date
+        Starting date of the contract.
+    fixed_spread: float
+        The spread associated to the premium leg.
+    maturity: int
+        Maturity of the swap in years.
+    tenor: int
+        Tenor of the premium leg in months, default is 3.
+    recovery: float
+        Recovery parameter in case of default, default value is 40%
+    """    
+    def __init__(self, notional, start_date, fixed_spread, 
+                 maturity, tenor=3, recovery=0.4):
+        self.notional = notional
+        self.payment_dates = generate_swap_dates(start_date, maturity*12, tenor)
+        self.fixed_spread = fixed_spread
+        self.recovery = recovery
+    
+    def npv_premium_leg(self, discount_curve, credit_curve):
+        """
+        npv_premium_leg: valuate the premium leg.
+
+        Params:
+        -------
+        discount_curve: DiscountCurve 
+            The curve to discount the NPV.
+        credit_curve: CreditCurve
+            The curve to extract the default probabilities.
+        """
+        npv = 0
+        for i in range(1, len(self.payment_dates)):
+            npv += (
+                discount_curve.df(self.payment_dates[i]) *
+                credit_curve.ndp(self.payment_dates[i])
+            )
+        return npv * self.notional * self.fixed_spread
+    
+    def npv_default_leg(self, discount_curve, credit_curve):
+        """
+        npv_ default_leg: valuate the default leg.
+
+        Params:
+        -------
+        discount_curve: DiscountCurve 
+            The curve to discount the NPV.
+        credit_curve: CreditCurve
+            The curve to extract the default probabilities.
+        """
+        npv = 0
+        d = self.payment_dates[0]
+        while d <= self.payment_dates[-1]:
+            npv += discount_curve.df(d) * (
+                credit_curve.ndp(d) -
+                credit_curve.ndp(d + relativedelta(days=1))
+            )
+            d += relativedelta(days=1)
+        return npv * self.notional * (1 - self.recovery)
+    
+    def npv(self, discount_curve, credit_curve):
+        """
+        npv: valuate the CDS.
+
+        Params:
+        -------
+        discount_curve: DiscountCurve 
+            The curve to discount the NPV.
+        credit_curve: CreditCurve
+            The curve to extract the default probabilities.
+        """
+        return self.npv_default_leg(discount_curve, credit_curve) - \
+               self.npv_premium_leg(discount_curve, credit_curve)
+
+    def breakevenRate(self, discount_curve, credit_curve):
+        num = self.npv_default_leg(discount_curve, credit_curve)
+        den = self.npv_premium_leg(discount_curve, credit_curve)/self.fixed_spread
+        return num/den
+
+
+class GaussianQuadrature:
+    def __init__(self, filename="gaussian_quadrature.json"):
+        with open(filename, "r") as f:
+            self.params = json.load(f)
+
+    def M(self, n):
+        n = str(n)
+        if n not in self.params.keys():
+            print ("N={} not available.".format(n))
+            return None, None
+        else:
+            values = self.params[str(n)]['value']
+            weight = self.params[str(n)]['weight']
+            return values, weight
+        
+                                 

@@ -1,11 +1,14 @@
 \chapter{Portfolio Optimization}\label{portfolio-optimization}
 
 Portfolio optimization models are concerned with investment where there
-are typically two criteria: expected return and risk. The investor wants
-the former to be high and the latter to be low. There is a variety of
+are typically two criteria: expected return and risk.
+The investor wants
+the former to be high and the latter to be low. 
+
+There is a variety of
 measures of risk. The most popular measure of risk has been variance in
 return. Even though there are some problems with it, we will first look
-at it very closely.
+at it very closely before introducing some alternatives.
 
 Some notations that will be heavily used later are:
 
@@ -92,15 +95,11 @@ be easily computed (e.g.~daily returns, covariance matrix, etc...):
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{c+c1}{\PYZsh{} daily returns}
 \PY{n}{daily\PYZus{}returns} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{pct\PYZus{}change}\PY{p}{(}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Daily expected returns: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{p}{)}\PY{p}{)}
 \PY{n}{annual\PYZus{}expected} \PY{o}{=} \PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{p}{)} \PY{o}{*} \PY{l+m+mi}{252}
 \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Annual expected returns: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{annual\PYZus{}expected}\PY{p}{)}
 
 \PY{c+c1}{\PYZsh{} covariance}
 \PY{n}{covariance} \PY{o}{=} \PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Daily covariance: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{covariance}\PY{p}{)}
-
 \PY{n}{annual\PYZus{}covariance} \PY{o}{=} \PY{n}{covariance} \PY{o}{*} \PY{l+m+mi}{252}
 \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Annual covariance: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{annual\PYZus{}covariance}\PY{p}{)}
 
@@ -112,13 +111,6 @@ date
 2014-01-06  0.005453 -0.007088  0.048445  NaN -0.009722
 2014-01-07 -0.007156  0.011178  0.012587  NaN -0.055817
 2014-01-08  0.006338  0.009773  0.005352  NaN  0.004389
-Daily expected returns:             ticker
-adj\_close  AAPL      0.000882
-           AMZN      0.001418
-           FB        0.001115
-           GOOG      0.000686
-           NFLX      0.002008
-dtype: float64
 Annual expected returns:             ticker
 adj\_close  AAPL      0.222314
            AMZN      0.357435
@@ -126,14 +118,6 @@ adj\_close  AAPL      0.222314
            GOOG      0.172818
            NFLX      0.505967
 dtype: float64
-Daily covariance:                   adj\_close
-ticker                AAPL      AMZN        FB      GOOG      NFLX
-          ticker
-adj\_close AAPL    0.000207  0.000094  0.000099  0.000089  0.000102
-          AMZN    0.000094  0.000348  0.000169  0.000157  0.000187
-          FB      0.000099  0.000169  0.000310  0.000143  0.000174
-          GOOG    0.000089  0.000157  0.000143  0.000206  0.000160
-          NFLX    0.000102  0.000187  0.000174  0.000160  0.000718
 Annual covariance:                   adj\_close
 ticker                AAPL      AMZN        FB      GOOG      NFLX
           ticker
@@ -159,13 +143,15 @@ standard deviations of the two random variables. The correlation can be
 between -1 and +1 with +1 (-1) being perfect correlation
 (anti-correlation) between the two.
 
-Simulating a large number of set of weights we can see which is the
-distribution of these portfolios in terms of return and volatility.
+Simulating a large number of set of weights to construct portfolios with the five stocks shown before, we can see which is the
+distribution of these portfolios in terms of return and volatility, see Figure~\ref{fig:mc_portfolio}.
 
-    \begin{figure}
-    \centering
-    \includegraphics[width=0.8\textwidth]{figures/Figure_1.png}
-    \end{figure}
+\begin{figure}[tb]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/Figure_1.png}
+\caption{Distribution in the expected return/volatility plane of a large number of simulated portfolios.}
+\label{fig:mc_portfolio}
+\end{figure}
 
 
 \section{Optimisation}\label{optimization}
@@ -174,8 +160,8 @@ Remembering that \(w_i\) represents the fraction of the portfolio
 devoted to each stock (weights), Markowitz model states that these
 weights should be chosen such that the portfolio volatility (or its
 variance) is minimised. So the application of Markovitz model reduces to
-an optimisation problem, given the covariance matrix of the portfolio
-\(\sigma_p^2\) estimated before from the historical series:
+an optimisation problem: given the covariance matrix of the portfolio
+\(\sigma_p^2\) estimated before from the historical series, we need to find:
 
 \[ J = \textrm{min}(\sigma_p^2) \]
 with the usual constraints \(\sum_{i}w_i = 1\) and \(0 \le w_i \le 1\).
@@ -189,14 +175,14 @@ In \texttt{python} we already know how to solve a minimisation problem
   define an objective function (in this case the variance of the
   portfolio);
 \item
-  define a set of constraints;
+  define a set of constraints (the weights constraints);
 \item
   set an initial guess for the weights;
 \item
   pass everything to \texttt{scipy.optimize.minimize} algorithm.
 \end{itemize}
 
-    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}\PY{o}{,} \PY{n+nn}{matplotlib}\PY{n+nn}{.}\PY{n+nn}{pyplot} \PY{k}{as} \PY{n+nn}{plt}\PY{o}{,} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{as} \PY{n+nn}{optimize}
 
@@ -236,10 +222,9 @@ Portfolio expected annual return: 0.2224
     \end{Verbatim}
 \end{tcolorbox}
 
-    The solution recommends about 44\% of the portfolio be put in AAPL,
+The solution recommends about 44\% of the portfolio be invested in AAPL,
 about 7\% in AMZN, 10\% in FB and so on\ldots{} The expected return is
-about 22\%, with a variance of 0.03 or, equivalently, a standard
-deviation of about 0.17.
+about 22\%, with a variance of about 0.036 or, equivalently, a standard deviation of 0.19.
 
 In this example we based the model simply on straightforward statistical
 data derived from daily returns. However it could be possible, rather
@@ -253,43 +238,46 @@ There is no precise way for an investor to determine the ``correct''
 working point between risk and return. For example if an investor wants
 a higher expected return, she generally has to ``pay for it'' with
 higher risk. Thus, one is frequently interested in looking at the
-distribution of the tradeoff between the two. In finance terminology, we
+distribution of the trade off between the two. In finance terminology, we
 would like to trace out the \emph{efficient frontier} of return and
 risk. This is doable solving for the minimum variance portfolio over a
 range of values for the expected return (e.g.~ranging from 0.20 to
-0.45). Back to our example portfolio we get the following plot or
-tradeoff curve:
+0.45).
+Now in the code, beside the usual constraint on the sum of the weights, we have to add the one that force the resulting return to be equal to the chosen target.
 
-    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+The following code produce the efficient frontier plot shown in Fig.~\ref{fig:efficient_frontier}.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{numAssets} \PY{o}{=} \PY{l+m+mi}{5}
-
 \PY{k}{def} \PY{n+nf}{getTargetReturn}\PY{p}{(}\PY{n}{weights}\PY{p}{,} \PY{n}{returns}\PY{p}{,} \PY{n}{targetReturn}\PY{p}{)}\PY{p}{:}
     \PY{n}{portfolio\PYZus{}return} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{returns}\PY{o}{*}\PY{n}{weights}\PY{p}{)}
     \PY{k}{return} \PY{p}{(}\PY{n}{portfolio\PYZus{}return} \PY{o}{\PYZhy{}} \PY{n}{targetReturn}\PY{p}{)}
 
 \PY{n}{returns} \PY{o}{=} \PY{p}{[}\PY{p}{]}
 \PY{k}{for} \PY{n}{eff} \PY{o+ow}{in} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.20}\PY{p}{,} \PY{l+m+mf}{0.45}\PY{p}{,} \PY{l+m+mf}{0.005}\PY{p}{)}\PY{p}{:}
-    \PY{c+c1}{\PYZsh{} in this case there is tha usual constraint on the sum of the weights}
-    \PY{c+c1}{\PYZsh{} PLUS the one that force the resulting return to be equal to the choosen target}
-    \PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{getTargetReturn}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{args}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{p}{(}\PY{n}{annual\PYZus{}expected}\PY{p}{,} \PY{n}{eff}\PY{p}{,}\PY{p}{)}\PY{p}{\PYZcb{}}\PY{p}{,}
+    \PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{getTargetReturn}\PY{p}{,}
+                    \PY{l+s+s2}{\PYZsq{}}\PY{l+s+s2}{args}\PY{l+s+s2}{\PYZsq{}}\PY{p}{:}\PY{p}{(}\PY{n}{annual\PYZus{}expected}\PY{p}{,} \PY{n}{eff}\PY{p}{,}\PY{p}{)}\PY{p}{\PYZcb{}}\PY{p}{,}
                    \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sumWeights}\PY{p}{\PYZcb{}}\PY{p}{)}
     \PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{numAssets}\PY{p}{)}\PY{p}{)}
-    \PY{n}{opts} \PY{o}{=} \PY{n}{optimize}\PY{o}{.}\PY{n}{minimize}\PY{p}{(}\PY{n}{objective}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{ones}\PY{p}{(}\PY{n}{numAssets}\PY{p}{)} \PY{o}{/} \PY{n+nb}{float}\PY{p}{(}\PY{n}{numAssets}\PY{p}{)}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{annual\PYZus{}covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
+    \PY{n}{opts} \PY{o}{=} \PY{n}{optimize}\PY{o}{.}\PY{n}{minimize}\PY{p}{(}\PY{n}{objective}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{ones}\PY{p}{(}\PY{n}{numAssets}\PY{p}{)} \PY{o}{/} \PY{n+nb}{float}\PY{p}{(}\PY{n}{numAssets}\PY{p}{)}\PY{p}{,} 
+                             \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{annual\PYZus{}covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
                              \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
 
-    \PY{n}{returns}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{annual\PYZus{}covariance}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{annual\PYZus{}expected}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+    \PY{n}{returns}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{annual\PYZus{}covariance}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{p}{,}
+                   \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{annual\PYZus{}expected}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)}
 
 \PY{n}{returns} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{n}{returns}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
-    \begin{figure}
-    \centering
-    \includegraphics[width=0.7\textwidth]{figures/markowitz_11_0.png}
-    \end{figure}
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/effiecient_frontier.png}
+\caption{Efficient frontier for our example portfolio obtained minimizing the the variance and requiring an expected return between 0.02 and 0.45.}
+\label{fig:efficient_frontier}
+\end{figure}
     
-\subsection{Portfolios with a Risk-Free
+\section{Portfolios with a Risk-Free
 Asset}\label{portfolios-with-a-risk-free-asset}
 
 When one of the investments available is risk free, then the efficient
@@ -341,7 +329,7 @@ minimisation to determine the efficient frontier of the resulting
 portfolio. Notice how the objective function is still the same, while
 the target return constraint now includes the risk-free asset.
 
-    \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{n}{numAssets} \PY{o}{=} \PY{l+m+mi}{6}
 
@@ -375,16 +363,20 @@ the target return constraint now includes the risk-free asset.
 \end{Verbatim}
 \end{tcolorbox}
 
-\begin{figure}
+\begin{figure}[htb]
 \centering
-    \includegraphics[width=0.7\textwidth]{figures/markowitz_13_1.png}
-    \end{figure}
+    \includegraphics[width=0.7\textwidth]{figures/cal.png}
+    \caption{Comparison of efficient frontier with a risk-free asset (red) and with risky asset only (blue).}
+    \label{fig:cal}
+\end{figure}
     
-    As it is clear from the plot the efficient frontier has become a
+As it is clear from Fig.~\ref{fig:cal} the efficient frontier has become a
 straight line, tangent to the frontier of the risky assets only. When
 the target is 10\% the entire investment is allocated to the risk-free
 asset, as the target increases the fraction of the risky assets grows
-proportionally to the volatility. In general the relative proportions
+proportionally to the volatility. 
+
+It is important to notice that in general the relative proportions
 devoted to risky investments do not change. Only the allocation between
 the risk-free asset and the risky assets change.
 
@@ -700,3 +692,63 @@ Risk contribution for asset 4: 15.0
     \end{Verbatim}
 \end{tcolorbox}
 And indeed for each stock we have allocated the desired amount of risk.
+
+
+
+
+
+%If the expected excess returns of assets are proportional to their risks (volatilities), then ER(P) = kP′Σ, where
+%k is a constant, and maximizing D(P) is equivalent to maximizing , which is the Sharpe ratio of the portfolio.
+%In this case, the Most-Diversified Portfolio is also the tangency portfolio
+%
+%
+%In addition to minimum variance, and risk parity/budgeting, maximum diversivication is also another well known risk based asset allocation technique.
+%
+%Let
+%
+%w1  be a vector of all asset weights
+%and
+%
+%Capture2 be a vector of all asset volatility (square root of the diagnal of V, the covariance matrix)
+%
+%Then define diversification ratio as
+%
+%dv
+%
+%It is basically the weighted average of volatility devided by the portfolio volatility
+%
+%An interesting hypothesis/observation: if the assest volatility is positively correlated with asset expected excess return, then maximizing diversification ratio is related to maximizing ex ante Sharpe ratio of the portfolio.
+%
+%For example, Using CAPM
+%capm
+%and beta is
+%12312zz
+%
+%Obviously zro is not a constant because correlation of stock return to market return varies across assets/stocks. But Beta is indeed positively correlated with asset volatility, thus the expected excess return is positively correlated with asset volatility under the CAPM.
+%
+%Python implementation using scipy optimize
+%
+%def calc_diversification_ratio(w, V):
+%# average weighted vol
+%w_vol = np.dot(np.sqrt(np.diag(V)), w.T)
+%# portfolio vol
+%port_vol = np.sqrt(calculate_portfolio_var(w, V))
+%diversification_ratio = w_vol/port_vol
+%# return negative for minimization problem (maximize = minimize -)
+%return -diversification_ratio
+%
+%
+%#####################################################################
+%#               PORTFOLIO Optimization functions                    #
+%#####################################################################
+%
+%def max_div_port(w0, V, bnd=None, long_only=True):
+%# w0: initial weight
+%# V: covariance matrix
+%# bnd: individual position limit
+%# long only: long only constraint
+%cons = ({'type': 'eq', 'fun': total_weight_constraint},)
+%if long_only: # add in long only constraint
+%cons = cons + ({'type': 'ineq', 'fun':  long_only_constraint},)
+%res = minimize(calc_diversification_ratio, w0, bounds=bnd, args=V, method='SLSQP', constraints=cons)
+%return res
