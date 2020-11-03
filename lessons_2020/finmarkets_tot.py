@@ -456,3 +456,21 @@ class CreditDefaultSwap:
         num = self.npv_default_leg(discount_curve, credit_curve)
         den = self.npv_premium_leg(discount_curve, credit_curve)/self.fixed_spread
         return num/den
+
+
+class GaussianQuadrature:
+    def __init__(self, filename="gaussian_quadrature.json"):
+        with open(filename, "r") as f:
+            self.params = json.load(f)
+
+    def M(self, n):
+        n = str(n)
+        if n not in self.params.keys():
+            print ("N={} not available.".format(n))
+            return None, None
+        else:
+            values = self.params[str(n)]['value']
+            weight = self.params[str(n)]['weight']
+            return values, weight
+        
+                                 
