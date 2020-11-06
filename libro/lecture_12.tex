@@ -133,6 +133,8 @@ variable \(M\).
 
 With the assumption that have been made the one factor model is also called \emph{Market Standard Model}.
 
+If the default probabilities are not the same for each company then it is possible through an iterative procedure to determine $DP(N_{t|M}=j)$ and proceed with the integration of Eq.~\ref{eq:gaussian_quadrature}.
+An example of this iterative technique will be shown in Section~\ref{sec:expected_losses}.
 
 %\subsubsection{Gaussian Quadrature}\label{gaussian-quadrature}
 %The integral in Eq.~\ref{eq:gaussian_quadrature} can be quite
@@ -288,7 +290,7 @@ independent. The integral in Eq.~\ref{eq:indep_default} can be solved by substit
 
 Setting \(t=m_A x + q_A\) it becomes:
 
-\[ \int_{m_A x_0 + q_A}^{m_A x_1 + q_A}{(1-F_B(x(t)))(1-F_C(x(t)))dt}~~~~~~\Big(\textrm{with}~x(t) = \cfrac{t -q_A}{m_A}\Big) \]
+\[ \int_{m_A x_0 + q_A}^{m_A x_1 + q_A}{(1-F_B(x(t)))(1-F_C(x(t)))dt}\qquad\Big(\textrm{with}~x(t) = \cfrac{t -q_A}{m_A}\Big) \]
 and similarly for company $B$ and $C$.
 
 To convert it into \texttt{python} we can use \texttt{scipy.integrate.quad} to
@@ -456,126 +458,215 @@ with constant default intensities (hazard rates), \(\lambda_i\),
 \end{Verbatim}
 \end{tcolorbox}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 \section{Collateralized Debt Obligation}\label{collateralized-debt-obligation}
 
-A Collateralized Debt Obligation (CDO) is a credit derivative1
-that creates fixed income securities with widely different risk characteristics from a pool of risky assets. 
-The
-coupon and principal payments of these securities are linked to the performance of the
-underlying pool. These fixed income securities are known as tranches and divided into
-senior, mezzanine and subordinated/equity tranches. 
+A Collateralized Debt Obligation (CDO) is a credit derivative where the issuer, typically an investment bank, gather risky assets and repackage them into discrete classes (\emph{tranches}) based on the level of credit risk assumed by the investor. These tranches of securities become the final investment product.
+
+Tranches are named to reflect their risk profile:
+senior, mezzanine and subordinated/equity and are delimited by the attachment ($L$) and detachment points ($U$), which represent the percentages of the total principal defining their boundaries. 
 
 Each of these tranches has a different level of seniority relative to the others in the sense that a senior tranche has coupon
 and principal payment priority over a mezzanine tranche, while a mezzanine tranche has
 coupon and principal payment priority over an equity tranche. 
+Indeed they receive returns using a set of rules known as \emph{waterfall}. Incomes of the portfolio are first used to provide returns to the most senior tranche, then to the next and so on.
+So the senior tranches are generally safest because they have the first claim on the collateral, although they'll offer lower coupon rates.
+Figure~\ref{fig:cdo_structure} shows a typical structure of a CDO.
 
+\begin{figure}
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/cdo_structure}
+	\caption{Typical structure of a CDO, with the reference portfolio made of bonds. These bonds form the collateral for the CDO.}
+	\label{fig:cdo_structure}
+\end{figure}
 
 It is important to note
 that a CDO only redistributes the total risk associated with the underlying pool of assets
 to the priority ordered tranches. It neither reduces nor increases the total risk associated
 with the pool.
 
-A CDO is called a synthetic CDO if the risky assets in the underlying pool are credit default swaps (CDS). 
-Besides synthetic CDOs,
-there are other types of CDOs. Depending on the nature of the risky assets in the
-underlying pool, a CDO may be called a collateralized loan obligation or a collateralized
-bond obligation if it holds only loans or bonds, respectively. 
+There are various kind of CDOs:
+\begin{itemize}
+	\item in a \textbf{Cash CDO} the reference portfolio consists of corporate bonds owned by the CDO issuer. To reduce the capital requirements to cover any potential losses,  the portfolio can be converted into a series of tranches and sold to investors. The equity tranche is usually kept by the issuer being the riskier but also the more rewarded.
+	\item in a \textbf{Synthetic CDO} the underlying reference portfolio is no longer a physical portfolio of bonds or loans, instead it is a \emph{fictitious} portfolio consisting of a number of names each with an associated notional amount.
+\end{itemize}
 
-the transaction is called a balance sheet CDO.
-A CDO can be structured as either a cash flow or a synthetic transaction, or a hybrid
-of both. In a cash flow transaction, the CDO is backed by a pool of cash assets that are
-truly owned by the CDO sponsor. A synthetic CDO makes use of CDS’ to transfer the
-credit risk of a pool of reference entities to tranche investors. 
-The main difference between
-a cash flow CDO and a synthetic CDO is that in the latter no transfer of securities takes
-place. 
+\subsection{Cash CDO Expected Losses}\label{sec:expected_losses}
+Before going to the valuation of a CDO we will compute the expected losses in a very simple case.
 
-\subsection{CDO Expected Losses}
+Consider a Cash CDO with a maturity of 1 year, made of 125 bonds. Each bond pays a coupon of one unit after 1 year and it has not yet defaulted (the recovery rate $R$ is assumed 0). We are interested in the following three tranches: equity ([0, 3] defaults), mezzanine ([4, 6] defaults) and senior ([7, 9] defaults), see Fig.~\ref{fig:cdo_ex_1} (note that now tranches are identified through the number of defaults and not percentages of the principal). 
 
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.5\textwidth]{figures/ex_cdo_1}
+	\caption{Structure of the CDO considered in the example.}
+	\label{fig:cdo_ex_1}
+\end{figure}
 
-\subsection{CDO Valuation}
-The structure of a typical synthetic CDO can be explained through the following example,
-which is illustrated in Figure 1.1. This synthetic CDO is based on a pool of 125 CDS’. The
-notional value of each CDS is US$8 million. The total notional value of the underlying
-pool is US$1 billion. The CDO has four priority ordered tranches: (i) an equity tranche
-with an initial notional value of US$30 million and a credit spread of 2000 basis points
-(bps) per annum; (ii) a mezzanine tranche with an initial notional value of US$50 million
-and a credit spread of 800 bps per annum; (iii) a senior tranche with an initial notional
-value of US$120 million and a credit spread of 100 bps per annum; and (iv) a super
-senior tranche with an initial notional value of US$800 million and a credit spread of 20
-bps per annum. The equity tranche is the riskiest one; the mezzanine tranche bears a
-medium risk; the senior tranche is less risky and the super senior tranche has the lowest
-risk. The maturity of the CDO, thus the maturity of each tranche, is five years from now
-and the premiums are paid quarterly.
-During the life of the CDO, each tranche may receive premiums quarterly from the
-CDO issuer. The premium that a tranche investor receives for a specified premium
-payment period is proportional to the remaining notional value of the specified tranche
-at the end of the premium payment period. Let us consider one scenario. Suppose there
-is no loss in the first quarter of the CDO life. Then the equity tranche investor receives
-30 ∗ 20% ∗ 0.25 =US$1.5 million from the CDO issuer; the mezzanine tranche investor
-receives 50 ∗ 8% ∗ 0.25 =US$1 million, and so on. Suppose further that, in the second
-quarter, the underlying pool suffers a US$6 million loss. Then the equity tranche investor
-absorbs this US$6 million loss. The premium that the equity tranche investor receives
-for this period is (30 − 6) ∗ 20% ∗ 0.25 =US$1.2 million. In total, the equity tranche
-investor pays the CDO issuer US$(6-1.2)=US$4.8 million. The notional value of the
-equity tranche for the next premium payment period is reduced to US$(30-6)=US$24
-Chapter 1. Introduction 5
-million. The mezzanine tranche investor still receives 50 ∗ 8% ∗ 0.25 =US$1 million from
-the CDO issuer, and so on. If the equity tranche’s notional value has been reduced to
-zero before the maturity of the CDO, the mezzanine tranche investor would then be the
-next one to suffer losses. The pool would need to suffer a loss of US$200 million before
-the super senior tranche investor would suffer any loss.
+We also assume that the probability of default within 1 year are identical for each bond ($Q$) and that the correlation between each pair is also identical ($\rho$).
 
+Under these assumptions we are in the position to use the Gaussian Copula Model and the derivation of the expected losses results quite simple.
 
+The probability of having $l$ defaults, conditional to the market parameter $M$ will follow a binomial distribution given by
+\begin{equation}
+p(l|M) = \binom{N}{l}Q_M^l (1-Q_M)^{N-l}
+\label{eq:def_prob_ex_cdo_1}
+\end{equation}
+where $N$ is the number of bonds in the portfolio and 
+\[
+Q_M = \Phi\left(\cfrac{\Phi^{-1}(Q)-\sqrt{\rho}M}{\sqrt{\-\rho}}\right)
+\]
+where $\Phi$ is the standard normal CDF and $Q$ the probability of default within 1 year of a single name.
 
+From the definition of each tranche with have that the expected losses are
+\begin{itemize}
+	\item $\mathbb{E}(\textrm{equity loss})=3\cdot\mathbb{P}(l\ge 3) + \sum_{k=1}^{2}{k\cdot\mathbb{P}(l=k)}$
+	\item $\mathbb{E}(\textrm{mezzanine loss})=3\cdot\mathbb{P}(l\ge 6) + \sum_{k=1}^{2}{k\cdot\mathbb{P}(l=k+3)}$
+	\item $\mathbb{E}(\textrm{senior loss})=3\cdot\mathbb{P}(l\ge 9) + \sum_{k=1}^{2}{k\cdot\mathbb{P}(l=k+6)}$
+\end{itemize}
 
+Each probability $\mathbb{P}$ can be calculated by integrating the above with respect to $M$ as in Equation~\ref{eq:gaussian_quadrature}.
 
+Let's see the corresponding \texttt{python} implementation.
+First we import the necessary modules and define the needed constants.
 
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{binom}\PY{p}{,} \PY{n}{norm}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{integrate} \PY{k}{import} \PY{n}{quad}
+\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+	
+\PY{n}{N} \PY{o}{=} \PY{l+m+mi}{125}
+\PY{n}{C} \PY{o}{=} \PY{l+m+mi}{1}
+\PY{n}{R} \PY{o}{=} \PY{l+m+mi}{0}
+\PY{n}{M} \PY{o}{=} \PY{l+m+mi}{1}
+\PY{n}{q} \PY{o}{=} \PY{l+m+mf}{0.02}
+\PY{n}{rho} \PY{o}{=} \PY{l+m+mf}{0.5}
+	
+\PY{n}{tranches} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{3}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{7}\PY{p}{,}\PY{l+m+mi}{9}\PY{p}{]}\PY{p}{]}
+\end{Verbatim}
+\end{tcolorbox}
 
+The we define a function \texttt{p} which implements the expected losses for each tranche and Eq.~\ref{eq:def_prob_ex_cdo_1}.
+The function takes in input the parameter \texttt{M}, the correlation \texttt{rho} and the tranche attach-detach limits.
+	
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{p}\PY{p}{(}\PY{n}{M}\PY{p}{,} \PY{n}{rho}\PY{p}{,} \PY{n}{lims}\PY{p}{)}\PY{p}{:}
+    \PY{n}{qM} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{p}{(}\PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{q}\PY{p}{)}\PY{o}{\PYZhy{}}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{rho}\PY{p}{)}\PY{o}{*}\PY{n}{M}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{rho}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+    \PY{n}{pN} \PY{o}{=} \PY{n}{binom}\PY{p}{(}\PY{n}{N}\PY{p}{,} \PY{n}{qM}\PY{p}{)}
+    \PY{n}{prob} \PY{o}{=} \PY{l+m+mi}{3}\PY{o}{*}\PY{p}{(}\PY{n}{pN}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{N}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{pN}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{lims}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{lims}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{lims}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{:}
+        \PY{n}{index} \PY{o}{=} \PY{n}{i}\PY{o}{\PYZhy{}}\PY{n}{lims}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}
+        \PY{n}{prob} \PY{o}{+}\PY{o}{=} \PY{n}{index}\PY{o}{*}\PY{n}{pN}\PY{o}{.}\PY{n}{pmf}\PY{p}{(}\PY{n}{index}\PY{p}{)}  
+    \PY{k}{return} \PY{n}{norm}\PY{o}{.}\PY{n}{pdf}\PY{p}{(}\PY{n}{M}\PY{p}{)}\PY{o}{*}\PY{n}{prob}
+\end{Verbatim}
+\end{tcolorbox}
 
+Finally we loop over a range of possible values for the correlation on each tranche to draw the plot of the expected losses vs the correlation, see Fig.~\ref{fig:losses_rho}.
 
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{res} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{p}{]}\PY{p}{]}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{tranches}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+    \PY{k}{for} \PY{n}{rho} \PY{o+ow}{in} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{1.05}\PY{p}{,} \PY{l+m+mf}{0.05}\PY{p}{)}\PY{p}{:}
+        \PY{k}{if} \PY{n}{rho} \PY{o}{==} \PY{l+m+mf}{1.0}\PY{p}{:}
+            \PY{n}{rho} \PY{o}{=} \PY{l+m+mf}{0.99}
+    \PY{n}{v} \PY{o}{=} \PY{n}{quad}\PY{p}{(}\PY{n}{p}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{n}{np}\PY{o}{.}\PY{n}{inf}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{inf}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{rho}\PY{p}{,} \PY{n}{tranches}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+    \PY{n}{res}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{v}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
 
+Some considerations can be done from these results. First of all, as expected the equity tranche is the riskier, producing the highest level of loss. The 
+\[
+\mathbb{E}(\mathrm{equity})\ge \mathbb{E}(\mathrm{mezzanine}) \ge \mathbb{E}(\mathrm{senior})
+\] 
+relation holds only if each tranche has the same notional exposure (in our example 3).
 
+Then we can notice that in the equity tranche losses are decreasing in $\rho$. When the correlation is low indeed the probability to have few defaults is higher than that of many. As the correlation increases, there will be more and more "simultaneous" defaults so also other tranches start to suffer losses. In the extreme case of correlation equal to 1 all the tranches are the same (indeed the expected losses curves join together). 
 
+When considering all the tranches covering the entire number of names, the last tranche (the one with detachment point of 100\%) is always increasing in $\rho$. Again this can be explained with the correlated defaults. Also, the total expected losses on the three tranches is independent of $\rho$.
 
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/losses_vs_rho}
+	\caption{Expected losses for each tranche as a function of the correlation parameter.}
+	\label{fig:losses_rho}
+\end{figure}
 
+\subsection{Synthetic CDO Valuation}
+Imagine a CDO made of $N$ names in the reference portfolio. Each name has a notional amount $F$.
+When the $i^{th}$ name defaults, then the portfolio incurs in a loss of $F(1-R)$ (the recovery rate is assumed to be fixed for all entities of the portfolio).
 
+The tranche loss function $TL^{L,U}(l)$ for a given time $t$ is a function of the number of defaults $l$ occurred up to that time and is given by
+\begin{equation*}
+TL_{t}^{L,U}=\mathrm{max}(\mathrm{min}(lF(1-R), U)-L, 0)
+\end{equation*}
+where $lF(1-R)$ is the total portfolio loss, if it is greater than $U$ then the tranche loss is $U$. Conversely if it is lower than $L$ there is no loss.
 
+So for example suppose $L=3\%$ and $U=7\%$ and suppose also that the portfolio loss is $lF(1-R)=5\%$. Then the tranche loss is 2\% of the total portfolio notional (or 50\% of the tranche notional $=7\%-3\%=4\%$).
 
+When an investor \emph{sells protection} on a tranche she is guaranteeing to reimburse any realized losses on the tranche to the \emph{protection buyer}. To better understand this concept it is useful to think of the protection as an \emph{insurance}. 
 
+In return, the protection seller receives a premium at regular intervals (typically every three months) from the protection buyer.
 
+\subsubsection{Premium Leg}
+As seen above the premium leg represents the payments that are done periodically by the protection buyer to the protection seller.
 
+These payments are made at the end of each time interval and are proportional to the \textbf{remaining notional} in the tranche (this is an important difference with respect to CDS, where the contract ends as soon as a default occurs).
 
+We can then write the NPV of the premium leg as
 
+\begin{equation}
+\mathrm{NPV}_{\mathrm{premium}}^{L,U}=S\sum^{n}_{i=1}D(d_i)\cfrac{(d_i - d_{i-1})}{360}\left((U-L)-\mathbb{E}[TL_{d-1}^{L,U}]\right)
+\label{eq:cdo_npv_premium}
+\end{equation}
+where $n$ is the number of payment dates, $D(d_i)$ is the discount factor, $S$ is the annualized premium. The expected value represents the expected notional remaining in the tranche at time 
+$d_{i-1}$.
+Note that for simplicity we are ignoring that the default may take place at anytime between each payment date.
 
+\subsubsection{Default Leg}
+The default leg represent the cash flows paid to the protection buyer upon losses occurring in the considered tranche. 
 
+The NPV of the leg can be expressed as
+\begin{equation}
+\mathrm{NPV}_{\mathrm{default}}^{L,U}=\sum_{i=1}^{n}D(d_i)\left(\mathbb{E}[TL_{d_i}^{L,U}]-\mathbb{E}[TL_{d_{i-1}}^{L,U}]\right)
+\label{eq:cdo_npv_default}
+\end{equation}
+where the argument in parenthesis is the expected losses between time $d_{i-1}$ up to $d_i$. 
 
+Therefore the key ingredient for the valuation of a CDO is the calculation of $\mathbb{E}[TL_{d_i}^{L,U}]$ which appears in both legs.
+Using the Gaussian copula it is relatively easy to compute it. 
+Indeed we know that 
+\begin{equation*}
+TL_{t}^{L,U}=\mathrm{max}(\mathrm{min}(lF(1-R), U)-L, 0)
+\end{equation*}
+where the only random variable is the number of defaults $l$. We also know that 
+\[
+\mathbb{E}[TL_{t}^{L,U}] = \sum_{l=0}^{N}TL_{t}^{L,U}\cdot DP(N_t=j)
+\] 
+with 
+\[
+DP(N_t=j)=\int_{-\infty}^{\infty} DP(N_{t|M}=j) \phi(M)dM
+\]
 
+And has we have already seen this calculation can be carried on without too much effort.
+The large popularity of the Gaussian copula just resides in this, it allows to compute very quickly very complicated contracts like CDO's which usually involve a large number of correlated names.
 
+\subsection{CDO Fair Value}
+The \emph{fair value} of a CDO tranche is that value of the premium $S^*$ for which the expected value of the premium leg equals the expected value of the default leg and for what we have seen depends on the expected value of the tranche loss function.
 
-%A collateralized debt obligation (CDO) is a type of structured asset-backed security (ABS). 
-%A CDO can be thought of as a promise to pay investors in a prescribed sequence, based on the cash flow the CDO collects from the pool of bonds or other assets it owns. Distinctively, CDO credit risk is typically assessed based on a probability of default (PD) derived from ratings on those bonds or assets.
+Given Equations~\ref{eq:cdo_npv_premium} and~\ref{eq:cdo_npv_default} it can be expressed as
 
-%The CDO is "sliced" into "tranches", which "catch" the cash flow of interest and principal payments in sequence based on seniority.
-%In the literature, tranches of a CDO are classified as
-%subordinate/equity tranche, mezzanine tranches, and senior tranches
-%according to their levels.
-%
-%If some loans default and the cash collected by the CDO is insufficient to pay all of its investors, those in the lowest, most "junior" tranches suffer losses first. The last to lose payment from default are the safest, most senior tranches. Consequently, coupon payments (and interest rates) vary by tranche with the safest/most senior tranches receiving the lowest rates and the lowest tranches receiving the highest rates to compensate for higher default risk.
-%
+\begin{equation}
+S^* = \cfrac{\mathrm{NPV_{default}}^{L,U}}{\sum^{n}_{i=1}D(d_i)\cfrac{(d_i - d_{i-1})}{360}\left((U-L)-\mathbb{E}[TL_{d-1}^{L,U}]\right)}
+\label{eq:cdo_fair_value}
+\end{equation}
+
+Equation~\ref{eq:cdo_fair_value} define the CDO fair value, but can also be used to calibrate the implied correlation parameter from the market.
+This can be obtained by plugging into the equation the market premium value and solve for the correlation parameter $\rho$.
+ 
+As a last consideration we have to notice that all equations shown previously have been derived under the assumptions of the same notional and recovery rate for each entity in the portfolio. Nonetheless  their generalization to different notional and recovery rate is pretty straightforward.
+ 
 %Each tranche has an attachment percentage and a detachment
 %percentage. When the cumulative percentage loss of the portfolio reaches
 %the attachment percentage, investors in the tranche start to lose their
@@ -584,60 +675,6 @@ the super senior tranche investor would suffer any loss.
 %principal and no further loss can occur to them.
 %
 %A common analogy compares the cash flow from the CDO's portfolio of securities (say mortgage payments from mortgage-backed bonds) to water flowing into cups of the investors where senior tranches were filled first and overflowing cash flowed to junior tranches, then equity tranches. If a large portion of the mortgages enter default, there is insufficient cash flow to fill all these cups and equity tranche investors face the losses first.
-
-
-
-%\section{CDO Valuation}
-%Suppose that the payment dates of a CDO tranche are at times $d_i$. Define $\mathbb{E}_j$ the expected 
-%tranche value at time $d$ and $D(d)$ the discount factor. Suppose also that the spread
-%on a particular tranche (i.e. the number of basis point paid for protection on the remaining tranche principal) is $S$. 
-%
-%The present value of the expected regular spread payments on the CDO is given by
-%\begin{equation}
-%\mathrm{NPV}_{\mathrm{spread}} = S\cdot \sum_{j=1}^{m}(d_j - d_{j-1})\mathbb{E}_{j}D(d_j)
-%\label{eq:A}
-%\end{equation}
-%The expected loss between times $d_{j-1}$ and $d_j$ is $\mathbb{E}_{j-1}-\mathbb{E}_j$. For simplicity assume
-%the loss occurs only at the midpoint of the time interval, so the present value of the expected payoffs on the CDO tranche is
-%\begin{equation}
-%\mathrm{NPV}_{\mathrm{payoff}}=\sum_{j=1}^{m}(\mathbb{E}_{j-1}-\mathbb{E}_j)D\left(\frac{d_{j-1}+d_j}{2}\right)
-%\label{eq:C}
-%\end{equation}
-%The accrual payment due to the losses is finally given by
-%\begin{equation}
-%\mathrm{NPV}_{\mathrm{accrual}} = S\cdot\sum_{j=1}^{m}\frac{1}{2}(d_j - d_{j-1})(\mathbb{E}_{j-1}-\mathbb{E}_j)D(\frac{d_{j-1}+d_j}{2})
-%\label{eq:B}
-%\end{equation}
-%
-%The value of the tranche, valued from the point of view of the protection buyer is $C-sA-sB$. The breakeven spread 
-%on the tranche occurs when the present value of the payments equals the present value of the payoffs so
-%
-%\[ s = \cfrac{C}{A+B}\]
-%
-%Suppose that the tranche under consideration covers losses on the portfolio between $\alpha_L$ and $\alpha_H$ and
-%define
-%
-%\[n_L = \cfrac{\alpha_L n}{1-R}\qquad \mathrm{and}\qquad n_H = \cfrac{\alpha_H n}{1-R}\]
-%where $R$ is the recovery rate. Finally define $m(x)$ as the smallest integer greater than $x$.
-%By definition the tranche principal stays $N$ while the number of defaults $k$ is less than $m(n_L)$, it 
-%is zero when the number of default is greater or equal to $m(n_H)$, otherwise is
-%
-%\[\cfrac{\alpha_H -k(1-R)/n}{\alpha_H - \alpha_L}\]
-%
-%The expected tranche principal at time $\tau_j$ conditional of the value of the factor $M$ is
-%\begin{equation}
-%\mathbb{E}_j(M) = \sum_{k=0}^{m(n_L)-1}\mathbb{P}(k, \tau_j|M) + \sum_{k=m(n_L)}^{m(n_H)-1}\mathbb{P}(k, \tau_j|M) \cfrac{\alpha_H -k(1-R)/n}{\alpha_H - \alpha_L}
-%\label{eq:E}
-%\end{equation}
-%
-%To compute the breakeven spread it is necessary to substitute Eq.~\ref{eq:E} into Eq.~\ref{eq:A},~\ref{eq:B} and~\ref{eq:C}
-%and we need to integrate the result over the variable $M$ (remember that has a standard normal distribution). 
-%The integration is quite complicated and is best accomplished with a technique called \emph{Gaussian quadrature} which
-%exploits the approximation
-%
-%\[\int_{-\infty}^{\infty}{\cfrac{1}{\sqrt{2}}e^{-M^{2}/2}g(M)dM} \approx \sum_{k=1}^{k=L}w_k g(F_k)\]
-%as $L$ increases, accuracy increases.
-
 
 \section{Complex Correlation Structures and the Financial
 	Crisis}\label{complex-correlation-structures-and-the-financial-crisis}
