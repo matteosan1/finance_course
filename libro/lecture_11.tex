@@ -9,7 +9,7 @@ Before going into the copulas we need to learn how to transform a distribution i
 
 Distribution transformation is a very useful tool which will be
 extensively used with the copula concept that we discuss in the next
-Section. The technique we are going to outline transforms every random
+Sections. The technique we are going to outline transforms every random
 variable, regardless its distribution, into uniform and vice versa and is called
 \emph{probability integral transform} or (percentile-to-percentile
 transform).
@@ -22,12 +22,24 @@ function. We won't go into the details but we will just show few
 examples of how this can be done in \(\tt{python}\).
 
 Imagine we want to transform an uniform distribution into a Gaussian.
-The transformation takes uniform samples of a number \(u\) between 0 and
+The transformation takes uniform samples of a variable \(u\) between 0 and
 1, interpreted as a probability, and then returns $F^{-1}(u)$. 
 
 Table~\ref{tab:transformation} shows samples taken from the
 uniform distribution and their representation on the standard normal
 distribution determined using the algorithm explained above.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{uniform}\PY{p}{,} \PY{n}{norm}
+		
+\PY{n}{uniform\PYZus{}samples} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.5}\PY{p}{,} \PY{o}{.}\PY{l+m+mi}{975}\PY{p}{,} \PY{l+m+mf}{0.995}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{]}
+		
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Unif.}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+s2}{Std. Normal}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{k}{for} \PY{n}{u} \PY{o+ow}{in} \PY{n}{uniform\PYZus{}samples}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.7f\PYZcb{}}\PY{l+s+se}{\PYZbs{}t}\PY{l+s+si}{\PYZob{}:.8f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{u}\PY{p}{,} \PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{u}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
 
 \begin{table}[h]
   \centering
@@ -46,11 +58,11 @@ distribution determined using the algorithm explained above.
     \(1-2^{-52}\) & 8.12589 \\
     \hline
   \end{tabular}
-  \caption{Comparison of values of the uniform distribution and the corresponding Gaussian quantiles.}
+  \caption{Table of samples from the uniform distribution and their corresponding Gaussian quantiles.}
 \label{tab:transformation}
 \end{table}
 
-Now let's see how this can be done with \texttt{python}. The first step is to sample
+Now let's see how this can be done directly with distributions. The first step is to sample
 uniformly distributed values between 0 and 1. This can be done either using \texttt{random.random} like in Section~\ref{pseudo-random-numbers} or with \texttt{scipy.stats.uniform}. Each distribution defined in \texttt{scipy.stats} has a convenient method \texttt{rvs(size=aSize)} (random variable sample) to sample from it as many time as specified by the arguments \texttt{size}. Usually the second method is preferred since it exploits \texttt{numpy.array} and let us avoid a lot of for-loop cycles.
 
 In any case in the left plot of Fig.~\ref{fig:uniform_and_gauss} the resulting distribution is shown.
@@ -63,9 +75,9 @@ In any case in the left plot of Fig.~\ref{fig:uniform_and_gauss} the resulting d
 \end{tcolorbox}
 
 Next we want to transform these samples so that instead of uniform they
-are normally distributed. As we have seen, see Section~\ref{quantile-function} the transform that does this
+are normally distributed. As we have seen, see Section~\ref{quantile-function}, the transform that does this
 is the inverse of the cumulative density function of the normal 
-distribution, or \((\tt{ppf(x))}\) in \texttt{oython}. 
+distribution, or \((\tt{ppf(x))}\) in \texttt{python}. 
 
 In the right plot of Fig.~\ref{fig:uniform_and_gauss} the Gaussian obtained 
 with the code below is shown
@@ -116,7 +128,7 @@ A similar transformation from uniform to t-Student is shown in Fig.~\ref{fig:uni
   \label{fig:uniform_to_tstudent}
 \end{figure}
 
-Clearly to do the opposite transformation, from an arbitrary distribution
+Clearly to do the opposite transformation, that is from an arbitrary distribution
 to the uniform, we can just apply the inverse of the inverse CDF, that is the CDF itself\ldots
 In such a way we can go from distribution A to distribution B passing through 
 a uniform distribution rather quickly. An example is shown in Figure~\ref{fig:a_to_b_to_a}.
@@ -130,7 +142,7 @@ a uniform distribution rather quickly. An example is shown in Figure~\ref{fig:a_
 
 \section{Copula}\label{copula}
 
-In probability theory a \emph{copula} \(C(U_1, U_2, \ldots, U_n, \rho)\)
+In probability theory a \emph{copula} $\mathcal{C}(U_1, U_2, \ldots, U_n, \rho)$
 is a multivariate (multidimensional) cumulative distribution function
 for which the marginal probability distributions (i.e. the probability
 distribution of each dimension) are uniform on the
@@ -156,8 +168,8 @@ caused floods.
 For the probability distribution of the maximum level of the river we
 know that maximums are Gumbel distributed, while the number of floods
 can be modeled according to a
-\href{https://en.wikipedia.org/wiki/Beta_distribution}{\emph{Beta}}
-distribution.
+\href{https://en.wikipedia.org/wiki/Beta_distribution}{\emph{Beta}
+distribution}.
 
 Clearly it is pretty reasonable to assume that the maximum level and the
 number of floods is going to be correlated, however we don't know how
@@ -227,7 +239,8 @@ the \(\tt{cdf}\) function of the normal distribution:
 \end{Verbatim}
 \end{tcolorbox}
 
-The plots shown in Fig.~\ref{fig:copula} are usually how copulas are visualized.
+The plots shown in Fig.~\ref{fig:copula} are usually how copulas are visualized. Since we have used a multivariate standard normal 
+to model the correlation this is an example of \textbf{Gaussian Copula}.
 
 \begin{figure}[p]
 \centering
@@ -245,15 +258,14 @@ Finally we can just transform the obtained marginals again from uniform to what 
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{n}{m1} \PY{o}{=} \PY{n}{stats}\PY{o}{.}\PY{n}{gumbel\PYZus{}l}\PY{p}{(}\PY{p}{)}
 \PY{n}{m2} \PY{o}{=} \PY{n}{stats}\PY{o}{.}\PY{n}{beta}\PY{p}{(}\PY{n}{a}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{,} \PY{n}{b}\PY{o}{=}\PY{l+m+mi}{3}\PY{p}{)}
-
-
 \end{Verbatim}
 \end{tcolorbox}
 
 Left plot of Figure~\ref{fig:gumbel_beta_with_corr} shows the two marginals and the joint distribution.
     
 To see that it is actually working as expected we should now compare the joint
-distributions with and without correlation. Compare the two plots in Figure~\ref{fig:gumbel_beta_with_corr} to spot the difference.
+distributions with and without correlation. 
+Compare the two plots in Figure~\ref{fig:gumbel_beta_with_corr} to spot the difference.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -294,14 +306,14 @@ Everything discussed in this Section can be easily generalized to higher dimensi
 
 \subsection{Generate Correlated Distributions}\label{generate-correlated-distributions}
 
-If we need to generate numbers from correlated distribution we can
+If we need to generate numbers from correlated distributions we can
 follow similar steps to those described before:
 
 \begin{itemize}
 \tightlist
 \item
   generate a random vector \(\mathbf{x}=(x_1, x_2,\ldots)\) from the
-  original multivariate distribution;
+  original multivariate distribution with the desired correlation;
 \item
   determine the single \(U_i(x_i)\) by applying \(\tt{cdf}\) to each
   \(x_i\);
@@ -329,6 +341,9 @@ of the single probabilities, hence:
 We can verify this in \(\tt{python}\) by applying the method outlined above: first generate a random sample from an uncorrelated multivariate normal distribution, then transform each sampled vector into uniform distribution with the \(\tt{norm.cdf}\) function (i.e. we
 convert the samples into cumulative probabilities) and then count how many times the
 three of them are lower than 10\% to check whether a default occurred in next two year.
+
+In this case, since we are interested in cumulative probabilities we can neglect the last transformation and work directly with the 
+uniform marginals.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]

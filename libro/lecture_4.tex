@@ -103,7 +103,63 @@ When calling a function parameters can be passed also by name for clarity, in th
 
 In the first case the function is called by name, in the second case the parameter are implicitly assigned according to their position.
 
-Another nice feature of $\tt{python}$ functions is that we can associate an help message to them so that we can easily check what a function is for by simply asking $\tt{help(functioName)}$:
+\subsubsection{\texttt{args} and \texttt{kwargs}}
+Another possible way of passing parameters to a function is through the reserved words \texttt{args} and \texttt{kwargs}. Those are very useful especially if there are nested call to function (a function that call another function) and we need to specify parameters to the secondary call.
+Let's see first a usage example of \texttt{args}.
+Imagine you have to call a function \texttt{runner} which multiplies by two the result of another function, \texttt{func}, which takes in inputs three parameters \texttt{a, b, c}.
+A first option is too define \texttt{a, b, c} in the global scope so that the three of them are visible within \texttt{func}.
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{a} \PY{o}{=} \PY{l+m+mi}{10}
+\PY{n}{b} \PY{o}{=} \PY{l+m+mi}{1}
+\PY{n}{c} \PY{o}{=} \PY{l+m+mi}{5}
+ 		
+\PY{k}{def} \PY{n+nf}{func}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{a}\PY{o}{*}\PY{n}{x}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{+} \PY{n}{b}\PY{o}{*}\PY{n}{x} \PY{o}{+} \PY{n}{c}
+ 		
+\PY{k}{def} \PY{n+nf}{runner}\PY{p}{(}\PY{n}{f}\PY{p}{,} \PY{n}{x}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{f}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{2}
+ 		
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{runner}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}
+ 	
+94
+\end{Verbatim}
+\end{tcolorbox}
+
+This is not ideal though. If I had to run multiple times the calculation changing every time one of the three parameters I would be in troubles. 
+The solution is to use \texttt{args} and the \texttt{*} operator. Indeed I can assign a tuple or list to \texttt{args}, where each item corresponds to one of the parameters to pass to \texttt{func} and then, inside \texttt{runner} we can call \texttt{func} with \texttt{*args} as second parameter. This will expand the tuple (or list) associated to \texttt{args} assigning each item to the corresponding parameter in the function call.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{func2}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{a}\PY{p}{,} \PY{n}{b}\PY{p}{,} \PY{n}{c}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{a}\PY{o}{*}\PY{n}{x}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{+} \PY{n}{b}\PY{o}{*}\PY{n}{x} \PY{o}{+} \PY{n}{c}
+ 		
+\PY{k}{def} \PY{n+nf}{runner}\PY{p}{(}\PY{n}{f}\PY{p}{,} \PY{n}{x}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{f}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{o}{*}\PY{n}{args}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{2}
+ 		
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{runner}\PY{p}{(}\PY{n}{func2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+ 
+94
+\end{Verbatim}
+\end{tcolorbox}
+
+\texttt{kwargs} acts similarly to \texttt{args} except that now the parameter are passed by name. It is indeed a dictionary and each key should correspond to a function parameter name. The call now will have two asterisks (\texttt{**}) to expand the dictionary.
+ 
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{func2}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{a}\PY{p}{,} \PY{n}{b}\PY{p}{,} \PY{n}{c}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{a}\PY{o}{*}\PY{n}{x}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{+} \PY{n}{b}\PY{o}{*}\PY{n}{x} \PY{o}{+} \PY{n}{c}
+ 		
+\PY{k}{def} \PY{n+nf}{runner}\PY{p}{(}\PY{n}{f}\PY{p}{,} \PY{n}{x}\PY{p}{,} \PY{n}{kwargs}\PY{o}{=}\PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{f}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{o}{*}\PY{o}{*}\PY{n}{kwargs}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{2}
+ 		
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{runner}\PY{p}{(}\PY{n}{func2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{n}{kwargs}\PY{o}{=}\PY{p}{\PYZob{}}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{a}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{l+m+mi}{10}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{b}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{c}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{l+m+mi}{5}\PY{p}{\PYZcb{}}\PY{p}{)}\PY{p}{)}
+ 
+94
+\end{Verbatim}
+\end{tcolorbox}
+  
+The last feature to describe is that we can associate an help message to them so that we can easily check what a function is for by simply asking $\tt{help(functioName)}$:
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
