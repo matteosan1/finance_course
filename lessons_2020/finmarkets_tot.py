@@ -1,4 +1,7 @@
-import math, numpy, json
+import math, numpy
+
+from scipy.stats import norm, binom
+from scipy.integrate import quad
 
 from datetime import date
 from dateutil.relativedelta import relativedelta
@@ -458,19 +461,27 @@ class CreditDefaultSwap:
         return num/den
 
 
-class GaussianQuadrature:
-    def __init__(self, filename="gaussian_quadrature.json"):
-        with open(filename, "r") as f:
-            self.params = json.load(f)
-
-    def M(self, n):
-        n = str(n)
-        if n not in self.params.keys():
-            print ("N={} not available.".format(n))
-            return None, None
-        else:
-            values = self.params[str(n)]['value']
-            weight = self.params[str(n)]['weight']
-            return values, weight
+class BasketDefaultSwaps:
+    def __init__(self, notional,  n_cds, rho, start_date, 
+                 spread, maturity, tenor=3, recovery=0.4):
+        self.n_cds = n_cds
+        self.rho = rho
+        self.cds = CreditDefaultSwap(notional, start_date, spread, maturity)
+        self.pillar_dates = generate_swap_dates(start_date, maturity*12, tenor)
+    
+    def one_factor_model(self, M, integrand, Q, dc, ndefaults):
+        P = norm.cdf((norm.ppf(Q) - numpy.sqrt(self.rho)*M)/(numpy.sqrt(1-self.rho)))
+        b = binom(self.n_cds, P)
+        S = (1-b.cdf(self.n_cds)-b.cdf(ndefaults-1))
+        cc = CreditCurve(self.pillar_dates, S)
+        return integrand(dc, cc)*norm.pdf(M)
         
-                                 
+    def breakeven(self, dc, ndefaults, Q):
+        s = quad(self.one_factor_model, -numpy.inf, numpy.inf, 
+                 args=(self.cds.breakevenRate, Q, dc, ndefaults))
+        return s[0]
+    
+    def npv(self, dc, ndefaults, Q):
+        s = quad(self.one_factor_model, -np.inf, np.inf, 
+                 args=(self.cds.npv, Q, dc, ndefaults))
+        return s[0]        
