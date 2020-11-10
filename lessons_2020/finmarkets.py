@@ -1,4 +1,7 @@
-import math, numpy, json
+import math, numpy
+
+from scipy.stats import norm, binom
+from scipy.integrate import quad
 
 from datetime import date
 from dateutil.relativedelta import relativedelta
@@ -456,3 +459,90 @@ class CreditDefaultSwap:
         num = self.npv_default_leg(discount_curve, credit_curve)
         den = self.npv_premium_leg(discount_curve, credit_curve)/self.fixed_spread
         return num/den
+
+
+class BasketDefaultSwaps:
+    def __init__(self, notional,  names, rho, start_date, 
+                 spread, maturity, tenor=3, recovery=0.4):
+        self.names = names
+        self.rho = rho
+        self.cds = CreditDefaultSwap(notional, start_date, spread, 
+                                     maturity, tenor, recovery)
+    
+    def one_factor_model(self, M, f, Q_dates, Q, dc, j):
+        P = norm.cdf((norm.ppf(Q) - numpy.sqrt(self.rho)*M)/(numpy.sqrt(1-self.rho)))
+        b = binom(self.names, P)
+        S = (1-(1-b.cdf(j-1))
+        cc = CreditCurve(Q_dates, S)
+        return f(dc, cc)*norm.pdf(M)
+        
+    def breakeven(self, Q_dates, Q, dc, ndefaults):
+        s = quad(self.one_factor_model, -numpy.inf, numpy.inf, 
+                 args=(self.cds.breakevenRate, Q_dates, Q, dc, ndefaults))
+        return s[0]
+    
+    def npv(self, Q_dates, Q, dc, ndefaults):
+        s = quad(self.one_factor_model, -np.inf, np.inf, 
+                 args=(self.cds.npv, Q_dates, Q, dc, ndefaults))
+        return s[0]        
+             
+class CollDebtObligation:
+    def __init__(self, notional, names, tranches, rho, cc,
+                 start_date, spreads,
+                 maturity, tenor=3, recovery=0.4):
+        self.notional = notional
+        self.names = names
+        self.tranches = tranches
+        self.payment_dates = generate_swap_dates(start_date, maturity * 12, tenor)
+        self.spreads = spreads
+        self.rho = rho
+        self.recovery = recovery
+        self.cc = cc
+
+    def one_factor_model(self, M, Q, l, L, U):
+        P = norm.cdf((norm.ppf(Q) - numpy.sqrt(self.rho) * M) / (numpy.sqrt(1 - self.rho)))
+        b = binom(self.names, P)
+        return b.pmf(l) * norm.pdf(M) * max(min(l/self.names * 
+                                                self.notional * 
+                                                (1 - self.recovery), U) - L, 0)
+        
+    def expected_tranche_loss(self, d, L, U):
+        Q = 1 - self.cc.ndp(d)
+        v = 0
+        for l in range(self.names+1):
+            i = quad(self.one_factor_model, -numpy.inf, numpy.inf, 
+                     args=(Q, l, L, U))[0]
+            v += i
+        return v
+
+    def npv_premium(self, tranche, dc):
+        L = self.tranches[tranche][0] * self.notional
+        U = self.tranches[tranche][1] * self.notional
+        v = 0
+        for i in range(1, len(self.payment_dates)):
+            ds = self.payment_dates[i - 1]
+            de = self.payment_dates[i]
+            D = dc.df(de)
+            ETL = self.expected_tranche_loss(ds, L, U)
+            v += D * (de - ds).days / 360 * max((U - L) - ETL, 0)
+        return v * self.spreads[tranche]
+
+    def npv_default(self, tranche, dc):
+        U = self.tranches[tranche][1] * self.notional
+        L = self.tranches[tranche][0] * self.notional
+        v = 0
+        for i in range(1, len(self.payment_dates)):
+            ds = self.payment_dates[i - 1]
+            de = self.payment_dates[i]
+            ETL1 = self.expected_tranche_loss(ds, L, U)
+            ETL2 = self.expected_tranche_loss(de, L, U)
+            v += dc.df(de) * (ETL2 - ETL1)
+        return v
+
+    def npv(self, tranche, dc):
+        return self.npv_default(tranche, dc) - self.npv_premium(tranche, dc)
+
+    def fair_value(self, tranche, dc):
+        num = self.npv_default(tranche, dc)
+        den = self.npv_premium(tranche, dc) / self.spreads[tranche]
+        return num / den
