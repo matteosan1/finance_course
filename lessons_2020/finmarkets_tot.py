@@ -461,30 +461,30 @@ class CreditDefaultSwap:
         return num/den
 
 
-class BasketDefaultSwaps:
-    def __init__(self, notional,  names, rho, start_date, 
-                 spread, maturity, tenor=3, recovery=0.4):
-        self.names = names
-        self.rho = rho
-        self.cds = CreditDefaultSwap(notional, start_date, spread, 
-                                     maturity, tenor, recovery)
+#class BasketDefaultSwaps:
+#    def __init__(self, notional,  names, rho, start_date, 
+#                 spread, maturity, tenor=3, recovery=0.4):
+#        self.names = names
+#        self.rho = rho
+#        self.cds = CreditDefaultSwap(notional, start_date, spread, 
+#                                     maturity, tenor, recovery)
     
-    def one_factor_model(self, M, f, Q_dates, Q, dc, j):
-        P = norm.cdf((norm.ppf(Q) - numpy.sqrt(self.rho)*M)/(numpy.sqrt(1-self.rho)))
-        b = binom(self.names, P)
-        S = (1-(1-b.cdf(j-1))
-        cc = CreditCurve(Q_dates, S)
-        return f(dc, cc)*norm.pdf(M)
+#    def one_factor_model(self, M, f, Q_dates, Q, dc, j):
+#        P = norm.cdf((norm.ppf(Q) - numpy.sqrt(self.rho)*M)/(numpy.sqrt(1-self.rho)))
+#        b = binom(self.names, P)
+#        S = (1-(1-b.cdf(j-1))
+#        cc = CreditCurve(Q_dates, S)
+#        return f(dc, cc)*norm.pdf(M)
         
-    def breakeven(self, Q_dates, Q, dc, ndefaults):
-        s = quad(self.one_factor_model, -numpy.inf, numpy.inf, 
-                 args=(self.cds.breakevenRate, Q_dates, Q, dc, ndefaults))
-        return s[0]
+#    def breakeven(self, Q_dates, Q, dc, ndefaults):
+#        s = quad(self.one_factor_model, -numpy.inf, numpy.inf, 
+#                 args=(self.cds.breakevenRate, Q_dates, Q, dc, ndefaults))
+#        return s[0]
     
-    def npv(self, Q_dates, Q, dc, ndefaults):
-        s = quad(self.one_factor_model, -np.inf, np.inf, 
-                 args=(self.cds.npv, Q_dates, Q, dc, ndefaults))
-        return s[0]        
+#    def npv(self, Q_dates, Q, dc, ndefaults):
+#        s = quad(self.one_factor_model, -np.inf, np.inf, 
+#                 args=(self.cds.npv, Q_dates, Q, dc, ndefaults))
+#        return s[0]        
              
 class CollDebtObligation:
     def __init__(self, notional, names, tranches, rho, cc,
