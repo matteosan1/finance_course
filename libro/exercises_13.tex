@@ -1,39 +1,246 @@
-\chapter{Var and Credit Risk}\label{lesson-13}
+\chapter{VaR and Credit Risk}\label{exercise-13}
 
+\begin{Exercise}[title={(VaR and Historical Series)}]
+Given the historical series of three stock prices in the file
+\(\href{https://drive.google.com/file/d/1iLCV5zlfNe9eAu_TQwQyZFhvIKR86-vM/view?usp=sharing}{\textrm{historical.csv}}\)
+compute the 1-day 95\% VaR for a portfolio consisting of 40 FOX shares, 35 ABC shares 
+and 25 CBS shares. 
+Today's price is the last entry of the series.
 
-\hypertarget{exercise-9.1}{%
-	\subsubsection{Exercise 9.1}\label{exercise-9.1}}
-
-Given the historical series of two stock prices in the file
-\(\href{https://repl.it/@MatteoSani/support9}{\textrm{historical\_data.py}}\)
-compute the 5-day 95\% VaR for a portfolio consisting of 100 shares of
-stock 1 and 50 shares of stock 2 (assume that last price of the series
-is today's price).
-
-\hypertarget{exercise-9.2}{%
-	\subsubsection{Exercise 9.2}\label{exercise-9.2}}
-
-Imagine a position consisting of 500000 EUR investemnt in FCA shares and
-a 750000 investiment in Apple shares. Assume that the daily volatilites
-of the two assets are 2.5\% and 0.7\% and that their correlation
-coefficient is 0.4.
-
-What is tha 10-day 97.5\% VaR for the portfolio ?
-
-\hypertarget{exercise-9.3}{%
-	\subsubsection{Exercise 9.3}\label{exercise-9.3}}
-Find today's price of a 4-years bond which pays semiannual coupons indexed with the LIBOR curve defined in \(\href{https://repl.it/@MatteoSani/support9}{\textrm{curve\_data.py}}\). The face value of the bond is 100000 EUR.
-
-\hypertarget{exercise-9.4}{%
-	\subsubsection{Exercise 9.4}\label{exercise-9.4}}
-
-Given an arbitrary number of students and some project label
-write a python program which assigns randomly a project to each student
-(repetition of projects are allowed).
-
-
-\begin{Exercise}
-Update \verb!finmarkets! module with \verb!CreditCurve! and \verb!CreditDefaultSwap! classes.
+\textbf{Hint:} when simulating the historical scenarios take care of possible NaN values
+in the series. 
 \end{Exercise}
+
 \begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
+		
+\PY{n}{df} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{historical.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+		
+\PY{n}{fox} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ticker}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{==}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{FOX}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
+\PY{n}{cbs} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ticker}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{==}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{CBS}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
+\PY{n}{abc} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ticker}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{==}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ABC}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
+		
+\PY{n}{fox}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{fox}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{/}\PY{n}{fox}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{shift}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1} 
+\PY{n}{cbs}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{cbs}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{/}\PY{n}{cbs}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{shift}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1} 
+\PY{n}{abc}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{abc}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{/}\PY{n}{abc}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{shift}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1} 
+		
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{fox}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+
+None        date ticker  adj\_close      rets
+0     0  2018-03-27    FOX      36.08       NaN
+1     1  2018-03-26    FOX      36.58  0.013858
+2     2  2018-03-23    FOX      35.45 -0.030891
+3     3  2018-03-22    FOX      36.18  0.020592
+4     4  2018-03-21    FOX      36.30  0.003317
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{w} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{l+m+mf}{0.4}\PY{p}{,} \PY{l+m+mf}{0.35}\PY{p}{,} \PY{l+m+mf}{0.25}\PY{p}{]}\PY{p}{)}
+		
+\PY{n}{rets} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n}{abc}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+    \PY{n}{ret} \PY{o}{=} \PY{p}{[}\PY{n}{fox}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,}
+            \PY{n}{abc}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,}
+            \PY{n}{cbs}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{]}
+    \PY{k}{if} \PY{n}{np}\PY{o}{.}\PY{n}{NaN} \PY{o+ow}{in} \PY{n}{ret}\PY{p}{:}
+        \PY{k}{continue}
+    \PY{n}{rets}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{n}{ret}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{+} \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{*}\PY{n}{ret}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{+} \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]} \PY{o}{*} \PY{n}{ret}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{)}
+			
+\PY{n}{current\PYZus{}price} \PY{o}{=} \PY{p}{[}\PY{n}{fox}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} 
+                 \PY{n}{abc}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,}
+                 \PY{n}{cbs}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{]}
+\PY{n}{portfolio\PYZus{}price} \PY{o}{=} \PY{n}{w}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{current\PYZus{}price}\PY{p}{)}
+\PY{n}{hist\PYZus{}var} \PY{o}{=} \PY{n}{portfolio\PYZus{}price}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{rets}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Historical VAR is }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{hist\PYZus{}var}\PY{p}{)}\PY{p}{)}
+
+Historical VAR is -1.385
+\end{Verbatim}
+\end{tcolorbox}
+
+\includegraphics{figures/hist_var_ex}
 \end{Answer}
+
+\begin{Exercise}[title={(Credit Valuation Adjustment)}]
+You have a 3-years call with strike \euro{110}. The underlying initial price is \euro{100} and the mean rate of return is 0.05 with a volatility of 0.15. The risk-free rate is 0.03 flat.
+Compute the CVA of the contract assuming a recovery rate of 40\% and default probabilities for the underlying of 10\%, 20\% and 30\% for first, second and third year respectively.
+\end{Exercise}
+
+\begin{Answer}
+Below ten simulations of the underlying price in the next three years.
+
+\includegraphics{figures/underlying_simulation}
+
+This is a first implementation of the CVA calculation, not optimized in terms of speed. It takes about 700 seconds to run 1000 simulations.
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{call\PYZus{}price}\PY{p}{,} \PY{n}{CreditCurve}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
+\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+		
+\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{dt} \PY{o}{=} \PY{l+m+mi}{1}\PY{o}{/}\PY{l+m+mi}{365}
+\PY{n}{K} \PY{o}{=} \PY{l+m+mi}{110}
+\PY{n}{sigma} \PY{o}{=} \PY{l+m+mf}{0.15}
+\PY{n}{mu} \PY{o}{=} \PY{l+m+mf}{0.05}
+\PY{n}{r} \PY{o}{=} \PY{l+m+mf}{0.03}
+\PY{n}{T} \PY{o}{=} \PY{l+m+mi}{3}
+\PY{n}{R} \PY{o}{=} \PY{l+m+mf}{0.4}
+\PY{n}{S} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.9}\PY{p}{,} \PY{l+m+mf}{0.8}\PY{p}{,} \PY{l+m+mf}{0.7}\PY{p}{]}
+\PY{n}{obs\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
+\PY{n}{pillars} \PY{o}{=} \PY{p}{[}\PY{n}{obs\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{T}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
+\PY{n}{cc} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{n}{pillars}\PY{p}{,} \PY{n}{S}\PY{p}{)}
+		
+\PY{k+kn}{import} \PY{n+nn}{time}
+\PY{n}{t1} \PY{o}{=} \PY{n}{time}\PY{o}{.}\PY{n}{time}\PY{p}{(}\PY{p}{)}
+\PY{n}{scenarios} \PY{o}{=} \PY{l+m+mi}{1000}
+\PY{n}{cvas} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{St} \PY{o}{=} \PY{n}{S0}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{ones}\PY{p}{(}\PY{n}{shape}\PY{o}{=}\PY{p}{(}\PY{n}{T}\PY{o}{*}\PY{l+m+mi}{365}\PY{p}{,} \PY{n}{scenarios}\PY{p}{)}\PY{p}{)}    
+\PY{k}{for} \PY{n}{s} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{scenarios}\PY{p}{)}\PY{p}{:}
+    \PY{n}{cva} \PY{o}{=} \PY{l+m+mi}{0}
+    \PY{n}{St} \PY{o}{=} \PY{l+m+mi}{100}
+    \PY{k}{for} \PY{n}{t} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{365}\PY{o}{*}\PY{n}{T}\PY{p}{)}\PY{p}{:} 
+        \PY{n}{St} \PY{o}{=} \PY{n}{St} \PY{o}{*} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{p}{(}\PY{n}{mu} \PY{o}{\PYZhy{}} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{sigma}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)} \PY{o}{*} \PY{n}{dt} \PY{o}{+} \PY{n}{sigma} 
+                \PY{o}{*} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{dt}\PY{p}{)} \PY{o}{*} \PY{n}{norm}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{size}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
+        \PY{n}{cva} \PY{o}{+}\PY{o}{=} \PY{n}{call\PYZus{}price}\PY{p}{(}\PY{n}{dt}\PY{o}{*}\PY{n}{t}\PY{p}{,} \PY{n}{St}\PY{p}{,} \PY{n}{K}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{sigma}\PY{p}{,} \PY{n}{T}\PY{p}{)}
+                         \PY{o}{*}\PY{p}{(}\PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{obs\PYZus{}date}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{n}{t}\PY{p}{)}\PY{p}{)}\PY{o}{\PYZhy{}}
+                         \PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{obs\PYZus{}date}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{n}{t}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}        
+    \PY{n}{cvas}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{cva}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{R}\PY{p}{)}\PY{p}{)}
+		
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{cvas}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{time}\PY{o}{.}\PY{n}{time}\PY{p}{(}\PY{p}{)}\PY{o}{\PYZhy{}}\PY{n}{t1}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+The next implementation, the one actually used, exploits the \texttt{numpy.array} and it is about 30\% faster.
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{call\PYZus{}price}\PY{p}{,} \PY{n}{CreditCurve}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
+\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+		
+\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{dt} \PY{o}{=} \PY{l+m+mi}{1}\PY{o}{/}\PY{l+m+mi}{365}
+\PY{n}{K} \PY{o}{=} \PY{l+m+mi}{110}
+\PY{n}{sigma} \PY{o}{=} \PY{l+m+mf}{0.15}
+\PY{n}{mu} \PY{o}{=} \PY{l+m+mf}{0.05}
+\PY{n}{r} \PY{o}{=} \PY{l+m+mf}{0.03}
+\PY{n}{T} \PY{o}{=} \PY{l+m+mi}{3}
+\PY{n}{R} \PY{o}{=} \PY{l+m+mf}{0.4}
+\PY{n}{S} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.9}\PY{p}{,} \PY{l+m+mf}{0.8}\PY{p}{,} \PY{l+m+mf}{0.7}\PY{p}{]}
+\PY{n}{obs\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
+\PY{n}{pillars} \PY{o}{=} \PY{p}{[}\PY{n}{obs\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{T}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
+\PY{n}{cc} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{n}{pillars}\PY{p}{,} \PY{n}{S}\PY{p}{)}
+		
+\PY{k+kn}{import} \PY{n+nn}{time}
+\PY{n}{t1} \PY{o}{=} \PY{n}{time}\PY{o}{.}\PY{n}{time}\PY{p}{(}\PY{p}{)}
+\PY{n}{scenarios} \PY{o}{=} \PY{l+m+mi}{1000}
+\PY{n}{cvas} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+		
+\PY{n}{St} \PY{o}{=} \PY{n}{S0}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{ones}\PY{p}{(}\PY{n}{shape}\PY{o}{=}\PY{p}{(}\PY{n}{T}\PY{o}{*}\PY{l+m+mi}{365}\PY{p}{,} \PY{n}{scenarios}\PY{p}{)}\PY{p}{)}    
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{T}\PY{o}{*}\PY{l+m+mi}{365}\PY{p}{)}\PY{p}{:}
+    \PY{n}{norms} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{size}\PY{o}{=}\PY{n}{scenarios}\PY{p}{)}
+    \PY{n}{St}\PY{p}{[}\PY{n}{i}\PY{p}{,} \PY{p}{:}\PY{p}{]} \PY{o}{=} \PY{n}{St}\PY{p}{[}\PY{n}{i}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{,} \PY{p}{:}\PY{p}{]} \PY{o}{*} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{p}{(}\PY{n}{mu} \PY{o}{\PYZhy{}} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{sigma}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)} \PY{o}{*} \PY{n}{dt} \PY{o}{+} \PY{n}{sigma}
+                          \PY{o}{*} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{dt}\PY{p}{)} \PY{o}{*} \PY{n}{norms}\PY{p}{[}\PY{p}{:}\PY{p}{]}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+	
+\PY{k}{for} \PY{n}{s} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{scenarios}\PY{p}{)}\PY{p}{:}
+    \PY{n}{cva} \PY{o}{=} \PY{l+m+mi}{0}
+    \PY{k}{for} \PY{n}{t} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{365}\PY{o}{*}\PY{n}{T}\PY{p}{)}\PY{p}{:} 
+        \PY{n}{cva} \PY{o}{+}\PY{o}{=} \PY{n}{call\PYZus{}price}\PY{p}{(}\PY{n}{dt}\PY{o}{*}\PY{n}{t}\PY{p}{,} \PY{n}{St}\PY{p}{[}\PY{n}{i}\PY{p}{,} \PY{n}{s}\PY{p}{]}\PY{p}{,} \PY{n}{K}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{sigma}\PY{p}{,} \PY{n}{T}\PY{p}{)}\PY{o}{*} \PYZbs{}
+                           \PY{p}{(}\PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{obs\PYZus{}date}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{n}{t}\PY{p}{)}\PY{p}{)}\PY{o}{\PYZhy{}}
+                           \PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{obs\PYZus{}date}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{n}{t}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}        
+    \PY{n}{cvas}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{cva}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{R}\PY{p}{)}\PY{p}{)}
+				
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{cvas}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{time}\PY{o}{.}\PY{n}{time}\PY{p}{(}\PY{p}{)}\PY{o}{\PYZhy{}}\PY{n}{t1}\PY{p}{)}
+
+3.7521017896018973
+459.46695613861084
+\end{Verbatim}
+\end{tcolorbox}
+\end{Answer}
+
+\begin{Exercise}[title={(Credit VaR)}]
+Consider a 1-years call with strike \euro{110}. The underlying initial price is \euro{100} and the mean rate of return is 0.05 with a volatility of 0.15. The risk-free rate is 0.03 flat.
+Compute the 99.9\% Credit VaR assuming a recovery rate of 40\% and default probabilities for the underlying of 30\% within next year.
+\end{Exercise}
+
+\begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} 460s for 1000 simulations}
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{call\PYZus{}price}\PY{p}{,} \PY{n}{CreditCurve}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
+\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+		
+\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{dt} \PY{o}{=} \PY{l+m+mi}{1}\PY{o}{/}\PY{l+m+mi}{365}
+\PY{n}{K} \PY{o}{=} \PY{l+m+mi}{110}
+\PY{n}{sigma} \PY{o}{=} \PY{l+m+mf}{0.15}
+\PY{n}{mu} \PY{o}{=} \PY{l+m+mf}{0.05}
+\PY{n}{r} \PY{o}{=} \PY{l+m+mf}{0.03}
+\PY{n}{T} \PY{o}{=} \PY{l+m+mi}{1}
+\PY{n}{R} \PY{o}{=} \PY{l+m+mf}{0.4}
+\PY{n}{S} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.7}\PY{p}{]}
+\PY{n}{obs\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
+\PY{n}{pillars} \PY{o}{=} \PY{p}{[}\PY{n}{obs\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{T}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
+\PY{n}{cc} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{n}{pillars}\PY{p}{,} \PY{n}{S}\PY{p}{)}
+		
+\PY{n}{scenarios} \PY{o}{=} \PY{l+m+mi}{1000}
+\PY{n}{losses} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\end{Verbatim}
+\end{tcolorbox}		
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+
+\PY{n}{St} \PY{o}{=} \PY{n}{S0}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{ones}\PY{p}{(}\PY{n}{shape}\PY{o}{=}\PY{p}{(}\PY{n}{T}\PY{o}{*}\PY{l+m+mi}{365}\PY{p}{,} \PY{n}{scenarios}\PY{p}{)}\PY{p}{)}    
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{T}\PY{o}{*}\PY{l+m+mi}{365}\PY{p}{)}\PY{p}{:}
+    \PY{n}{norms} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{size}\PY{o}{=}\PY{n}{scenarios}\PY{p}{)}
+    \PY{n}{St}\PY{p}{[}\PY{n}{i}\PY{p}{,} \PY{p}{:}\PY{p}{]} \PY{o}{=} \PY{n}{St}\PY{p}{[}\PY{n}{i}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{,} \PY{p}{:}\PY{p}{]} \PY{o}{*} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{p}{(}\PY{n}{mu} \PY{o}{\PYZhy{}} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{sigma}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)} \PY{o}{*} \PY{n}{dt} \PY{o}{+} \PY{n}{sigma}
+                         \PY{o}{*} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{dt}\PY{p}{)} \PY{o}{*} 	\PY{n}{norms}\PY{p}{[}\PY{p}{:}\PY{p}{]}\PY{p}{)}
+		
+\PY{k}{for} \PY{n}{s} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{scenarios}\PY{p}{)}\PY{p}{:}
+    \PY{n}{loss} \PY{o}{=} \PY{l+m+mi}{0}
+    \PY{k}{for} \PY{n}{t} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{365}\PY{o}{*}\PY{n}{T}\PY{p}{)}\PY{p}{:} 
+        \PY{n}{loss} \PY{o}{+}\PY{o}{=} \PY{n}{call\PYZus{}price}\PY{p}{(}\PY{n}{dt}\PY{o}{*}\PY{n}{t}\PY{p}{,} \PY{n}{St}\PY{p}{[}\PY{n}{i}\PY{p}{,} \PY{n}{s}\PY{p}{]}\PY{p}{,} \PY{n}{K}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{sigma}\PY{p}{,} \PY{n}{T}\PY{p}{)}\PY{o}{*} \PYZbs{}
+                            \PY{p}{(}\PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{obs\PYZus{}date}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{n}{t}\PY{p}{)}\PY{p}{)}\PY{o}{\PYZhy{}}
+                            \PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{obs\PYZus{}date}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{n}{t}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}        
+    \PY{n}{losses}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{cva}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{R}\PY{p}{)}\PY{p}{)}
+		
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{cvas}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{99.9}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+
+[9.96586061]
+\end{Verbatim}
+\end{tcolorbox}
+
+\includegraphics{figures/cr_var_ex}
+\end{Answer}
+
+
+
+
+

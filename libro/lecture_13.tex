@@ -3,12 +3,12 @@
 \section{Value at Risk}\label{value-at-risk}
 
 The value at risk (VaR) of a portfolio is a function of two parameters:
-the time horizon and the confidence level. It is usually involved when it
+time horizon and confidence level. It is usually used when it
 is important to know to a certain confidence level how
-much will be the maximum loss in the next $N$ days. 
-
+much will be the maximum loss in the next $N$ days (i.e. time horizon). 
 It can be interpreted as the loss level over \(N\) days that has a 
 probability of only \((100 - X)\%\) of being exceeded.
+
 Mathematically the VaR is the loss corresponding to the
 \((100-X)\textrm{th}\) percentile of the distribution of the change in
 the value of the portfolio over the next \(N\) days. 
@@ -31,7 +31,7 @@ limitation as it implies too much simplification.
 
 Concerning the time horizon parameter it is usually set to \(N=1\) since
 it is not easy to estimate market variables over periods longer than one
-day. To generalize the VaR estimate it is assumed:
+day. Nevertheless to generalize the VaR estimate it is assumed
 
 \begin{equation}
 \textrm{N-day VaR} = \textrm{1-day VaR}\times \sqrt{N}
@@ -43,15 +43,15 @@ distributions with mean 0 (otherwise it is just an approximation).
 
 \section{How to Estimate the VaR}\label{how-to-estimate-the-var}
 
-Three are the methods that can be used to estimate the VaR.
-In this Section they will be reviewed.
+Three are the methods that can be used to estimate the VaR and 
+in this Section they will be all reviewed.
 
-In the proposed examples historical series of Apple and Netflix
-are used. Data is saved in \href{}{historical\_data.csv}.
+In the proposed examples the historical series of Apple and Netflix
+are used. Data is saved in \href{https://drive.google.com/file/d/1pxzLjR_dsFdF3vildeh6vbmZJQmS6Qx7/view?usp=sharing}{historical\_data.csv}
 and it can be inspected as usual with \texttt{pandas}.
-We will assume to have a portfolio made of 60\% of AAPL and 40\% NFLX stocks.
+Also we will assume to have a portfolio made of \textbf{60\% of AAPL and 40\% NFLX stocks}.
 
-In the following code beside the closing price a new column with the daily return is added.
+In the following code we are going to add a new column with the daily return to the dataframe.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -79,26 +79,18 @@ In the following code beside the closing price a new column with the daily retur
 
 \subsection{Historical Simulation}\label{historical-simulation}
 
-In order to estimate the VaR from an historical series, we need to
-collect the market variables affecting the portfolio over the last \(N\)
-days (with \(N\) quite large).
+In order to estimate the VaR from a historical series, we need to
+collect the market variables affecting the portfolio over the last \(N\) days (with \(N\) quite large).
 
 The variation over each day in our time interval will provide different
-scenarios to be applied to today's market simulation so that for each of
-them we need to compute the variation in the portfolio value
-(\(\Delta P\)). 
+scenarios to be applied to today's market values.
+For each "scenario" we can apply the historical variation and compute the distribution of the change in the portfolio value
+(\(\Delta P\)). The VaR estimate will be the (100 - X)\% percentile of this distribution. 
 
-Given the distribution of the simulated scenarios the VaR estimate 
-will be its (100 - X)\% percentile. 
+Of course such kind of simulation relies on the assumption that past
+behaviors are indicative of what might happen in the future, that's why it is important that out historical series was as large as possible.
 
-Of course such historical simulation relies on the assumption that past
-behaviors are indicative of what might happen in the future, that's why it 
-is important that out historical series was as large as possible.
-
-As an example imagine a portfolio \(P\) whose value depends only on two market
-variables (\(x_1(t) , x_2(t)\)). From the historical series of these
-variables we can determine various \emph{simulated} portfolio
-values as:
+As an example imagine a portfolio \(P\) whose value depends only on two market variables (\(x_1(t) , x_2(t)\)). From the historical series of these variables we can simulate the evolution of the portfolio as
 
 \[P_i(t_n+1) = P\Big(x_1(t_n)\cfrac{(x_1(t_i)-x_1(t_{i-1}))}{x_1(t_{i-1})}, x_2(t_n)\cfrac{(x_2(t_i)-x_2(t_{i-1}))}{x_2(t_{i-1})}\Big)\]
 
@@ -121,9 +113,7 @@ For more information about scalar product, vector and matrices see Appendix~\ref
     \PY{n}{rets}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{n}{aapl}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{+} \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{*}\PY{n}{nflx}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}
 		
 \PY{n}{price} \PY{o}{=} \PY{p}{[}\PY{n}{aapl}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{n}{nflx}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{]}
-		
 \PY{n}{portfolio\PYZus{}price} \PY{o}{=} \PY{n}{w}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{price}\PY{p}{)}
-		
 \PY{n}{hist\PYZus{}var} \PY{o}{=} \PY{n}{portfolio\PYZus{}price}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{rets}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
 \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Historical VAR is }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{hist\PYZus{}var}\PY{p}{)}\PY{p}{)}
 
@@ -142,22 +132,22 @@ Historical VAR is -2.412
 
 Our portfolio \(P\) consists of different amounts \(w_i\)
 invested on two assets. If with \(\Delta x_i\) we denote the daily
-return of the $i$th asset the change in the value of the portfolio can be
-expressed as:
+return of the $i^{th}$ asset the change in the value of the portfolio can be
+expressed as
 
 \[\Delta P = \sum_{i=1}^n w_i \Delta x_i\]
 
 If we then assume that the asset variations are normally distributed
-with mean 0 (in this approach is typical to assume the expected change
-in a market variable over the considered period zero), \(\Delta P\) will
-be normally distributed (as a sum of normal distribution) with zero
+with zero mean (in this approach is typical to assume the expected change
+in a market variable over the considered period equal to zero), \(\Delta P\) will
+be also normally distributed (as a sum of normal distribution) with zero
 mean.
 
 To estimate the VaR we just need to compute the standard deviation of
 \(\Delta P\). In the general case with many different assets we define
-\(\sigma_i\) the daily volatility of the $i$th asset and with
+\(\sigma_i\) the daily volatility of the $i^{th}$ asset and with
 \(\rho_{ij}\) the correlation coefficient between the assets $i$ and $j$.
-The variance of \(\Delta P\) can then be expressed as:
+The variance of \(\Delta P\) can then be expressed as
 
 \begin{align*}\sigma^2_P & = \sum_{i=1}^{n}\sum_{j=1}^{n}\rho_{ij}w_i w_j \sigma_i \sigma_j \\
 & = \sum_{i=1}^{n} w_i^2 \sigma_i^2 + 2 \sum_{i=1}^{n}\sum_{j<i}^{n}\rho_{ij}w_i w_j \sigma_i \sigma_j 
@@ -175,32 +165,30 @@ A very useful alternative to the previous approaches is using a Monte
 Carlo simulation to generate the probability distribution for the
 \(\Delta P\) distribution. 
 
-Imagine we need to compute the 1-day VaR for our example portfolio
-the simulation can be done either generating random returns from a distribution with mean and standard deviation obtained from the historical data of each stock, or by simulating the evolution 
+Imagine we need to compute the 1-day VaR for our example portfolio.
+The simulation can be done either generating random returns from a distribution with mean and standard deviation obtained from the historical data of each stock, or by simulating the evolution 
 of all the portfolio market variables in one day.
 
-Let's start from the first case, computing mean and standard deviation of each historical data-set. We will then throw various simulated returns from a multivariate Gaussian with such means and variances. 
+Let's start from the first case, computing mean and standard deviation of each historical dataset. We will then throw various simulated returns from a multivariate Gaussian with such means and variances. 
 One useful aspect of this method is that in principal other distribution could be used instead of a Gaussian.
 Once we have the distribution of returns the VaR can be computed as usual, the example distribution is shown in Fig.~\ref{fig:mc1_var}.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} MC simulated VaR 1}
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}		
 \PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{multivariate\PYZus{}normal}
-		
+
 \PY{n}{mean} \PY{o}{=} \PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{aapl}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{nflx}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{p}{]}
-\PY{n}{std} \PY{o}{=} \PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{aapl}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{nflx}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{p}{]}
+\PY{n}{cov} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{n}{aapl}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{nflx}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}		
+\PY{n}{mvnorm} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{n}{mean}\PY{p}{,} \PY{n}{cov}\PY{o}{=}\PY{n}{cov}\PY{p}{)}
 		
-\PY{n}{mvnorm} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{n}{mean}\PY{p}{,} \PY{n}{cov}\PY{o}{=}\PY{p}{[}\PY{p}{[}\PY{n}{std}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}
-                                             \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{std}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
 \PY{n}{n\PYZus{}sims} \PY{o}{=} \PY{l+m+mi}{100000}
 \PY{n}{sim\PYZus{}returns} \PY{o}{=} \PY{n}{mvnorm}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{n\PYZus{}sims}\PY{p}{)}
 \PY{n}{p\PYZus{}returns} \PY{o}{=} \PY{p}{[}\PY{n}{w}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{s}\PY{p}{)} \PY{k}{for} \PY{n}{s} \PY{o+ow}{in} \PY{n}{sim\PYZus{}returns}\PY{p}{]}
 \PY{n}{mc\PYZus{}var} \PY{o}{=} \PY{n}{portfolio\PYZus{}price} \PY{o}{*} \PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{p\PYZus{}returns}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Simulated VAR is }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{mc\PYZus{}var}\PY{p}{)}
+\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Simulated VAR is }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{mc\PYZus{}var}\PY{p}{)}\PY{p}{)}
 
-Simulated VAR is \{\} -2.114679008811982
+Simulated VAR is -2.197
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -211,10 +199,11 @@ Simulated VAR is \{\} -2.114679008811982
 	\label{fig:mc1_var}
 \end{figure}
 
-This result can be compared with the VaR estimated with a simulation of the daily evolution of the stock price. We will use the log-normal evolution described in Section~\ref{derivation-of-log-normal-stochastic-differential-equation} where $\mu$ and $\sigma@$ are the mean and variance estimated from the historical series. Figure~\ref{fig:mc2_var} shows the resulting distribution of the returns.
+This result can be compared with the VaR estimated with a simulation of the daily evolution of the stock price. We will use the log-normal evolution described in Section~\ref{derivation-of-log-normal-stochastic-differential-equation} where $\mu$ and $\sigma$ are the mean and variance estimated from the historical series. Figure~\ref{fig:mc2_var} shows the resulting distribution of the returns.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{numpy}\PY{n+nn}{.}\PY{n+nn}{random} \PY{k}{import} \PY{n}{normal}
 \PY{k+kn}{from} \PY{n+nn}{numpy} \PY{k}{import} \PY{n}{exp}\PY{p}{,} \PY{n}{sqrt}
 		
 \PY{n}{T} \PY{o}{=} \PY{l+m+mi}{1}
@@ -224,14 +213,14 @@ This result can be compared with the VaR estimated with a simulation of the dail
 \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{trials}\PY{p}{)}\PY{p}{:}
     \PY{n}{s} \PY{o}{=} \PY{l+m+mi}{0}
     \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{:}
-        \PY{n}{s} \PY{o}{+}\PY{o}{=} \PY{n}{w}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{*} \PY{n}{price}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{*} \PY{n}{exp}\PY{p}{(}\PY{p}{(}\PY{n}{mean}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{std}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)} \PY{o}{*} \PY{n}{T} \PY{o}{+} 
-                                   \PY{n}{std}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{*} \PY{n}{sqrt}\PY{p}{(}\PY{n}{T}\PY{p}{)} \PY{o}{*} \PY{n}{normal}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-    \PY{n}{dP}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{portfolio\PYZus{}price} \PY{o}{\PYZhy{}} \PY{n}{s}\PY{p}{)}
+        \PY{n}{s} \PY{o}{+}\PY{o}{=} \PY{n}{w}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{*} \PY{n}{price}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{*} \PY{n}{exp}\PY{p}{(}\PY{p}{(}\PY{n}{mean}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{cov}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)} \PY{o}{*} \PY{n}{T} \PY{o}{+} 
+             \PY{n}{sqrt}\PY{p}{(}\PY{n}{cov}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)} \PY{o}{*} \PY{n}{sqrt}\PY{p}{(}\PY{n}{T}\PY{p}{)} \PY{o}{*} \PY{n}{normal}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+        \PY{n}{dP}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{portfolio\PYZus{}price} \PY{o}{\PYZhy{}} \PY{n}{s}\PY{p}{)}
 		
 \PY{n}{mc\PYZus{}var2} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{dP}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Simulated VAR is }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{mc\PYZus{}var2}\PY{p}{)}
+\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Simulated VAR is }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{mc\PYZus{}var2}\PY{p}{)}\PY{p}{)}
 
-Simulated VAR is \{\} -1.9213098361249987
+Simulated VAR is -1.913
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -242,23 +231,17 @@ Simulated VAR is \{\} -1.9213098361249987
 	\label{fig:mc2_var}
 \end{figure}
 
-
 \subsection{Stress and Back Testing}\label{stress-testing-and-back-testing}
 
 In addition to calculating the value at risk of a portfolio, it could be useful to 
 check how it would behave under the most extreme moves seen in the last years.
 
-This kind of test is called \emph{stress test} and it is done by extracting from the historical series, particular days with exceptional large variation of our market variables, im order to check
-how the portfolio moves.
+This kind of test is called \emph{stress test} and it is done by extracting from the historical series, particular days with exceptional large variation of our market variables, in order to check how the portfolio moves.
  
-The idea is to take into account extreme events that can more frequently in reality 
-than in a simulation where Gaussian tails are assumed hence are quite hard to simulate
-(e.g. a 5-standard deviation move should happen once every 7000 years
-but in practice can be observed twice over 10 years).
+The idea is to take into account extreme events that can happen more frequently in reality than in a simulation (where usually Gaussian tails are assumed hence are quite hard to simulate). For example a 5-standard deviation move should happen once every 7000 years but in practice can be observed twice over 10 years.
 
 How can we compute how likely is a $n\sigma$ event (assuming Gaussian distribution) ?
-The probability of such a daily event is given by 1 over the total probability of having an 
-event with a probability of $\pm n\sigma$ or more (the 252 factor comes to the number of working days per year).
+The probability of such a daily event is given by 1 over $252\cdot\mathbb{P}(|x| \ge n\sigma$ (the 252 factor comes to the number of working days per year).
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -285,29 +268,28 @@ loss exceeded the N-days X\% VaR just computed. If it happens on about
 %positions with a counterparty that would be lost if the counterparty
 %were to default with zero recovery at that time.
 
-Credit VaR is defined in the usual way Value at Risk measures are defined (i.e. as percentile of a loss).
+Credit VaR is defined in the usual way Value at Risk measures are (i.e. as percentile of a loss distribution).
 In this case we are concerned with the default risk associated to one or
-multiple counter-parties in a specific portfolio, and it is defined on
-the overall exposure to all the counter-parties involved.
+multiple counter-parties in a specific portfolio.
 
-The exposure Ex at the default date is defined as:
+The exposure $\textrm{EE}(\tau)$ is defined as the sum 
+of the discounted cash flows at the default date $\tau$; 
+the corresponding loss is then given by
 
-\[ \textrm{Ex} = (\sum \Pi(\tau, T))^{+}\]
+\[L_{\tau, \hat{T}} = (1 - R) \cdot \textrm{EE}(\tau)\]
+where \(\hat{T}\) is the risk horizon and $L$ is non-zero only in
+scenarios of early default of the counter-party. 
 
-where \(\Pi(\tau,T)\) represents the discounted cash flows at the
-default date \(\tau\); the corresponding loss is then given by:
+Given the above definitions we can express the Credit VaR as the 
+q-quantile of $L_{\tau, \hat{T}}$.
 
-\[L_{\tau, \hat{T}, T} = (1 - R) \cdot \textrm{Ex}(\tau)\]
+With respect to the Value at Risk, the time horizon is usually one year 
+and the percentile is the $99.9^{th}$, so it returns the loss that is 
+exceeded only in 1 case out of 1000. 
 
-where \(\hat{T}\) is the risk horizon and \(L\) is non-zero only in
-scenarios of early default of the counter-party. Given the above
-definitions we can express the Cr-VaR as the q-quantile of
-\(L_{\tau, \hat{T}, T}\).
-
-In this case the horizon is usually one year and the standard percentile is the 99.9th, so it returns the loss that is exceeded only in 1 case out of 1000. 
-
-Cr-Var is actually either the difference of the percentile from the mean,
-or the percentile itself. There is more than one possible definition.
+Credit Var is actually either the difference of the percentile from the mean,
+or the percentile itself. There is more than one possible definition but we 
+will use the latter.
 
 
 %Consider your portfolio has a call option on equity with a final maturity of two years. To get the Credit-Var, roughly, you simulate the underlying equity up to one year, and obtain a number of scenarios for the underlying equity in one year. Also, you need to simulate the default scenarios up to one year, to know in each scenario whether the counter-parties have defaulted or not. 
@@ -328,20 +310,68 @@ Credit VaR can be calculated through a simulation of the basic financial
 variables underlying the portfolio up to the risk horizon. 
 The simulation also includes the default of the counter-parties. 
 
-At the risk horizon, the portfolio is priced in every simulated scenario of the basic financial variables, including defaults, obtaining a number of scenarios for the portfolio value at the risk horizon.
+The portfolio is priced in every simulated scenario of the basic financial variables, including defaults, obtaining a number of scenarios for the portfolio value at the risk horizon.
 
 It is then straightforward to derive the Credit VaR from the distribution of the losses.
 
+Consider a portfolio of twenty zero coupon bonds each one with a default probability for the next year of 8\% and the same face value  (\euro{100}). The recovery rate in case of default is $R=40\%$ and the risk free rate is 1\%.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}\PY{p}{,} \PY{n}{CreditCurve}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{uniform}
+		
+\PY{n}{bonds} \PY{o}{=} \PY{l+m+mi}{20}
+\PY{n}{S} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.08} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{bonds}\PY{p}{)}\PY{p}{]}
+\PY{n}{N} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{100} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{20}\PY{p}{)}\PY{p}{]}
+\PY{n}{R} \PY{o}{=} \PY{l+m+mf}{0.4}
+\PY{n}{r} \PY{o}{=} \PY{l+m+mf}{0.01}
+\PY{n}{obs\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
+		
+\PY{n}{pillars} \PY{o}{=} \PY{p}{[}\PY{n}{obs\PYZus{}date}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{]}
+\PY{n}{dfs} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{n}{r}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{n}{i} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{]}
+\PY{n}{dc} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{obs\PYZus{}date}\PY{p}{,} \PY{n}{pillars}\PY{p}{,} \PY{n}{dfs}\PY{p}{)}
+\PY{n}{ccs} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{bonds}\PY{p}{)}\PY{p}{:}
+    \PY{n}{ccs}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{CreditCurve}\PY{p}{(}\PY{n}{pillars}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{S}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+		
+\PY{n}{scenarios} \PY{o}{=} \PY{l+m+mi}{100000}
+\PY{n}{losses} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{scenarios}\PY{p}{)}\PY{p}{:}
+    \PY{n}{loss} \PY{o}{=} \PY{l+m+mi}{0}
+    \PY{n}{unif} \PY{o}{=} \PY{n}{uniform}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{size}\PY{o}{=}\PY{n}{bonds}\PY{p}{)}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{bonds}\PY{p}{)}\PY{p}{:}
+        \PY{k}{if} \PY{n}{unif}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZgt{}} \PY{n}{ccs}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{pillars}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{:}
+            \PY{n}{loss} \PY{o}{+}\PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{R}\PY{p}{)}\PY{o}{*}\PY{n}{N}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{dc}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{pillars}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)} 
+        \PY{n}{losses}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{loss}\PY{p}{)}
+        
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{losses}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{99.9}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+
+[415.84158416]
+\end{Verbatim}
+\end{tcolorbox}
+Figure~\ref{fig:credit_var} shows the loss distribution of our simple portfolio.
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/credit_var_zcb.png}
+\caption{Distribution of losses in a portfolio made of twenty zero coupon bonds. The distribution is discrete since all the ZCB have the same face value and recovery rate. The red line indicates the Credit VaR.}
+\label{fig:credit_var}
+\end{figure}
+
 \subsection{Credit VaR and One Factor Copula Model}
-Consider a portfolio made of similar assets. As an approximation assume that the probability of default is the same for each counter-party and that the correlation between each pair is the same and equal to $\rho$. If we use the One Factor Copula model to describe the default correlations, Eq.~\ref{eq:one_factor_model}
+Consider a portfolio made of similar assets. As an approximation assume that the probability of default is the same for each counter-party and that the correlation between each pair is the same and equal to $\rho$. If we use the One Factor Copula model to describe the default correlations, Eq.~\ref{eq:gaussian_one_factor_copula}
 
 \[
 \mathbb{P}(T|M) = \Phi\Big(\cfrac{\Phi^{-1}[Q(T)]-M\sqrt{\rho}}{\sqrt{1-\rho}}\Big)
 \]
+where $\Phi$ is the cumulative distribution function of the standard normal,
 gives us the percentage of defaults by time $T$ as a function of $M$. 
-Indeed if you a have $n$ counter-parties with the same default probability $DP(T)$ the percentage of defaults at time $T$ is $DP$ itself ($\textrm{\% of defaults} = \textrm{n defaults}/n = n\cdot DP/n$).
+Indeed if you a have $n$ counter-parties with the same default probability $DP(T)$ the percentage of defaults at time $T$ is $DP$ itself ($\textrm{\% of defaults} = \textrm{n\_defaults}/n = n\cdot DP/n$).
 
-In the previous equation $\Phi$ is the cumulative distribution function of the standard normal.
 Since $M$ is distributed according to a standard normal we can be $X\%$ certain that its value will be \emph{greater} than $\Phi^{-1}(1-X)=-\Phi^{-1}(X)$, where the last equality holds due to the symmetry of the Gaussian distribution (see Figure~\ref{fig:certain_for_X}).
 
 \begin{figure}[htb]
@@ -350,11 +380,12 @@ Since $M$ is distributed according to a standard normal we can be $X\%$ certain 
 	\caption{$X\%$ probability to get an higher value a threshold for a normally distributed random variable.}
 	\label{fig:certain_for_X}
 \end{figure} 
-But in the probability of default formula appears $-M$, therefore we are $X\%$ certain that the percentage of losses over $T$ years on a large portfolio will be \emph{less} than $V(X,T)$ where
+
+Once the time $T$ as been chosen the only random variable appearing in the conditional default probability expression above is $M$, therefore we can be $X\%$ certain that the percentage of losses over $T$ years on a large portfolio will be \emph{less} than $V(X,T)$ where
 \[
 V(X,T)=\Phi\Big(\cfrac{\Phi^{-1}[Q(T)]+\Phi^{-1}(X)\sqrt{\rho}}{\sqrt{1-\rho}}\Big)
 \]
-When $X\%$ confidence level is used and the time horizon is $T$, a rough estimate of the Credit VaR is therefore $L(1-R)V(X,T)$, where $L$ is the size of the portfolio and $R$ is the recovery rate.
+When the confidence level $X\%$ is used and the time horizon is $T$, a rough estimate of the Credit VaR is therefore $L(1-R)V(X,T)$, where $L$ is the size of the portfolio and $R$ is the recovery rate.
 
 Suppose that a bank has a total of \euro{100} million of retail exposures. The 1-year probability of default averages to 2\% and the recovery rate averages to 60\%. The copula correlation parameter is estimated as 0.1.
 
@@ -416,7 +447,7 @@ As an example consider Table~\ref{tab:credit_ratings}, it shows the percentage p
 \end{table}
 
 Clearly credit rate changes cannot be assumed independent, hence a copula approach can be implemented also here.
-As an example suppose to simulate rating change of a portfolio of 9 bonds with various ratings over 1-year period. The correlation between them is 0.2.
+As an example suppose to simulate rating change of a portfolio of nine bonds with various ratings over 1-year period. The correlation between them is 0.2.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -425,57 +456,52 @@ As an example suppose to simulate rating change of a portfolio of 9 bonds with v
 		
 \PY{c+c1}{\PYZsh{} AAA, AA, A, BBB, BB, B, CCC, Def}
 \PY{n}{table} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+m+mf}{90.81}\PY{p}{,} \PY{l+m+mf}{8.33}\PY{p}{,} \PY{l+m+mf}{0.68}\PY{p}{,} \PY{l+m+mf}{0.06}\PY{p}{,} \PY{l+m+mf}{0.08}\PY{p}{,} \PY{l+m+mf}{0.02}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{]}\PY{p}{,}
-\PY{p}{[}\PY{l+m+mf}{0.70}\PY{p}{,} \PY{l+m+mf}{90.65}\PY{p}{,} \PY{l+m+mf}{7.79}\PY{p}{,} \PY{l+m+mf}{0.64}\PY{p}{,} \PY{l+m+mf}{0.06}\PY{p}{,} \PY{l+m+mf}{0.13}\PY{p}{,} \PY{l+m+mf}{0.02}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{]}\PY{p}{,}
-\PY{p}{[}\PY{l+m+mf}{0.09}\PY{p}{,} \PY{l+m+mf}{2.27}\PY{p}{,} \PY{l+m+mf}{91.05}\PY{p}{,} \PY{l+m+mf}{5.52}\PY{p}{,} \PY{l+m+mf}{0.74}\PY{p}{,} \PY{l+m+mf}{0.26}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.06}\PY{p}{]}\PY{p}{,}
-\PY{p}{[}\PY{l+m+mf}{0.02}\PY{p}{,} \PY{l+m+mf}{0.33}\PY{p}{,} \PY{l+m+mf}{5.95}\PY{p}{,} \PY{l+m+mf}{85.93}\PY{p}{,} \PY{l+m+mf}{5.30}\PY{p}{,} \PY{l+m+mf}{1.17}\PY{p}{,} \PY{l+m+mf}{1.12}\PY{p}{,} \PY{l+m+mf}{0.18}\PY{p}{]}\PY{p}{,}
-\PY{p}{[}\PY{l+m+mf}{0.03}\PY{p}{,} \PY{l+m+mf}{0.14}\PY{p}{,} \PY{l+m+mf}{0.67}\PY{p}{,} \PY{l+m+mf}{7.73}\PY{p}{,} \PY{l+m+mf}{80.53}\PY{p}{,} \PY{l+m+mf}{8.84}\PY{p}{,} \PY{l+m+mf}{1.00}\PY{p}{,} \PY{l+m+mf}{1.06}\PY{p}{]}\PY{p}{,}
-\PY{p}{[}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.11}\PY{p}{,} \PY{l+m+mf}{0.24}\PY{p}{,} \PY{l+m+mf}{0.43}\PY{p}{,} \PY{l+m+mf}{6.48}\PY{p}{,} \PY{l+m+mf}{83.46}\PY{p}{,} \PY{l+m+mf}{4.07}\PY{p}{,} \PY{l+m+mf}{5.20}\PY{p}{]}\PY{p}{,}
-\PY{p}{[}\PY{l+m+mf}{0.21}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{0.22}\PY{p}{,} \PY{l+m+mf}{1.30}\PY{p}{,} \PY{l+m+mf}{2.38}\PY{p}{,} \PY{l+m+mf}{11.24}\PY{p}{,} \PY{l+m+mf}{64.86}\PY{p}{,} \PY{l+m+mf}{19.79}\PY{p}{]}\PY{p}{]}
-		
-\PY{n}{table\PYZus{}gauss} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-		
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{table}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{n}{temp} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-    \PY{n}{s} \PY{o}{=} \PY{l+m+mi}{0}
-    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{8}\PY{p}{)}\PY{p}{:}
-        \PY{n}{s} \PY{o}{+}\PY{o}{=} \PY{n}{table}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{o}{/}\PY{l+m+mi}{100}
-        \PY{k}{if} \PY{n}{s}\PY{o}{\PYZgt{}}\PY{l+m+mi}{1}\PY{p}{:}
-            \PY{n}{s} \PY{o}{=} \PY{l+m+mi}{1}
-        \PY{n}{temp}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{s}\PY{p}{)}\PY{p}{)}
-    \PY{n}{table\PYZus{}gauss}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{temp}\PY{p}{)}
+         \PY{p}{[}\PY{l+m+mf}{0.70}\PY{p}{,} \PY{l+m+mf}{90.65}\PY{p}{,} \PY{l+m+mf}{7.79}\PY{p}{,} \PY{l+m+mf}{0.64}\PY{p}{,} \PY{l+m+mf}{0.06}\PY{p}{,} \PY{l+m+mf}{0.13}\PY{p}{,} \PY{l+m+mf}{0.02}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{]}\PY{p}{,}
+         \PY{p}{[}\PY{l+m+mf}{0.09}\PY{p}{,} \PY{l+m+mf}{2.27}\PY{p}{,} \PY{l+m+mf}{91.05}\PY{p}{,} \PY{l+m+mf}{5.52}\PY{p}{,} \PY{l+m+mf}{0.74}\PY{p}{,} \PY{l+m+mf}{0.26}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.06}\PY{p}{]}\PY{p}{,}
+         \PY{p}{[}\PY{l+m+mf}{0.02}\PY{p}{,} \PY{l+m+mf}{0.33}\PY{p}{,} \PY{l+m+mf}{5.95}\PY{p}{,} \PY{l+m+mf}{85.93}\PY{p}{,} \PY{l+m+mf}{5.30}\PY{p}{,} \PY{l+m+mf}{1.17}\PY{p}{,} \PY{l+m+mf}{1.12}\PY{p}{,} \PY{l+m+mf}{0.18}\PY{p}{]}\PY{p}{,}
+         \PY{p}{[}\PY{l+m+mf}{0.03}\PY{p}{,} \PY{l+m+mf}{0.14}\PY{p}{,} \PY{l+m+mf}{0.67}\PY{p}{,} \PY{l+m+mf}{7.73}\PY{p}{,} \PY{l+m+mf}{80.53}\PY{p}{,} \PY{l+m+mf}{8.84}\PY{p}{,} \PY{l+m+mf}{1.00}\PY{p}{,} \PY{l+m+mf}{1.06}\PY{p}{]}\PY{p}{,}
+         \PY{p}{[}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.11}\PY{p}{,} \PY{l+m+mf}{0.24}\PY{p}{,} \PY{l+m+mf}{0.43}\PY{p}{,} \PY{l+m+mf}{6.48}\PY{p}{,} \PY{l+m+mf}{83.46}\PY{p}{,} \PY{l+m+mf}{4.07}\PY{p}{,} \PY{l+m+mf}{5.20}\PY{p}{]}\PY{p}{,}
+         \PY{p}{[}\PY{l+m+mf}{0.21}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{0.22}\PY{p}{,} \PY{l+m+mf}{1.30}\PY{p}{,} \PY{l+m+mf}{2.38}\PY{p}{,} \PY{l+m+mf}{11.24}\PY{p}{,} \PY{l+m+mf}{64.86}\PY{p}{,} \PY{l+m+mf}{19.79}\PY{p}{]}\PY{p}{]}
+				
+\PY{n}{t} \PY{o}{=} \PY{n}{numpy}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{n}{table}\PY{p}{)}
+\PY{n}{table\PYZus{}gauss} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{cumsum}\PY{p}{(}\PY{n}{t}\PY{o}{/}\PY{l+m+mf}{100.}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
+\PY{n}{table\PYZus{}gauss}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{inf}
 		
 \PY{n}{N} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{100}\PY{p}{,} \PY{l+m+mi}{95}\PY{p}{,} \PY{l+m+mi}{92}\PY{p}{,} \PY{l+m+mi}{85}\PY{p}{,} \PY{l+m+mi}{80}\PY{p}{,} \PY{l+m+mi}{70}\PY{p}{,} \PY{l+m+mi}{60}\PY{p}{]}
 \PY{n}{portfolio} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{]}
 \PY{n}{R} \PY{o}{=} \PY{l+m+mf}{0.4}
+		
 \PY{n}{p0} \PY{o}{=} \PY{l+m+mi}{0}
 \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n}{portfolio}\PY{p}{:}
     \PY{n}{p0} \PY{o}{+}\PY{o}{=} \PY{n}{N}\PY{p}{[}\PY{n}{i}\PY{p}{]}
 		
-\PY{n}{mvnorm} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{p}{[}\PY{l+m+mi}{0} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{9}\PY{p}{)}\PY{p}{]}\PY{p}{,} 
-    \PY{n}{cov}\PY{o}{=}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
-         \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
-         \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
-         \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
-         \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
-         \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
-         \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
-         \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
-         \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+\PY{n}{numpy}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{mvnorm} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{p}{[}\PY{l+m+mi}{0} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{9}\PY{p}{)}\PY{p}{]}\PY{p}{,}
+          \PY{n}{cov}\PY{o}{=}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}
 		
-\PY{n}{trials} \PY{o}{=} \PY{l+m+mi}{100000}
+\PY{n}{trials} \PY{o}{=} \PY{l+m+mi}{1000000}
 \PY{n}{x\PYZus{}prob} \PY{o}{=} \PY{n}{mvnorm}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{size}\PY{o}{=}\PY{n}{trials}\PY{p}{)}
 		
 \PY{n}{dp} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{x\PYZus{}prob}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+\PY{k}{for} \PY{n}{x} \PY{o+ow}{in} \PY{n}{x\PYZus{}prob}\PY{p}{:}
     \PY{n}{p} \PY{o}{=} \PY{l+m+mi}{0}
-    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{9}\PY{p}{)}\PY{p}{:}
+    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{portfolio}\PY{p}{)}\PY{p}{)}\PY{p}{:}
         \PY{n}{ip} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{k}{while} \PY{n}{x\PYZus{}prob}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{n}{j}\PY{p}{]} \PY{o}{\PYZgt{}} \PY{n}{table\PYZus{}gauss}\PY{p}{[}\PY{n}{portfolio}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{]}\PY{p}{[}\PY{n}{ip}\PY{p}{]}\PY{p}{:}
+        \PY{k}{while} \PY{n}{x}\PY{p}{[}\PY{n}{j}\PY{p}{]} \PY{o}{\PYZgt{}} \PY{n}{table\PYZus{}gauss}\PY{p}{[}\PY{n}{portfolio}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{,} \PY{n}{ip}\PY{p}{]}\PY{p}{:}
             \PY{n}{ip} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
-        \PY{k}{if} \PY{n}{ip} \PY{o}{==} \PY{l+m+mi}{7}\PY{p}{:}
-            \PY{n}{p} \PY{o}{+}\PY{o}{=} \PY{n}{N}\PY{p}{[}\PY{n}{portfolio}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{]}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{R}\PY{p}{)}
-        \PY{k}{else}\PY{p}{:}
-            \PY{n}{p} \PY{o}{+}\PY{o}{=} \PY{n}{N}\PY{p}{[}\PY{n}{ip}\PY{p}{]}
+            \PY{k}{if} \PY{n}{ip} \PY{o}{==} \PY{l+m+mi}{7}\PY{p}{:}
+                \PY{n}{p} \PY{o}{+}\PY{o}{=} \PY{n}{N}\PY{p}{[}\PY{n}{portfolio}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{]}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{R}\PY{p}{)}
+            \PY{k}{else}\PY{p}{:}
+                \PY{n}{p} \PY{o}{+}\PY{o}{=} \PY{n}{N}\PY{p}{[}\PY{n}{ip}\PY{p}{]}
+	
         \PY{n}{r} \PY{o}{=} \PY{n+nb}{max}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{p}{(}\PY{n}{p} \PY{o}{\PYZhy{}} \PY{n}{p0}\PY{p}{)}\PY{p}{)}
         \PY{k}{if} \PY{n}{r} \PY{o}{!=} \PY{l+m+mi}{0}\PY{p}{:}
             \PY{n}{dp}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{r}\PY{p}{)}
@@ -512,38 +538,37 @@ Credit Valuation Adjustment (CVA).
 It can be expressed in the following way:
 
 \begin{equation}
-\text{CVA} = (1-R) \int_0^T D(t) \cdot EE(t) d\mathbb{P}(t)
+\text{CVA} = (1-R) \int_0^T D(t) \cdot \textrm{EE}(t) dQ(t)
 \label{eq:cva}
 \end{equation}
-
 where \(T\) is the latest maturity in the portfolio, \(D\) is the
-discount factor, \(EE\) is the expected exposure or
-\(\mathbb{E}[\text{max(0, NPV}_\text{portfolio})]\).
+discount factor, EE is the expected exposure or
+\(\mathbb{E}[\text{max(0, NPV}_\text{portfolio})]\), and $dQ$ is the "instantaneous" probability of default.
 
 For an easier computation it is natural to discretize the above integral
 and use a time grid going from 0 to the maturity of the portfolio:
 
 \begin{equation}
-\text{CVA} = (1-R) \sum_i^n D(t_i) \cdot EE(t_i) \mathbb{P}(t_{i-1}, t_i)
+\text{CVA} = (1-R) \sum_i^n D(t_i) \cdot \mathrm{EE}(t_i) Q(t_{i-1}, t_i)
 \label{eq:cva_discrete}
 \end{equation}
 
 Let us say that Credit VaR measures the risk of losses you
-face due to the possible default of some counter-parties you are having
-business with. CVA measures the pricing component of this risk, i.e.
+face due to the possible default of some counter-party you are having
+business with. Instead CVA measures the pricing component of this risk, i.e.
 the adjustment to the price of a product due to this risk.
 
 \subsection{Debit Valuation Adjustment}
 
-The adjustment seen from the point of view of our counter-party is positive, and is called Debit Valuation Adjustment, DVA. It is positive because the early default of the client itself would imply a discount on the client payment obligations, and this means a gain in a way. So the client marks a positive adjustment over the risk free price by adding the positive amount called DVA. 
+The adjustment seen from the point of view of our counter-party is positive, and is called Debit Valuation Adjustment, DVA. It is positive because the early default of the client itself would imply a discount on the client payment obligations, and this means a gain. So the client marks a positive adjustment over the risk free price by adding the positive amount called DVA. 
 
-Basically when both parties have the possibility to default, they
+When both parties have the possibility to default, they
 consistently include both defaults into the valuation. Hence
 every party needs to include its own default besides the default of the
 counter-party into the valuation. So they will mark a positive
 CVA to be subtracted and a positive DVA to be added to the default
 risk free price of the deal. The CVA of one party will be the DVA of
-the other one and viceversa.
+the other one and vice versa.
 
 \[
 \textrm{price}=\textrm{default risk free price + DVA - CVA}
@@ -568,72 +593,53 @@ conservation.
 \subsection{CVA Computation}
 
 The computation of the CVA is easily carried on with Monte Carlo simulation.
-First simulate the development of your derivatives portfolio (its NPC) at each time point for each MC scenario. 
+First simulate the development of your portfolio (its NPV) at each time point for each MC scenario. 
 Then calculate the CVA using Eq.~\ref{eq:cva} or its discrete form of Eq.~\ref{eq:cva_discrete}.
-Finally average the CVA of all the scenarios to get its best estimate.
+Finally average the CVA of all the scenarios to get its estimate.
 
-In case of bonds the computation of the CVA can be further simplified. Indeed in this case the exposure of the investor is equal to the notional of the bond, so it is enough to loop through each days from the observation date to the maturity of the bond and compute the CVA using Eq.~\ref{eq:cva_discrete}.
-Imagine a 3-years bond with a notional $N=$~\euro{100}. The bond provides yearly coupons of 6\%. The bond issuer has the following default probabilities 10\%, 20\% and 30\% for 1, 2 and 3 years respectively (the recovery rate is 40\%). The risk free rate is 3\%. 
+In case of zero coupon bond bonds the computation of the CVA can be simplified. Indeed in this case the exposure of the investor is equal to the face value of the bond, so it is enough to loop through each days from the observation date to the maturity of the bond and compute the CVA using Eq.~\ref{eq:cva_discrete}.
 
-To compute CVA we need to first define a discount curve and the credit curve corresponding to the issuer. 
+Imagine a 3-years zero coupon bond with a face value of $N=$~\euro{100}. 
+The bond issuer has the following default probabilities 10\%, 20\% and 30\% for 1, 2 and 3 years respectively and the recovery rate is 40\%. The risk free rate is instead 3\%. 
+
+To compute the CVA we need to first define a discount curve and the credit curve corresponding to the issuer, then we perform a daily loop. Finally the price of the bond is the default-risk-free price minus the CVA.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
 \PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
 \PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}\PY{p}{,} \PY{n}{CreditCurve}
-	
+\PY{k+kn}{import} \PY{n+nn}{math}
+		
 \PY{n}{T} \PY{o}{=} \PY{l+m+mi}{3} 
-\PY{n}{C} \PY{o}{=} \PY{l+m+mf}{0.06}
 \PY{n}{r} \PY{o}{=} \PY{l+m+mf}{0.03}
 \PY{n}{R} \PY{o}{=} \PY{l+m+mf}{0.4}
 \PY{n}{N} \PY{o}{=} \PY{l+m+mi}{100}
-	
+		
 \PY{n}{obs\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
 \PY{n}{pillars} \PY{o}{=} \PY{p}{[}\PY{n}{obs\PYZus{}date}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{T}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
-\PY{n}{dfs} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{n}{r}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{n}{i} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{T}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
+\PY{n}{dfs} \PY{o}{=} \PY{p}{[}\PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{r}\PY{o}{*}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{T}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
 \PY{n}{dc} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{obs\PYZus{}date}\PY{p}{,} \PY{n}{pillars}\PY{p}{,} \PY{n}{dfs}\PY{p}{)}
 \PY{n}{S} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.9}\PY{p}{,} \PY{l+m+mf}{0.8}\PY{p}{,} \PY{l+m+mf}{0.7}\PY{p}{]}
 \PY{n}{cc} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{n}{pillars}\PY{p}{,} \PY{n}{S}\PY{p}{)}
-\end{Verbatim}
-\end{tcolorbox}
-
-Then the loop for the CVA
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{V} \PY{o}{=} \PY{n}{N} \PY{o}{*} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{r}\PY{o}{*}\PY{n}{i}\PY{p}{)}
+		
 \PY{n}{cva} \PY{o}{=} \PY{l+m+mi}{0}
 \PY{n}{d} \PY{o}{=} \PY{n}{obs\PYZus{}date}
 \PY{k}{while} \PY{n}{d} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{n}{pillars}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{:}
     \PY{n}{cva} \PY{o}{+}\PY{o}{=} \PY{n}{dc}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d}\PY{p}{)}\PY{o}{*}\PY{p}{(}\PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{d}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{d}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
     \PY{n}{d} \PY{o}{+}\PY{o}{=} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-	
-\PY{n}{cva} \PY{o}{=} \PY{n}{cva} \PY{o}{*} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{R}\PY{p}{)} \PY{o}{*} \PY{n}{N}
+		
+\PY{n}{cva} \PY{o}{*}\PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{R}\PY{p}{)} \PY{o}{*} \PY{n}{N}
 \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CVA: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{cva}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Bond Price: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{V} \PY{o}{\PYZhy{}} \PY{n}{cva}\PY{p}{)}\PY{p}{)}
 
-CVA: 17.23
+CVA: 17.21
+Bond Price: 74.18
 \end{Verbatim}
 \end{tcolorbox}
 
-Then we can compute the default-risk-free price:
+If we assume that the recovery payments are done at the maturity date of the zero coupon bond the formula of the CVA calculation can be simplified further, indeed
 
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{default\PYZus{}free\PYZus{}price} \PY{o}{=} \PY{l+m+mi}{0}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n}{pillars}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{n}{default\PYZus{}free\PYZus{}price} \PY{o}{+}\PY{o}{=} \PY{p}{(}\PY{n}{N} \PY{o}{*} \PY{p}{(}\PY{p}{(}\PY{n}{pillars}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{n}{pillars}\PY{p}{[}\PY{n}{i}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{360}\PY{p}{)} \PY{o}{*} 
-	\PY{n}{dc}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{pillars}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)} \PY{o}{*} \PY{n}{C} \PY{p}{)}
-	
-\PY{n}{default\PYZus{}free\PYZus{}price} \PY{o}{+}\PY{o}{=} \PY{n}{N} \PY{o}{*} \PY{n}{dc}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{pillars}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
-\end{Verbatim}
-\end{tcolorbox}
-
-So in conclusion the price of the bond is the default-risk-free price minus the CVA:
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Bond Price: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{default\PYZus{}free\PYZus{}price} \PY{o}{\PYZhy{}} \PY{n}{cva}\PY{p}{)}\PY{p}{)}
-
-Bond Price: 91.50
-\end{Verbatim}
-\end{tcolorbox}
-
+$\textrm{CVA} = (1-R)\cdot N \cdot \sum_{i=1}^{n} D(d_i)\cdot Q(d_{i-1}, d_i) $
+becomes
+\[ \textrm{CVA} = (1-R)\cdot N\cdot D(d_n)\cdot\sum_{i=1}^{n} Q(d_{i-1}, d_i) = (1-R)\cdot N\cdot Q(d_{0}, d_n)\]
