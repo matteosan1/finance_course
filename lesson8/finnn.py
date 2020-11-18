@@ -116,14 +116,13 @@ class FinNN:
             x = self.scale_x.transform(self.my_reshape(val))
         else:
             x = self.my_reshape(val)
-
+            
         if self.scale_y is not None:
             r = self.scale_y.inverse_transform(self.model.predict(x))
         else:
             r = self.model.predict(x)
-            
         return r
-
+        
     def evaluate(self):
         eval1 = self.model.evaluate(self.x, self.y)
         print('Training: {}'.format(eval1))
