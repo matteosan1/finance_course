@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 from finmarkets import call
 
-state = 2
+state = 3
 bins = 800
 
 if state == 1:
@@ -24,7 +24,7 @@ if state == 1:
         for i1 in range(bins):
             for i2 in range(bins):
                 z.append(call(1, rates[i1], vols[i2], 1))
-                writer.writerow([rates[i1], vols[i2], z[-1]])                
+                writer.writerow([vols[i2], rates[i1], z[-1]])                
 
 elif state == 2:
     from keras.models import Sequential
@@ -32,8 +32,8 @@ elif state == 2:
 
     dataset = pd.read_csv("test.csv")
 
-    x = dataset.iloc[:, :2].values
-    z = dataset.iloc[:, 2].values
+    x = dataset.iloc[:, 1:3].values
+    z = dataset.iloc[:, 0].values
     print (z.shape)
     z = z.reshape((len(z), 1))
     print (z.shape)
@@ -43,8 +43,6 @@ elif state == 2:
     z = scale_z.fit_transform(z)
     
     x_train, x_test, z_train, z_test = train_test_split(x, z, test_size=0.33)
-    import sys
-    sys.exit()
     model = Sequential()
     model.add(Dense(20, input_dim=2, kernel_initializer='he_uniform', activation='sigmoid'))
     #model.add(Dropout(0.2))
@@ -54,9 +52,9 @@ elif state == 2:
     
     model.compile(loss='mse', optimizer='adam')
     
-    model.fit(x_train, z_train, epochs=5000, verbose=1, batch_size=500)
+    model.fit(x_train, z_train, epochs=200, verbose=1, batch_size=1500)
 
-    model.save("test.b5")
+    model.save("test_inv.b5")
     
     eval1 = model.evaluate(x_train, z_train)
     print('Training: {}'.format(eval1))
@@ -67,14 +65,14 @@ elif state == 2:
 elif state == 3:
     from keras.models import load_model
 
-    model = load_model("test.b5")
+    model = load_model("test_inv.b5")
     dataset = pd.read_csv("test.csv")
 
-    vols = dataset.iloc[:, 0].values
-    rates = dataset.iloc[:, 1].values
+#    vols = dataset.iloc[:, 0].values
+#    rates = dataset.iloc[:, 2].values
 
-    x = dataset.iloc[:, :2].values
-    z = dataset.iloc[:, 2].values
+    x = dataset.iloc[:, 1:3].values
+    z = dataset.iloc[:, 0].values
     
     x = x.reshape((len(x), 2))
     z = z.reshape((len(z), 1))
@@ -84,30 +82,39 @@ elif state == 3:
     scale_z = MinMaxScaler()
     z = scale_z.fit_transform(z)
 
+    
+    
     predictions = model.predict(x)
-    z = scale_z.inverse_transform(z)
+    #zt = z[:]*0.4+0.15
+    zt = scale_z.inverse_transform(z)
     zhat = scale_z.inverse_transform(predictions)
+    #print (zt[:10, 0])
+    #print (zhat[:10])
+           
     #for i in range(100):
     #    print (z[i], zhat[i])
 
-    from mpl_toolkits import mplot3d
+#    from mpl_toolkits import mplot3d
     
-    fig = plt.figure()
-    ax = plt.axes(projection='3d')
+#    fig = plt.figure()
+#    ax = plt.axes(projection='3d')
     
-    vols = vols.reshape(bins, bins)
-    rates = rates.reshape(bins, bins)
+#    vols = vols.reshape(bins, bins)
+#    rates = rates.reshape(bins, bins)
     #rates = rates.copy().T
-    z = z.reshape(bins, bins)
-    zhat = zhat.reshape(bins, bins)
+#    z = z.reshape(bins, bins)
+#    zhat = zhat.reshape(bins, bins)
 
-    res = (z-zhat)/z
-    
-    ax.plot_surface(vols, rates, res, cmap='viridis', edgecolor='grey')
-    ax.set_xlabel("volatility")
-    ax.set_ylabel("rate")
-    ax.set_zlabel("m.s.e.")
-    #ax.set_zlim3d(-.01, .01)
-    #ax.set_xlim3d(.25, .55)
+    res = (zt-zhat)/zt
+    from matplotlib import pyplot as plt
+    plt.plot(res)
     plt.show()
-
+    
+#    ax.plot_surface(vols, rates, res, cmap='viridis', edgecolor='grey')
+#    ax.set_xlabel("volatility")
+#    ax.set_ylabel("rate")
+#    ax.set_zlabel("m.s.e.")
+#    #ax.set_zlim3d(-.01, .01)
+#    #ax.set_xlim3d(.25, .55)
+#    plt.show()
+#
