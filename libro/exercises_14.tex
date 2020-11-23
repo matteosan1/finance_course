@@ -1,75 +1,225 @@
-\chapter{Credit Default Swaps}\label{introduction-to-python---lesson-9}
+\chapter{Portfolio Optimization}\label{ex-lesson-14}
 
-\section{Exercises}
+\begin{Exercise}[title={(Minimum Risk Portfolio)}]
+Your are managing portfolios and one of your clients is asking to design her investment in order to reduce at the minimum the risk. Her position involves these shares: 'TMUS', 'TDS', 'ENTR', 'UEC', 'WM', 'CTRE', 'LDOS', 'COST', 'CHD', 'HI'.
+Find the weights corresponding to each asset.
 
-\begin{Exercise}
-Update \verb!finmarkets! module with \verb!CreditCurve! and \verb!CreditDefaultSwap! classes.
+\textbf{Hint:} the historical series of the corresponding companies are store in \href{https://drive.google.com/file/d/1ARryI7zpNVqlpzPsrNS2rTH9Knj07JBV/view?usp=sharing}{share\_prices.csv}.
 \end{Exercise}
 \begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
+		
+\PY{n}{df} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{prova.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{index\PYZus{}col}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{date}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n}{daily\PYZus{}returns} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{pct\PYZus{}change}\PY{p}{(}\PY{p}{)}
+\PY{n}{returns} \PY{o}{=} \PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{252}
+\PY{n}{covariance} \PY{o}{=} \PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{252}
+
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{returns}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{covariance}\PY{p}{)}
+
+CHD     0.149289
+COST    0.165491
+CTRE    0.099866
+ENTR    0.611855
+HI      0.162094
+LDOS    0.226562
+TDS     0.081294
+TMUS    0.313158
+UEC     0.102048
+WM      0.189474
+dtype: float64
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+
+           CHD      COST      CTRE      ENTR        HI      LDOS       TDS
+CHD   0.024915  0.009337  0.008256  0.009681  0.008599  0.007354  0.011440
+COST  0.009337  0.028864  0.007549  0.019100  0.010508  0.012134  0.011564
+CTRE  0.008256  0.007549  0.098606 -0.037186  0.015380  0.014143  0.015634
+ENTR  0.009681  0.019100 -0.037186  2.628810  0.001346  0.005644 -0.008187
+HI    0.008599  0.010508  0.015380  0.001346  0.050175  0.018365  0.019070
+LDOS  0.007354  0.012134  0.014143  0.005644  0.018365  0.065101  0.018032
+TDS   0.011440  0.011564  0.015634 -0.008187  0.019070  0.018032  0.078266
+TMUS  0.009991  0.008667  0.012142  0.020659  0.017274  0.015900  0.030212
+UEC   0.009134  0.011193  0.002861  0.174809  0.034460  0.025498  0.024209
+WM    0.007536  0.008773  0.010322  0.006651  0.011621  0.011010  0.011077
+	
+          TMUS       UEC        WM
+CHD   0.009991  0.009134  0.007536
+COST  0.008667  0.011193  0.008773
+CTRE  0.012142  0.002861  0.010322
+ENTR  0.020659  0.174809  0.006651
+HI    0.017274  0.034460  0.011621
+LDOS  0.015900  0.025498  0.011010
+TDS   0.030212  0.024209  0.011077
+TMUS  0.126895  0.024575  0.011563
+UEC   0.024575  0.497870  0.014853
+WM    0.011563  0.014853  0.019869
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
+		
+\PY{k}{def} \PY{n+nf}{sum\PYZus{}weights}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{:} 
+    \PY{k}{return} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{w}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}
+		
+\PY{k}{def} \PY{n+nf}{markowitz}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{p}{,} \PY{n}{w}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+		
+\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{10}
+\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{,}\PY{p}{)} 
+\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
+		
+\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
+                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
+
+    fun: 0.1137665453329252
+    jac: array([0.11396485, 0.11356963, 0.11363222, 0.11417477, 0.11384268,
+                0.11409247, 0.11368632, 0.11387072, 0.12300402, 0.11367865])
+message: 'Optimization terminated successfully.'
+   nfev: 144
+    nit: 12
+   njev: 12
+ status: 0
+success: True
+      x: array([2.84626544e-01, 1.87698071e-01, 3.77538201e-02, 1.90910627e-03,
+                4.80977699e-02, 4.07549907e-02, 8.50047814e-03, 1.50307431e-02,
+                4.44522891e-18, 3.75628477e-01])
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio composition}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{k}{for} \PY{n}{i}\PY{p}{,} \PY{n}{n} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{columns}\PY{p}{)}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:5\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:4.1f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{n}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+		
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio variance: }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{fun}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Expected Portfolio return: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{returns}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+
+Portfolio composition
+CHD  : 28.5\%
+COST : 18.8\%
+CTRE :  3.8\%
+ENTR :  0.2\%
+HI   :  4.8\%
+LDOS :  4.1\%
+TDS  :  0.9\%
+TMUS :  1.5\%
+UEC  :  0.0\%
+WM   : 37.6\%
+Portfolio variance: 0.0129
+Expected Portfolio return: 0.172
+\end{Verbatim}
+\end{tcolorbox}
 \end{Answer}
 
-\begin{Exercise}[title={(Boostrapping reprise)}]
-Applying a bootstrapping technique, outlined in Lesson~\ref{}, derive the a
-credit curve from the following CDS market quotes:
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{pricing_date }\OperatorTok{=}\NormalTok{ date(}\DecValTok{2019}\NormalTok{, }\DecValTok{11}\NormalTok{, }\DecValTok{6}\NormalTok{)}
-
-\NormalTok{cds_quotes }\OperatorTok{=}\NormalTok{ [}
-\NormalTok{    \{}\StringTok{'maturity'}\NormalTok{: }\DecValTok{12}\NormalTok{, }\StringTok{'spread'}\NormalTok{:}\FloatTok{0.0149}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'maturity'}\NormalTok{: }\DecValTok{24}\NormalTok{, }\StringTok{'spread'}\NormalTok{:}\FloatTok{0.0165}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'maturity'}\NormalTok{: }\DecValTok{36}\NormalTok{, }\StringTok{'spread'}\NormalTok{:}\FloatTok{0.0173}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'maturity'}\NormalTok{: }\DecValTok{69}\NormalTok{, }\StringTok{'spread'}\NormalTok{:}\FloatTok{0.0182}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'maturity'}\NormalTok{: }\DecValTok{120}\NormalTok{, }\StringTok{'spread'}\NormalTok{:}\FloatTok{0.0183}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'maturity'}\NormalTok{: }\DecValTok{240}\NormalTok{, }\StringTok{'spread'}\NormalTok{:}\FloatTok{0.0184}\NormalTok{\},}
-\NormalTok{]}
-\end{Highlighting}
-\end{Shaded}
-
-\hypertarget{hint}{%
-\paragraph{Hint}\label{hint}}
-
-\begin{itemize}
-\tightlist
-\item
-  create a CDS contract for each input market quote;
-\item
-  implement an objective function to minimize the squared sum of the CDS
-  npvs, the function has to implement also a \texttt{CreditCurve} with
-  the unknown (to be detrmined by the bootstrap survival probabilities)
-  and a list of pillars corresponding to the CDS maturities;
-\item
-  remember to set initial guesses and boundary conditions for the
-  unknown parameters (the first survival probability has to be set to 1
-  since no default happened !, the others free to move between {[}0.01
-  to 1{]});
-\item
-  using the \texttt{scipy.optimize.minimize} find the curve.
-\end{itemize}
+\begin{Exercise}[title={(Return Allocation Portfolio)}]
+After few months the same client of the previous exercise, contacted you again asking for larger returns. In particular she would like to increase it by 40\%.
+Find the new portfolio composition that makes your client happy.
 \end{Exercise}
 \begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{efficient\PYZus{}frontier}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{asset\PYZus{}returns}\PY{p}{,} \PY{n}{target\PYZus{}return}\PY{p}{)}\PY{p}{:} 
+    \PY{n}{portfolio\PYZus{}return} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{asset\PYZus{}returns} \PY{o}{*} \PY{n}{w}\PY{p}{)} 
+    \PY{k}{return} \PY{p}{(}\PY{n}{portfolio\PYZus{}return} \PY{o}{\PYZhy{}} \PY{n}{target\PYZus{}return}\PY{p}{)}
+		
+\PY{n}{results} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+\PY{n}{target} \PY{o}{=} \PY{l+m+mf}{0.172}\PY{o}{*}\PY{l+m+mf}{1.4}
+\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{efficient\PYZus{}frontier}\PY{p}{,} 
+                \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{args}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{p}{(}\PY{n}{returns}\PY{p}{,} \PY{n}{target}\PY{p}{)}\PY{p}{\PYZcb{}}\PY{p}{,}
+               \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}
+\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
+\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
+\PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)} 
+		
+\PY{n}{p\PYZus{}variance} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}
+\PY{n}{ret} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{returns}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio variance: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{variance}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio return: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{ret}\PY{p}{)}\PY{p}{)}
+
+Portfolio variance: 0.026
+Portfolio return: 0.241
+\end{Verbatim}
+\end{tcolorbox}	
 \end{Answer}
 
-\begin{Exercise}
-Using the above \texttt{Credit\ Curve} and the \texttt{DiscountCurve}
-already defined in lesson 5, price the following CDS:
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{cds_to_price }\OperatorTok{=}\NormalTok{ [}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{18}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{30}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{42}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{72}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{108}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{132}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{160}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{184}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{210}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\}}
-\NormalTok{]}
-\end{Highlighting}
-\end{Shaded}
+\begin{Exercise}[title={(Risk Parity)}]
+The client is not yet satisfied and decides to move to a risk parity portfolio.
+Compute the correct weights to have each asset contributing equally to the portfolio risk.
 \end{Exercise}
 \begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{risk\PYZus{}parity}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
+    \PY{n}{variance} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{p}{,} \PY{n}{w}\PY{p}{)}\PY{p}{)} 
+    \PY{n+nb}{sum} \PY{o}{=} \PY{l+m+mi}{0}
+    \PY{n}{N} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{w}\PY{p}{)}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{N}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb}{sum} \PY{o}{+}\PY{o}{=} \PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{p}{(}\PY{n}{variance}\PY{o}{/}\PY{p}{(}\PY{n}{N}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{p}{,} \PY{n}{w}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} 
+    \PY{k}{return} \PY{n+nb}{sum}
+		
+\PY{n}{args} \PY{o}{=} \PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}
+\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)} 
+\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
+\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{risk\PYZus{}parity}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
+                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
+
+    fun: 3.0597183058586087e-07
+    jac: array([-5.36616836e-04,  1.70066372e-04, -3.68199937e-04, 5.59974747e-03, 
+                -9.08102600e-04,  3.25565500e-04,  3.17810572e-04, -6.52504960e-04,  
+                1.32785256e-03, -7.77000622e-05])
+message: 'Optimization terminated successfully.'
+   nfev: 163
+    nit: 13
+   njev: 13
+ status: 0
+success: True
+      x: array([0.16075373, 0.14425109, 0.0998296 , 0.02449688, 0.10306514,
+                0.09916455, 0.08835716, 0.0781992 , 0.04379689, 0.15808576])
+
+\PY{n}{sigma\PYZus{}i} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
+    \PY{n}{std} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
+    \PY{n}{a} \PY{o}{=} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]} 
+    \PY{n}{sigma\PYZus{}i}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{a}\PY{o}{/}\PY{n}{std}\PY{p}{)}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
+	\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Risk contribution for asset }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}
+               \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{sigma\PYZus{}i}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{/}\PY{n+nb}{sum}\PY{p}{(}\PY{n}{sigma\PYZus{}i}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+
+Risk contribution for asset 0: 9.986\%
+Risk contribution for asset 1: 10.010\%
+Risk contribution for asset 2: 10.012\%
+Risk contribution for asset 3: 10.040\%
+Risk contribution for asset 4: 10.009\%
+Risk contribution for asset 5: 9.999\%
+Risk contribution for asset 6: 9.961\%
+Risk contribution for asset 7: 9.972\%
+Risk contribution for asset 8: 10.000\%
+Risk contribution for asset 9: 10.011\%		
+\end{Verbatim}
+\end{tcolorbox}
 \end{Answer}

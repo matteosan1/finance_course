@@ -57,17 +57,21 @@ class FinNN:
     def addHiddenLayer(self, n_neurons, activation, k_init="he_uniform"):
         self.model.add(Dense(n_neurons, activation=activation, kernel_initializer=k_init))
 
-    def addOutputLayer(self, n_outputs):
-        self.model.add(Dense(n_outputs))
+    def addOutputLayer(self, n_outputs, activation=None, bias_initializer='random_uniform'):
+        self.model.add(Dense(n_outputs, activation=activation, bias_initializer=bias_initializer))
 
-    def addConv2DLayer(self, num_filters, filter_size, input_shape):
-        self.model.add(Conv2D(num_filters, filter_size, input_shape=input_shape))
-        self.model.add(MaxPooling2D(pool_size=2))
+    def addConv2DLayer(self, num_filters, filter_size, input_shape, activation=None, with_maxpool=True):
+        self.model.add(Conv2D(num_filters, filter_size, input_shape=input_shape, activation=activation))
+        if with_maxpool:
+            self.model.add(MaxPooling2D(pool_size=2))
+
+    def addFlatten(self):
+        self.model.add(Flatten())
         
-    def addCNNOutputLayer(self, n_outputs):
-        if self.nn_type == "CNN2D":
+    def addCNNOutputLayer(self, n_outputs, activation='softmax', with_flatten=True):
+        if self.nn_type == "CNN2D" and with_flatten:
             self.model.add(Flatten())
-        self.model.add(Dense(n_outputs, activation='softmax'))
+        self.model.add(Dense(n_outputs, activation=activation))
 
     def addConv1DInputLayer(self, num_filters, kernel_size, input_size):
         self.model.add(Conv1D(filters=num_filters, kernel_size=kernel_size, 
@@ -83,6 +87,9 @@ class FinNN:
     def addMaxPooling1D(self, pool_size):
         self.model.add(MaxPooling1D(pool_size))
 
+    def addMaxPooling2D(self, pool_size=2):
+        self.model.add(MaxPooling2D(pool_size=pool_size))
+            
     def addGlobalAveragePooling1D(self):
         self.model.add(GlobalAveragePooling1D())
         
@@ -116,14 +123,13 @@ class FinNN:
             x = self.scale_x.transform(self.my_reshape(val))
         else:
             x = self.my_reshape(val)
-
+            
         if self.scale_y is not None:
             r = self.scale_y.inverse_transform(self.model.predict(x))
         else:
             r = self.model.predict(x)
-            
         return r
-
+        
     def evaluate(self):
         eval1 = self.model.evaluate(self.x, self.y)
         print('Training: {}'.format(eval1))

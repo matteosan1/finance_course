@@ -6,21 +6,21 @@ from scipy.integrate import quad
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
-def call_price(t, St, K, r, sigma, T):
-    return (St*norm.cdf(d_plus(t, St, K, r, sigma, T))-
-            K*math.exp(-r*(T-t))*norm.cdf(d_minus(t, St, K, r, sigma, T)))
+def call(St, r, sigma, ttm):
+    return (St*norm.cdf(d_plus(St, r, sigma, ttm))-
+            math.exp(-r*(ttm))*norm.cdf(d_minus(St, r, sigma, ttm)))
 
-def put_price(t, St, K, r, sigma, T):
-    return (K*math.exp(-r*(T-t))*norm.cdf(-d_minus(t, St, K, r, sigma, T))-
-            St*norm.cdf(-d_plus(t, St, K, r, sigma, T)))
+def put(St, r, sigma, ttm):
+    return (math.exp(-r*(ttm))*norm.cdf(-d_minus(St, K, r, sigma, ttm))-
+            St*norm.cdf(-d_plus(St, r, sigma, ttm)))
     
-def d_plus(t, St, K, r, sigma, T):
-    num = math.log(St/K) + (r + 0.5*sigma**2)*(T - t)
-    den = sigma*math.sqrt(T-t)
+def d_plus(St, r, sigma, ttm):
+    num = math.log(St) + (r + 0.5*sigma**2)*(ttm)
+    den = sigma*math.sqrt(ttm)
     return num/den
 
-def d_minus(t, St, K, r, sigma, T):
-    return d_plus(t, St, K, r, sigma, T) - sigma*math.sqrt(T-t)
+def d_minus(St, r, sigma, ttm):
+    return d_plus(St, r, sigma, ttm) - sigma*math.sqrt(ttm)
 
 def generate_swap_dates(start_date, n_months, tenor_months=12):
     """
