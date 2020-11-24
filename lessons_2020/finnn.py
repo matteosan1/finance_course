@@ -65,7 +65,7 @@ class FinNN:
 
     def addConv2DLayer(self, num_filters, kernel_size, input_shape, activation=None):
         self.model.add(Conv2D(num_filters, kernel_size, input_shape=input_shape, activation=activation))
-        self.model.add(MaxPooling2D(pool_size=2))
+        #self.model.add(MaxPooling2D(pool_size=2))
 
     def addFlatten(self):
         self.model.add(Flatten())
