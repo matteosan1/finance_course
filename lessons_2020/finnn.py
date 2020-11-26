@@ -20,11 +20,22 @@ class FinNN:
         self.nn_type = nn_type
         self.categorical = False
 
+    def setTestData(self, x, y):
+        x = self.my_reshape(x)
+        y = self.my_reshape(y)
+        if self.nn_type == "CNN2D":
+            x = np.expand_dims(x, axis=3)
+        elif self.nn_type == "CNN1D":
+            x = np.expand_dims(x, axis=2)
+        self.x_test, self.y_test = x, y
+        
     def setData(self, x, y, test_size=1):
         x = self.my_reshape(x)
         y = self.my_reshape(y)
-        if self.nn_type.startswith("CNN"):
+        if self.nn_type == "CNN2D":
             x = np.expand_dims(x, axis=3)
+        elif self.nn_type == "CNN1D":
+            x = np.expand_dims(x, axis=2)
         self.x, self.x_test, self.y, self.y_test = train_test_split(x, y, test_size=test_size)
          
     def my_reshape(self, x):
@@ -33,7 +44,6 @@ class FinNN:
                 x = x.reshape(len(x), 1)
             else:
                 x = x.reshape(len(x), len(x[0]))
-                
         return x
 
     def normalize(self):
@@ -54,31 +64,30 @@ class FinNN:
         if self.predictions is not None:
             self.predictions = self.scale_y.inverse_transform(self.predictions)
         
-    def addInputLayer(self, n_inputs, n_neurons, activation, k_init="he_uniform"):
-        self.model.add(Dense(n_neurons, input_dim=n_inputs, activation=activation, kernel_initializer=k_init))
+    def addInputLayer(self, inputs, neurons, activation, k_init="he_uniform"):
+        self.model.add(Dense(neurons, input_dim=inputs, activation=activation, kernel_initializer=k_init))
 
-    def addHiddenLayer(self, n_neurons, activation, k_init="he_uniform"):
-        self.model.add(Dense(n_neurons, activation=activation, kernel_initializer=k_init))
+    def addHiddenLayer(self, neurons, activation, k_init="he_uniform"):
+        self.model.add(Dense(neurons, activation=activation, kernel_initializer=k_init))
 
-    def addOutputLayer(self, n_outputs, activation=None, bias_initializer='random_uniform'):
-        self.model.add(Dense(n_outputs, activation=activation, bias_initializer=bias_initializer))
+    def addOutputLayer(self, outputs, activation='relu', bias_initializer='random_uniform'):
+        self.model.add(Dense(outputs, activation=activation, bias_initializer=bias_initializer))
 
-    def addConv2DLayer(self, num_filters, kernel_size, input_shape, activation=None):
-        self.model.add(Conv2D(num_filters, kernel_size, input_shape=input_shape, activation=activation))
-        #self.model.add(MaxPooling2D(pool_size=2))
-
+    def addConv2DLayer(self, filters, filter_size, input_shape, activation=None):
+        self.model.add(Conv2D(filters, kernel_size=filter_size, input_shape=input_shape, activation=activation))
+        
     def addFlatten(self):
         self.model.add(Flatten())
         
-    def addCNNOutputLayer(self, n_outputs, activation='softmax'):
-        self.model.add(Dense(n_outputs, activation=activation))
+    def addCNNOutputLayer(self, outputs, activation='softmax'):
+        self.model.add(Dense(outputs, activation=activation))
 
-    def addConv1DInputLayer(self, num_filters, kernel_size, input_size, activation='relu'):
-        self.model.add(Conv1D(filters=num_filters, kernel_size=kernel_size, 
+    def addConv1DInputLayer(self, filters, filter_size, input_size, activation='relu'):
+        self.model.add(Conv1D(filters=filters, kernel_size=filter_size, 
                               activation=activation, input_shape=input_size))
 
-    def addConv1DLayer(self, num_filters, kernel_size, activation='relu'):
-        self.model.add(Conv1D(filters=num_filters, kernel_size=kernel_size, 
+    def addConv1DLayer(self, filters, filter_size, activation='relu'):
+        self.model.add(Conv1D(filters=filters, kernel_size=filter_size, 
                               activation=activation))        
 
     def addDropout(self, density):
@@ -93,10 +102,10 @@ class FinNN:
     def addGlobalAveragePooling1D(self):
         self.model.add(GlobalAveragePooling1D())
         
-    def compileModel(self, loss_func, optimizer):
-        if loss_func == "categorical_crossentropy":
+    def compileModel(self, loss, opt):
+        if loss == "categorical_crossentropy":
             self.categorical = True
-        self.model.compile(loss=loss_func, optimizer=optimizer)
+        self.model.compile(loss=loss, optimizer=opt)
 
     def fit(self, epochs, batch_size=0, verbose=0):
         if self.nn_type == "ANN":
