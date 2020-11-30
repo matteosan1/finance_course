@@ -10,7 +10,7 @@ from keras.layers import Dense,Conv1D, Conv2D, MaxPooling2D, Flatten, Dropout, M
 from keras.utils import to_categorical
 
 class FinNN:
-    def __init__(self, nn_type="ANN"):
+    def __init__(self, nn_type):
         self.x, self.x_test = None, None
         self.y, self.y_test = None, None
         self.scale_x = None
@@ -107,7 +107,9 @@ class FinNN:
             self.categorical = True
         self.model.compile(loss=loss, optimizer=opt)
 
-    def fit(self, epochs, batch_size=0, verbose=0):
+    def fit(self, epochs, batch_size=None, verbose=0):
+        if batch_size is None:
+            batch_size = int(len(self.x) * 0.15)
         if self.nn_type == "ANN":
             self.model.fit(self.x, self.y, epochs=epochs, batch_size=batch_size, verbose=verbose)
         elif self.nn_type.startswith("CNN"):
