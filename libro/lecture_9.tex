@@ -1,6 +1,6 @@
 \chapter{Interest Rate Swaps and Swaptions}\label{interest-rate-swaps-and-swaptions}
 
-In the previous Chapters we have already introduces a particular type of swap, the Overnight Index Swap, here we will introduce a more general Interest Rate Swap and see how it can underlying a Swaption, the analogous of the European options for interest rate market.
+In the previous Chapters we introduced a particular type of swap, the Overnight Index Swap, here we describes a more general Interest Rate Swap and see how it can underlying a swaption, the analogous of the European options for interest rate market.
 
 \section{Interest Rate Swaps}\label{interest-rate-swaps}
 
@@ -27,15 +27,13 @@ LIBOR will pay a floating coupon every three months, an IRS on 6-month
 EURIBOR pays the floating coupon every six months and so on.
 
 The fixed leg pays a predetermined cash flow at annual frequency,
-regardless of the tenor of the underlying floating rate. 
-
-For simplicity we will only consider swaps with maturities which are multiples of 1
-year.
+regardless of the tenor of the underlying floating rate (for simplicity we will only consider swaps with maturities which are multiples of 1 year).
 
 Before going into the details of the valuation of IRSs, we need to
-modify the \texttt{generate\_swap\_dates} function in our
+modify the \texttt{generate\_swap\_dates} function in
 \texttt{finmarkets} module to generate the payment dates for both the
-fixed and floating legs. The modification consists of the addition of a new input
+fixed and floating legs. 
+The modification consists of the addition of a new input
 parameter, the tenor, which was previously set to 12 months.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
@@ -81,40 +79,48 @@ leg payment dates, and let's use the following notation:
   date \(d'\);
 \item
   \(F(d, d', d'')\) the forward rate observed in date \(d\) for the
-  period \([d', d'']\). The rate tenor is \(\tau = d'' - d'\).
+  period \([d', d'']\); 
+  \item the rate tenor is \(\tau = d'' - d'\).
 \end{itemize}
-
 The NPV of the fixed leg is calculated as follows:
 
-\[\mathrm{NPV}_{\mathrm{fixed}}(d, K) = N\cdot K\cdot\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})\]
+\begin{equation}
+\mathrm{NPV}_{\mathrm{fixed}}(d, K) = N\cdot K\cdot\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})\end{equation}
 while the NPV of the floating leg is calculated as follows:
 
-\[\mathrm{NPV}_{\mathrm{float}}(d) = N\cdot\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360}
-\cdot D(d, d_{i}^{\mathrm{float}})\]
+\begin{equation}\mathrm{NPV}_{\mathrm{float}}(d) = N\cdot\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360}
+\cdot D(d, d_{i}^{\mathrm{float}})\end{equation}
 
 Therefore the NPV of the swap (seen from the point of view of the
 counter-party which receives the floating leg) is
 
-\[\mathrm{NPV}(d, K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, K)\]
+\begin{equation}\mathrm{NPV}(d, K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, K)\end{equation}
 
 For reasons which will become apparent later, it's actually more
 convenient to express the NPV of an IRS as a function of the fair value
-fixed rate \(S\) of the IRS, also known as the \textbf{swap rate}. \(S\)
+fixed rate \(S\) of the IRS, also known as the \textbf{swap rate}, which
 is the value of K which makes \(\mathrm{NPV}(d)=0\).
-
 On the basis of the previous expressions, we can easily calculate \(S\)
-as:
+as
 
-\[\mathrm{NPV}_{\mathrm{fixed}}(d, S) = \mathrm{NPV}_{\mathrm{float}}(d)\]
-\[N\cdot S\cdot\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}}) = N\cdot\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360} \cdot D(d, d_{i}^{\mathrm{float}})\]
-\[S=\frac{\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360}
-\cdot D(d, d_{i}^{\mathrm{float}})}{\sum_{i=1}^{n}D(d, d_i^{\mathrm{fixed}})} \]
+\begin{equation}
+\begin{gathered}
+\mathrm{NPV}_{\mathrm{fixed}}(d, S) = \mathrm{NPV}_{\mathrm{float}}(d)\\
+N\cdot S\cdot\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}}) = N\cdot\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360} \cdot D(d, d_{i}^{\mathrm{float}})\\
+S=\frac{\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360}
+\cdot D(d, d_{i}^{\mathrm{float}})}{\sum_{i=1}^{n}D(d, d_i^{\mathrm{fixed}})}
+\end{gathered}
+\end{equation}
 
 Once we have calculated \(S\), we can express the \(\mathrm{NPV}\) of an
 IRS as follows:
 
-\begin{align*}&\mathrm{NPV}(d, K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) = & \\ \\ &= \underbrace{\mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, S)}_{\mathrm{=\;0}} + \mathrm{NPV}_{\mathrm{fixed}}(d, S) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) & \\ & = N\cdot(S-K)\cdot\underbrace{\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})}_{\mathrm{'annuity'}}
-\end{align*}
+\begin{equation}
+\begin{split}&\mathrm{NPV}(d, K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) = \\ 
+&= \underbrace{\mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, S)}_{\mathrm{=\;0}} + \mathrm{NPV}_{\mathrm{fixed}}(d, S) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) \\ 
+& = N\cdot(S-K)\cdot\underbrace{\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})}_{\mathrm{'annuity'}}
+\end{split}
+\end{equation}
 
 For convenience the relevant inputs that will be used later (LIBOR and discount curve definitions) have been saved in the files \href{https://drive.google.com/file/d/1dm5oZnZKmJM6UrV0L32OcqD5Tzs9SI9A/view?usp=sharing}{libor\_curve.xlsx} and \href{https://drive.google.com/file/d/14R22r7m-6VpQ_P79D3qHdK0QN_mOQ_UB/view?usp=sharing}{discount\_curve.xlsx} respectively.
 
@@ -198,7 +204,6 @@ curves are the same as before.
 \end{tcolorbox}
 
 \textbf{Can you guess what could be the \textbf{swap rate} given that the NPV obtained above ?}
-
 Since we are looking at this contracts from the point of view
 of the receiver of the floating leg and that the swap rate is the rate that makes the total NPV equal to 0, the NPV of the fixed leg has to be increased to balance the value of the floating leg so the swap rate will be higher than the fixed rate of the IRS.
 
@@ -210,7 +215,7 @@ of the receiver of the floating leg and that the swap rate is the rate that make
 \end{Verbatim}
 \end{tcolorbox}
     
-To check if the we have computed correctly the swap rate we can
+To check if we have computed correctly the swap rate we can
 instantiate a new IRS with fixed rate equal to the just calculated swap
 rate and print its NPV, it should come very close to 0.
 
@@ -299,26 +304,29 @@ at the exercise date \(d_{ex}\), to enter into an Interest Rate Swap at
 a pre-determined fixed rate.
 
 Clearly the option holder will only choose to do this if the NPV of the
-underlying swap at \(d_{ex}\) is positive - looking at the expression
+underlying swap at \(d_{ex}\) is positive. Looking at the expression
 for the NPV of the IRS in terms of the swap rate \(S\) therefore, we can
 see that the payoff of the swaption is
 
-\[\mathrm{payoff} = N\cdot \mathrm{max}(0, S(d_{\mathrm{ex}}) - K)\cdot\sum D(d, d_i^{\mathrm{fixed}})\]
+\begin{equation}\mathrm{payoff} = N\cdot \mathrm{max}(0, S(d_{\mathrm{ex}}) - K)\cdot\sum D(d, d_i^{\mathrm{fixed}})
+\label{eq:swaption_payoff}
+\end{equation}
 
-The key issue is now to estimate \(S(d_{\mathrm{ex}})\) in order to
-evaluate the payoff of a swaption. This will be shown with two
-alternative approaches.
+In order to evaluate the payoff of a swaption then the key issue is to estimate \(S(d_{\mathrm{ex}})\). This will be shown with two alternative approaches.
 
 \subsection{Evaluation through Black-Scholes Formula}\label{evaluation-through-black-scholes-formula}
 
 In this case, to evaluate the NPV of this payoff, we'll use a
 generalization of the Black-Scholes-Merton formula applied to swaptions:
 
-\[\mathrm{payoff} = N\cdot A\cdot [S \Phi(d_+) - K\Phi(d_-)]\]
+\begin{equation}\mathrm{payoff} = N\cdot A\cdot [S \Phi(d_+) - K\Phi(d_-)]\end{equation}
 where \(\Phi\) represents the cumulative distribution function of the normal distribution
 
-\[d_{\pm} = \frac{\mathrm{log}(\frac{S}{K}) \pm \frac{1}{2}\sigma^{2}T}{\sigma\sqrt{T}}\qquad(\sigma~\textrm{is the volatility of the swap rate})\\\]
-\[A =\sum_{i=1}^{p}D(d, d_{i}^{\mathrm{fixed}})\qquad\mathrm{(annuity})\]
+\begin{equation}
+\begin{gathered}d_{\pm} = \frac{\mathrm{log}(\frac{S}{K}) \pm \frac{1}{2}\sigma^{2}T}{\sigma\sqrt{T}}\qquad(\sigma~\textrm{is the volatility of the swap rate})\\
+A =\sum_{i=1}^{p}D(d, d_{i}^{\mathrm{fixed}})\qquad\mathrm{(annuity})
+\end{gathered}
+\end{equation}
 
 As an example let's consider a swaption whose underlying 6M-IRS has a
 notional of 1M, fixed rate of 1\%, and a maturity of 4 years. In
@@ -361,11 +369,9 @@ evaluated at the pricing date \(d\), and assume that it follows a
 log-normal stochastic process, i.e. its distribution at
 \(d_{\mathrm{ex}}\) (exercise date) is
 \(S(d_{\mathrm{ex}}) = S(d)\mathrm{exp}(-\frac{1}{2}\sigma^{2}T+\sigma\sqrt{T}\epsilon)\)
-where \(\epsilon\approx\mathcal{N}(0,1)\). Notice that it is assumed
-that the \emph{drift} rate in the evolution of the swap rate is zero.
-Given that the discounted payoff is given by:
-
-\[N\cdot \mathrm{max}(0, S(d_{\mathrm{ex}}) - K)\cdot\sum D(d, d_i^{\mathrm{fixed}})\]
+where \(\epsilon\approx\mathcal{N}(0,1)\) (notice that it is assumed
+that the \emph{drift} rate in the evolution of the swap rate is zero).
+Given that the discounted payoff is given by Eq.~\ref{eq:swaption_payoff}
 to perform the simulation we can:
 
 \begin{itemize}
@@ -409,15 +415,15 @@ Swaption NPV: 223915.50 EUR
 \end{Verbatim}
 \end{tcolorbox}
 
-Note that this is not \emph{strictly speaking} the correct way of
-calculating the swaption NPV, the reason being that one should calculate
-the swap NPV at the expiry date of the swaption, apply the payoff
-function max(0, \ldots{}) and \emph{then} discount from the expiry date
-to today.
-
-However, it's simpler to calculate it as above and it doesn't make any
-difference for the result, since
-\[ DF\cdot \mathrm{max}(0, \mathrm{SwapNPVAtExpiry}) = \mathrm{max}(0, DF \cdot\mathrm{SwapNPVAtExpiry}) \]
+%Note that this is not \emph{strictly speaking} the correct way of
+%calculating the swaption NPV, the reason being that one should calculate
+%the swap NPV at the expiry date of the swaption, apply the payoff
+%function max(0, \ldots{}) and \emph{then} discount from the expiry date
+%to today.
+%
+%However, it's simpler to calculate it as above and it doesn't make any
+%difference for the result, since
+%\[ DF\cdot \mathrm{max}(0, \mathrm{SwapNPVAtExpiry}) = \mathrm{max}(0, DF \cdot\mathrm{SwapNPVAtExpiry}) \]
 
 \subsection{Confidence Interval of MC Simulation}
 
