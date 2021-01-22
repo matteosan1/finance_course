@@ -8,8 +8,8 @@ models.
 
 Historical default data has played an important role in the estimation
 of default probabilities. However, because default events are rare,
-there is very limited default data available. Moreover, historical data
-reflects the historical default pattern only and it may not be a proper
+there is very limited default data available. Moreover, historical data only
+reflects the historical default pattern and it may not be a proper
 indicator of the future. This makes the estimate of default
 probabilities from historical data difficult and inexact. To use this
 same data to estimate default correlations is even more difficult and
@@ -17,14 +17,15 @@ more inexact.
 
 The market trend now is towards more and more to the use of mathematical
 models that don't rely on historical default data. In
-Chapter~\ref{credit_default_swaps} we have seen how it is possible to derive default 
-probabilities from market data,
+Chapter~\ref{credit_default_swaps} we have seen how it is possible to derive default probabilities from market data,
 here we will see how the copula can be used to model their correlations. 
 
 \section{One Factor Gaussian Copula Model}\label{standard-market-model}
 While there are several types of copula function models, the first
-introduced was the \emph{one-factor Gaussian copula model}. This model has,
-above all, the advantage that can be solved semi-analytically.
+introduced was the \emph{one-factor Gaussian copula model}. This model 
+is quite simple and has,above all, the advantage that can be solved semi-analytically.
+In essence the one-factor Gaussian copula, is nothing but a numerical algorithm to generate samples of normally distributed random variables that have a given
+pair-wise correlation. 
 
 Consider a portfolio of \(N\) bonds and assume that the marginal
 probabilities of default are known for each issuer. Define:
@@ -52,21 +53,22 @@ called the idiosyncratic component of default.
 The correlation between \(X_i\) and \(X_j\) is
 
 \[
-\mathrm{Corr}(X_i, X_j) = \cfrac{\mathbb{E}[(X_i-\mu_i)(X_j-\mu_j)]}{\sigma_{i}\sigma_{j}} =\mathbb{E}[X_i X_j] = a_i a_j \mathbb{E}[M^2] = a_i a_j
+\rho(X_i, X_j) = \cfrac{\mathbb{E}[(X_i-\mu_i)(X_j-\mu_j)]}{\sigma_{i}\sigma_{j}} =\mathbb{E}[X_i X_j] = a_i a_j \mathbb{E}[M^2] = a_i a_j
 \]
 where we just exploit the definition of $X_i$ and its properties.
+So the functional form of Eq.~\ref{eq:normalized_var} has been chosen to ensure the desired correlation structure among the $X_i$.
 
 %Assume that the $i^{th}$ company has defaulted by the time $t_i$ if $X_i$ is below a threshold value $\bar{x}_i(t_i)$.
 If $F_i$ is the cumulative distribution function of the $X_i$,
-with a percentile to percentile transformation we can map the \(X_i\) to the \(t_i\), so that $Q_i(t_i) = \mathbb{P}(X_i\le x)=F_i(x)$.
+with a percentile to percentile transformation (see Section~\ref{distribution-transformation}) we can map the \(X_i\) to the \(t_i\), so that $Q_i(t_i) = P(X_i\le x)=F_i(x)$.
 Therefore a point \(X_i = x\) is transformed to \(t_i = t\) where
 \(x = F_i^{-1}[Q_i(t)]\).
 
 Let's note that, \textbf{conditional} on $M$, the $N$ default events are \textbf{independent}. So we can write
 \begin{equation}
 \begin{split}
-Q_i(t_i|M) = \mathbb{P}(X_i\le x|M) &= \mathbb{P}(a_i M + \sqrt{1-a_i^2}Z_i\le x) =\\
-&= \mathbb{P}\left(Z_i\le \cfrac{x-a_i M}{\sqrt{1-a_i^2}}\right)
+Q_i^{\textrm{corr}}(t_i|M) = P(X_i\le x|M) &= P(a_i M + \sqrt{1-a_i^2}Z_i\le x) =\\
+&= P\left(Z_i\le \cfrac{x-a_i M}{\sqrt{1-a_i^2}}\right)
 =H_i\left(\cfrac{F^{-1}[Q(t_i)]-a_i M}{\sqrt{1-a_i^2}}\right)
 \end{split}
 \label{eq:generic_copula}
@@ -80,19 +82,19 @@ Gaussian copula).
 So we can rewrite Eq.~\ref{eq:generic_copula} as
 
 \begin{equation}
-Q_i(t_i|M) = \Phi\left(\cfrac{\Phi^{-1}[Q(t_i)]-a_i M}{\sqrt{1-a_i^2}}\right)
+Q_i^{\textrm{corr}}(t_i|M) = \Phi\left(\cfrac{\Phi^{-1}[Q(t_i)]-a_i M}{\sqrt{1-a_i^2}}\right)
 \label{eq:gaussian_one_factor_copula}
 \end{equation}
 where $\Phi$ denotes the cumulative distribution function of the standard normal distribution.
 
 If we call $\mathcal{C}(t_1,\ldots,t_N)$ the joint distribution of the default times of the $N$ bonds in the portfolio then
 
-\[
-\mathcal{C}(t_1,\ldots,t_N)=\Phi_{A}(\Phi^{-1}(Q_1(t_1)),\ldots,\Phi^{-1}(Q_N(t_N)))
-\]
-where $A$ is the correlation matrix of the default probabilities, is the one factor Gaussian copula model (one factor because there is only a random variable, $M$, which determines the correlation between $X_i$).
+\begin{equation}
+\mathcal{C}(t_1,\ldots,t_N, \rho)=\Phi(\Phi^{-1}(Q_1(t_1)),\ldots,\Phi^{-1}(Q_N(t_N)), \rho)
+\end{equation}
+where $\rho$ represents the correlation matrix of the default probabilities, is the one factor Gaussian copula model (one factor because there is only a random variable, $M$, which determines the correlation between $X_i$).
 
-Clearly different choices of distributions result in different copula models, and in different natures of the default dependence. For example, copulas where the \(M\) have heavy tails generate models where there is a
+Clearly different choices of distributions result in different copula models, and in various natures of the default dependence. For example, copulas where the \(M\) have heavy tails generate models where there is a
 greater likelihood of a clustering of early defaults for several
 companies.
 
@@ -111,29 +113,30 @@ Assume the following two assumptions are made:
 
 Under these assumptions, given the market situation \(M = m\), all the
 companies have the same cumulative default probability
-\(DP_{t|m}=Q_i(t_i|m)=\mathbb{P}(X_i < x|m)\). 
+\(Q_i^{\textrm{corr}}(t_i|m)=P(X_i < x|m)\). 
 Moreover, for a given value of the
 market component \(M\), the defaults are mutually independent for all
 the underlying companies. 
 
-Letting \(l_{t|m}\) be the total defaults that
+Letting \(l(t|m)\) be the total defaults that
 have occurred by time \(t\) conditional on the market condition
-\(M = m\), then \(l_{t|m}\) follows a binomial distribution (see Appendix~\ref{appendix1}), and
-
-\[DP(l_{t|m} = j) = \cfrac{N!}{j!(N-j)!}DP^j_{t|m}(1-DP_{t|m})^{N-j},\qquad  j=0, 1, 2,\ldots,N\]
-
-In general to evaluate any function of $DP$, say $g(DP(l_t))$, regardless the parameter $M$ is necessary to average according to the following integral
+\(M = m\), then \(l(t|m)\) follows a binomial distribution (see Appendix~\ref{binomial-distribution}), and
 
 \begin{equation}
-g(DP(l_{t} = j)) = \int_{-\infty}^{\infty}{g(DP(l_{t|m} = j))\cdot f_M(m)dm}
-\label{eq:gaussian_quadrature}
+DP(l(t|m) = j) = \cfrac{N!}{j!(N-j)!}(Q_i^{\textrm{corr}}(t_i|m))^j(1-Q_i^{\textrm{corr}}(t_i|m))^{N-j},\qquad  j=0, 1, 2,\ldots,N
 \end{equation}
 
+In general to evaluate any function of $DP$, say $g(DP(l(t))$ (e.g. an NPV or a fair value), regardless the parameter $M$, is necessary to average according to all the possible values that $M$ can take. The average is performed with the following integral which represents the weighted sum of $g$ with the probability distribution of the random variable $M$  
+
+\begin{equation}
+g(DP(l(t) = j)) = \int_{-\infty}^{\infty}{g(DP(l(t|m) = j))\cdot f_M(m)dm}
+\label{eq:gaussian_quadrature}
+\end{equation}
 where $f_M(m)$ is the probability density function (PDF) of the random variable $M$.
 
 With the assumption that have been made the one factor model is also called \emph{Market Standard Model}.
 
-If the default probabilities are not the same for each company then it is possible through an iterative procedure to determine $DP(l_{t|M}=j)$ and proceed with the integration of Eq.~\ref{eq:gaussian_quadrature}.
+If the default probabilities are not the same for each company then it is possible through an iterative procedure to determine $DP(l(t|M)=j)$ and proceed with the integration of Eq.~\ref{eq:gaussian_quadrature}.
 An example of this iterative technique will be shown in Section~\ref{sec:expected_losses}.
 
 \subsection{Extensions of the One Factor Copula Model}
@@ -141,20 +144,20 @@ Many other one-factor model have been tried: Student t copula, Clayton copula an
 
 If instead of the single factor $M$ there are two or more, Eq.~\ref{eq:normalized_var} would become
 
-\[
+\begin{equation}
 X_i = a_1 M_1 + a_2 M_2 + \sqrt{1 - a_1^2 - a^2_2}Z_i
-\]
+\end{equation}
 and similarly
-\[
-Q(t|M_1, M_2) = \Phi\left(\cfrac{\Phi^{-1}[Q(t)]-a_1 M_1 - a_2 M_2}{\sqrt{1 - a_1^2 - a^2_2}}\right)
-\]
+\begin{equation}
+Q^{\textrm{corr}}(t|M_1, M_2) = \Phi\left(\cfrac{\Phi^{-1}[Q(t)]-a_1 M_1 - a_2 M_2}{\sqrt{1 - a_1^2 - a^2_2}}\right)
+\end{equation}
 In terms of computation time, this kind of models are proportionally slower with the increase of the number of factors, since the integration of Eq.~\ref{eq:gaussian_quadrature} has to be carried on two or more random variables.
-.
-Later in this Chapter we will also see that the copula/correlation can be implied from the market quotes of CDOs.
+
+Later in this Chapter we will also see that the correlation used in Eq.~\ref{eq:gaussian_one_factor_copula} can be implied from the market quotes of CDOs.
 
 \section{Basket Default Swaps}\label{basket-default-swaps}
 
-A basket default swap is a credit derivative on a portfolio of reference
+A Basket Default Swap is a credit derivative on a portfolio of reference
 entities. The simplest basket default swaps are first-to-default,
 second-to-default, or nth-to-default swaps. 
 
@@ -207,17 +210,17 @@ of the contract is reached.
 In the event of the $n^{th}$ default occurring, the seller pays
 \(F\cdot(1-R)\). The contract can be valued in a similar way as done for the CDS.
 
-In the following we are going to develop a \texttt{BasketDefaultSwap} class that is able to compute the basket NPV and its breakeven spread.
+In the following we are going to develop a \texttt{BasketDefaultSwap} class that is able to compute the basket NPV and its break-even spread.
 The idea is:
 \begin{itemize}
 \item compute the correlated default probability of each name according to 
-\[Q(t|M) = \Phi\left(\cfrac{\Phi^{-1}[Q(t)]-\sqrt{\rho} M}{\sqrt{1-\rho}}\right)\]
+\begin{equation}Q^{\textrm{corr}}(t|M) = \Phi\left(\cfrac{\Phi^{-1}[Q(t)]-\sqrt{\rho} M}{\sqrt{1-\rho}}\right)\end{equation}
 \item compute the probability of having at least $j$ defaults using the binomial distribution
-\[Q(l_{t|m} \ge j) = \sum_{k=j}^{N}\left[  \cfrac{N!}{k!(N-k)!}Q(t|M)^k(1-Q(t|M))^{N-k}\right]\]
-\item create a \textbf{credit curve}, $CC(Q)$ with those probabilities;
-\item re-use the \texttt{CreditDefaultSwap} class methods to compute NPV and breakeven rate (with the appropriate discount curve and the credit curve determine above),through integration of
-\[ \mathrm{NPV}(DC, CC(Q)) = \int_{-\infty}^{\infty}{\mathrm{NPV}(DC, CC(Q))) f_M(m)dm} \]
-and similarly for the breakeven rate.
+\begin{equation}DP(l(t|m) \ge j) = \sum_{k=j}^{N}\left[  \cfrac{N!}{k!(N-k)!}Q^{\textrm{corr}}(t|M)^k(1-Q^{\textrm{corr}}(t|M))^{N-k}\right]\end{equation}
+\item create a \textbf{credit curve}, $CC(DP)$ with those probabilities;
+\item re-use the \texttt{CreditDefaultSwap} class methods to compute NPV and break-even rate (with the appropriate discount curve and the credit curve determine above),through integration of
+\begin{equation}\mathrm{NPV}(DC, CC(DP)) = \int_{-\infty}^{\infty}{\mathrm{NPV}(DC, CC(DP)) f_M(m)dm} \end{equation}
+and similarly for the break-even rate.
 \end{itemize}
 
 Since to valuate a basket default swap we need to integrate let's see briefly how it works in \texttt{python}.
@@ -375,21 +378,21 @@ p(l|M) = \binom{N}{l}Q_M^l (1-Q_M)^{N-l}
 \label{eq:def_prob_ex_cdo_1}
 \end{equation}
 where $N$ is the number of bonds in the portfolio and 
-\[
-Q_M = \Phi\left(\cfrac{\Phi^{-1}(Q)-\sqrt{\rho}M}{\sqrt{\-\rho}}\right)
-\]
-where $\Phi$ is the standard normal CDF and $Q$ the probability of default within 1 year of a single name.
+\begin{equation}
+Q_M^{\textrm{corr}} = \Phi\left(\cfrac{\Phi^{-1}(Q)-\sqrt{\rho}M}{\sqrt{\-\rho}}\right)
+\end{equation}
+where $\Phi$ is the standard normal CDF and $Q$ the marginal probability of default within 1 year of a single name.
 
 From the definition of each tranche with have that the expected losses are
 \begin{itemize}
-	\item $\mathbb{E}_{\textrm{equity loss}}(l, Q_M)=3\cdot p(l\ge 3|M) + \sum_{k=1}^{2}k\cdot p(l=k|M)$
-	\item $\mathbb{E}_{\textrm{mezzanine loss}}(l, Q_M)=3\cdot p(l\ge 6|M) + \sum_{k=1}^{2}k\cdot p(l=k+3|M)$
-	\item $\mathbb{E}_{\textrm{senior loss}}(l, Q_M)=3\cdot p(l\ge 9|M) + \sum_{k=1}^{2}k\cdot p(l=k+6|M)$
+	\item $\mathbb{E}_{\textrm{equity loss}}(l, Q_M^{\textrm{corr}})=3\cdot p(l\ge 3|M) + \sum_{k=1}^{2}k\cdot p(l=k|M)$
+	\item $\mathbb{E}_{\textrm{mezzanine loss}}(l, Q_M^{\textrm{corr}})=3\cdot p(l\ge 6|M) + \sum_{k=1}^{2}k\cdot p(l=k+3|M)$
+	\item $\mathbb{E}_{\textrm{senior loss}}(l, Q_M^{\textrm{corr}})=3\cdot p(l\ge 9|M) + \sum_{k=1}^{2}k\cdot p(l=k+6|M)$
 \end{itemize}
 	
-Each probability $\mathbb{P}$ can be calculated by integrating the above with respect to $M$
+Each probability can be calculated by integrating the above with respect to $M$
 	
-\[ \mathbb{E}_{\mathrm{tranche}} = \int_{-\infty}^{\infty}{\mathbb{E}_{\mathrm{tranche}}(l, Q_M) f_M(m)dm}\]
+\begin{equation} \mathbb{E}_{\mathrm{tranche}} = \int_{-\infty}^{\infty}{\mathbb{E}_{\mathrm{tranche}}(l, Q_M) f_M(m)dm}\end{equation}
 
 Let's see the corresponding \texttt{python} implementation.
 First we import the necessary modules and define the needed constants.
@@ -439,9 +442,9 @@ Finally we loop over a range of possible values for the correlation on each tran
 \end{tcolorbox}
 
 Some considerations can be done from these results. First of all, as expected, the equity tranche is the riskier, producing the highest level of loss. The 
-\[
+\begin{equation}
 \mathbb{E}_{\textrm{equity loss}} \ge \mathbb{E}_{\textrm{mezzanine loss}} \ge \mathbb{E}_{\textrm{senior loss}}
-\] 
+\end{equation}
 relation holds only if each tranche has the same notional exposure (in our example 3).
 
 Then we can notice that in the equity tranche losses are decreasing in $\rho$. When the correlation is low indeed the probability to have few defaults is higher than that of many. As the correlation increases, there will be more and more "simultaneous" defaults so also other tranches start to suffer losses. In the extreme case of correlation equal to 1 all the tranches are the same (indeed the expected losses curves join together). 
@@ -487,9 +490,9 @@ Imagine a Synthetic CDO made of $N$ references in the portfolio, each one with t
 When the $i^{th}$ reference defaults the portfolio incurs in a loss of $F/N(1-R)$ (the recovery rate is assumed to be fixed for all names of the portfolio).
 
 The tranche loss function $TL^{L,U}(l)$ for a given time $t$ is a function of the number of defaults $l$ occurred up to that time and is given by
-\begin{equation*}
+\begin{equation}
 TL_{t}^{L,U}=\mathrm{max}(\mathrm{min}(l/N\cdot F(1-R), U)-L, 0)
-\end{equation*}
+\end{equation}
 where $l/N\cdot F(1-R)$ is the total portfolio loss, if it is greater than $U$ then the tranche loss is $U$. Conversely if it is lower than $L$ there is no loss.
 
 So for example suppose $L=3\%$ and $U=7\%$ and suppose also that the portfolio loss is $5\%$. Then the tranche loss is 2\% of the total portfolio notional (or 50\% of the tranche notional $=7\%-3\%=4\%$).
@@ -528,7 +531,7 @@ TL_{t}^{L,U}=\mathrm{max}(\mathrm{min}(l/N\cdot F(1-R), U)-L, 0)
 \end{equation}
 where the only random variable is the number of defaults $l$. We also know that 
 \begin{equation}
-\mathbb{E}[TL_{t}^{L,U}] = \sum_{l=0}^{N}TL_{t}^{L,U}\cdot \int_{-\infty}^{\infty} DP(l_{t|M}=j) \phi(M)dM
+\mathbb{E}[TL_{t}^{L,U}] = \sum_{l=0}^{N}TL_{t}^{L,U}\cdot \int_{-\infty}^{\infty} DP(l(t|M)=j) \phi(M)dM
 \label{eq:etl}
 \end{equation}
 
