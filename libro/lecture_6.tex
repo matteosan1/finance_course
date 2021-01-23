@@ -1,6 +1,6 @@
 \chapter{Interpolation, Discount Factors and Forward Rates}\label{interpolation---practical-lesson-3}
 
-In this chapter we will start to see the first applications of \texttt{python} to financial calculations.
+In this Chapter we will start to see the first applications of \texttt{python} to financial calculations.
 In particular we will consider discount curves and forward rates, implementing the first utilities that will fill our financial module.
 In doing so we will review a widely used mathematical tool: \emph{interpolation}.
 
@@ -23,18 +23,23 @@ Assume you are going on holidays by car and that luckily there isn't much traffi
 
 Given two samples of the car traveled distance \(s_1\) and \(s_2\) taken at two different times \(t_1\) and \(t_2\) you can linearly interpolate to find your position at different times using the following relations:
 
-\[s = (1 - w)\cdot s_1 + w \cdot s_2\]
+\begin{equation}
+s = (1 - w)\cdot s_1 + w \cdot s_2
+\end{equation}
 where $t$ is a generic time at which we want to know the distance $s$ and \(w = \cfrac{t - t_1}{t_2 - t_1}\).
 
 \subsubsection{Derivation}
 The equation of a line for two points
 \((t_1, s_1)\) and \((t_2, s_2)\) can be written as:
 
-\[\frac{t - t_1}{t_2 - t_1} = \frac{s - s_1}{s_2 - s_1}\]
+\begin{equation}
+\frac{t - t_1}{t_2 - t_1} = \frac{s - s_1}{s_2 - s_1}
+\end{equation}
 
 Setting again \(w = \cfrac{t - t_1}{t_2 - t_1}\) and solving for \(s\) we find the desired solution:
 
-\[(s_2 - s_1)\cdot w = s - s_1\quad\Rightarrow\quad s = (1 - w)\cdot s_1 + w \cdot s_2\]
+\begin{equation}(s_2 - s_1)\cdot w = s - s_1\quad\implies\quad s = (1 - w)\cdot s_1 + w \cdot s_2
+\end{equation}
 
 This formula can also be understood as a weighted average where the weights are inversely related to the distance from the end points to the unknown point ($w_1 = (1 - w) = \cfrac{t_2 - t}{t_2 -t_1}, w_2 = w$), the closer point has more influence than the farther point.
 
@@ -87,22 +92,31 @@ If we believe the relation between our variable stays the same ($f(t)$ still lin
 When the function $f$ that we want to interpolate is an exponential we can fall back to the previous case by a simple variable transformation. 
 Assume the following is the relationship between $p$ and $h$, two generic variables:
 
-\[p = \mathrm{exp}(c \cdot h)\]
+\begin{equation}
+p = \mathrm{exp}(c \cdot h)
+\end{equation}
 
 Applying the logarithm to both sides of the equation gives:
 
-\[s = \mathrm{log}(p) = \mathrm{log}(\mathrm{exp}(c \cdot h)) = c \cdot h\]
+\begin{equation}
+s = \mathrm{log}(p) = \mathrm{log}(\mathrm{exp}(c \cdot h)) = c \cdot h
+\end{equation}
 so there is linear relation between the new variable $s$ and $h$. At this point we can use the results of the previous section to interpolate for values of $s$, just remember to exponentiate the result to get the correct $p$. In formulas:
 
-\[w = \frac{h - h_1}{h_2 - h_1}\]
-
-\[s = (1 - w)\cdot s_1 + w \cdot s_2\qquad (\mathrm{remember \;now }\;s = \mathrm{log}(p))\]
-
-\[p = \mathrm{exp}(s)\]
+\begin{align}
+\label{eq:log_interp}
+\begin{gathered}
+w = \frac{h - h_1}{h_2 - h_1} \\
+s = (1 - w)\cdot s_1 + w \cdot s_2\qquad (\textrm{now } s = \textrm{log}(p))\\
+p = \textrm{exp}(s)
+\end{gathered}
+\end{align}
 
 Let's see another example. Atmospheric pressure decreases with the altitude (i.e.~the highest you flight the lower is the pressure) following an exponential law:
 
-\[p = p_0\cdot e^{-\alpha h}\]
+\begin{equation}
+p = p_0\cdot e^{-\alpha h}
+\end{equation}
 where
 \begin{itemize}
 \tightlist
@@ -116,7 +130,9 @@ where
 
 Taking the logarithm of each side of the equation I get a linear relation which can be interpolated as seen before:
 
-\[s = \mathrm{log}(p) = \mathrm{log}(p_0\cdot e^{-\alpha h})\propto - \alpha \cdot h\]
+\begin{equation}
+s = \mathrm{log}(p) = \mathrm{log}(p_0\cdot e^{-\alpha h})\propto - \alpha \cdot h
+\end{equation}
 
 Now assume that we have measured
 \(p_1 = 90~\mathrm{kPa}\;(h_1 = 1000~\mathrm{m})\) and
@@ -191,7 +207,7 @@ It can be easily demonstrated that the linear approximation between two points o
   \label{fig:sine_interp}
 \end{figure}
 
-To improve the approximation accuracy with complicated curves a polynomial of higher order can be used ($𝑝(𝑥)=𝑎_0 + 𝑎_1 𝑥+ 𝑎_2 𝑥^2+\cdots$), for example in the evaluation of the natural logarithm and trigonometric functions. It has to be clear however that going to higher degrees does not always help (for those interested \href{https://en.wikipedia.org/wiki/Runge%27s_phenomenon}{see Runge's phenomenon}).
+To improve the approximation accuracy with complicated curves a polynomial of higher order can be used ($𝑝(𝑥)=𝑎_0 + 𝑎_1 𝑥+ 𝑎_2 𝑥^2+\cdots$), for example in the evaluation of the natural logarithm and trigonometric functions. It has to be clear however that going to higher degrees does not always help (for those interested~\cite{bib:runge}).
 
 \section{Discount curve interpolation}\label{discount-curve-interpolation}
 
@@ -209,11 +225,13 @@ Needed data:
 The input argument to the function will be the value date at which we want to interpolate the discount factor. Since the discount factor can be expressed as \(D=e^{-r(T-t)}\) the function will use a log-linear interpolation to return the value at a date not included in the given pillars.
 More technically we can say that we are doing a linear interpolation over time in the log space:
 
-\[d(t_i):=\mathrm{ln}(D(t_i))\]
-
-\[d(t) = (1-w)d(t_i) + wd(t_{i+1});\qquad w=\frac{t-t_i}{t_{i+1}-t_i}\]
-
-\[D(t) = \mathrm{exp}(d(t))\]
+\begin{align}
+\begin{gathered}
+d(t_i)=\mathrm{ln}(D(t_i))\\
+d(t) = (1-w)d(t_i) + wd(t_{i+1});\quad w=\frac{t-t_i}{t_{i+1}-t_i}\\
+D(t) = \mathrm{exp}(d(t))
+\end{gathered}
+\end{align}
 where again \(i\) is such that \(t_i \le t \le t_{i+1}\)
 
 This time instead of reinventing the wheel and performing the interpolation with our own code, we'll use the function \texttt{interp} provided by the module \texttt{numpy}; this function linearly interpolates between the provided points to estimate the value of $f$ at some "new" $x$.
@@ -386,18 +404,20 @@ Let's see what these look like when plotted on a linear graph instead:
   \centering
   \includegraphics[width=0.7\textwidth]{figures/lecture_3_16_0.png}
 \end{figure}
-
 Discrepancies in the linear plot are most likely due to rounding.
 
 \section{Forward Rates}\label{calculating-forward-rates}
 
 A forward rate is an interest rate applicable to a financial transaction that will take place in the future. Forward rates are calculated from the spot rate by exploiting the no arbitrage condition which states that investing at rate \(r_1\) for the period \((0, T_1)\) and then \emph{re-investing} at rate \(r_{1,2}\) for the time period \((T_1, T_2)\) is equivalent to invest at rate \(r_2\) for the full time period \((0, T_2)\). Essentially two investors shouldn't be able to earn money from arbitraging between different interest periods. That said:
 
-\[(1+r_1 T_1)(1+r_{1,2}(T_2 - T_1)) = 1 + r_2 T_2\]
-
+\begin{equation}
+(1+r_1 T_1)(1+r_{1,2}(T_2 - T_1)) = 1 + r_2 T_2
+\end{equation}
 Solving for \(r_{1,2}\) leads to
 
-\[F(T_1, T_2) = r_{1,2} = \frac{1}{T_2-T_1}\Big(\frac{D(T_1)}{D(T_2)} - 1 \Big)~~~~\textrm{(where $D{(T_i)}=\frac{1}{1+r_iT_{i}}$)}\]
+\begin{equation}
+F(T_1, T_2) = r_{1,2} = \frac{1}{T_2-T_1}\Big(\frac{D(T_1)}{D(T_2)} - 1 \Big)\quad\textrm{(where $D{(T_i)}=\frac{1}{1+r_iT_{i}}$)}
+\end{equation}
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -484,7 +504,7 @@ As a practical result of the divergence of the two indices, after the 2008 finan
 
 Our financial library will have to implement the following calculation:
 
-\[\mathrm{NPV} = D_{\mathrm{EONIA}}(T_1) \times \frac{1}{T_2-T_1}\Big(\frac{D_{\mathrm{LIBOR}}(T_1)}{D_{\mathrm{LIBOR}}(T_2)} - 1 \Big)\]
+\[\mathrm{NPV} = D_{\mathrm{EONIA}}(T_1) \cdot \frac{1}{T_2-T_1}\Big(\frac{D_{\mathrm{LIBOR}}(T_1)}{D_{\mathrm{LIBOR}}(T_2)} - 1 \Big)\]
 and this will asked to be done in the exercises relative to this chapter.
 
 To exploit the Object Oriented capabilities we will implement a \texttt{DiscountCurve} class, below a skeleton class to give you an idea of how could be this new class.
@@ -518,3 +538,46 @@ To exploit the Object Oriented capabilities we will implement a \texttt{Discount
         \CommentTok{# implemented above to calculate the forward rate}
 \end{Highlighting}
 \end{Shaded}
+
+\subsection{Transitioning away from LIBOR~\cite{bib:str}}
+A working group on euro risk-free rates was established to identify
+and recommend risk-free rates that could serve as a basis for an
+alternative to current benchmarks used in a variety of financial
+instruments and contracts in the euro area, such as the euro
+overnight index average (EONIA) and the euro interbank offered rate
+(EURIBOR). 
+
+The group recommended on September 2018 that the euro
+short-term rate (STR) be used as the risk-free rate for the euro area
+and is now focused on supporting the market with transitioning.
+The ECB published the STR for the first time on 2nd October 2019,
+reflecting trading activity on 1st October 2019.
+
+The working group recommends that market participants should gradually replace
+EONIA with the STR as a reference rate for all products and
+contracts and make all necessary adjustments for using the STR as
+their standard benchmark
+The working group recommends the STR plus a fixed spread of 8.5
+basis points as the EONIA fallback rate for all products and purposes.
+The working group recommends that market participants should:
+consider, whenever feasible and appropriate, no longer entering into
+new contracts referencing EONIA, in particular new contracts
+maturing after 31 December 2021, as EONIA will cease to exist after
+that date.
+
+The working group is also looking at identifying fallbacks for
+EURIBOR based on the STR. Both backward and forward-looking
+options are being considered. As part of its work on forward-looking
+options, in March 2019 the working group recommended a
+methodology based on (tradable) overnight index swap (OIS) quotes
+for calculating a STR-based forward-looking term structure and later
+invited benchmark administrators to express their interest in
+producing such a term structure.
+
+\begin{thebibliography}{9}
+	%  %\bibitem{survey2019} StackOverflow \emph{The TEXbook}, Addison-Wesley, Reading,Massachusetts, second edition, 1984,
+	\bibitem{bib:runge} \href{https://en.wikipedia.org/wiki/Runge\%27s_phenomenon}{Runge's phenomenon} [Online]
+	\bibitem{bib:str}
+	B. Guggenheim and A. Schrimpf, 
+	\href{https://www.bis.org/publ/work891.htm}{\emph{At the crossroads in the transition away from LIBOR - from overnight to term rates}}, BIS Working Papers No 891, 09 October 2020 [Online]
+\end{thebibliography}
