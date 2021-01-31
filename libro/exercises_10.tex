@@ -1,214 +1,89 @@
-\chapter{Credit Default Swaps}\label{introduction-to-python---lesson-10}
+\chapter{Interest Rate Swap and Swaptions}\label{introduction-to-python---lesson-9}
 
-\begin{Exercise}
-Update \texttt{finmarkets} module with \texttt{CreditCurve} and \texttt{CreditDefaultSwap} classes. Once you are done verify with the \texttt{dir} (or \texttt{help}) commands that all the classes and functions are there.
+\begin{Exercise}[title={(Swaption Class)}]
+  Add to \texttt{finmarkets} module a class to valuate swaptions, it should have as attributes the underlying IRS, the swap rate volatility and the exercise date.
+  The class should have the capability of estimating the payoff of the swaptions both with the Black-Scholes formula and Monte Carlo Simulation.
 \end{Exercise}
 
 \begin{Answer}
-	\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
-		\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{finmarkets}
-\PY{n+nb}{dir}\PY{p}{(}\PY{n}{finmarkets}\PY{p}{)}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{class} \PY{n+nc}{InterestRateSwaption}\PY{p}{:}    
+    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{exercise\PYZus{}date}\PY{p}{,} \PY{n}{irs}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{exercise\PYZus{}date} \PY{o}{=} \PY{n}{exercise\PYZus{}date}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{irs} \PY{o}{=} \PY{n}{irs}
+        
+    \PY{k}{def} \PY{n+nf}{npv\PYZus{}bs}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{,} \PY{n}{sigma}\PY{p}{)}\PY{p}{:}
+        \PY{n}{A} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{irs}\PY{o}{.}\PY{n}{annuity}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
+        \PY{n}{S} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{irs}\PY{o}{.}\PY{n}{swap\PYZus{}rate}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}
+        \PY{n}{T} \PY{o}{=} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{exercise\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{365}
+        \PY{n}{d1} \PY{o}{=} \PY{p}{(}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{S}\PY{o}{/}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{irs}\PY{o}{.}\PY{n}{fixed\PYZus{}rate}\PY{p}{)} \PY{o}{+} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{sigma}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{*} \PY{n}{T}\PY{p}{)} 
+             \PY{o}{/} \PY{p}{(}\PY{n}{sigma} \PY{o}{*} \PY{n}{T}\PY{o}{*}\PY{o}{*}\PY{l+m+mf}{0.5}\PY{p}{)}
+        \PY{n}{d2} \PY{o}{=} \PY{n}{d1} \PY{o}{\PYZhy{}} \PY{p}{(}\PY{n}{sigma} \PY{o}{*} \PY{n}{T}\PY{o}{*}\PY{o}{*}\PY{l+m+mf}{0.5}\PY{p}{)}
+        \PY{n}{npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{irs}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{n}{A} \PY{o}{*} \PY{p}{(}\PY{n}{S} \PY{o}{*} \PY{n}{scipy}\PY{o}{.}\PY{n}{stats}\PY{o}{.}\PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{d1}\PY{p}{)} \PY{o}{\PYZhy{}} 
+              \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{irs}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{*} \PY{n}{scipy}\PY{o}{.}\PY{n}{stats}\PY{o}{.}\PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{d2}\PY{p}{)}\PY{p}{)}
+        \PY{k}{return} \PY{n}{npv}
+\end{Verbatim}
+\end{tcolorbox}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+    
+    \PY{k}{def} \PY{n+nf}{npv\PYZus{}mc}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{,} \PY{n}{sigma}\PY{p}{,} \PY{n}{n\PYZus{}scenarios}\PY{o}{=}\PY{l+m+mi}{10000}\PY{p}{)}\PY{p}{:}
+        \PY{n}{A} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{irs}\PY{o}{.}\PY{n}{annuity}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
+        \PY{n}{S} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{irs}\PY{o}{.}\PY{n}{swap\PYZus{}rate}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}
+        \PY{n}{T} \PY{o}{=} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{exercise\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{365}
+        \PY{n}{discounted\PYZus{}payoffs} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+        \PY{k}{for} \PY{n}{i\PYZus{}scenario} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{n\PYZus{}scenarios}\PY{p}{)}\PY{p}{:}
+            \PY{n}{S\PYZus{}simulated} \PY{o}{=} \PY{n}{S} \PY{o}{*} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{sigma} \PY{o}{*} \PY{n}{sigma} \PY{o}{*} \PY{n}{T} \PY{o}{+}
+                          \PY{n}{sigma} \PY{o}{*} \PY{n}{math}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{T}\PY{p}{)} \PY{o}{*} \PY{n}{numpy}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{normal}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+            \PY{n}{swap\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{irs}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{p}{(}\PY{n}{S\PYZus{}simulated} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{irs}\PY{o}{.}\PY{n}{fixed\PYZus{}rate}\PY{p}{)} \PY{o}{*} \PY{n}{A}
+            \PY{n}{discounted\PYZus{}payoffs}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n+nb}{max}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{swap\PYZus{}npv}\PY{p}{)}\PY{p}{)}
+        \PY{n}{npv\PYZus{}mc} \PY{o}{=} \PY{n}{numpy}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{discounted\PYZus{}payoffs}\PY{p}{)}
+        \PY{n}{npv\PYZus{}error} \PY{o}{=} \PY{l+m+mi}{3} \PY{o}{*} \PY{n}{numpy}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{discounted\PYZus{}payoffs}\PY{p}{)} \PY{o}{/} \PY{n}{math}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{n\PYZus{}scenarios}\PY{p}{)}
+        
+        \PY{k}{return} \PY{n}{npv\PYZus{}mc}\PY{p}{,} \PY{n}{npv\PYZus{}error}
+\end{Verbatim}
+\end{tcolorbox}
+\end{Answer}
 
-['CreditCurve',
- 'CreditDefaultSwap',
- 'DiscountCurve',
- 'ForwardRateCurve',
- 'InterestRateSwap',
- 'InterestRateSwaption',
- 'OvernightIndexSwap',
- ...
- 'date',
- 'generate\_swap\_dates',
- 'math',
- 'numpy',
- 'relativedelta']
+\begin{Exercise}[title={(Swaption)}]
+Suppouse that the LIBOR Forward rates and the discount curve are those defined in \href{https://drive.google.com/file/d/1dm5oZnZKmJM6UrV0L32OcqD5Tzs9SI9A/view?usp=sharing}{libor.xlsx} and \href{https://drive.google.com/file/d/14R22r7m-6VpQ_P79D3qHdK0QN_mOQ_UB/view?usp=sharing}{discount\_curve.xlsx} respectively.
+Determine the value of an option to pay a fixed rate of 4\% and receives LIBOR on a 5 year swap starting in 1 year. Assume the notional is 100 EUR, the exercise date is on October, 30th 2020 and the swap rate volatility is 15\%.
+
+\textbf{Hint:} add \texttt{InterestRateSwap} class to \texttt{finmarkets.py}.
+\end{Exercise}
+
+\begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{InterestRateSwap}
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
+\PY{k+kn}{from} \PY{n+nn}{curve\PYZus{}data} \PY{k}{import} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
+\PY{k+kn}{import} \PY{n+nn}{math}
+
+\PY{n}{pricing\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
+\PY{n}{start\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{exercise\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{30}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
 \begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
-	\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{help}\PY{p}{(}\PY{n}{finmarkets}\PY{p}{)}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{irs} \PY{o}{=} \PY{n}{InterestRateSwap}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{,} \PY{l+m+mf}{0.04}\PY{p}{,} \PY{l+m+mi}{12}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{)}
+\PY{n}{sigma} \PY{o}{=} \PY{l+m+mf}{0.15}
 
-Help on module finmarkets:
+\PY{n}{A} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{annuity}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
+\PY{n}{S} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{swap\PYZus{}rate}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}
+\PY{n}{T} \PY{o}{=} \PY{p}{(}\PY{n}{exercise\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{pricing\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{365}
+\PY{n}{d1} \PY{o}{=} \PY{p}{(}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{S}\PY{o}{/}\PY{n}{irs}\PY{o}{.}\PY{n}{fixed\PYZus{}rate}\PY{p}{)} \PY{o}{+} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{sigma}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{*} \PY{n}{T}\PY{p}{)} \PY{o}{/} \PY{p}{(}\PY{n}{sigma} \PY{o}{*} \PY{n}{T}\PY{o}{*}\PY{o}{*}\PY{l+m+mf}{0.5}\PY{p}{)}
+\PY{n}{d2} \PY{o}{=} \PY{p}{(}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{S}\PY{o}{/}\PY{n}{irs}\PY{o}{.}\PY{n}{fixed\PYZus{}rate}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{sigma}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{*} \PY{n}{T}\PY{p}{)} \PY{o}{/} \PY{p}{(}\PY{n}{sigma} \PY{o}{*} \PY{n}{T}\PY{o}{*}\PY{o}{*}\PY{l+m+mf}{0.5}\PY{p}{)}
+\PY{n}{npv} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{n}{A} \PY{o}{*} \PY{p}{(}\PY{n}{S} \PY{o}{*} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{d1}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{irs}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{*} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{d2}\PY{p}{)}\PY{p}{)}
 
-NAME
-    finmarkets
+\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Swaption NPV: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{npv}\PY{p}{)}\PY{p}{)}
 
-CLASSES
-    builtins.object
-        CreditCurve
-        CreditDefaultSwap
-        DiscountCurve
-        ForwardRateCurve
-        InterestRateSwap
-        InterestRateSwaption
-        OvernightIndexSwap
-
-    class CreditCurve(builtins.object)
-     |  CreditCurve(pillar\_dates, pillar\_ndps)
-     |
-     |  CreditCurve: a class to manage credit curves.
-     |
-     |  Attributes:
-     |  -----------
-     |  pillar\_date: list of datetime.date
-     |      List of dates that forms the pillars of the curve.
-     |  ndps: list of floats
-     |      List of non-default probabilities.
-     ....
+Swaption NPV: 13.587 EUR
 \end{Verbatim}
-\end{tcolorbox}
-\end{Answer}
-
-\begin{Exercise}[title={(Boostrapping Reprise)}]
-Applying the bootstrapping technique, outlined in Chapter 10, derive the a credit curve from the following CDS market quotes:
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{observation_date }\OperatorTok{=}\NormalTok{ date(}\DecValTok{2020}\NormalTok{, }\DecValTok{11}\NormalTok{, }\DecValTok{1}\NormalTok{)}
-
-\NormalTok{cds_quotes }\OperatorTok{=}\NormalTok{ [}
-\NormalTok{    \{}\StringTok{'maturity'}\NormalTok{: }\DecValTok{12}\NormalTok{, }\StringTok{'spread'}\NormalTok{:}\FloatTok{0.0149}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'maturity'}\NormalTok{: }\DecValTok{24}\NormalTok{, }\StringTok{'spread'}\NormalTok{:}\FloatTok{0.0165}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'maturity'}\NormalTok{: }\DecValTok{36}\NormalTok{, }\StringTok{'spread'}\NormalTok{:}\FloatTok{0.0173}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'maturity'}\NormalTok{: }\DecValTok{69}\NormalTok{, }\StringTok{'spread'}\NormalTok{:}\FloatTok{0.0182}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'maturity'}\NormalTok{: }\DecValTok{120}\NormalTok{, }\StringTok{'spread'}\NormalTok{:}\FloatTok{0.0183}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'maturity'}\NormalTok{: }\DecValTok{240}\NormalTok{, }\StringTok{'spread'}\NormalTok{:}\FloatTok{0.0184}\NormalTok{\},}
-\NormalTok{]}
-\end{Highlighting}
-\end{Shaded}
-and using \href{https://drive.google.com/file/d/1mugHyet3H9tcSAvYvt8G4_kpfaEbVY7b/view?usp=sharing}{discount\_curve\_ch10.xlsx}.
-\end{Exercise}
-
-\begin{Answer}
-\begin{tcolorbox}[size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{,} \PY{n}{CreditDefaultSwap}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{CreditCurve}\PY{p}{,} \PY{n}{DiscountCurve}
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
-
-\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{cds\PYZus{}pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{observation_date\PYZus{}date}\PY{p}{]}
-\PY{n}{cds\PYZus{}quotes} \PY{o}{=} \PY{p}{[}
-    \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{12}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{l+m+mf}{0.0149}\PY{p}{\PYZcb{}}\PY{p}{,}
-    \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{24}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{l+m+mf}{0.0165}\PY{p}{\PYZcb{}}\PY{p}{,}
-    \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{36}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{l+m+mf}{0.0173}\PY{p}{\PYZcb{}}\PY{p}{,}
-    \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{69}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{l+m+mf}{0.0182}\PY{p}{\PYZcb{}}\PY{p}{,}
-    \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{120}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{l+m+mf}{0.0183}\PY{p}{\PYZcb{}}\PY{p}{,}
-    \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{240}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{l+m+mf}{0.0184}\PY{p}{\PYZcb{}}\PY{p}{,}
-\PY{p}{]}
-
-\PY{n}{creditdefaultswaps} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{quote} \PY{o+ow}{in} \PY{n}{cds\PYZus{}quotes}\PY{p}{:}
-    \PY{n}{creditdefswap} \PY{o}{=} \PY{n}{CreditDefaultSwap}\PY{p}{(}
-        \PY{l+m+mi}{1}\PY{p}{,}            
-        \PY{n}{observation\PYZus{}date}\PY{p}{,}  \PY{n}{quote}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{/}\PY{o}{/}\PY{l+m+mi}{12}\PY{p}{,}
-        \PY{n}{quote}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}   
-    \PY{p}{)}
-    \PY{n}{creditdefaultswaps}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{creditdefswap}\PY{p}{)}
-    \PY{n}{cds\PYZus{}pillar\PYZus{}dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{creditdefswap}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
-    
-\PY{n}{cds\PYZus{}pillar\PYZus{}dates} \PY{o}{=} \PY{n+nb}{sorted}\PY{p}{(}\PY{n}{cds\PYZus{}pillar\PYZus{}dates}\PY{p}{)}
-\PY{n}{n\PYZus{}cds\PYZus{}vector} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{cds\PYZus{}pillar\PYZus{}dates}\PY{p}{)}
-
-\PY{k}{def} \PY{n+nf}{obj\PYZus{}function}\PY{p}{(}\PY{n}{unknown\PYZus{}ndps}\PY{p}{)}\PY{p}{:}
-    \PY{n}{curve\PYZus{}c} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}
-        \PY{n}{cds\PYZus{}pillar\PYZus{}dates}\PY{p}{,}
-        \PY{n}{unknown\PYZus{}ndps}
-    \PY{p}{)}
-
-    \PY{n}{sum\PYZus{}sq} \PY{o}{=} \PY{l+m+mf}{0.0}
-    \PY{k}{for} \PY{n}{creditdefswap} \PY{o+ow}{in} \PY{n}{creditdefaultswaps}\PY{p}{:}
-        \PY{n}{sum\PYZus{}sq} \PY{o}{+}\PY{o}{=} \PY{n}{creditdefswap}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{curve\PYZus{}c}\PY{p}{)} \PY{o}{*}\PY{o}{*} \PY{l+m+mi}{2}
-
-    \PY{k}{return} \PY{n}{sum\PYZus{}sq}
-
-\PY{n}{x0\PYZus{}guess} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.001} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{n\PYZus{}cds\PYZus{}vector}\PY{p}{)}\PY{p}{]}
-
-\PY{n}{bounds\PYZus{}credit\PYZus{}curve} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{n\PYZus{}cds\PYZus{}vector}\PY{p}{)}\PY{p}{]}
-\PY{n}{bounds\PYZus{}credit\PYZus{}curve}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}
-\end{Verbatim}
-\end{tcolorbox}
-
-\begin{tcolorbox}[size=fbox, boxrule=1pt,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{results} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{obj\PYZus{}function}\PY{p}{,} \PY{n}{x0\PYZus{}guess}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds\PYZus{}credit\PYZus{}curve}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{results}\PY{o}{.}\PY{n}{x}\PY{p}{)}
-
-[1.         0.90681257 0.80416782 0.70889095 0.54479309 0.29706549
- 0.08665777]
-\end{Verbatim}  
-\end{tcolorbox}
-\end{Answer}
-
-\begin{Exercise}
-Using the \texttt{Credit\ Curve} and \texttt{DiscountCurve} found in the previous exercise price the following CDS:
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\NormalTok{cds_to_price }\OperatorTok{=}\NormalTok{ [}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{18}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{30}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{42}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{72}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{108}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{132}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{160}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{184}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\},}
-\NormalTok{    \{}\StringTok{'nominal'}\NormalTok{: }\DecValTok{5000000}\NormalTok{, }\StringTok{'maturity'}\NormalTok{: }\DecValTok{210}\NormalTok{, }\StringTok{'spread'}\NormalTok{: }\FloatTok{0.02}\NormalTok{\}}
-\NormalTok{]}
-\end{Highlighting}
-\end{Shaded}
-\end{Exercise}
-
-\begin{Answer}
- \begin{tcolorbox}[size=fbox, boxrule=1pt,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{curve\PYZus{}data} \PY{k}{import} \PY{n}{discount\PYZus{}curve}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{CreditDefaultSwap}\PY{p}{,} \PY{n}{CreditCurve}
-\PY{k+kn}{import} \PY{n+nn}{datetime}
-
-\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{curve\PYZus{}pillar\PYZus{}dates} \PY{o}{=} \PY{n}{cd_pillar_dates}
-\PY{n}{surv\PYZus{}prob} \PY{o}{=} \PY{n}{results.x}
-\PY{n}{credit\PYZus{}curve} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{n}{curve\PYZus{}pillar\PYZus{}dates}\PY{p}{,} \PY{n}{surv\PYZus{}prob}\PY{p}{)}
-
-\PY{n}{cds\PYZus{}to\PYZus{}price} \PY{o}{=} \PY{p}{[}
-\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nominal}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{5000000}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{18}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mf}{0.02}\PY{p}{\PYZcb{}}\PY{p}{,}
-\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nominal}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{5000000}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{30}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mf}{0.02}\PY{p}{\PYZcb{}}\PY{p}{,}
-\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nominal}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{5000000}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{42}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mf}{0.02}\PY{p}{\PYZcb{}}\PY{p}{,}
-\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nominal}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{5000000}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{72}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mf}{0.02}\PY{p}{\PYZcb{}}\PY{p}{,}
-\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nominal}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{5000000}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{108}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mf}{0.02}\PY{p}{\PYZcb{}}\PY{p}{,}
-\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nominal}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{5000000}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{132}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mf}{0.02}\PY{p}{\PYZcb{}}\PY{p}{,}
-\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nominal}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{5000000}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{160}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mf}{0.02}\PY{p}{\PYZcb{}}\PY{p}{,}
-\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nominal}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{5000000}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{184}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mf}{0.02}\PY{p}{\PYZcb{}}\PY{p}{,}
-\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nominal}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{5000000}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mi}{210}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+m+mf}{0.02}\PY{p}{\PYZcb{}}\PY{p}{]}
-
-\end{Verbatim}
-\end{tcolorbox}
-
-\begin{tcolorbox}[size=fbox, boxrule=1pt,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{npv\PYZus{}cds\PYZus{}to\PYZus{}price} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{quote} \PY{o+ow}{in} \PY{n}{cds\PYZus{}to\PYZus{}price}\PY{p}{:}
-    \PY{n}{creditdefswapprice} \PY{o}{=} \PY{n}{CreditDefaultSwap}\PY{p}{(}
-        \PY{n}{quote}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nominal}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,}              
-        \PY{n}{pricing\PYZus{}date}\PY{p}{,}
-        \PY{n}{quote}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{/}\PY{o}{/}\PY{l+m+mi}{12}\PY{p}{,}
-        \PY{n}{quote}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{spread}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}   
-    \PY{p}{)}
-
-    \PY{n}{npvcdstoprice} \PY{o}{=} \PY{n}{creditdefswapprice}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-    
-    \PY{n}{npv\PYZus{}cds\PYZus{}to\PYZus{}price}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{npvcdstoprice}\PY{p}{)}
-
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{npv\PYZus{}cds\PYZus{}to\PYZus{}price}\PY{p}{)}
-
-[-96879.21494231955, -125875.49083899031, -137489.2485942383,
--150388.56810656283, -184387.14756564656, -199054.44398897374,
--208689.7770410725, -216150.51575594302, -221690.38180709025]
-    \end{Verbatim}
 \end{tcolorbox}
 \end{Answer}

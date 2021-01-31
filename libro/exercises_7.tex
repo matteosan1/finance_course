@@ -1,255 +1,278 @@
-\chapter{Swap and Boostrapping}\label{introduction-to-python---lesson-7}
+\chapter{Interpolation, Discount Factors and Forward Rates}\label{introduction-to-python---lesson-6}
 
-\begin{Exercise}[title={(Analytic bootstrapping)}]
-Consider two 5\% coupon paying bonds (par value of \euro{100}) with the clean market prices of \euro{99.50} and \euro{98.30} and having maturities of 6 months and 1 year respectively.
+\begin{Exercise}[title={(Assertion)}]
+Python has a useful command called \texttt{assert} which can be used for
+checking that a given condition is satisfied, and raising an error if
+the condition is not satisfied.
 
-Determine the spot rate for the 6-month and 1-year bond.  
-\end{Exercise}
+The following line does not cause an error, in fact it does nothing since 1 is lower than 2, hence the condition is met.
 
-\begin{Answer}
-At the end of 6 months the first bond will pay a coupon of \euro{2.5} (= \euro{100} * 5\%/ 2) plus the principal amount (= €100) which sums up to 102.50. To
-determine the 6M spot rate we can write the following equation, :
+\begin{Shaded}
+\begin{Highlighting}[]
+\ControlFlowTok{assert} \DecValTok{1} \OperatorTok{<} \DecValTok{2}
+\end{Highlighting}
+\end{Shaded}
 
-\[ \cfrac{102.5}{(1 + S_{6M}/2)} = 99.5\qquad\Rightarrow\qquad S_{6M} = 2 \cdot \Big( \cfrac{102.5}{99.5} - 1 \Big) =  6.03 \%\]
+This causes an error (the condition is evaluated to false. 
 
-At the end of another 6 months the second bond will pay a coupon of €2.5
-(= €100 * 5\% / 2) plus the principal amount (= €100) which sums up to
-€102.50. The bond is trading at €98.30, therefore, the 1-year spot rate
-\(S_{1y}\) can be calculated using \(S_{6M}\) as,
+\begin{Shaded}
+\begin{Highlighting}[]
+\ControlFlowTok{assert} \DecValTok{1} \OperatorTok{>} \DecValTok{2}
+\end{Highlighting}
+\end{Shaded}
 
-\[ \cfrac{2.5}{(1+S_{6M}/2)} + \cfrac{102.5}{(1 + S_{1y}/2)^{2}} = 98.30 \]
+\texttt{assert} can take a second argument with a message to display in case of failure.
 
-\[ \cfrac{102.5}{(1 + S_{1y}/2)^{2}} = 98.30 - \cfrac{2.5}{(1+0.03015)} \]
+\begin{Shaded}
+\begin{Highlighting}[]
+\ControlFlowTok{assert} \DecValTok{1} \OperatorTok{>} \DecValTok{2}\NormalTok{, }\StringTok{"Two is greater than one"}
+\end{Highlighting}
+\end{Shaded}
 
-\[ (2 + S_{1y})^{2} = \cfrac{4\cdot102.5}{98.87317} = 4.276428 \]
+Now takes the \texttt{df} function from Chapter 6 of the Lecture Notes and modify it by adding some assertions to check that:
 
-\[ S_{1y}^{2} + 4\cdot S_{1y} - 0.276428 = 0 \]
+\begin{itemize}
+\tightlist
+\item
+  the pillar date list contains at least 2 elements;
+\item
+  the pillar date list has the same length as the discount factor one;
+\item
+  the first pillar date is equal to the today's date;
+\item
+  the value date (first argument \texttt{d}) is greater or equal to the first pillar
+  date and also less than or equal to the last pillar date.
+\end{itemize}
 
-\[ S_{1y} = -2 \pm \sqrt{4 + 0.276428} =\begin{cases}\text{\sout{-4.06795}} \\ 6.80\%\end{cases} \]
-
-\end{Answer}
-
-\begin{Exercise}[title={(Minimization in Business)}]
-A small petroleum company owns two refineries. Refinery 1 costs \$20,000 per day to
-operate, and it can produce 400 barrels of high-grade oil, 300 barrels of medium-grade oil,
-and 200 barrels of low-grade oil each day. Refinery 2 is newer and more modern. It costs
-\$25,000 per day to operate, and it can produce 300 barrels of high-grade oil, 400 barrels of
-medium-grade oil, and 500 barrels of low-grade oil each day.
-The company has orders totaling 25,000 barrels of high-grade oil, 27,000 barrels of
-medium-grade oil, and 30,000 barrels of low-grade oil. How many days should it run each
-refinery to minimize its costs and still refine enough oil to meet its orders?
-
-\textbf{Hint:} you need to identify the unknown quantities (working days for each refinery) and set the constraints on the production of barrels.
-The objective is to minimize the costs. If you have multiple constraints you can define a list of dictionaries (one for constraint). Furthermore
-in this case the constraint is not \emph{equal to} but rather \emph{greater than} so you have to set \texttt{ineq} type.
-\end{Exercise}
-
-\begin{Answer}
-Let's implement the usual steps for a minimization. In this case our unknown are \texttt{x[0]} and \texttt{x[1]} the working days for each refinery. Then define the objective function with the production costs and three more functions, one for each oil-grade for the constraints.
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
-
-\PY{k}{def} \PY{n+nf}{of}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{l+m+mi}{20000}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{+} \PY{l+m+mi}{25000}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}
-
-\PY{k}{def} \PY{n+nf}{cons1}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{l+m+mi}{400}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{+} \PY{l+m+mi}{300}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{l+m+mi}{25000}
-
-\PY{k}{def} \PY{n+nf}{cons2}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{l+m+mi}{300}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{+} \PY{l+m+mi}{400}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{l+m+mi}{27000}
-
-\PY{k}{def} \PY{n+nf}{cons3}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{l+m+mi}{200}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{+} \PY{l+m+mi}{500}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{l+m+mi}{30000}
-
-\PY{n}{cons} \PY{o}{=} \PY{p}{[}\PY{p}{\PYZob{}}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{type}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ineq}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{fun}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{n}{cons1}\PY{p}{\PYZcb{}}\PY{p}{,}
-        \PY{p}{\PYZob{}}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{type}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ineq}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{fun}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{n}{cons2}\PY{p}{\PYZcb{}}\PY{p}{,}
-        \PY{p}{\PYZob{}}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{type}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ineq}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{fun}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{n}{cons3}\PY{p}{\PYZcb{}}\PY{p}{]}
-    \end{Verbatim}
-\end{tcolorbox}
-
-Set limits and initial values and run the minimizer.
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-        
-\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{]}
-\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{)} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{x0}\PY{p}{)}\PY{p}{)}\PY{p}{]}
-
-\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{of}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{cons}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{r}\PY{p}{)}
-
-     fun: 1750002.070622686
-     jac: array([20000., 25000.])
- message: 'Optimization terminated successfully.'
-    nfev: 8
-     nit: 6
-    njev: 2
-  status: 0
- success: True
-       x: array([25.00004033, 50.00005056])
-    \end{Verbatim}
-\end{tcolorbox}
-    
- So refinery 1 should work 25 days while refinery 2 50 days to minimize the production costs to 1750000 M (see objective function value in the minimization report).
-\end{Answer}
-
-\begin{Exercise}[title={(OvernightIndexSwap)}]
-Take the \texttt{OvernightIndexSwap} class, add it to \texttt{finmarkets} module and try importing and using it. In particular read the OIS market data from \href{https://drive.google.com/file/d/1LCEDmheKqwPXFpJ25hFz32QI5im2UJO1/view?usp=sharing}{\texttt{ois\_data.xlsx}} and construct the corresponding swaps.
+Then try using the function with some invalid data to make sure that your as sertions are correctly checking the desired conditions
 \end{Exercise}
 
 \begin{Answer}
 \begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{pandas}\PY{o}{,} \PY{n+nn}{datetime}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{OvernightIndexSwap}\PY{p}{,} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
+\PY{c+c1}{\PYZsh{} import modules and objects that we need}
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\PY{k+kn}{import} \PY{n+nn}{numpy}
+\PY{k+kn}{import} \PY{n+nn}{math}
 
-\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
-\PY{n}{df} \PY{o}{=} \PY{n}{pandas}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ois\PYZus{}data.xlsx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n}{today\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2017}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2017}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
+                \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2018}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
+                \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
+\PY{n}{discount\PYZus{}factors} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.95}\PY{p}{,} \PY{l+m+mf}{0.8}\PY{p}{]}
 
-\PY{n}{market\PYZus{}quotes} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{df}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{n}{key} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{i}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{months}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
-    \PY{n}{value} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{i}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{quote}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
-    \PY{n}{market\PYZus{}quotes}\PY{p}{[}\PY{n}{key}\PY{p}{]} \PY{o}{=} \PY{n}{value}
-
-\PY{n}{swaps} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{months}\PY{p}{,} \PY{n}{rate} \PY{o+ow}{in} \PY{n}{market\PYZus{}quotes}\PY{o}{.}\PY{n}{items}\PY{p}{(}\PY{p}{)}\PY{p}{:}
-        
-    \PY{n}{swap} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,}
-                              \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,}
-                                                  \PY{n}{months}\PY{p}{)}\PY{p}{,}
-                              \PY{l+m+mf}{0.01} \PY{o}{*} \PY{n}{rate}
-                              \PY{p}{)}
-    \PY{n}{swaps}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{swap}\PY{p}{)}
-\end{Verbatim}
-\end{tcolorbox}
-\end{Answer}
-
-\begin{Exercise}[title={(Bootstrapping of Discount Curve)}]
-From the \texttt{OvernightIndexSwap} created in the previous example derive a discount curve using the bootstrap method.
-\end{Exercise}
-
-\begin{Answer}
-We have just created our swaps from the market quotes in the previous exercise, so now we can just create a list with the pillar dates.
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-
-\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}
-\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{observation\PYZus{}date}\PY{p}{]}
-
-\PY{k}{for} \PY{n}{swap} \PY{o+ow}{in} \PY{p}{(}\PY{n}{swaps}\PY{p}{:}
-    \PY{n}{pillar\PYZus{}dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{swap}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
-
-\PY{c+c1}{\PYZsh{} this shouldn\PYZsq{}t be necessary if the original}
-\PY{c+c1}{\PYZsh{} list of market quotes is sorted}
-\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{n+nb}{sorted}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}
-\end{Verbatim}
-\end{tcolorbox}
-
- Define the objective function: the sum of the squared NPVs of the OIS.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{def} \PY{n+nf}{objective\PYZus{}function}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
-    \PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,}
-                          \PY{n}{pillar\PYZus{}dates}\PY{p}{,}
-                          \PY{n}{x}\PY{p}{)}
+\PY{k}{def} \PY{n+nf}{df}\PY{p}{(}\PY{n}{d, observation_date, pillar_dates, discount_factors}\PY{p}{)}\PY{p}{:}
+    \PY{c+c1}{\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{} CHECKS \PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}}
+    \PY{k}{assert} \PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)} \PY{o}{\PYZgt{}}\PY{o}{=} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ need at least 2 pillar dates}\PY{l+s+s2}{\PYZdq{}}
     
-    \PY{n}{sum\PYZus{}sq} \PY{o}{=} \PY{l+m+mf}{0.0}
-    \PY{k}{for} \PY{n}{swap} \PY{o+ow}{in} \PY{n}{swaps}\PY{p}{:}
-        \PY{n}{sum\PYZus{}sq} \PY{o}{+}\PY{o}{=} \PY{n}{swap}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{curve}\PY{p}{)} \PY{o}{*}\PY{o}{*} \PY{l+m+mi}{2}
-    \PY{k}{return} \PY{n}{sum\PYZus{}sq}
+    \PY{k}{assert} \PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)} \PY{o}{==} \PY{n+nb}{len}\PY{p}{(}\PY{n}{discount\PYZus{}factors}\PY{p}{)}\PY{p}{,} \PYZbs{}
+        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{number of pillar dates should be equal to }\PY{l+s+se}{\PYZbs{}}
+\PY{l+s+s2}{        the number of pillar discount factors}\PY{l+s+s2}{\PYZdq{}}
+    
+    \PY{k}{assert} \PY{n}{observation\PYZus{}date} \PY{o}{==} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PYZbs{}
+        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{first pillar date should be the observation date}\PY{l+s+s2}{\PYZdq{}}
+    
+    \PY{k}{assert} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{n}{d} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,} \PYZbs{}
+        \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Invalid value date }\PY{l+s+si}{\PYZpc{}s}\PY{l+s+s2}{\PYZdq{}} \PY{o}{\PYZpc{}} \PY{p}{(}\PY{n}{d}\PY{p}{)}
+    \PY{c+c1}{\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{} END OF CHECKS \PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}\PYZsh{}}
+    
+    \PY{n}{log\PYZus{}discount\PYZus{}factors} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+    \PY{k}{for} \PY{n}{discount\PYZus{}factor} \PY{o+ow}{in} \PY{n}{discount\PYZus{}factors}\PY{p}{:}
+        \PY{n}{log\PYZus{}discount\PYZus{}factors}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{discount\PYZus{}factor}\PY{p}{)}\PY{p}{)}
+    
+    \PY{n}{pillar\PYZus{}days} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+    \PY{k}{for} \PY{n}{pillar\PYZus{}date} \PY{o+ow}{in} \PY{n}{pillar\PYZus{}dates}\PY{p}{:}
+        \PY{n}{pillar\PYZus{}days}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{p}{(}\PY{n}{pillar\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{observation\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days}\PY{p}{)}
+    
+    \PY{n}{d\PYZus{}days} \PY{o}{=} \PY{p}{(}\PY{n}{d} \PY{o}{\PYZhy{}} \PY{n}{observation\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days}
+    
+    \PY{n}{interpolated\PYZus{}log\PYZus{}discount\PYZus{}factor} \PY{o}{=} \PYZbs{}
+        \PY{n}{numpy}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{d\PYZus{}days}\PY{p}{,} \PY{n}{pillar\PYZus{}days}\PY{p}{,} \PY{n}{log\PYZus{}discount\PYZus{}factors}\PY{p}{)}
+    
+    \PY{k}{return} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{interpolated\PYZus{}log\PYZus{}discount\PYZus{}factor}\PY{p}{)}
+
+\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{), today_date, pillar_dates, discount_factors}\PY{p}{)}
+
+0.9097285910181567
 \end{Verbatim}
-\end{tcolorbox}
+\end{tcolorbox} 
+\end{Answer}
 
-Set the initial value of the discount factors (\(x_i\)) to 1 with a
-  range of variability \([ 0.01, 10]\), in addition the first element of
-  the list, today's discount factor, will be fixed to 1 (variability
-  \([1, 1]\)).
+\begin{Exercise}[label={ex:BS3}, title={(Black-Scholes Again)}]
+Copy into the file \texttt{finmarkets.py} the function used to compute Black Scholes formula used in Ex.~\ref{ex:BS2}. This is another utility for our financial library. Then repeat Ex.~\ref{ex:BS2} now using the version of the Black and Scholes formula in the \texttt{finmarkets} module.
+\end{Exercise}
 
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{]}
+\PY{k}{import} \PY{n}{finmarkets}
+        
+\PY{n}{s} \PY{o}{=} \PY{l+m+mi}{800}
+\PY{c+c1}{\PYZsh{} strikes expressed as \PYZpc{} of spot price}
+\PY{n}{moneyness} \PY{o}{=} \PY{p}{[} \PY{l+m+mf}{0.5}\PY{p}{,} \PY{l+m+mf}{0.75}\PY{p}{,} \PY{l+m+mf}{0.825}\PY{p}{,} \PYZbs{}
+             \PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{1.125}\PY{p}{,} \PY{l+m+mf}{1.25}\PY{p}{,} \PY{l+m+mf}{1.5} \PY{p}{]}
+\PY{n}{vol} \PY{o}{=} \PY{l+m+mf}{0.3}
+\PY{n}{ttm} \PY{o}{=} \PY{l+m+mf}{0.75}
+\PY{n}{r} \PY{o}{=} \PY{l+m+mf}{0.005}
 
-\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{10.0}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{]}
-\PY{n}{bounds}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{1.0}\PY{p}{)}
-\end{Verbatim}
-\end{tcolorbox}
+\PY{n}{result} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
+\PY{k}{for} \PY{n}{m} \PY{o+ow}{in} \PY{n}{moneyness}\PY{p}{:}
+    \PY{n}{result}\PY{p}{[}\PY{n}{s}\PY{o}{*}\PY{n}{m}\PY{p}{]} \PY{o}{=} \PY{n}{finmarkets.call}\PY{p}{(}\PY{n}{s}\PY{p}{,} \PY{n}{m}\PY{o}{*}\PY{n}{s}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{vol}\PY{p}{,} \PY{n}{ttm}\PY{p}{)}
+\PY{n}{result}
 
-Finally launch the minimizer to find the discount factors (\(\mathbf{x}\)).
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
-
-\PY{n}{result} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{objective\PYZus{}function}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{result}\PY{p}{)}
-
-      fun: 0.000819919032900304
- hess\_inv: <34x34 LbfgsInvHessProduct with dtype=float64>
-      jac: array([ 6.58948735e+05, -1.58720803e+01, -6.53143264e+01,
--1.03323232e+02,
-       -1.26050260e+02, -1.31748898e+02, -1.20374599e+02, -9.15399651e+01,
-       -4.24363322e+01,  2.44903182e+01,  1.14345243e+02,  2.22002243e+02,
-       -3.72021700e+00,  4.21398633e+01,  4.21787852e+01,  4.22369487e+01,
-        4.23327026e+01,  4.31814758e+01,  4.44924460e+01,  4.62078978e+01,
-        4.82906823e+01, -3.69972738e+00, -1.42454702e+00,  7.53771932e-01,
-        2.79741018e+00,  4.62896699e+00,  6.24844054e+00,  9.93101553e+00,
-        1.31122434e+01,  1.42880909e+01,  1.48279215e+01,  1.50787019e+01,
-        1.43267935e+01,  1.38451324e+01])
-  message: b'CONVERGENCE: REL\_REDUCTION\_OF\_F\_<=\_FACTR*EPSMCH'
-     nfev: 840
-      nit: 7
-   status: 0
-  success: True
-        x: array([1.        , 1.00030147, 1.00058831, 1.00089012, 1.00119726,
-       1.00147996, 1.00178743, 1.00208107, 1.00238467, 1.00267865,
-       1.00298261, 1.00327737, 1.00357104, 1.00357104, 1.00355063,
-       1.00352002, 1.00346901, 1.00302007, 1.00232627, 1.00141821,
-       1.00031629, 0.99911234, 0.99790839, 0.99675545, 0.99567393,
-       0.99470465, 0.9938476 , 0.99189884, 0.99021534, 0.98959296,
-       0.98930728, 0.98917464, 0.98957256, 0.98982763])
+\{400.0: 401.66074527896365,
+  600.0: 213.9883852521275,
+  660.0: 166.85957363897393,
+  800.0: 84.03697017660357,
+  900.0: 47.61880394696229,
+  1000.0: 25.632722952585738,
+  1200.0: 6.655275227771156\}
 \end{Verbatim}
 \end{tcolorbox}
 \end{Answer}
 
-\begin{Exercise}[title={(OvernightIndexSwap fair value)}]
-Take the \texttt{OvernightIndexSwap} class from your \texttt{finmarkets} module and add a new method called \texttt{fair\_value\_strike} which takes a discount curve object and returns the fixed rate which would make the OIS with zero NPV.
+\begin{Exercise}[title={(Discount Curves)}]
+  Following the steps outlined in Chapter 6 of the Lecture Notes, implement a \texttt{DiscountCurve} class and add it to \texttt{finmarkets} module. The class should have as attributes the pillar dates and the corresponding discount factors and two methods, one to interpolate discount factors and another to calculate forward rates.
+  Finally using that class compute the forward 6M LIBOR coupon using the curves given below in pre and post 2008 crisis way.
 
-\textbf{Hint:} first take the formulas for the NPV of the fixed and floating legs, put one equal to the other and solve for $K$.
-\end{Exercise}
-
-\begin{Answer}
-As the hint suggested the two NPV equations are compared:
-
-\[\mathrm{NPV}_{\mathrm{fix}} = NK \sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}\]
-
-\[\mathrm{NPV}_{\mathrm{float}} = N \cdot [D(d_0) - D(d_n)]\]
-
-\[K \sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360} = [D(d_0) - D(d_n)]\]
-
-\[K = \cfrac{[D(d_0) - D(d_n)]}{\sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}}\]
-
-Now in python:
-
+\textbf{Input:}
 \begin{Shaded}
 \begin{Highlighting}[]
-\KeywordTok{class}\NormalTok{ OverNightIndexSwap:}
-\NormalTok{    ...}
-    \KeywordTok{def}\NormalTok{ fair_value_strike(}\VariableTok{self}\NormalTok{, discount_curve):}
-\NormalTok{        den }\OperatorTok{=} \DecValTok{0}
-        \ControlFlowTok{for}\NormalTok{ i }\KeywordTok{in} \BuiltInTok{range}\NormalTok{(}\DecValTok{1}\NormalTok{, }\BuiltInTok{len}\NormalTok{(}\VariableTok{self}\NormalTok{.payment_dates)):}
-\NormalTok{            start_date }\OperatorTok{=} \VariableTok{self}\NormalTok{.payment_dates[i}\DecValTok{-1}\NormalTok{] }
-\NormalTok{            end_date }\OperatorTok{=} \VariableTok{self}\NormalTok{.payment_dates[i]}
-\NormalTok{            tau }\OperatorTok{=}\NormalTok{ (end_date }\OperatorTok{-}\NormalTok{ start_date).days }\OperatorTok{/} \DecValTok{360}
-\NormalTok{            df }\OperatorTok{=}\NormalTok{ discount_curve.df(end_date)}
-\NormalTok{            den }\OperatorTok{+=}\NormalTok{ df }\OperatorTok{*}\NormalTok{ tau}
-\NormalTok{        num }\OperatorTok{=}\NormalTok{ (discount_curve.df(}\VariableTok{self}\NormalTok{.payment_dates[}\DecValTok{0}\NormalTok{]) }\OperatorTok{-} 
-\NormalTok{               discount_curve.df(}\VariableTok{self}\NormalTok{.payment_dates[}\OperatorTok{-}\DecValTok{1}\NormalTok{]))}
+\NormalTok{observation_date }\OperatorTok{=}\NormalTok{ date (}\DecValTok{2020}\NormalTok{, }\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{)}
+\NormalTok{t1 }\OperatorTok{=}\NormalTok{ date(}\DecValTok{2020}\NormalTok{,}\DecValTok{4}\NormalTok{, }\DecValTok{1}\NormalTok{)}
+\NormalTok{t2 }\OperatorTok{=}\NormalTok{ date(}\DecValTok{2020}\NormalTok{, }\DecValTok{10}\NormalTok{, }\DecValTok{1}\NormalTok{)}
 
-        \ControlFlowTok{return}\NormalTok{ num}\OperatorTok{/}\NormalTok{den    }
+\CommentTok{# for EONIA}
+\NormalTok{pillar_dates_eonia }\OperatorTok{=}\NormalTok{ [date(}\DecValTok{2020}\NormalTok{ , }\DecValTok{1}\NormalTok{ ,}\DecValTok{1}\NormalTok{), }
+\NormalTok{                      date(}\DecValTok{2021}\NormalTok{, }\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{), }
+\NormalTok{                      date(}\DecValTok{2022}\NormalTok{, }\DecValTok{10}\NormalTok{ ,}\DecValTok{1}\NormalTok{)]}
+\NormalTok{discount_factors_eonia }\OperatorTok{=}\NormalTok{ [}\FloatTok{1.0}\NormalTok{, }\FloatTok{0.97}\NormalTok{, }\FloatTok{0.72}\NormalTok{]}
+
+\CommentTok{# for LIBOR 6M}
+\NormalTok{pillar_dates_libor }\OperatorTok{=}\NormalTok{ [date(}\DecValTok{2020}\NormalTok{, }\DecValTok{1}\NormalTok{ ,}\DecValTok{1}\NormalTok{), }
+\NormalTok{                      date(}\DecValTok{2020}\NormalTok{, }\DecValTok{6}\NormalTok{, }\DecValTok{1}\NormalTok{), }
+\NormalTok{                      date(}\DecValTok{2020}\NormalTok{, }\DecValTok{12}\NormalTok{ ,}\DecValTok{1}\NormalTok{)]}
+\NormalTok{discount_factors_libor }\OperatorTok{=}\NormalTok{ [}\FloatTok{1.0}\NormalTok{, }\FloatTok{0.95}\NormalTok{, }\FloatTok{0.90}\NormalTok{]}
 \end{Highlighting}
 \end{Shaded}
+\end{Exercise}
 
-Finally add this method to the class implementation in \texttt{finmarkets.py}.
+\begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{math}
+\PY{k+kn}{import} \PY{n+nn}{numpy}
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+
+\PY{k}{class} \PY{n+nc}{DiscountCurve}\PY{p}{:}
+
+    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{today}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{discount\PYZus{}factors}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today} \PY{o}{=} \PY{n}{today}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{n}{pillar\PYZus{}dates}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{discount\PYZus{}factors} \PY{o}{=} \PY{n}{discount\PYZus{}factors}
+
+    \PY{k}{def} \PY{n+nf}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{d}\PY{p}{)}\PY{p}{:}
+        \PY{n}{log\PYZus{}discount\PYZus{}factors} \PY{o}{=} \PYZbs{}
+          \PY{p}{[}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{discount\PYZus{}factor}\PY{p}{)} 
+           \PY{k}{for} \PY{n}{discount\PYZus{}factor} \PY{o+ow}{in} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{discount\PYZus{}factors}\PY{p}{]}
+        \PY{n}{pillar\PYZus{}days} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{n}{pillar\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days} 
+                       \PY{k}{for} \PY{n}{pillar\PYZus{}date} \PY{o+ow}{in} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates}\PY{p}{]}
+        \PY{n}{d\PYZus{}days} \PY{o}{=} \PY{p}{(}\PY{n}{d} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days}
+        \PY{n}{interpolated\PYZus{}log\PYZus{}discount\PYZus{}factor} \PY{o}{=} \PYZbs{}
+            \PY{n}{numpy}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{d\PYZus{}days}\PY{p}{,} \PY{n}{pillar\PYZus{}days}\PY{p}{,} \PY{n}{log\PYZus{}discount\PYZus{}factors}\PY{p}{)}
+        \PY{k}{return} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{interpolated\PYZus{}log\PYZus{}discount\PYZus{}factor}\PY{p}{)}
+
+    \PY{k}{def} \PY{n+nf}{forward\PYZus{}rate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{d1}\PY{p}{,} \PY{n}{d2}\PY{p}{)}\PY{p}{:}
+        \PY{k}{return} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d1}\PY{p}{)} \PY{o}{/} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d2}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mf}{1.0}\PY{p}{)} \PY{o}{*} \PYZbs{}
+                \PY{p}{(}\PY{l+m+mf}{365.0} \PY{o}{/} \PY{p}{(}\PY{p}{(}\PY{n}{d2} \PY{o}{\PYZhy{}} \PY{n}{d1}\PY{p}{)}\PY{o}{.}\PY{n}{days}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}
+
+\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{date} \PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{t1} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{t2} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+
+\PY{c+c1}{\PYZsh{} for EONIA}
+\PY{n}{pillar\PYZus{}dates\PYZus{}eonia} \PY{o}{=} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020} \PY{p}{,} \PY{l+m+mi}{1} \PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
+                      \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
+                      \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2022}\PY{p}{,} \PY{l+m+mi}{10} \PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
+\PY{n}{discount\PYZus{}factors\PYZus{}eonia} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.97}\PY{p}{,} \PY{l+m+mf}{0.72}\PY{p}{]}
+
+\PY{c+c1}{\PYZsh{} for LIBOR 6M}
+\PY{n}{pillar\PYZus{}dates\PYZus{}libor} \PY{o}{=} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1} \PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
+                      \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
+                      \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{12} \PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
+\PY{n}{discount\PYZus{}factors\PYZus{}libor} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.95}\PY{p}{,} \PY{l+m+mf}{0.90}\PY{p}{]}
+
+
+\PY{n}{eonia\PYZus{}curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,} 
+                            \PY{n}{pillar\PYZus{}dates\PYZus{}eonia}\PY{p}{,} 
+                            \PY{n}{discount\PYZus{}factors\PYZus{}eonia}\PY{p}{)}
+\PY{n}{libor\PYZus{}curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,} 
+                            \PY{n}{pillar\PYZus{}dates\PYZus{}libor}\PY{p}{,} 
+                            \PY{n}{discount\PYZus{}factors\PYZus{}libor}\PY{p}{)}
+
+
+\PY{n}{npv} \PY{o}{=} \PY{n}{eonia\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{t1}\PY{p}{)} \PY{o}{*} \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{t1}\PY{p}{,} \PY{n}{t2}\PY{p}{)}
+
+\PY{c+c1}{\PYZsh{} Compute it in the pre\PYZhy{}2008 way}
+\PY{n}{npv\PYZus{}pre2008} \PY{o}{=} \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{t1}\PY{p}{)} \PY{o}{*} \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{t1}\PY{p}{,} \PY{n}{t2}\PY{p}{)}
+
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{NPV post 2008:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{npv}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{NPV pre 2008:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{npv\PYZus{}pre2008}\PY{p}{)}
+
+NPV post 2008: 0.11533243116069992
+NPV pre 2008: 0.11269481011359303
+\end{Verbatim}
+\end{tcolorbox}
 \end{Answer}
+
+\begin{Exercise}[title={(Forward Rate Curve)}]
+Write a ForwardRateCurve class (for EURIBOR/LIBOR rate curve) which
+doesn't compute discount factors but only interplatates forward rates;
+then add it to the \texttt{finmarkets} module (this function is used to
+define the LIBOR curve needed throughout future lessons).
+\end{Exercise}
+
+\begin{Answer}
+In this case it is enough to write a new \texttt{class} that has three
+attributes: a today date, a set of pillar\_dates and the corresponding
+rates. There will be just a single method \texttt{forward\_rate} which
+returns the corresponding interpolated rate.
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{numpy}
+        
+\PY{c+c1}{\PYZsh{} an EURIBOR or LIBOR rate curve}
+\PY{c+c1}{\PYZsh{} doesn\PYZsq{}t calculate discount factors, only interpolates forward rates}
+\PY{k}{class} \PY{n+nc}{ForwardRateCurve}\PY{p}{(}\PY{n+nb}{object}\PY{p}{)}\PY{p}{:}
+   
+   \PY{c+c1}{\PYZsh{} the special \PYZus{}\PYZus{}init\PYZus{}\PYZus{} method defines how to}
+   \PY{c+c1}{\PYZsh{} construct instances of the class}
+   \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{rates}\PY{p}{)}\PY{p}{:}
+       
+       \PY{c+c1}{\PYZsh{} we just store the arguments as attributes of the instance}
+       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today} \PY{o}{=} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
+       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rates} \PY{o}{=} \PY{n}{rates}
+       
+       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days} \PY{o}{=} \PY{p}{[}
+           \PY{p}{(}\PY{n}{pillar\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days}
+           \PY{k}{for} \PY{n}{pillar\PYZus{}date} \PY{o+ow}{in} \PY{n}{pillar\PYZus{}dates}
+       \PY{p}{]}
+       
+       
+   \PY{c+c1}{\PYZsh{} interpolates the forward rates stored in the instance}
+   \PY{k}{def} \PY{n+nf}{forward\PYZus{}rate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{d}\PY{p}{)}\PY{p}{:}
+       \PY{n}{d\PYZus{}days} \PY{o}{=} \PY{p}{(}\PY{n}{d} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days}
+       \PY{k}{return} \PY{n}{numpy}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{d\PYZus{}days}\PY{p}{,} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days}\PY{p}{,} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rates}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+\end{Answer}
+
+
+  

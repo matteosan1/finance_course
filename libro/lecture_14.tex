@@ -1,929 +1,636 @@
-\chapter{Portfolio Optimization}\label{portfolio-optimization}
+\chapter{VaR and Credit Risk}\label{var-and-credit-risk}
 
-Portfolio optimization models look for the optimal way to make investments. Usually investors expect 
-either a maximum return for a given level of risk or a given return for a minimum risk so these models
-are typically based on two criteria: maximization of the expected return and/or minimization of the risk.
+\section{Value at Risk}\label{value-at-risk}
 
-While the concept of return is straightforward there is a variety of measures of risk. 
-The most popular one has been variance in return and we will first look at it very closely before introducing some alternatives.
+The value at risk (VaR) of a portfolio is a function of two parameters:
+time horizon and confidence level. It is usually used when it
+is important to know to a certain confidence level how
+much will be the maximum loss in the next $N$ days (i.e. time horizon). 
+It can be interpreted as the loss level over \(N\) days that has a 
+probability of only \((100 - X)\%\) of being exceeded.
 
-Some notations that will be used later are
+Mathematically the VaR is the loss corresponding to the
+\((100-X)\textrm{th}\) percentile of the distribution of the change in
+the value of the portfolio over the next \(N\) days. 
 
-\begin{itemize}
-\tightlist
-\item
-  expected return: \begin{equation} \mathbb{E}(R_{p}) = \sum _{i}w_{i} \mathbb{E}(R_{i}) \end{equation} where
-  \(R_{p}\) is the return on the portfolio, \(R_{i}\) is the return on
-  asset \(i\) and \(w_{i}\) is the weighting of component asset \(i\)
-  (that is, the proportion of asset \(i\) in the portfolio) and
-  \(\sum_{i}w_i = 1\) and \(0 \le w_i \le 1\);
-\item
-  portfolio return variance:
-  \begin{equation} \sigma _{p}^{2} = \sum _{i}w_{i}^{2}\sigma _{i}^{2} + \sum _{i}\sum _{j\neq i}w_{i}w_{j}\sigma _{i}\sigma _{j}\rho _{ij} \end{equation}
-  where \(\sigma\) is the (sample) standard deviation of the periodic
-  returns on an asset, and \(\rho _{ij}\) is the correlation coefficient
-  between the returns on assets \(i\) and \(j\). In a more compact way
-  it can be expressed as:
-  \begin{equation} \sigma _{p}^{2}=\sum _{i}\sum _{j}w_{i}w_{j}\sigma _{ij} \end{equation} where
-  \(\sigma _{ij}=\sigma _{i}\sigma _{j}\rho _{ij}\) is the (sample)
-  covariance of the periodic returns on the two assets, or alternatively
-  denoted as \(\Sigma\).
-  In matrix notation:
-  \begin{equation}\sigma_p^2 = \mathbf{w^T}\Sigma\mathbf{w} \end{equation}
-  where $\mathbf{w} = (w_1,w_2,\ldots,w_N)$ is the vector of weights. 
-  For a very brief introduction to matrices see Appendix~\ref{app:matrices};
-\item
-  portfolio return volatility (standard deviation):
-  \begin{equation}\sigma _{p}= \sqrt{\sigma _{p}^{2}}\end{equation}
-\end{itemize}
+For example, with \(N=1\) and \(X=95\), VaR is the fifth percentile of the distribution of
+changes in the value of the portfolio over the next day (e.g. in Figure~\ref{fig:var_loss}
+the graphical representation of the VaR assuming a normal
+distribution for the changes of value is shown).
 
-\section{The Markowitz Mean/Variance Portfolio Model}
-\label{the-markowitz-meanvariance-portfolio-model}
+\begin{figure}[htb]
+\centering
+  \includegraphics[width=0.6\linewidth]{figures/95_var.png}
+  \caption{Example of 95\% VaR on the distribution of changes in the value.}
+  \label{fig:var_loss}
+\end{figure}
+    
+VaR is useful to summarize all the information about the risk of a
+portfolio in one single number, but this can also be considered its main
+limitation as it implies too much simplification.
 
-Although investors may expect a particular return when they buy a particular stock, they may be disappointed or pleasantly surprised, because fluctuations in stock prices result in fluctuating returns. 
+Concerning the time horizon parameter it is usually set to \(N=1\) since
+it is not easy to estimate market variables over periods longer than one
+day. Nevertheless to generalize the VaR estimate it is assumed
 
-This model, first introduced by Markowitz, defines risk as the possibility that actual returns will deviate from expected returns, and the degree of potential fluctuation determines the degree of risk.
-So it it assumes that an investor has two considerations when constructing an investment portfolio: expected return and variance in return (i.e. measure of risk or of the variability in realized return around the expected return). 
+\begin{equation}
+\textrm{N-day VaR} = \textrm{1-day VaR}\times \sqrt{N}
+\label{eq:var_horizon}
+\end{equation}
+This relation is true only if the changes of value of the portfolio over
+the considered period of time have independent and identical normal
+distributions with mean 0 (otherwise it is just an approximation).
 
-Hence the Markowitz model requires two major kinds of information:
+\section{How to Estimate the VaR}\label{how-to-estimate-the-var}
 
-\begin{itemize}
-\tightlist
-\item
-  the estimated expected return for each candidate investment;
-\item
-  the covariance matrix of returns, which characterizes not only the 
-  individual variability of the return on each investment, 
-  but also how each investment's return tends to move with the other (correlation).
-\end{itemize}
+Three are the methods that can be used to estimate the VaR and 
+in this Section they will be all reviewed.
 
-In the example proposed in this Chapter we are going to use real data
-of five companies:  AAPL, AMZN, FB, GOOG, NFLX.
-Data, shown in Figure~\ref{fig:stocks}, is made of the historical 
-series of the closing prices in the last 5 years which are saved in 
-\href{https://drive.google.com/file/d/1srCzNlKVY_LHRpkaKoUynnmI0KImfT6Y/view?usp=sharing}{portfolio\_data.csv}.
+In the proposed examples the historical series of Apple and Netflix
+are used. Data is saved in \href{https://drive.google.com/file/d/1pxzLjR_dsFdF3vildeh6vbmZJQmS6Qx7/view?usp=sharing}{historical\_data.csv}
+and it can be inspected as usual with \texttt{pandas}.
+Also we will assume to have a portfolio made of \textbf{60\% of AAPL and 40\% NFLX stocks}.
+
+In the following code we are going to add a new column with the daily return to the dataframe.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
+\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+
+\PY{n}{w} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{l+m+mf}{0.6}\PY{p}{,} \PY{l+m+mf}{0.4}\PY{p}{]}\PY{p}{)}
+\PY{n}{df} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{historical_date.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n}{aapl} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ticker}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{==}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{AAPL}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
+\PY{n}{nlfx} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ticker}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{==}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{NFLX}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
 		
-\PY{n}{df} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{portfolio\PYZus{}data.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{index\PYZus{}col}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{date}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+\PY{n}{aapl}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{aapl}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{/}\PY{n}{aapl}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{shift}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}
+\PY{n}{nflx}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{nflx}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{/}\PY{n}{nflx}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{shift}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}
 
-                 AAPL     AMZN     FB    GOOG       NFLX
-date
-2014-03-27  71.865678  338.470  60.97  558.46  52.025714
-2014-03-28  71.785450  338.290  60.01  559.99  51.267143
-2014-03-31  71.769404  336.365  60.24  556.97  50.290000
-2014-04-01  72.425937  342.990  62.62  567.16  52.098571
-2014-04-02  72.546280  341.960  62.72  567.00  51.840000
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{aapl}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+
+            date ticker adj\_close      rets
+4201  2018-03-27   AAPL    168.340       NaN
+4202  2018-03-26   AAPL    172.770  0.026316
+4203  2018-03-23   AAPL    164.940 -0.045320
+4204  2018-03-22   AAPL    168.845  0.023675
+4205  2018-03-21   AAPL    171.270  0.014362
 \end{Verbatim}
 \end{tcolorbox}
 
-With \texttt{pandas} the main characteristics of these time series can
-be easily computed (e.g. daily returns, covariance matrix,\ldots):
+\subsection{Historical Simulation}\label{historical-simulation}
 
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{daily\PYZus{}returns} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{pct\PYZus{}change}\PY{p}{(}\PY{p}{)}
-\PY{n}{returns} \PY{o}{=} \PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{252}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{returns}\PY{p}{)}
+In order to estimate the VaR from a historical series, we need to
+collect the market variables affecting the portfolio over the last \(N\) days (with \(N\) quite large).
 
-AAPL    0.239188
-AMZN    0.415127
-FB      0.263797
-GOOG    0.172818
-NFLX    0.528046
-dtype: float64
-\end{Verbatim}
-\end{tcolorbox}
+The variation over each day in our time interval will provide different
+scenarios to be applied to today's market values.
+For each "scenario" we can apply the historical variation and compute the distribution of the change in the portfolio value
+(\(\Delta P\)). The VaR estimate will be the (100 - X)\% percentile of this distribution. 
 
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{covariance} \PY{o}{=} \PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{252}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{covariance}\PY{p}{)}
+Of course such kind of simulation relies on the assumption that past
+behaviors are indicative of what might happen in the future, that's why it is important that out historical series was as large as possible.
 
-          AAPL      AMZN        FB      GOOG      NFLX
-AAPL  0.051902  0.025037  0.025737  0.022454  0.027760
-AMZN  0.025037  0.085839  0.041025  0.039501  0.048412
-FB    0.025737  0.041025  0.069550  0.036127  0.044528
-GOOG  0.022454  0.039501  0.036127  0.051797  0.040390
-NFLX  0.027760  0.048412  0.044528  0.040390  0.178298
-\end{Verbatim}
-\end{tcolorbox}
+As an example imagine a portfolio \(P\) whose value depends only on two market variables (\(x_1(t) , x_2(t)\)). From the historical series of these variables we can simulate the evolution of the portfolio as
 
-\begin{figure}[htb]
-\centering
-\includegraphics[width=0.7\textwidth]{figures/portfolio_sample}
-\caption{Historical series of the closing price of five companies. To compare them, prices, have been normalized to the 
-first value in each series}
-\label{fig:stocks}
-\end{figure}
-    
-In order to "simulate" a portfolio it is enough to throw five random weights 
-with the constraint that they had to sum up to 1. 
-In Figure~\ref{fig:mc_portfolio} a large number of simulated portfolios are shown in the return vs volatility plane. 
-In this case no attempt of any optimization whatsoever has been made.
+\begin{equation}P_i(t_n+1) = P\Big(x_1(t_n)\cfrac{(x_1(t_i)-x_1(t_{i-1}))}{x_1(t_{i-1})}, x_2(t_n)\cfrac{(x_2(t_i)-x_2(t_{i-1}))}{x_2(t_{i-1})}\Big)\end{equation}
 
-\begin{figure}[hbt]
-\centering
-\includegraphics[width=0.8\textwidth]{figures/return_variance}
-\caption{Distribution in the expected return/volatility plane of a large number of simulated portfolios.}
-\label{fig:mc_portfolio}
-\end{figure}
+Essentially re-scaling the market variables according to the variation
+between day \(i\) and \(i-1\) we can draw a distribution of the possible
+changes in the portfolio value \(P_i\) and then compute the VaR taking
+the appropriate percentile.
 
-Investors may use short sales in their portfolios (a portfolio is short in those stocks with negative portfolio weights). 
-Although short selling extends the set of possible portfolios we are not going to consider them here.
+Using the historical series seen above the procedure can be outlined as follows. Figure~\ref{fig:hist_var} shows the resulting VaR. 
 
-\section{Optimisation}\label{optimization}
-
-Markowitz model states that the weights of a portfolio should be chosen 
-such that its volatility (or its variance) is minimised. 
-So the application of this model reduces to
-an optimisation problem: given the covariance matrix of the portfolio
-$\Sigma$, estimated from their historical series, we need to find
-
-\begin{equation}\underset{\mathbf{w}}{\min}\{\sigma_p^2\} = \underset{\mathbf{w}}{\min}\{\mathbf{w^T}\Sigma\mathbf{w}\}\end{equation}
-with the constraints \(\sum_{i}w_i = 1\) and \(0 \le w_i \le 1\).
-
-In \texttt{python} we already know how to solve a minimisation problem
-(see bootstrapping in Chapter~\ref{swaps-and-bootstrapping---practical-lesson-5}) 
-so it is enough to repeat the same steps:
-
-\begin{itemize}
-\tightlist
-\item
-  define an objective function (in this case the portfolio variance);
-\item
-  define a set of constraints ($\sum w_i = 1$);
-\item
-  set an initial guess for the weights;
-\item
-  pass everything to \texttt{scipy.optimize.minimize}.
-\end{itemize}
+In the code we are using the scalar product between the invested amount ($w_i$) and the price of each portfolio component ($p_i$) to compute the portfolio price. It is indicated with \texttt{.dot} and defined as $\sum_{i} w_i \cdot p_i$.
+For more information about scalar product, vector and matrices see Appendix~\ref{app:matrices}. 
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
+				
+\PY{n}{rets} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n}{aapl}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+    \PY{n}{rets}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{n}{aapl}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{+} \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{*}\PY{n}{nflx}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}
 		
-\PY{k}{def} \PY{n+nf}{sum\PYZus{}weights}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{:} 
-    \PY{k}{return} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{w}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}
-		
-\PY{k}{def} \PY{n+nf}{markowitz}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{)}
-		
-\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{5}
-\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{,}\PY{p}{)} 
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-		
-\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
-                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
-
-    fun: 0.03607029963784209
-    jac: array([0.0723022 , 0.07233166, 0.0718961 , 0.07199311, 0.07223676])
-message: 'Optimization terminated successfully.'
-   nfev: 63
-    nit: 9
-   njev: 9
- status: 0
-success: True
-      x: array([0.44544146, 0.06252825, 0.12333117, 0.3662157 , 0.00248342])
-
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Expected portfolio return: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{,} \PY{n}{returns}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-
-Expected portfolio return: 0.230
-\end{Verbatim}
-\end{tcolorbox}
-
-The solution recommends to devote about 44\% of the portfolio to AAPL,
-about 6\% to AMZN, 12\% to FB and so on\ldots 
-The expected return is
-about 23\%, with a variance of about 0.036 or, equivalently, a standard deviation of 0.19.
-
-In this example we based the model simply on straightforward statistical
-data derived from daily returns. However it could be possible, rather
-than estimate the expected returns form historical data,
-to base this estimate on information about
-expected future performance of the asset.
-
-\section{Efficient Frontier}\label{efficient-frontier}
-There is no precise way for an investor to determine the “correct” trade off between risk and return. If she wants a higher expected return, she generally has to “pay for it” with higher risk. Thus, one is frequently interested in looking at the relative distribution of the two.
-
-In finance terminology, we would like to trace out the \emph{efficient frontier} of return and risk. This is doable solving for the minimum variance portfolio over a range of values for the expected return (e.g. ranging from 0.20 to 0.45).
-
-This time beside the constraint on the sum of weights, we have to add the one that forces the resulting return to be equal to the chosen target.
-
-The following example produce the efficient frontier plot shown in Fig.~\ref{fig:efficient_frontier}.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{def} \PY{n+nf}{efficient\PYZus{}frontier}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{asset\PYZus{}returns}\PY{p}{,} \PY{n}{target\PYZus{}return}\PY{p}{)}\PY{p}{:} 
-    \PY{n}{portfolio\PYZus{}return} \PY{o}{=} \PY{n}{asset\PYZus{}returns}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)} 
-    \PY{k}{return} \PY{p}{(}\PY{n}{portfolio\PYZus{}return} \PY{o}{\PYZhy{}} \PY{n}{target\PYZus{}return}\PY{p}{)}
-		
-\PY{n}{results} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-		
-\PY{k}{for} \PY{n}{eff} \PY{o+ow}{in} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.20}\PY{p}{,} \PY{l+m+mf}{0.45}\PY{p}{,} \PY{l+m+mf}{0.005}\PY{p}{)}\PY{p}{:}
-    \PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{efficient\PYZus{}frontier}\PY{p}{,} 
-                    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{args}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{p}{(}\PY{n}{returns}\PY{p}{,} \PY{n}{eff}\PY{p}{,}\PY{p}{)}\PY{p}{\PYZcb{}}\PY{p}{,}
-                   \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}
-    \PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-    \PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
-                    \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)} 
-		
-    \PY{n}{results}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{p}{,}
-                    \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{returns}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
-\end{Verbatim}
-\end{tcolorbox}
-
-\begin{figure}[htb]
-\centering
-\includegraphics[width=0.7\textwidth]{figures/efficient_frontier.png}
-\caption{Efficient frontier for our example portfolio obtained minimizing the the variance and requiring an expected return between 0.02 and 0.45.}
-\label{fig:efficient_frontier}
-\end{figure}
-
-Efficient portfolios offer investors the highest possible expected return for a given level of risk. As investors add stocks to a portfolio, the efficient portfolio improves.
-An investor seeking high expected returns and low volatility should invest only in efficient portfolios and will choose from the set of efficient portfolios based on her risk tolerance.
-    
-\subsection{Limits of the Markowitz Model}
- \label{limits-of-the-markowitz-model}
-    
-Despite the significant utility of the Markowitz theory, there are some major limitations in this model:
-    
-\begin{itemize}
-  	\tightlist
-   	\item
-   	it is difficult to forecast asset returns with accuracy using
-   	historical data, which tends to be a poor forecasting source. As
-   	return estimations have a much larger impact on the asset allocations,
-   	small changes in return assumptions can lead to inefficient
-   	portfolios. Therefore, the model tends to lead to highly concentrated
-   	portfolios (out-of sample weights) that do not offer as much
-   	diversification benefits in practice as they seem to provide in
-   	theory;
-    	\item
-    	the model assumes that asset correlations are linear. In reality,
-    	asset correlations move dynamically, changing with the market cycles.
-    	During the global financial crisis, asset correlations approached
-    	almost 1, so if anything, diversification seemed to have insignificant
-    	impacts on the portfolios;
-    	\item
-    	last but not the least, the model assumes normality in return
-    	distributions. Therefore, it does not factor in extreme market moves
-    	which tend to make returns distributions either skewed, fat tailed or
-    	both. Without optimising the portfolio for asset that may actually
-    	have skewed distributions or fat tailed, it could lead to a riskier
-    	allocation that is intended.
-    \end{itemize}
-    
-Extensions of the Markowitz model are the  \href{https://en.wikipedia.org/wiki/Post-modern_portfolio_theory}{Post Modern Theory} and the \href{https://en.wikipedia.org/wiki/Black\%E2\%80\%93Litterman_model}{Black-Litterman Model}.
-    
-\section{Portfolios with a Risk-Free Asset}
-\label{portfolios-with-a-risk-free-asset}
-
-When one of the investments available is risk free, then the efficient
-frontier has a particularly simple form. The risk–return combinations of the risk-free investment and a risky portfolio lie on a straight line connecting the two investments: the capital allocation line (CAL). The slope of the CAL measures the trade off
-between risk and return. A higher slope means that investors receive a
-higher expected return in exchange for taking on more risk.
-
-The capital allocation line aids investors in choosing how much to
-invest in a risk-free asset and one or more risky assets.
-
-The simplest example of such kind of portfolios is the one containing only two assets: a risk-free Treasury bill and a stock. Assume that the expected return of the Treasury bill is \(\mathbb{E}(R_f)=3\%\) and its risk is 0\%. Further, assume that the expected return of the stock is \(\mathbb{E}(R_r)=10\%\) and its standard deviation is \(\sigma_r=20\%\). The question that needs to be answered
-for any individual investor is how much to invest in each of these
-assets.
-
-The expected return (\(\mathbb{E}(R_p)\)) of this portfolio is calculated as follows:
-
-\begin{equation} \mathbb{E}(R_p) = \mathbb{E}(R_f)\cdot w_f + \mathbb{E}(R_r)\cdot (1- w_f) \end{equation}
-where \(w_f\) is the relative allocation to the risk-free asset.
-
-The calculation of risk for this portfolio is simple because the
-standard deviation of the Treasury bill is 0\%. Thus it is calculated
-as
-
-\begin{equation} \sigma_p = (1-w_f)\cdot \sigma_r \end{equation}
-
-In this very simple example, if an investor invested 100\% into
-the risk-free asset (\(w_f=1\)), the expected return would be 3\% and
-the risk of the portfolio would be 0\%. Likewise, investing 100\% into
-the stock (\(w_f=0\)) would give an investor an expected return of 10\%
-and a portfolio risk of 20\%. If the investor allocated 25\% to the
-risk-free asset and 75\% to the risky asset, the portfolio expected
-return and risk calculations would be
-
-\[ \mathbb{E}(R_p) = (3\% \cdot 25\%) + (10\% \cdot 75\%) = 0.75\% + 7.5\% = 8.25\% \]
-
-\[ \sigma_p = 75\% \cdot 20\% = 15\% \]
-
-Applying the same reasoning to our example we can consider an additional
-risk-free asset with an expected return of 10\% and repeat the
-minimisation to determine the efficient frontier of the resulting
-portfolio. Notice how the objective function is almost the same as before, 
-while the target return constraint now includes the risk-free asset.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{6}
-		
-\PY{k}{def} \PY{n+nf}{markowitz\PYZus{}with\PYZus{}rf}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{n}{w}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
-		
-\PY{k}{def} \PY{n+nf}{efficient\PYZus{}frontier\PYZus{}with\PYZus{}rf}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{asset\PYZus{}returns}\PY{p}{,} \PY{n}{target\PYZus{}return}\PY{p}{,} \PY{n}{risk\PYZus{}free}\PY{p}{)}\PY{p}{:} 
-    \PY{n}{portfolio\PYZus{}return} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{asset\PYZus{}returns}\PY{o}{*}\PY{n}{w}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)} \PY{o}{+} \PY{n}{risk\PYZus{}free}\PY{o}{*}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{5}\PY{p}{]} 
-    \PY{k}{return} \PY{p}{(}\PY{n}{portfolio\PYZus{}return} \PY{o}{\PYZhy{}} \PY{n}{target\PYZus{}return}\PY{p}{)}
-	
-\PY{n}{rf\PYZus{}asset\PYZus{}return} \PY{o}{=} \PY{l+m+mf}{0.10}
-\PY{n}{results\PYZus{}rf} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-\PY{k}{for} \PY{n}{eff} \PY{o+ow}{in} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.10}\PY{p}{,} \PY{l+m+mf}{0.45}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{)}\PY{p}{:}
-    \PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{efficient\PYZus{}frontier\PYZus{}with\PYZus{}rf}\PY{p}{,} 
-                     \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{args}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{p}{(}\PY{n}{returns}\PY{p}{,} \PY{n}{eff}\PY{p}{,} \PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{)}\PY{p}{\PYZcb{}}\PY{p}{,}
-                    \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}
-    \PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-    \PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz\PYZus{}with\PYZus{}rf}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{)}\PY{p}{,}
-                    \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
-    \PY{n}{results\PYZus{}rf}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{p}{,} 
-                       \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{returns}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{o}{+}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{5}\PY{p}{]}\PY{o}{*}\PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{)}\PY{p}{)}
-\end{Verbatim}
-\end{tcolorbox}
-
-\begin{figure}[htb]
-\centering
-    \includegraphics[width=0.7\textwidth]{figures/cal.png}
-    \caption{Comparison of efficient frontier with a risk-free asset (red) and with risky asset only (blue).}
-    \label{fig:cal}
-\end{figure}
-    
-As it is clear from Fig.~\ref{fig:cal} the efficient frontier has become a
-straight line, tangent to the frontier of the risky assets only. When
-the target is 10\% the entire investment is allocated to the risk-free
-asset, as the target increases the fraction of the risky assets grows
-proportionally to the volatility. 
-
-It is important to notice that in general the relative proportions
-devoted to risky investments do not change. Only the allocation between
-the risk-free asset and the risky assets change.
-
-\subsection{The Sharpe Ratio}
-\label{the-sharpe-ratio}
-The goal of an investor who is seeking to earn the highest possible expected return for any 
-level of volatility is to find the portfolio that generates the steepest possible line
-when combined with the risk-free investment. The slope of the line is called the \emph{Sharpe ratio} of the portfolio.
-
-For some portfolio of risky assets let
-
-\begin{itemize}
-\tightlist
-\item
-  \(R_r\) its expected return;
-\item
-  \(\sigma_r\) its standard deviation in return;
-\item
-  \(r_f\) the return of a risk-free asset.
-\end{itemize}
-
-A plausible single measure (as opposed to the two measures, risk and
-return) of attractiveness of portfolio is the Sharpe ratio:
-
-\begin{equation} \cfrac{R_r - r_f}{\sigma_r} \end{equation}
-
-In words, it measures how much additional return we achieved for the
-additional risk we took on, relative to putting all our money in the
-risk-free asset. The portfolio that maximizes this ratio has some interesting properties. Suppose
-
-\begin{itemize}
-\tightlist
-\item
-  \(R_\textrm{target}\) our desired target return;
-\item
-  \(w_r\) the fraction of our wealth we place in the portfolio (the
-  rest placed in the risk-free asset).
-\end{itemize}
-
-To meet our return target, we must have:
-
-\begin{equation} (1 - w_r) * r_f + w_r * R_r =R_\textrm{target} \end{equation}
-
-The standard deviation of our total investment is:
-\(w_r\cdot \sigma_r\). Solving for \(w_r\) in the equation above, we
-get:
-
-\begin{equation} w_r = \cfrac{R_\textrm{target} - r_f}{R_r - r_f} \end{equation}
-
-Thus, the standard deviation of the portfolio is:
-
-\begin{equation} w_r\cdot \sigma_r = \left(\cfrac{R_\textrm{target} - r_f}{R_r - r_f}\right)\cdot \sigma_r \end{equation}
-
-Minimising the portfolio standard deviation means:
-
-\begin{equation} \textrm{min}\left[\cfrac{R_\textrm{target} - r_f}{R_r - r_f}\cdot \sigma_r\right]\implies\textrm{max}\left[\cfrac{R_r - r_f}{\sigma_r}\right] \end{equation}
-
-So, regardless of our risk/return preference, the money we invest in
-risky assets should be invested in the portfolio that maximises
-the Sharpe ratio, because it will be also the portfolio that minimize 
-the risk (i.e. standard deviation) at the same time.
-
-Let's see the application of the Sharpe ratio on our sample.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{5}
-\PY{n}{rf\PYZus{}asset\PYZus{}return} \PY{o}{=} \PY{l+m+mf}{0.10}
-		
-\PY{k}{def} \PY{n+nf}{negativeSharpeRatio}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{asset\PYZus{}returns}\PY{p}{,} \PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:} 
-    \PY{n}{p\PYZus{}ret} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{asset\PYZus{}returns}\PY{o}{*}\PY{n}{w}\PY{p}{)}
-    \PY{n}{p\PYZus{}var} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-    \PY{n}{ratio} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{p}{(}\PY{n}{p\PYZus{}ret} \PY{o}{\PYZhy{}} \PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{)} \PY{o}{/} \PY{n}{p\PYZus{}var}
-    \PY{k}{return} \PY{n}{ratio}
-		
-\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{negativeSharpeRatio}\PY{p}{,} \PY{n}{weights}\PY{p}{,} 
-                \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{returns}\PY{p}{,} \PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{,} \PY{n}{covariance}\PY{p}{)}\PY{p}{,}
-                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
-
-    fun: -1.259317843963551
-    jac: array([-0.37875988, -0.37936528, -0.26915939,  0.02855793,
-                -0.37932482])
-message: 'Optimization terminated successfully.'
-   nfev: 42
-    nit: 6
-   njev: 6
- status: 0
-success: True
-      x: array([1.19754268e-01, 5.43974232e-01, 4.33680869e-19,
-                6.41847686e-17, 3.36271500e-01])
-
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Sharpe ratio: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{n}{opts}\PY{o}{.}\PY{n}{fun}\PY{p}{)}
-
-Sharpe ratio:  1.259317843963551
-\end{Verbatim}
-\end{tcolorbox}
-
-Figure~\ref{fig:sharpe_ratio} shows the result of the optimization for our example.    
-Notice that in general the relative proportions of the stocks are the
-same as in the previous case where we explicitly included a risk free
-asset (0.12, 0.54, 0., 0., 0.33).
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/sharpe_ratio.png}
-	\caption{Sharpe portfolio (green cross) compared to the efficient frontier with a risk-free asset (red) and with risky asset only (blue).}
-	\label{fig:sharpe_ratio}
-\end{figure}
-
-So the optimization using the Sharpe ratio gives us a portfolio that is
-on the minimum volatility efficient frontier, and gives the maximum
-return relative to putting all our money in the risk-free asset.
-
-Usually, any Sharpe ratio greater than 1.0 is considered acceptable to good by investors. A ratio higher than 2.0 is rated as very good. A ratio of 3.0 or higher is considered excellent. A ratio under 1.0 is sub-optimal.
-
-\section{Capital Asset Pricing Model}
-The Capital Asset Pricing Model (CAPM) describes the relationship between expected return of assets and \emph{systematic risk} of the market.
-
-Indeed we can divide a security’s total risk into \emph{unsystematic risk}, the portion peculiar to the company that can be diversified away, and systematic risk, the nondiversifiable portion that is related to the movement of the stock market and is therefore unavoidable. 
-
-The assumption of CAPM is that investors are risk averse and want to maximize return. This notion implies that investors demand compensation for taking on risk, which in the financial market means that higher-risk securities are priced to yield higher expected returns than lower-risk securities. 
-
-CAPM states that the expected return of an asset is equal to the risk-free return plus a risk premium. 
-Mathematically, we can summarize it with the following formula
-\begin{equation}
-r_i = r_f + \beta_i(r_m-r_f)
-\label{eq:capm}
-\end{equation}
-where:
-\begin{itemize}
-	\item $r_i$ is the expected return of the $i^{th}$ security;
-	\item $r_f$ is the risk-free rate with zero standard deviation (an example of a risk-free asset includes Treasury Bills as they are backed by the U.S. government);
-	\item $r_m - r_f$ is the risk premium ($r_m$ denotes the market return including all securities in the market, it can be represented with an index like S\&P 500);
-	\item $\beta_i$ is a measure of $i^{th}$ asset volatility in relation to the overall market. 
-	$\beta$ is used in the CAPM to describe the relationship between systematic risk, or market risk, and its expected return.
-\end{itemize}
-	
-Therefore the key point in CAPM is the determination of $\beta$. This can be achieved with the measurement of the slope of the \emph{regression line}, of the market vs individual stock return distribution.
-
-Given two sets of measurements $X$ and $y$ the linear regression determines the parameter $\alpha$ and $\beta$ such that
-
-\begin{equation}y=\beta X + \alpha\end{equation}
-by minimizing the sum of the squared differences between the predicted and true $y$ values.
-Figure~\ref{fig:linear_regression} shows an example of regression. 
-In our case the regressed line estimates the stock returns given the global market returns and in particular 
-
-\begin{equation}\beta \approx \cfrac{\textrm{cov}(X,y)}{\textrm {var}(X)}\end{equation}
-so provides insights about how \emph{volatile}, or how risky, a stock is relative to the rest of the market.
-In CAPM $\beta$ calculation is used to help investors understand whether a stock moves in the same direction as the rest of the market but for it to provide any useful insight, the market that is used as a benchmark should be related to the stock.
-
-If $\beta$ of an individual stock = 1.0, this means its price is perfectly correlated with the market, if $\beta < 1.0$, which is referred to as "defensive", this indicates the security is theoretically less volatile than the market (provides lower returns, so it is less risky), while if $\beta > 1.0$, or "aggressive", this indicates the assets price is more volatile than the market.
-
-Those who use CAPM pick individual stocks or portfolios, and compare them to different indexes. The point is to find stocks that have high $\beta$, and portfolios that have high $\alpha$. High $\beta$ values mean that the stock fares better than index with positive market and performs worse for negative market (contrary low $\beta$ gives lower performance for positive market and better returns in negative market), so those stocks have a chance at beating the market. $\alpha$ values above zero mean that your portfolio outperform market whatever it does.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/linear_regression}
-	\caption{Example of linear regression for the determination of $\beta$.}
-	\label{fig:linear_regression}
-\end{figure}
-
-This risk/expected return relationship is called the \emph{security market line} (SML). An example of this line is shown in Fig.~\ref{fig:sel}. As indicated before, the expected return on a security generally equals the risk-free rate plus a risk premium. In CAPM the risk premium is measured as $\beta$ times the expected return on the market minus the risk-free rate. No measure of unsystematic risk appears in the risk premium, of course, for in the world of CAPM diversification has eliminated it.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/sel}
-	\caption{Security market line.}
-	\label{fig:sel}
-\end{figure}
-
-In the freely competitive financial markets described by CAPM, no security can sell for long at prices low enough to yield more than its appropriate return on the SML. The security would then be very attractive compared with other securities of similar risk, and investors would bid its price up until its expected return fell to the appropriate position on the SML. Conversely, investors would sell off any stock selling at a price high enough to put its expected return below its appropriate position. The resulting reduction in price would continue until the stock’s expected return rose to the level justified by its systematic risk.
-
-\subsection{Calculate $\beta$ and CAPM for a Stock}
-
-In order to see an example of CAPM application we use \href{https://drive.google.com/file/d/1G4U8foyhq9agGPs8cg83-aY4qU8K3jJI/view?usp=sharing}{capm.csv} file which contains the historical series of S\&P500 and of some stocks.
-As usual with \texttt{pandas} we can inspect the file and compute some useful quantities like daily and annualized expected returns.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
-		
-\PY{n}{capm} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{capm.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{index\PYZus{}col}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{date}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{capm}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-\PY{n}{daily\PYZus{}returns} \PY{o}{=} \PY{n}{capm}\PY{o}{.}\PY{n}{pct\PYZus{}change}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}
-
-                 AAPL     AMZN          BA    GOOG         IBM        MGM 
-date
-27/03/2014  71.865678  338.470  111.078480  558.46  167.346339  24.629343
-28/03/2014  71.785450  338.290  112.205402  559.99  167.892905  24.609560
-31/03/2014  71.769404  336.365  113.133986  556.97  169.691285  25.578908
-01/04/2014  72.425937  342.990  115.586169  567.16  171.463219  26.241625
-02/04/2014  72.546280  341.960  115.676323  567.00  170.625738  26.409777
-
-                    T    TSLA        SP500
-date
-27/03/2014  28.801410  207.32  1849.040039
-28/03/2014  28.892032  212.37  1857.619995
-31/03/2014  28.892032  208.45  1872.339966
-01/04/2014  28.908509  216.97  1885.520020
-02/04/2014  29.139184  230.29  1890.900024
-\end{Verbatim}
-\end{tcolorbox}
-
-To recap $\beta$ is the slope of the regression line of the market return vs stock return plot (and $\alpha$ is the intercept of this line with the $y$ axis).
-
-These quantities can be calculated with \texttt{numpy.polyfit} passing as inputs the market and stock return lists. 
-The resulting fits for the stocks in our sample are shown in Fig.~\ref{fig:capm_fit}.
-
-With the daily returns and $\beta$ of each stock, we can apply the capital asset pricing model. First, we can calculate the average daily return of the market and annualize this return by multiplying it by the number of trading days in a year.
-Assuming a risk-free rate of 1\%, we can then calculate CAPM using Eq.~\ref{eq:capm}.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{rm} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SP500}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{252}
-\PY{n}{rf} \PY{o}{=} \PY{l+m+mf}{0.01} 
-	
-\PY{n}{betas} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
-\PY{n}{alphas} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
-\PY{n}{ERs} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
-\PY{k}{for} \PY{n}{i}\PY{p}{,} \PY{n}{k} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{columns}\PY{p}{)}\PY{p}{:}
-    \PY{k}{if} \PY{n}{k} \PY{o}{==} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{SP500}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}
-        \PY{k}{continue}
-    \PY{n}{betas}\PY{p}{[}\PY{n}{k}\PY{p}{]}\PY{p}{,} \PY{n}{alphas}\PY{p}{[}\PY{n}{k}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{polyfit}\PY{p}{(}\PY{n}{daily\PYZus{}returns}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SP500}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{,} 
-    \PY{n}{daily\PYZus{}returns}\PY{p}{[}\PY{n}{k}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-    \PY{n}{ERs}\PY{p}{[}\PY{n}{k}\PY{p}{]} \PY{o}{=} \PY{n}{rf} \PY{o}{+} \PY{p}{(}\PY{n}{betas}\PY{p}{[}\PY{n}{k}\PY{p}{]} \PY{o}{*} \PY{p}{(}\PY{n}{rm}\PY{o}{\PYZhy{}}\PY{n}{rf}\PY{p}{)}\PY{p}{)} 
-
-\PY{k}{for} \PY{n}{k}\PY{p}{,} \PY{n}{v} \PY{o+ow}{in} \PY{n}{ERs}\PY{o}{.}\PY{n}{items}\PY{p}{(}\PY{p}{)}\PY{p}{:} 
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:4\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:4.1f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{k}\PY{p}{,} \PY{n}{v}\PY{p}{)}\PY{p}{)}
-
-AAPL: 10.3\%
-AMZN: 10.8\%
-BA  : 10.3\%
-GOOG: 10.7\%
-IBM :  8.7\%
-MGM : 13.8\%
-T   :  5.9\%
-TSLA: 11.9\%
+\PY{n}{price} \PY{o}{=} \PY{p}{[}\PY{n}{aapl}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{n}{nflx}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{]}
+\PY{n}{portfolio\PYZus{}price} \PY{o}{=} \PY{n}{w}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{price}\PY{p}{)}
+\PY{n}{hist\PYZus{}var} \PY{o}{=} \PY{n}{portfolio\PYZus{}price}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{rets}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Historical VAR is }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{hist\PYZus{}var}\PY{p}{)}\PY{p}{)}
+
+Historical VAR is -2.412
 \end{Verbatim}
 \end{tcolorbox}
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=.8\textwidth]{figures/capm_fit.png}
-	\caption{Linear regression of market return vs stock return for a set of selected stocks. The fit results are also shown in red and the regression parameters are indicated in the legend.}
-	\label{fig:capm_fit}
+	\includegraphics[width=0.7\textwidth]{figures/historical_var.png}
+	\caption{Distribution of the changes of values estimated from historical data. The red line shows the 99\% VaR.}
+	\label{fig:hist_var}
 \end{figure}
 
-\subsection{Calculate $\beta$ and CAPM for a Portfolio}
+\subsection{Model Approach}\label{model-approach}
 
-Now that we have the $\beta$s of each individual stock we can calculate the CAPM for a portfolio made of the same stocks (we assume equal weights for simplicity).
-It is enough indeed to perform a weighted sum of of the expected return according to the model of each stock.
+Our portfolio \(P\) consists of different amounts \(w_i\)
+invested on two assets. If with \(\Delta x_i\) we denote the daily
+return of the $i^{th}$ asset the change in the value of the portfolio can be
+expressed as
 
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n+nb}{sum}\PY{p}{(}\PY{n}{ERs}\PY{o}{.}\PY{n}{values}\PY{p}{(}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{1}\PY{o}{/}\PY{n+nb}{len}\PY{p}{(}\PY{n}{ERs}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\begin{equation}\Delta P = \sum_{i=1}^n w_i \Delta x_i\end{equation}
 
-10.3\%
-\end{Verbatim}
-\end{tcolorbox}
+If we then assume that the asset variations are normally distributed
+with zero mean (in this approach is typical to assume the expected change
+in a market variable over the considered period equal to zero), \(\Delta P\) will
+be also normally distributed (as a sum of normal distribution) with zero
+mean.
 
-The expected return of the portfolio is roughly 10\% and this is what an investor should expect according to CAPM.
+To estimate the VaR we just need to compute the standard deviation of
+\(\Delta P\). In the general case with many different assets we define
+\(\sigma_i\) the daily volatility of the $i^{th}$ asset and with
+\(\rho_{ij}\) the correlation coefficient between the assets $i$ and $j$.
+The variance of \(\Delta P\) can then be expressed as
 
-\subsection{Criticism to CAPM}
-As we have seen the whole model is about plotting a line in a scatter plot, it’s not a very complex model. Assumptions under the model are even more simplistic. For example:
-\begin{itemize}
-\tightlist
-\item expect that all investors are rational and they avoid risk;
-\item everyone have full information about the market;
-\item everyone have similar investment horizons and expectations about future movements;
-\item stocks are all correctly priced.
-\end{itemize}
-
-Moreover, this is a model from the 1960s. Market dynamics were different back then. And of course, this is a retrospective model. We cannot know how future stock prices move and how the market behaves.
-Interesting extension of CAPM involves \emph{Bayesian regression} but it will not be discussed here.
-
-\section{Risk Parity Portfolio}
-\label{risk-parity-portfolio}
-
-An alternative approach to Markowitz theory is given by the
-\emph{risk parity}. A risk parity portfolio is an investment allocation
-strategy which focuses on the allocation of risk, rather than on the
-allocation of capital. 
-A risk parity (equal risk) portfolio is characterised by having equal risk contributions to the total risk from each individual asset. 
-
-Risk parity allocation is also referred to as equally-weighted risk
-contributions portfolio method. Equally-weighted risk contributions is
-not about \emph{having the same volatility}, it is about having each
-asset contributing in the same way to the portfolio overall volatility.
-For this we will have to define the contribution of each asset to the
-portfolio risk. 
-
-This allocation strategy has gained popularity in the
-last decades since it is believed to provide better risk adjusted return
-than capital based allocation strategies.
-
-Let's go over a very basic example to better illustrate how to construct
-a simple risk parity (equal risk) portfolio. Later we will see how
-to extend this technique to a risk budgeting portfolio (targeted risk
-allocation).
-
-Consider a portfolio of \(N\) assets: \(x_{1}, \ldots, x_N\) where as
-usual the weight of the $i^{th}$ asset is denoted by \(w_{i}\). The
-\(w_{i}\) form the allocation vector \(\mathbf{w}\). Let us further
-denote the covariance matrix of the assets as \(\Sigma\). The volatility
-of the portfolio is then defined as:
-
-\begin{equation} \sigma_p={\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} = \sum_{i=1}^{N}\sigma _{i}\qquad\textrm{with}~\sigma _{i} = w_{i}\cdot \cfrac{\partial\sigma_p}{\partial w_{i}}={\cfrac {w_{i}(\Sigma \mathbf{w})_{i}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}}\end{equation}
-so that \(\sigma _{i}\) can be interpreted as the contribution of the $i^{th}$ asset to the overall risk of the portfolio.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cream, colframe=cellborder]
-This paragraph can be skipped if you are not interested in the derivation of the $\sigma_i$.
-
-Expressing explicitly in matrix form the standard deviation of the portfolio we get
-\[
+\begin{align}
 \begin{split}
-	\sigma_p={\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} & =
-	\sqrt{
-		\begin{bmatrix}
-			w_{1} \\
-			w_{2}
-		\end{bmatrix}
-		\begin{bmatrix}
-			\sigma_{11} & \sigma_{21} \\
-			\sigma_{12} & \sigma_{22} 
-		\end{bmatrix}
-		\begin{bmatrix}
-			w_{1} & w_{2} \\
-		\end{bmatrix}
-	}\\
-	&=
-	\sqrt{
-		\begin{bmatrix}
-			w_{1} \\
-			w_{2}
-		\end{bmatrix}
-		\begin{bmatrix}
-			w_{1}\sigma_{11} + w_{2}\sigma_{12} & w_{1}\sigma_{21} + w_{2}\sigma_{22} \\
-		\end{bmatrix}
-	} \\
-	&= \sqrt{
-		w_{1}w_{1}\sigma_{11} + w_{2}w_{1}\sigma_{12} + w_{1}w_{2}\sigma_{21} + w_{2}w_{2}\sigma_{22} }
+\sigma^2_P & = \sum_{i=1}^{n}\sum_{j=1}^{n}\rho_{ij}w_i w_j \sigma_i \sigma_j \\
+& = \sum_{i=1}^{n} w_i^2 \sigma_i^2 + 2 \sum_{i=1}^{n}\sum_{j<i}^{n}\rho_{ij}w_i w_j \sigma_i \sigma_j 
 \end{split}
-\]
-Now performing for example the derivative with respect to $w_1$ we obtain
-\[\cfrac{\partial\sigma_p}{\partial w_1} = \cfrac{1}{2}\cdot\cfrac{2\cdot w_1\sigma_{11} + 2\cdot w_{2}\sigma_{21}}{\sigma_p} = \cfrac{w_1\sigma_{11} + w_{2}\sigma_{21}}{\sigma_p} = \cfrac{(\Sigma \mathbf{w})_{1}}{\sigma_p}\]
+\end{align}
 
-Summing up $\sum w_i\cdot\cfrac{\partial\sigma_p}{\partial w_i}$ we get back $\sigma_p$
-\end{tcolorbox}
+As in the previous case if we are interested in a longer time horizon we
+can use Eq.~\ref{eq:var_horizon}.
 
-Equal risk contribution then means \(\sigma _{i} =\sigma _{j}\) for all
-\(i,j\) or equivalently \(\sigma _{i}=\sigma_p/N\). So
+Once we have the variance of \(\Delta P\) it is easy to determine the appropriate percentile using the equations described in Appendix~\ref{transformation-to-standard-normal}.
 
-\begin{equation}\sigma _{i} = \cfrac{\sigma_p}{N}={\cfrac {w_{i}(\Sigma \mathbf{w})_{i}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}}\implies w_{i} = \frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}\end{equation}
-Since we want the previous expression to be true for each $i$, the solution for the weights can be found by solving the minimisation problem
+\subsection{Monte Carlo Simulation}\label{monte-carlo-simulation}
 
-\begin{equation} \underset{\mathbf{w}}{\min } \sum _{i=1}^{N}\left[w_{i}-{\frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}}\right]^{2} \end{equation}
+A very useful alternative to the previous approaches is using a Monte
+Carlo simulation to generate the probability distribution for the
+\(\Delta P\) distribution. 
 
-Going back to our data sample let's find out the weights to give us a
-risk parity portfolio.
+Imagine we need to compute the 1-day VaR for our example portfolio.
+The simulation can be done either generating random returns from a distribution with mean and standard deviation obtained from the historical data of each stock, or by simulating the evolution 
+of all the portfolio market variables in one day.
 
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{5}
-\PY{k}{def} \PY{n+nf}{risk\PYZus{}parity}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
-    \PY{n}{variance} \PY{o}{=} \PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{)} 
-    \PY{n+nb}{sum} \PY{o}{=} \PY{l+m+mi}{0}
-    \PY{n}{N} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{w}\PY{p}{)}
-    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{N}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb}{sum} \PY{o}{+}\PY{o}{=} \PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{p}{(}\PY{n}{variance}\PY{o}{/}\PY{p}{(}\PY{n}{N}\PY{o}{*}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} 
-    \PY{k}{return} \PY{n+nb}{sum}
-		
-\PY{n}{args} \PY{o}{=} \PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}
-\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)} 
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{risk\PYZus{}parity}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
-                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
-
-    fun: 2.2543755363349716e-07
-    jac: array([-7.06474804e-04,  1.97343062e-04, -4.26326934e-05,
-                -8.04037852e-06,  1.11882164e-03])
-message: 'Optimization terminated successfully.'
-   nfev: 38
-    nit: 5 
-   njev: 5
- status: 0
-success: True
-      x: array([0.25895309, 0.18118756, 0.19670379, 0.22208923, 
-                0.14106633])
-
-\PY{n}{sigma\PYZus{}i} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{std} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
-    \PY{n}{a} \PY{o}{=} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]} 
-    \PY{n}{sigma\PYZus{}i}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{a}\PY{o}{/}\PY{n}{std}\PY{p}{)}
-		
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
-    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Risk contribution for asset }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}
-           \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{sigma\PYZus{}i}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{/}\PY{n+nb}{sum}\PY{p}{(}\PY{n}{sigma\PYZus{}i}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
-
-Risk contribution for asset 0: 19.974\%
-Risk contribution for asset 1: 19.999\%
-Risk contribution for asset 2: 19.990\%
-Risk contribution for asset 3: 19.993\%
-Risk contribution for asset 4: 20.044\%
-\end{Verbatim}
-\end{tcolorbox}
-
-%Figure~\ref{fig:risk_parity} shows the fraction of risk allocated to each asset and the corresponding weight within the portfolio.
-
-\subsection{Risk Budget Allocation}
-\label{risk-budget-allocation}
-
-The same technique can be used if we would like to calculate a portfolio
-with risk budget allocation. In this case we want to associate to each asset a particular level of risk. If we consider the previous equation
-
-\begin{equation} \sigma _{i}=\cfrac{\sigma_p}{N} \end{equation}
-where we set the risk contribution fraction to every asset to \(1/N\);
-now we can simply replace \(1/N\) with the desired fraction of risk (\(f_i\)) for each asset
-
-\begin{equation} \sigma _{i}=f_i \cdot \sigma_p \end{equation}
-so that the relation to minimise becomes
-
-\begin{equation} \underset{\mathbf{w}}{\min} \sum _{i=1}^{N}\left[w_{i}-{\frac {f_i \cdot \sigma_p^{2}}{(\Sigma \mathbf{w})_{i}}}\right]^{2} \end{equation}
-
-Translating it into \texttt{python} we get:
+Let's start from the first case, computing mean and standard deviation of each historical dataset. We will then throw various simulated returns from a multivariate Gaussian with such means and variances. 
+One useful aspect of this method is that in principal other distribution could be used instead of a Gaussian.
+Once we have the distribution of returns the VaR can be computed as usual, the example distribution is shown in Fig.~\ref{fig:mc1_var}.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{def} \PY{n+nf}{risk\PYZus{}budget}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{target\PYZus{}risk}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
-    \PY{n}{variance} \PY{o}{=} \PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{)} 
-    \PY{n+nb}{sum} \PY{o}{=} \PY{l+m+mi}{0}
-    \PY{n}{N} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{w}\PY{p}{)}
-    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{N}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb}{sum} \PY{o}{+}\PY{o}{=} \PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{p}{(}\PY{n}{target\PYZus{}risk}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{variance}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} 
-    \PY{k}{return} \PY{n+nb}{sum}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{multivariate\PYZus{}normal}
+
+\PY{n}{mean} \PY{o}{=} \PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{aapl}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{nflx}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{p}{]}
+\PY{n}{cov} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{n}{aapl}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{nflx}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}		
+\PY{n}{mvnorm} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{n}{mean}\PY{p}{,} \PY{n}{cov}\PY{o}{=}\PY{n}{cov}\PY{p}{)}
 		
-\PY{n}{f\PYZus{}i} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.3}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.15}\PY{p}{,} \PY{l+m+mf}{0.15}\PY{p}{]} 
-\PY{n}{args} \PY{o}{=} \PY{p}{(}\PY{n}{f\PYZus{}i}\PY{p}{,} \PY{n}{covariance}\PY{p}{)}
-\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}          
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{risk\PYZus{}budget}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{f\PYZus{}i}\PY{p}{,} \PY{n}{covariance}\PY{p}{)}\PY{p}{,} 
-ersi                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
-		
-    fun: 4.798712878867406e-08
-    jac: array([-3.11920407e-04,  3.24431247e-04,  
-                 9.84173665e-05, -9.10631775e-05,  4.14667119e-04])
-message: 'Optimization terminated successfully.'
-   nfev: 45
-    nit: 6
-   njev: 6
- status: 0
-success: True
-      x: array([0.34604471, 0.17973628, 0.19407208, 0.16911722, 
-                0.11102971])
-		
-\PY{n}{sigma\PYZus{}i} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{std} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
-    \PY{n}{a} \PY{o}{=} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]} 
-    \PY{n}{sigma\PYZus{}i}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{a}\PY{o}{/}\PY{n}{std}\PY{p}{)}
-		
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
-    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Risk contribution for asset }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}
-            \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{sigma\PYZus{}i}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{/}\PY{n+nb}{sum}\PY{p}{(}\PY{n}{sigma\PYZus{}i}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
-		
-Risk contribution for asset 0: 29.986\%
-Risk contribution for asset 1: 20.009\%
-Risk contribution for asset 2: 19.999\%
-Risk contribution for asset 3: 14.992\%
-Risk contribution for asset 4: 15.013\%
+\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{n\PYZus{}sims} \PY{o}{=} \PY{l+m+mi}{100000}
+\PY{n}{sim\PYZus{}returns} \PY{o}{=} \PY{n}{mvnorm}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{n\PYZus{}sims}\PY{p}{)}
+\PY{n}{p\PYZus{}returns} \PY{o}{=} \PY{p}{[}\PY{n}{w}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{s}\PY{p}{)} \PY{k}{for} \PY{n}{s} \PY{o+ow}{in} \PY{n}{sim\PYZus{}returns}\PY{p}{]}
+\PY{n}{mc\PYZus{}var} \PY{o}{=} \PY{n}{portfolio\PYZus{}price} \PY{o}{*} \PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{p\PYZus{}returns}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Simulated VAR is }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{mc\PYZus{}var}\PY{p}{)}\PY{p}{)}
+
+Simulated VAR is -2.197
 \end{Verbatim}
 \end{tcolorbox}
-
-%Figure~\ref{risk_allocation} shows the amount of risk associated to each asset and their weights within the portfolio. 
-Indeed for each stock we have allocated the desired amount of risk.
-
-\section{Portfolio Diversification}
-
-Diversification is a common topic in portfolio construction and allows to combine risky stocks so that their combination (the portfolio) is less risky than any of its components. Although such diversification is a familiar notion, it may be worthwhile to review the manner in which diversification reduces risk.
-
-Suppose there are two companies located on an isolated island whose chief industry is tourism. One company manufactures suntan lotion. Its stock predictably performs well in sunny years and poorly in rainy ones. The other company produces disposable umbrellas. Its stock performs equally poorly in sunny years and well in rainy ones. Each company earns a 12\% average return.
-
-In purchasing either stock, investors incur a great amount of risk because of variability in the stock price driven by fluctuations in weather conditions. Investing half the funds in the suntan lotion stock and half in the stock of the umbrella manufacturer, however, results in a return of 12\% regardless of which weather condition prevails. Portfolio diversification thus transforms two risky stocks, each with an average return of 12\%, into a riskless portfolio certain of earning the expected 12\%.
-
-Unfortunately, the perfect negative relationship between the returns on these two stocks is very rare in the real world. To some extent, corporate securities move together, so complete elimination of risk through simple portfolio diversification is impossible. However, as long as some lack of parallelism in the returns of securities exists, diversification will always reduce risk.
-
-Empirical studies have demonstrated that unsystematic risk can be virtually eliminated in portfolios of 30 to 40 randomly selected stocks. Of course, if investments are made in closely related industries, more securities are required to eradicate unsystematic risk.
-
-As we have already seen no measure of unsystematic risk appears in the risk premium, of CAPM model, since it is assumed that diversification has eliminated it.
-
-In the Markowitz model instead diversification is achieved by seeking to combine in a portfolio assets with returns that are less than perfectly positively correlated, in an effort to lower portfolio risk (variance) without sacrificing return, through the reduction of the correlation matrix $\Sigma$.
-
-\subsection{Maximum Diversification Portfolio}
-\label{maximum-diversification-portfolio}
-
-As seen diversification it is most often either pursued in tandem with another objective, such as return maximization, or pursued simply by including more asset classes or adding constraints based on intuition.
-
-But it does not have to be this way and diversification can be pursued explicitly as the sole objective in portfolio construction.
-In a 2008 paper, the diversification ratio $D$ of a portfolio has been defined as
-
-\begin{equation}
-D=\cfrac{\mathbf{w^T}\boldsymbol{\sigma}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} 
-\end{equation}
-where $\boldsymbol{\sigma}$ is the vector of volatilities and $\Sigma$ is the covariance matrix. The denominator represents the volatility of the portfolio and the numerator the weighted average volatility of the assets. More diversification within a portfolio decreases the denominator and leads to a higher diversification ratio.
-Let's construct a portfolio that maximize this ratio.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{def} \PY{n+nf}{diversification\PYZus{}ratio}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{:}
-    \PY{n}{w\PYZus{}vol} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{diag}\PY{p}{(}\PY{n}{covariance}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{p}{)}
-    \PY{n}{port\PYZus{}vol} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{p}{,} \PY{n}{w}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-    \PY{n}{diversification\PYZus{}ratio} \PY{o}{=} \PY{n}{w\PYZus{}vol}\PY{o}{/}\PY{n}{port\PYZus{}vol}
-    \PY{k}{return} \PY{o}{\PYZhy{}}\PY{n}{diversification\PYZus{}ratio}
-	
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-\PY{n}{cons} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{,}\PY{p}{)}
-\PY{c+c1}{\PYZsh{}cons = cons + (\PYZob{}\PYZsq{}type\PYZsq{}: \PYZsq{}ineq\PYZsq{}, \PYZsq{}fun\PYZsq{}:  long\PYZus{}only\PYZus{}constraint\PYZcb{},)}
-\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-	
-\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{diversification\PYZus{}ratio}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} 
-                \PY{n}{constraints}\PY{o}{=}\PY{n}{cons}\PY{p}{)}
-	
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
-
-    fun: -1.3603935531589488
-    jac: array([-0.00038704,  0.00023621, -0.00032043,  0.00083792,  
-                0.00020067])
-message: 'Optimization terminated successfully.'
-   nfev: 37
-    nit: 5
-   njev: 5
- status: 0
-success: True
-      x: array([0.3495816 , 0.17887765, 0.1566318 , 0.12398934, 
-                0.19091962])
-
-\PY{n}{ret} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{returns}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}
-\PY{n}{vol} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Diversification: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{n}{opts}\PY{o}{.}\PY{n}{fun}\PY{p}{)}
-
-Diversification:  1.3603935531589488
-\end{Verbatim}
-\end{tcolorbox}
-
-Figure~\ref{fig:max_div} shows how the maximum diversified portfolio compares to the efficient frontier.
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.7\textwidth]{figures/max_div.png}
-	\caption{Portfolio constructed with the maximum diversification technique shown in the return/variance plane.}
-	\label{fig:max_div}
+	\includegraphics[width=0.7\textwidth]{figures/sim1_var}
+	\caption{Distribution of the changes of values estimated from simulated data. The red line shows the 99\% VaR.}
+	\label{fig:mc1_var}
 \end{figure}
+
+This result can be compared with the VaR estimated with a simulation of the daily evolution of the stock price. We will use the log-normal evolution described in Section~\ref{derivation-of-log-normal-stochastic-differential-equation} where $\mu$ and $\sigma$ are the mean and variance estimated from the historical series. Figure~\ref{fig:mc2_var} shows the resulting distribution of the returns.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{numpy}\PY{n+nn}{.}\PY{n+nn}{random} \PY{k}{import} \PY{n}{normal}
+\PY{k+kn}{from} \PY{n+nn}{numpy} \PY{k}{import} \PY{n}{exp}\PY{p}{,} \PY{n}{sqrt}
+		
+\PY{n}{T} \PY{o}{=} \PY{l+m+mi}{1}
+\PY{n}{trials} \PY{o}{=} \PY{l+m+mi}{100000}
+\PY{n}{dP} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+		
+\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{trials}\PY{p}{)}\PY{p}{:}
+    \PY{n}{s} \PY{o}{=} \PY{l+m+mi}{0}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{:}
+        \PY{n}{s} \PY{o}{+}\PY{o}{=} \PY{n}{w}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{*} \PY{n}{price}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{*} \PY{n}{exp}\PY{p}{(}\PY{p}{(}\PY{n}{mean}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{cov}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)} \PY{o}{*} \PY{n}{T} \PY{o}{+} 
+             \PY{n}{sqrt}\PY{p}{(}\PY{n}{cov}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)} \PY{o}{*} \PY{n}{sqrt}\PY{p}{(}\PY{n}{T}\PY{p}{)} \PY{o}{*} \PY{n}{normal}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+        \PY{n}{dP}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{portfolio\PYZus{}price} \PY{o}{\PYZhy{}} \PY{n}{s}\PY{p}{)}
+		
+\PY{n}{mc\PYZus{}var2} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{dP}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Simulated VAR is }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{mc\PYZus{}var2}\PY{p}{)}\PY{p}{)}
+
+Simulated VAR is -1.913
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/sim2_var}
+	\caption{Distribution of the changes of values estimated from simulation of the evolution of the stock prices. The red line shows the 99\% VaR.}
+	\label{fig:mc2_var}
+\end{figure}
+
+\subsection{Stress and Back Testing}\label{stress-testing-and-back-testing}
+
+In addition to calculating the value at risk of a portfolio, it could be useful to 
+check how it would behave under the most extreme moves seen in the last years.
+
+This kind of test is called \emph{stress test} and it is done by extracting from the historical series, particular days with exceptional large variation of our market variables, in order to check how the portfolio moves.
+ 
+The idea is to take into account extreme events that can happen more frequently in reality than in a simulation (where usually Gaussian tails are assumed hence are quite hard to simulate). For example a 5-standard deviation move should happen once every 7000 years but in practice can be observed twice over 10 years.
+
+How can we compute how likely is a $n\sigma$ event (assuming Gaussian distribution) ?
+The probability of such a daily event is given by 1 over $252\cdot\mathbb{P}(|x| \ge n\sigma$ (the 252 factor comes to the number of working days per year).
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
+
+\PY{n}{prob} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{5}\PY{p}{)} \PY{o}{*} \PY{l+m+mi}{2} \PY{c+c1}{\PYZsh{} e.g. consider +\PYZhy{} 5sigma movements}
+\PY{n}{nyears} \PY{o}{=} \PY{l+m+mi}{1}\PY{o}{/}\PY{n}{prob}\PY{o}{/}\PY{l+m+mi}{252}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{nyears}\PY{p}{)}
+
+6921.737673091067
+    \end{Verbatim}
+\end{tcolorbox}
+
+Another important check that could be done is the so-called \emph{back testing}
+which consists of checking how well the VaR estimate would have
+performed in the past. Basically it has to be tested how often the daily
+loss exceeded the N-days X\% VaR just computed. If it happens on about
+(100-X)\% of the times we can be confident that our estimate is correct.
+
+\section{Credit VaR}\label{credit-var-cr-var}
+
+%exposure at any given future time is the
+%larger between zero and the market value of the portfolio of derivative
+%positions with a counterparty that would be lost if the counterparty
+%were to default with zero recovery at that time.
+
+Credit VaR is defined in the usual way Value at Risk measures are (i.e. as percentile of a loss distribution).
+In this case we are concerned with the default risk associated to one or
+multiple counter-parties in a specific portfolio instead of to the market risk.
+
+To derive the loss distribution we need to consider the exposure $\textrm{EE}(\tau)$ defined as the sum 
+of the discounted cash flows at the default date $\tau$; 
+the corresponding loss is then given by
+
+\begin{equation}L_{\tau, \hat{T}} = (1 - R) \cdot \textrm{EE}(\tau)\end{equation}
+where \(\hat{T}\) is the risk horizon and $L$ is non-zero only in
+scenarios of early default of the counter-party. 
+
+Given the above definitions we can express the Credit VaR as the 
+q-quantile of $L_{\tau, \hat{T}}$.
+
+With respect to the Value at Risk, the time horizon is usually set to one year  and the percentile to $99.9^{th}$, so it returns the loss that is 
+exceeded only in 1 case out of 1000. 
+
+Credit Var is actually either the difference of the percentile from the mean, or the percentile itself. There is more than one possible definition but we  will use the latter.
+
+
+%Consider your portfolio has a call option on equity with a final maturity of two years. To get the Credit-Var, roughly, you simulate the underlying equity up to one year, and obtain a number of scenarios for the underlying equity in one year. Also, you need to simulate the default scenarios up to one year, to know in each scenario whether the counter-parties have defaulted or not. 
+%
+%And then in each scenario at one year, if the counter-party
+%has defaulted there will be a recovery value and all else will be lost.
+%Otherwise, we price the call option over the remaining year using for
+%example a Black Scholes formula. But this price is like taking the
+%expected value of the call option payoff in two years, conditional on
+%each scenario for the underlying equity in one year. Because this is
+%pricing, this expected value will be taken under the pricing measure Q,
+%not P. This gives the Black Scholes formula if the underlying equity
+%follows a geometric brownian motion under Q.
+
+\subsection{Credit Var and MC Simulation}
+
+Credit VaR can be calculated through a simulation of the basic financial
+variables underlying the portfolio up to the risk horizon; the simulation must also include possible defaults of the counter-parties. 
+
+In each simulation of the basic financial variables the portfolio is priced obtaining a number of scenarios to draw the loss distribution. It is then straightforward to derive the Credit VaR from it.
+
+Consider a portfolio of twenty zero coupon bonds each one with a default probability of 8\% and the same face value (\euro{100}). The recovery rate in case of default is $R=40\%$ and the risk free rate is 1\%.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}\PY{p}{,} \PY{n}{CreditCurve}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{uniform}
+		
+\PY{n}{bonds} \PY{o}{=} \PY{l+m+mi}{20}
+\PY{n}{S} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.08} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{bonds}\PY{p}{)}\PY{p}{]}
+\PY{n}{FV} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{100} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{20}\PY{p}{)}\PY{p}{]}
+\PY{n}{R} \PY{o}{=} \PY{l+m+mf}{0.4}
+\PY{n}{r} \PY{o}{=} \PY{l+m+mf}{0.01}
+\PY{n}{obs\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
+		
+\PY{n}{pillars} \PY{o}{=} \PY{p}{[}\PY{n}{obs\PYZus{}date}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{]}
+\PY{n}{dfs} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{n}{r}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{n}{i} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{]}
+\PY{n}{dc} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{obs\PYZus{}date}\PY{p}{,} \PY{n}{pillars}\PY{p}{,} \PY{n}{dfs}\PY{p}{)}
+\PY{n}{ccs} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{bonds}\PY{p}{)}\PY{p}{:}
+    \PY{n}{ccs}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{CreditCurve}\PY{p}{(}\PY{n}{pillars}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{S}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+		
+\PY{n}{scenarios} \PY{o}{=} \PY{l+m+mi}{100000}
+\PY{n}{losses} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{scenarios}\PY{p}{)}\PY{p}{:}
+    \PY{n}{loss} \PY{o}{=} \PY{l+m+mi}{0}
+    \PY{n}{unif} \PY{o}{=} \PY{n}{uniform}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{size}\PY{o}{=}\PY{n}{bonds}\PY{p}{)}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{bonds}\PY{p}{)}\PY{p}{:}
+        \PY{k}{if} \PY{n}{unif}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZgt{}} \PY{n}{ccs}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{pillars}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{:}
+            \PY{n}{loss} \PY{o}{+}\PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{R}\PY{p}{)}\PY{o}{*}\PY{n}{FV}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{dc}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{pillars}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)} 
+        \PY{n}{losses}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{loss}\PY{p}{)}
+        
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{losses}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{99.9}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+
+[415.84158416]
+\end{Verbatim}
+\end{tcolorbox}
+Figure~\ref{fig:credit_var} shows the loss distribution of our simple portfolio.
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/credit_var_zcb.png}
+\caption{Distribution of losses in a portfolio made of twenty zero coupon bonds. The distribution is discrete since all the ZCB have the same face value and recovery rate. The red line indicates the Credit VaR.}
+\label{fig:credit_var}
+\end{figure}
+
+\subsection{Credit VaR and One Factor Copula Model}
+Consider a portfolio made of similar assets. As an approximation assume that the probability of default is the same for each counter-party and that the correlation between each pair is the same and equal to $\rho$. If we use the One Factor Copula model to describe the default correlations, Eq.~\ref{eq:gaussian_one_factor_copula}
+
+\begin{equation}
+Q^{\textrm{corr}}_M(T) = \Phi\Big(\cfrac{\Phi^{-1}[Q(T)]-M\sqrt{\rho}}{\sqrt{1-\rho}}\Big)
+\label{eq:conditional_default_prob}
+\end{equation}
+where $\Phi$ is the cumulative distribution function of the standard normal,
+gives us the percentage of defaults by time $T$ given $M$. 
+Indeed if you a have $n$ counter-parties with the same default probability $Q^{\textrm{corr}}_M(T)$ the percentage of defaults at time $T$ is $Q^{\textrm{corr}}_M$ itself ($\textrm{\% of defaults} = \textrm{n\_defaults}/n = n\cdot Q^{\textrm{corr}}_M/n$).
+
+Since $M$ is distributed according to a standard normal we can be $X\%$ certain that its value will be \emph{greater} than $\Phi^{-1}(1-X)=-\Phi^{-1}(X)$, where the last equality holds due to the symmetry of the Gaussian distribution (see Figure~\ref{fig:certain_for_X}).
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/certain_for_X.png}
+	\caption{$X\%$ probability to get an higher value a threshold for a normally distributed random variable.}
+	\label{fig:certain_for_X}
+\end{figure} 
+
+Once the time $T$ as been chosen the only random variable appearing in the conditional default probability expression of Eq.~\ref{eq:conditional_default_prob} is $M$, therefore we can be $X\%$ certain that the percentage of losses over $T$ years on a large portfolio will be \textbf{less} than $V(X,T)$ where
+\[
+V(X,T)= \Phi\Big(\cfrac{\Phi^{-1}[Q(T)]+\hat{m}\sqrt{\rho}}{\sqrt{1-\rho}}\Big) = \Phi\Big(\cfrac{\Phi^{-1}[Q(T)]+\Phi^{-1}(X)\sqrt{\rho}}{\sqrt{1-\rho}}\Big)
+\]
+When the confidence level is $X\%$ and the time horizon is $T$, a rough estimate of the Credit VaR is therefore $P(1-R)V(X,T)$, where $P$ is the size of the portfolio and $R$ is the recovery rate.
+
+Suppose that a bank has a total of \euro{100} million of retail exposures. The 1-year probability of default averages to 2\% and the recovery rate averages to 60\%. The copula correlation parameter is estimated as 0.1.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
+\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{sqrt}
+		
+\PY{n}{X} \PY{o}{=} \PY{l+m+mf}{0.999}
+\PY{n}{rho} \PY{o}{=} \PY{l+m+mf}{0.1}
+\PY{n}{R} \PY{o}{=} \PY{l+m+mf}{0.6}
+\PY{n}{Q} \PY{o}{=} \PY{l+m+mf}{0.02}
+\PY{n}{exposure} \PY{o}{=} \PY{l+m+mf}{100e6}
+		
+\PY{n}{num} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{Q}\PY{p}{)} \PY{o}{+} \PY{n}{sqrt}\PY{p}{(}\PY{n}{rho}\PY{p}{)}\PY{o}{*}\PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{X}\PY{p}{)}
+\PY{n}{den} \PY{o}{=} \PY{n}{sqrt}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{rho}\PY{p}{)}
+\PY{n}{V} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{num}\PY{o}{/}\PY{n}{den}\PY{p}{)}
+		
+\PY{n}{cr\PYZus{}var} \PY{o}{=} \PY{n}{exposure}\PY{o}{*}\PY{n}{V}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{R}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Cr\PYZhy{}VaR: }\PY{l+s+si}{\PYZob{}:.0f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n+nb}{round}\PY{p}{(}\PY{n}{cr\PYZus{}var}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mi}{4}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+
+Cr-VaR: 5130000
+\end{Verbatim}
+\end{tcolorbox}
+The 1-year 99.9\% Credit VaR is therefore \euro{5.13} million.
+
+\subsection{CreditMetrics}
+Another popular approach to compute Credti VaR is CreditMetrics. It involves estimating a probability distribution of credit losses by carrying out Monte Carlo simulations of the credit rating changes of the  counter-parties.
+
+Imagine we would like to determine the probability distribution of losses over 1-year period. On each simulation, we are going to determine the credit rating of each counter-party using the estimated probability of migration between one rate to another (or to default). Since the value of each asset of the portfolio will depend on its rating we can determine the eventual losses. 
+
+As an example consider Table~\ref{tab:credit_ratings}, it shows the percentage probability of a bond moving from one category to another during a 1-year period.
+
+\begin{table}[htb]
+	\centering
+	\begin{tabular}{|l|c|c|c|c|c|c|c|c|}
+	\hline
+	Initial rating & AAA & AA & A & BBB & BB & B & CCC & default \\
+	\hline
+	\hline
+	AAA & 90.81 & 8.33 & 0.68 & 0.06 & 0.08 & 0.02 & 0.01& 0.01 \\ 
+	\hline
+	AA & 0.70 & 90.65 & 7.79 & 0.64 & 0.06 & 0.13 & 0.02 & 0.01 \\ 
+	\hline
+	A & 0.09 & 2.27 & 91.05 & 5.52 & 0.74 & 0.26 & 0.01 & 0.06 \\ 
+	\hline
+	BBB & 0.02 & 0.33 & 5.95 & 85.93 & 5.30 & 1.17 & 1.12 & 0.18 \\
+	\hline
+	BB & 0.03 & 0.14 & 0.67 & 7.73 & 80.53 & 8.84 & 1.00 & 1.06 \\
+	\hline
+	B & 0.01 & 0.11 & 0.24 & 0.43 & 6.48 & 83.46 & 4.07 & 5.20 \\
+	\hline
+	CCC & 0.21 & 0 & 0.22 & 1.30 & 2.38 & 11.24 & 64.86 & 19.79 \\		
+	\hline
+\end{tabular}
+\caption{Example of table with transition probabilities (in percent) between different credit rating categories.}
+\label{tab:credit_ratings}
+\end{table}
+
+Clearly credit rate changes cannot be assumed independent, hence a copula approach could be implemented also here.
+%As an example suppose to simulate rating change of a portfolio of nine bonds with various ratings over 1-year period. The correlation between them is 0.2.
+%
+%\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+%\begin{Verbatim}[commandchars=\\\{\}]
+%\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{multivariate\PYZus{}normal}\PY{p}{,} \PY{n}{norm}
+%\PY{k+kn}{import} \PY{n+nn}{numpy}
+%		
+%\PY{c+c1}{\PYZsh{} AAA, AA, A, BBB, BB, B, CCC, Def}
+%\PY{n}{table} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+m+mf}{90.81}\PY{p}{,} \PY{l+m+mf}{8.33}\PY{p}{,} \PY{l+m+mf}{0.68}\PY{p}{,} \PY{l+m+mf}{0.06}\PY{p}{,} \PY{l+m+mf}{0.08}\PY{p}{,} \PY{l+m+mf}{0.02}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{]}\PY{p}{,}
+%         \PY{p}{[}\PY{l+m+mf}{0.70}\PY{p}{,} \PY{l+m+mf}{90.65}\PY{p}{,} \PY{l+m+mf}{7.79}\PY{p}{,} \PY{l+m+mf}{0.64}\PY{p}{,} \PY{l+m+mf}{0.06}\PY{p}{,} \PY{l+m+mf}{0.13}\PY{p}{,} \PY{l+m+mf}{0.02}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{]}\PY{p}{,}
+%         \PY{p}{[}\PY{l+m+mf}{0.09}\PY{p}{,} \PY{l+m+mf}{2.27}\PY{p}{,} \PY{l+m+mf}{91.05}\PY{p}{,} \PY{l+m+mf}{5.52}\PY{p}{,} \PY{l+m+mf}{0.74}\PY{p}{,} \PY{l+m+mf}{0.26}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.06}\PY{p}{]}\PY{p}{,}
+%         \PY{p}{[}\PY{l+m+mf}{0.02}\PY{p}{,} \PY{l+m+mf}{0.33}\PY{p}{,} \PY{l+m+mf}{5.95}\PY{p}{,} \PY{l+m+mf}{85.93}\PY{p}{,} \PY{l+m+mf}{5.30}\PY{p}{,} \PY{l+m+mf}{1.17}\PY{p}{,} \PY{l+m+mf}{1.12}\PY{p}{,} \PY{l+m+mf}{0.18}\PY{p}{]}\PY{p}{,}
+%         \PY{p}{[}\PY{l+m+mf}{0.03}\PY{p}{,} \PY{l+m+mf}{0.14}\PY{p}{,} \PY{l+m+mf}{0.67}\PY{p}{,} \PY{l+m+mf}{7.73}\PY{p}{,} \PY{l+m+mf}{80.53}\PY{p}{,} \PY{l+m+mf}{8.84}\PY{p}{,} \PY{l+m+mf}{1.00}\PY{p}{,} \PY{l+m+mf}{1.06}\PY{p}{]}\PY{p}{,}
+%         \PY{p}{[}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.11}\PY{p}{,} \PY{l+m+mf}{0.24}\PY{p}{,} \PY{l+m+mf}{0.43}\PY{p}{,} \PY{l+m+mf}{6.48}\PY{p}{,} \PY{l+m+mf}{83.46}\PY{p}{,} \PY{l+m+mf}{4.07}\PY{p}{,} \PY{l+m+mf}{5.20}\PY{p}{]}\PY{p}{,}
+%         \PY{p}{[}\PY{l+m+mf}{0.21}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{0.22}\PY{p}{,} \PY{l+m+mf}{1.30}\PY{p}{,} \PY{l+m+mf}{2.38}\PY{p}{,} \PY{l+m+mf}{11.24}\PY{p}{,} \PY{l+m+mf}{64.86}\PY{p}{,} \PY{l+m+mf}{19.79}\PY{p}{]}\PY{p}{]}
+%				
+%\PY{n}{t} \PY{o}{=} \PY{n}{numpy}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{n}{table}\PY{p}{)}
+%\PY{n}{table\PYZus{}gauss} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{cumsum}\PY{p}{(}\PY{n}{t}\PY{o}{/}\PY{l+m+mf}{100.}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
+%\PY{n}{table\PYZus{}gauss}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{inf}
+%		
+%\PY{n}{N} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{100}\PY{p}{,} \PY{l+m+mi}{95}\PY{p}{,} \PY{l+m+mi}{92}\PY{p}{,} \PY{l+m+mi}{85}\PY{p}{,} \PY{l+m+mi}{80}\PY{p}{,} \PY{l+m+mi}{70}\PY{p}{,} \PY{l+m+mi}{60}\PY{p}{]}
+%\PY{n}{portfolio} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{]}
+%\PY{n}{R} \PY{o}{=} \PY{l+m+mf}{0.4}
+%		
+%\PY{n}{p0} \PY{o}{=} \PY{l+m+mi}{0}
+%\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n}{portfolio}\PY{p}{:}
+%    \PY{n}{p0} \PY{o}{+}\PY{o}{=} \PY{n}{N}\PY{p}{[}\PY{n}{i}\PY{p}{]}
+%		
+%\PY{n}{numpy}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
+%\PY{n}{mvnorm} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{p}{[}\PY{l+m+mi}{0} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{9}\PY{p}{)}\PY{p}{]}\PY{p}{,}
+%          \PY{n}{cov}\PY{o}{=}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+%          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+%          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+%          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+%          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+%          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+%          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+%          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{]}\PY{p}{,}
+%          \PY{p}{[}\PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+%		
+%\PY{n}{trials} \PY{o}{=} \PY{l+m+mi}{1000000}
+%\PY{n}{x\PYZus{}prob} \PY{o}{=} \PY{n}{mvnorm}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{size}\PY{o}{=}\PY{n}{trials}\PY{p}{)}
+%		
+%\PY{n}{dp} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+%\PY{k}{for} \PY{n}{x} \PY{o+ow}{in} \PY{n}{x\PYZus{}prob}\PY{p}{:}
+%    \PY{n}{p} \PY{o}{=} \PY{l+m+mi}{0}
+%    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{portfolio}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+%        \PY{n}{ip} \PY{o}{=} \PY{l+m+mi}{0}
+%        \PY{k}{while} \PY{n}{x}\PY{p}{[}\PY{n}{j}\PY{p}{]} \PY{o}{\PYZgt{}} \PY{n}{table\PYZus{}gauss}\PY{p}{[}\PY{n}{portfolio}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{,} \PY{n}{ip}\PY{p}{]}\PY{p}{:}
+%            \PY{n}{ip} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
+%            \PY{k}{if} \PY{n}{ip} \PY{o}{==} \PY{l+m+mi}{7}\PY{p}{:}
+%                \PY{n}{p} \PY{o}{+}\PY{o}{=} \PY{n}{N}\PY{p}{[}\PY{n}{portfolio}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{]}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{R}\PY{p}{)}
+%            \PY{k}{else}\PY{p}{:}
+%                \PY{n}{p} \PY{o}{+}\PY{o}{=} \PY{n}{N}\PY{p}{[}\PY{n}{ip}\PY{p}{]}
+%	
+%        \PY{n}{r} \PY{o}{=} \PY{n+nb}{max}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{p}{(}\PY{n}{p} \PY{o}{\PYZhy{}} \PY{n}{p0}\PY{p}{)}\PY{p}{)}
+%        \PY{k}{if} \PY{n}{r} \PY{o}{!=} \PY{l+m+mi}{0}\PY{p}{:}
+%            \PY{n}{dp}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{r}\PY{p}{)}
+%		
+%\PY{n}{crvar} \PY{o}{=} \PY{n}{numpy}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{dp}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{99.9}\PY{p}{]}\PY{p}{)}
+%\PY{n+nb}{print} \PY{p}{(}\PY{n}{crvar}\PY{p}{)}
+%
+%[124.]
+%\end{Verbatim}
+%\end{tcolorbox}
+%
+%\begin{figure}[htb]
+%	\centering
+%	\includegraphics[width=0.7\textwidth]{figures/credit_metrics.png}
+%	\caption{Distribution of the losses estimated from simulation of credit rating changes within 1 year. The red line shows the 99.9\% Cr-VaR.}
+%\end{figure}
+
+\section{Credit Valuation
+Adjustment}\label{credit-valuation-adjustment}
+
+Suppose you have a portfolio of derivatives with a counter-party. 
+If the counter-party defaults and the present value of the portfolio at
+default is positive to the surviving party, then the surviving party only
+gets a recovery fraction of the portfolio value from the defaulted entity. 
+If however the present value is negative to the surviving party,
+it has to pay it in full to the liquidators of the defaulted entity.
+
+This creates and asymmetry that, once one has done all
+calculations, says that the value of the deal under counter-party risk is
+the value without counter-party risk minus a positive adjustment, called
+Credit Valuation Adjustment (CVA).
+
+%Therefore we charge the default risky one
+%a supplementary amount besides the default-free cost of the contract.
+%This is often called Credit Valuation Adjustment, or CVA. 
+
+It can be expressed in the following way:
+
+\begin{equation}
+\text{CVA} = (1-R) \int_0^T D(t) \cdot \textrm{EE}(t) dQ(t)
+\label{eq:cva}
+\end{equation}
+where \(T\) is the latest maturity in the portfolio, \(D\) is the
+discount factor, EE is the expected exposure or
+\(\mathbb{E}[\text{max(0, NPV}_\text{portfolio})]\), and $dQ$ is the probability of default between $t$ and $t+dt$.
+
+For an easier computation it is natural to discretize the above integral
+and use a time grid going from 0 to the maturity of the portfolio:
+
+\begin{equation}
+\text{CVA} = (1-R) \sum_i^n D(t_i) \cdot \mathrm{EE}(t_i) Q(t_{i-1}, t_i)
+\label{eq:cva_discrete}
+\end{equation}
+
+It is important to note that while Credit VaR measures the risk of losses faced due to the possible default of some counter-party, CVA measures the pricing component of this risk, i.e.
+the adjustment to the price of a product due to this risk.
+
+\subsection{Debit Valuation Adjustment}
+
+The adjustment seen from the point of view of our counter-party is positive, and is called Debit Valuation Adjustment, DVA. It is positive because the early default of the client itself would imply a discount on the client payment obligations, and this means a gain. So the client marks a positive adjustment over the risk free price by adding the positive amount called DVA. 
+
+When both parties have the possibility to default, they
+consistently include both defaults into the valuation. Hence
+every party needs to include its own default besides the default of the
+counter-party into the valuation. So they will mark a positive
+CVA to be subtracted and a positive DVA to be added to the default
+risk free price of the deal. The CVA of one party will be the DVA of
+the other one and vice versa.
+
+\[
+\textrm{price}=\textrm{default risk free price + DVA - CVA}
+\]
+Now, since
+\[
+\textrm{default risk free price(A)} = - \textrm{default risk free price(A)}
+\]
+\[
+\textrm{DVA(A)} = \textrm{CVA(B)}
+\]
+\[
+\textrm{DVA(B)} = \textrm{CVA(A)}
+\]
+we get that eventually
+\[
+\textrm{price(A)} = -\textrm{price(B)}
+\]
+so that both parties agree on the price, or, we could say, there is money
+conservation.
+
+\subsection{CVA Computation}
+
+The computation of the CVA is easily carried on with Monte Carlo simulation.
+First simulate the development of your portfolio (its NPV) at each time point for each MC scenario. 
+Then calculate the CVA using Eq.~\ref{eq:cva} or its discrete form in Eq.~\ref{eq:cva_discrete}.
+Finally average the CVA of all the scenarios to get its estimate.
+
+In case of zero coupon bonds the computation of the CVA can be simplified. Indeed in this case the exposure of the investor is equal to the face value of the bond, so it is enough to loop through each days from the observation date to the maturity of the bond and compute the CVA using Eq.~\ref{eq:cva_discrete}.
+
+Imagine a 3-years zero coupon bond with a face value of $FV=$~\euro{100}. 
+The bond issuer has the following default probabilities 10\%, 20\% and 30\% for 1, 2 and 3 years respectively and the recovery rate is 40\%. The risk free rate is instead 3\%. 
+
+To compute the CVA we need to first define a discount curve and the credit curve corresponding to the issuer. Then we perform a daily loop to sum up all the contributions to the CVA and finally we set the price of the bond to the default-risk-free price minus the CVA.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}\PY{p}{,} \PY{n}{CreditCurve}
+\PY{k+kn}{import} \PY{n+nn}{math}
+		
+\PY{n}{T} \PY{o}{=} \PY{l+m+mi}{3} 
+\PY{n}{r} \PY{o}{=} \PY{l+m+mf}{0.03}
+\PY{n}{R} \PY{o}{=} \PY{l+m+mf}{0.4}
+\PY{n}{FV} \PY{o}{=} \PY{l+m+mi}{100}
+		
+\PY{n}{obs\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
+\PY{n}{pillars} \PY{o}{=} \PY{p}{[}\PY{n}{obs\PYZus{}date}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{T}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
+\PY{n}{dfs} \PY{o}{=} \PY{p}{[}\PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{r}\PY{o}{*}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{T}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
+\PY{n}{dc} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{obs\PYZus{}date}\PY{p}{,} \PY{n}{pillars}\PY{p}{,} \PY{n}{dfs}\PY{p}{)}
+\PY{n}{S} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.9}\PY{p}{,} \PY{l+m+mf}{0.8}\PY{p}{,} \PY{l+m+mf}{0.7}\PY{p}{]}
+\PY{n}{cc} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{n}{pillars}\PY{p}{,} \PY{n}{S}\PY{p}{)}
+\PY{n}{PV} \PY{o}{=} \PY{n}{FV} \PY{o}{*} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{r}\PY{o}{*}\PY{n}{i}\PY{p}{)}
+		
+\PY{n}{cva} \PY{o}{=} \PY{l+m+mi}{0}
+\PY{n}{d} \PY{o}{=} \PY{n}{obs\PYZus{}date}
+\PY{k}{while} \PY{n}{d} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{n}{pillars}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{:}
+    \PY{n}{cva} \PY{o}{+}\PY{o}{=} \PY{n}{dc}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d}\PY{p}{)}\PY{o}{*}\PY{p}{(}\PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{d}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{d}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+    \PY{n}{d} \PY{o}{+}\PY{o}{=} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
+		
+\PY{n}{cva} \PY{o}{*}\PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{R}\PY{p}{)} \PY{o}{*} \PY{n}{FV}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CVA: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{cva}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Bond Price: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{PV} \PY{o}{\PYZhy{}} \PY{n}{cva}\PY{p}{)}\PY{p}{)}
+
+CVA: 17.21
+Bond Price: 74.18
+\end{Verbatim}
+\end{tcolorbox}
