@@ -1,185 +1,343 @@
-\chapter{Machine Learning}\label{ex-lesson-15}
+\chapter{Portfolio Optimization}\label{ex-lesson-14}
 
-\begin{Exercise}
-In order to see how different parameter choices affect the training
-repeat the exercise of the function approximation but
+\begin{Exercise}[title={(Minimum Risk Portfolio)}]
+Your are portfolio manager and one of your clients is asking to design her investment in order to reduce at the minimum the risk. Her position involves these shares: 'TMUS', 'TDS', 'ENTR', 'UEC', 'WM', 'CTRE', 'LDOS', 'COST', 'CHD', 'HI'.
+Find the weights corresponding to each asset.
 
-\begin{itemize}
-\tightlist
-\item
-  change the number of points used in the training (move the step
-  to 0.01 and to 0.0001 in \(\tt{np.arange(-2, 2, 0.001)}\);
-\item
-  change the number of nodes per layer from 15-5 to 5-2 and 30-15.
-\end{itemize}
-\end{Exercise}
-
-\begin{Answer}
-In this first test we are going to reduce the number of sample in the training test by changing the step to define the $x$ values to 0.01.
-
-\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{n}{i} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{)}\PY{p}{]}\PY{p}{)}
-	
-\PY{n}{y} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{n}{i}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{3}\PY{o}{+}\PY{l+m+mi}{2} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n}{x}\PY{p}{]}\PY{p}{)}
-	
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{test\PYZus{}size}\PY{o}{=}\PY{l+m+mf}{0.2}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{normalize}\PY{p}{(}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addInputLayer}\PY{p}{(}\PY{n}{inputs}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{15}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{tanh}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addHiddenLayer}\PY{p}{(}\PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{tanh}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{mse}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{,} \PY{n}{batch\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{100}\PY{p}{,} \PY{n}{verbose}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{evaluate}\PY{p}{(}\PY{p}{)}
-\end{Verbatim}
-\end{tcolorbox}
-
-\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-Epoch 1/1000
-320/320 [==============================] - 0s 298us/step - loss: 0.2785
-Epoch 2/1000
-320/320 [==============================] - 0s 33us/step - loss: 0.2782
-...
-Epoch 999/1000
-320/320 [==============================] - 0s 40us/step - loss: 3.6015e-04
-Epoch 1000/1000
-320/320 [==============================] - 0s 41us/step - loss: 3.5167e-04
-
-320/320 [==============================] - 0s 80us/step
-Training: 0.0003514565250952728
-80/80 [==============================] - 0s 94us/step
-Test: 0.0005268571898341179
-\end{Verbatim}
-\end{tcolorbox}
-
-The accuracy is not as quite as good as in the original example when the step
-was 0.001.
-
-So now let's try to reduce the step to 0.0001.
-\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-Epoch 1/1000
-32000/32000 [==============================] - 0s 14us/step - loss: 0.0545
-Epoch 2/1000
-32000/32000 [==============================] - 0s 12us/step - loss: 0.0053
-...
-Epoch 999/1000
-32000/32000 [==============================] - 0s 10us/step - loss: 4.8033e-07
-Epoch 1000/1000
-32000/32000 [==============================] - 0s 10us/step - loss: 4.5722e-07
-
-32000/32000 [==============================] - 0s 14us/step
-Training: 6.162963977018876e-08
-8000/8000 [==============================] - 0s 15us/step
-Test: 6.096156344881365e-08
-None
-\end{Verbatim}
-\end{tcolorbox}
-
-In this case first of all the training is much longer, results are much
-better though since the neural network can learn from more points of the
-target function leading to a better approximation (old MSE was 2.5e-6).
-
-Now let's try to change the number of neurons in each hidden layer to 5 and 2.
-\begin{tcolorbox}[size=fbox, boxrule=1pt,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{n}{i} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mf}{0.001}\PY{p}{)}\PY{p}{]}\PY{p}{)}
-	
-\PY{n}{y} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{n}{i}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{3}\PY{o}{+}\PY{l+m+mi}{2} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n}{x}\PY{p}{]}\PY{p}{)}
-	
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{test\PYZus{}size}\PY{o}{=}\PY{l+m+mf}{0.2}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{normalize}\PY{p}{(}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addInputLayer}\PY{p}{(}\PY{n}{inputs}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{tanh}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addHiddenLayer}\PY{p}{(}\PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{tanh}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{mse}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{1000}\PY{p}{,} \PY{n}{batch\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{100}\PY{p}{,} \PY{n}{verbose}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{evaluate}\PY{p}{(}\PY{p}{)}
-\end{Verbatim}
-\end{tcolorbox}
-
-\begin{tcolorbox}[size=fbox, boxrule=1pt,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-Epoch 1/1000
-3200/3200 [==============================] - 0s 40us/step - loss: 0.0158
-Epoch 2/1000
-3200/3200 [==============================] - 0s 13us/step - loss: 0.0136
-...
-Epoch 999/1000
-3200/3200 [==============================] - 0s 21us/step - loss: 5.2428e-06
-Epoch 1000/1000
-3200/3200 [==============================] - 0s 20us/step - loss: 4.7666e-06
-
-3200/3200 [==============================] - 0s 40us/step
-Training: 4.866414481057291e-06
-800/800 [==============================] - 0s 46us/step
-Test: 4.6103044132905776e-06
-\end{Verbatim}
-\end{tcolorbox}
-
-In this case there is a slight degradation of performance.
-Changing the number of neurons to 30-15 instead...
-
-\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-Epoch 1/1000
-3200/3200 [==============================] - 0s 39us/step - loss: 0.0477
-Epoch 2/1000
-3200/3200 [==============================] - 0s 12us/step - loss: 0.0141
-...
-Epoch 999/1000
-3200/3200 [==============================] - 0s 13us/step - loss: 5.2197e-06
-Epoch 1000/1000
-3200/3200 [==============================] - 0s 16us/step - loss: 2.2086e-06
-
-3200/3200 [==============================] - 0s 19us/step
-Training: 1.6095951883698946e-06
-800/800 [==============================] - 0s 16us/step
-Test: 1.4640712151958723e-06
-\end{Verbatim}
-\end{tcolorbox}
-
-In this case there is some improvement. In general more complex NN are
-capable of catching more features from the training sample. The
-developer has to choose the needed trade off between complexity and gain
-in accuracy.
-\end{Answer}
-
-\begin{Exercise}
-Check how the CNN used to classify handwritten digits perform with your own calligraphy.
-
-\begin{itemize}
-\tightlist
-\item
-  Open \texttt{paint} (or any other drawing program) and create a 280x280 white square;
-\item
-  change brush type and set it the maximum size (larger sign of the "pencil");
-\item
-  with the mouse draw a digit;
-\item
-  finally save the file (e.g.~five.png).
-\end{itemize}
-
-Before passing the image to the NN it has to be resized and this is done
-with an ad-hoc function (\texttt{transform\_image}) which is in the
-\href{https://drive.google.com/file/d/1FMYvOJDDOdIv7kDb2VIGhAkNNmReiOb_/view?usp=sharing}{\texttt{digit\_converter.py}} module.
+\textbf{Hint:} the historical series of the corresponding companies are store in \href{https://drive.google.com/file/d/1ARryI7zpNVqlpzPsrNS2rTH9Knj07JBV/view?usp=sharing}{share\_prices.csv}.
 \end{Exercise}
 \begin{Answer}
-See the lecture notes.
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
+		
+\PY{n}{df} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{prova.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{index\PYZus{}col}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{date}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n}{daily\PYZus{}returns} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{pct\PYZus{}change}\PY{p}{(}\PY{p}{)}
+\PY{n}{returns} \PY{o}{=} \PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{252}
+\PY{n}{covariance} \PY{o}{=} \PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{252}
+
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{returns}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{covariance}\PY{p}{)}
+
+CHD     0.149289
+COST    0.165491
+CTRE    0.099866
+ENTR    0.611855
+HI      0.162094
+LDOS    0.226562
+TDS     0.081294
+TMUS    0.313158
+UEC     0.102048
+WM      0.189474
+dtype: float64
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+
+           CHD      COST      CTRE      ENTR        HI      LDOS       TDS
+CHD   0.024915  0.009337  0.008256  0.009681  0.008599  0.007354  0.011440
+COST  0.009337  0.028864  0.007549  0.019100  0.010508  0.012134  0.011564
+CTRE  0.008256  0.007549  0.098606 -0.037186  0.015380  0.014143  0.015634
+ENTR  0.009681  0.019100 -0.037186  0.628810  0.001346  0.005644 -0.008187
+HI    0.008599  0.010508  0.015380  0.001346  0.050175  0.018365  0.019070
+LDOS  0.007354  0.012134  0.014143  0.005644  0.018365  0.065101  0.018032
+TDS   0.011440  0.011564  0.015634 -0.008187  0.019070  0.018032  0.078266
+TMUS  0.009991  0.008667  0.012142  0.020659  0.017274  0.015900  0.030212
+UEC   0.009134  0.011193  0.002861  0.174809  0.034460  0.025498  0.024209
+WM    0.007536  0.008773  0.010322  0.006651  0.011621  0.011010  0.011077
+	
+          TMUS       UEC        WM
+CHD   0.009991  0.009134  0.007536
+COST  0.008667  0.011193  0.008773
+CTRE  0.012142  0.002861  0.010322
+ENTR  0.020659  0.174809  0.006651
+HI    0.017274  0.034460  0.011621
+LDOS  0.015900  0.025498  0.011010
+TDS   0.030212  0.024209  0.011077
+TMUS  0.126895  0.024575  0.011563
+UEC   0.024575  0.497870  0.014853
+WM    0.011563  0.014853  0.019869
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
+		
+\PY{k}{def} \PY{n+nf}{sum\PYZus{}weights}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{:} 
+    \PY{k}{return} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{w}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}
+		
+\PY{k}{def} \PY{n+nf}{markowitz}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{p}{,} \PY{n}{w}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+		
+\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{10}
+\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{,}\PY{p}{)} 
+\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
+		
+\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
+                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
+
+    fun: 0.1137665453329252
+    jac: array([0.11396485, 0.11356963, 0.11363222, 0.11417477, 0.11384268,
+                0.11409247, 0.11368632, 0.11387072, 0.12300402, 0.11367865])
+message: 'Optimization terminated successfully.'
+   nfev: 144
+    nit: 12
+   njev: 12
+ status: 0
+success: True
+      x: array([2.84626544e-01, 1.87698071e-01, 3.77538201e-02, 1.90910627e-03,
+                4.80977699e-02, 4.07549907e-02, 8.50047814e-03, 1.50307431e-02,
+                4.44522891e-18, 3.75628477e-01])
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio composition}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{k}{for} \PY{n}{i}\PY{p}{,} \PY{n}{n} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{columns}\PY{p}{)}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:5\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:4.1f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{n}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+		
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio variance: }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{fun}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Expected Portfolio return: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{returns}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+
+Portfolio composition
+CHD  : 28.5\%
+COST : 18.8\%
+CTRE :  3.8\%
+ENTR :  0.2\%
+HI   :  4.8\%
+LDOS :  4.1\%
+TDS  :  0.9\%
+TMUS :  1.5\%
+UEC  :  0.0\%
+WM   : 37.6\%
+Portfolio variance: 0.0129
+Expected Portfolio return: 0.172
+\end{Verbatim}
+\end{tcolorbox}
 \end{Answer}
 
-\begin{Exercise}
-Taking as example the pricing NN trained on call, try to price put
-options.
+%\begin{Exercise}[title={(Return Allocation Portfolio)}]
+%After few months the same client of the previous exercise, contacted you again asking for larger returns. In particular she would like to increase it by 40\%.
+%Find the new portfolio composition that makes your client happy.
+%\end{Exercise}
+%\begin{Answer}
+%\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+%\begin{Verbatim}[commandchars=\\\{\}]
+%\PY{k}{def} \PY{n+nf}{efficient\PYZus{}frontier}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{asset\PYZus{}returns}\PY{p}{,} \PY{n}{target\PYZus{}return}\PY{p}{)}\PY{p}{:} 
+%    \PY{n}{portfolio\PYZus{}return} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{asset\PYZus{}returns} \PY{o}{*} \PY{n}{w}\PY{p}{)} 
+%    \PY{k}{return} \PY{p}{(}\PY{n}{portfolio\PYZus{}return} \PY{o}{\PYZhy{}} \PY{n}{target\PYZus{}return}\PY{p}{)}
+%		
+%\PY{n}{results} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+%\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+%\PY{n}{target} \PY{o}{=} \PY{l+m+mf}{0.172}\PY{o}{*}\PY{l+m+mf}{1.4}
+%\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{efficient\PYZus{}frontier}\PY{p}{,} 
+%                \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{args}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{p}{(}\PY{n}{returns}\PY{p}{,} \PY{n}{target}\PY{p}{)}\PY{p}{\PYZcb{}}\PY{p}{,}
+%               \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}
+%\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
+%\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
+%\PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)} 
+%		
+%\PY{n}{p\PYZus{}variance} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}
+%\PY{n}{ret} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{returns}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}
+%\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio variance: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{variance}\PY{p}{)}\PY{p}{)}
+%\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio return: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{ret}\PY{p}{)}\PY{p}{)}
+%
+%Portfolio variance: 0.026
+%Portfolio return: 0.241
+%\end{Verbatim}
+%\end{tcolorbox}	
+%\end{Answer}
+
+\begin{Exercise}[title={(Risk Parity)}]
+The client is not yet satisfied and decides to move to a risk parity portfolio.
+Compute the correct weights to have each asset contributing equally to the portfolio risk.
 \end{Exercise}
 \begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{risk\PYZus{}parity}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
+    \PY{n}{variance} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{p}{,} \PY{n}{w}\PY{p}{)}\PY{p}{)} 
+    \PY{n+nb}{sum} \PY{o}{=} \PY{l+m+mi}{0}
+    \PY{n}{N} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{w}\PY{p}{)}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{N}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb}{sum} \PY{o}{+}\PY{o}{=} \PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{p}{(}\PY{n}{variance}\PY{o}{/}\PY{p}{(}\PY{n}{N}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{p}{,} \PY{n}{w}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} 
+    \PY{k}{return} \PY{n+nb}{sum}
+		
+\PY{n}{args} \PY{o}{=} \PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}
+\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)} 
+\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
+\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{risk\PYZus{}parity}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
+                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
+
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
+
+    fun: 3.0597183058586087e-07
+    jac: array([-5.36616836e-04,  1.70066372e-04, -3.68199937e-04, 5.59974747e-03, 
+                -9.08102600e-04,  3.25565500e-04,  3.17810572e-04, -6.52504960e-04,  
+                1.32785256e-03, -7.77000622e-05])
+message: 'Optimization terminated successfully.'
+   nfev: 163
+    nit: 13
+   njev: 13
+ status: 0
+success: True
+      x: array([0.16075373, 0.14425109, 0.0998296 , 0.02449688, 0.10306514,
+                0.09916455, 0.08835716, 0.0781992 , 0.04379689, 0.15808576])
+
+\PY{n}{sigma\PYZus{}i} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
+    \PY{n}{std} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
+    \PY{n}{a} \PY{o}{=} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]} 
+    \PY{n}{sigma\PYZus{}i}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{a}\PY{o}{/}\PY{n}{std}\PY{p}{)}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
+	\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Risk contribution for asset }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}
+               \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{sigma\PYZus{}i}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{/}\PY{n+nb}{sum}\PY{p}{(}\PY{n}{sigma\PYZus{}i}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+
+Risk contribution for asset 0: 9.986\%
+Risk contribution for asset 1: 10.010\%
+Risk contribution for asset 2: 10.012\%
+Risk contribution for asset 3: 10.040\%
+Risk contribution for asset 4: 10.009\%
+Risk contribution for asset 5: 9.999\%
+Risk contribution for asset 6: 9.961\%
+Risk contribution for asset 7: 9.972\%
+Risk contribution for asset 8: 10.000\%
+Risk contribution for asset 9: 10.011\%		
+\end{Verbatim}
+\end{tcolorbox}
 \end{Answer}
+
+\begin{Exercise}[title={(CAPM Multianswer I)}]
+Stock A has a $\beta$ of 1.2 and Stock B has a $\beta$ of 0.6. Which of the following statements is true? 
+\begin{enumerate}[label=\emph{\alph*})]
+\item Stock A has more unsystematic risk than Stock B;
+\item Stock B has more systematic risk than Stock A; 
+\item if the risk-free rate and the market risk premium are both positive, Stock A has a higher expected return than Stock B according to the CAPM;
+\item both \emph{a} and \emph{b} are true;
+\item both \emph{b} and \emph{c} are true
+\end{enumerate}
+\end{Exercise}
+\begin{Answer}
+The correct answer is \emph{c} indeed according to CAPM formula
+\[r_i = r_f + \beta_i (r_M - r_f)\]
+if both $r_f$ and $(r_M - r_f)$ are positive then $r_A \gt r_B$.
+\end{Answer}	
+
+\begin{Exercise}[title={(CAPM Multianswer II)}]
+Consider a stock with a $\beta$ of 1.5. Which of the following statements is true?
+ 
+\begin{enumerate}[label=\emph{\alph*}]
+\item when the market goes down by 1.5\%, on average, the stock goes down by 1\%;
+\item when the market goes up by 1.5\%, on average, the stock goes up by 1\%;
+\item when the market goes up by 1\%, on average, the stock goes down by 1.5\%;
+\item when the market goes down by 1\%, on average, the stock goes down by 1.5\%. 
+\item both \emph{a} and \emph{b}.	
+\end{enumerate}
+\end{Exercise}
+\begin{Answer}
+The correct answer is \emph{d} since $\beta$ measures the slope of the regression line of the expected return of the stock vs the expected return of the market. So by definition it represents the variation of the stock expected return given the a unit variation of the expected return of the market.
+\end{Answer}	
+
+\begin{Exercise}[title={(CAPM Practicle Application I)}]
+Suppose that the risk-free rate is 3\% and the market risk premium is 8\%. According to the CAPM, what is the required rate of return on a stock with a $\beta$ of 2 ?
+\end{Exercise}
+\begin{Answer}
+Careful! The market risk premium is 8\%. This means that $r_M - r_f  = 8\%$. Plug this into the CAPM equation to get
+
+\[r = r_f + \beta(r_M - r_f) = 3\% + 2\cdot(8\%) =19\%\]
+\end{Answer}
+
+\begin{Exercise}[title={(CAPM Practicle Application II)}]
+You analyze the prospects of several companies and come to the following conclusions about the required return on each:
+
+\begin{center}
+\begin{tabular}{lc}
+\textbf{Stock Required} & \textbf{Return} \\
+Starbucks &18\% \\
+Sears &8\% \\
+Microsoft &16\% \\
+Limited Brands &12\% \\
+\end{tabular}
+\end{center}
+
+You decide to invest \$4000 in Starbucks, \$6000 in Sears, \$12000 in Microsoft, and \$3000 in Limited Brands. What is the required return on your portfolio?
+\end{Exercise}
+\begin{Answer}
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{P} \PY{o}{=} \PY{l+m+mi}{4000} \PY{o}{+} \PY{l+m+mi}{6000} \PY{o}{+} \PY{l+m+mi}{12000} \PY{o}{+} \PY{l+m+mi}{3000}
+\PY{n}{rp} \PY{o}{=}\PY{p}{(}\PY{l+m+mi}{4000}\PY{o}{/}\PY{n}{P}\PY{p}{)}\PY{o}{*}\PY{l+m+mf}{0.18} \PY{o}{+} \PY{p}{(}\PY{l+m+mi}{6000}\PY{o}{/}\PY{n}{P}\PY{p}{)}\PY{o}{*}\PY{l+m+mf}{0.08} \PY{o}{+} \PY{p}{(}\PY{l+m+mi}{12000}\PY{o}{/}\PY{n}{P}\PY{p}{)}\PY{o}{*}\PY{l+m+mf}{0.16} \PY{o}{+}\PY{p}{(}\PY{l+m+mi}{3000}\PY{o}{/}\PY{n}{P}\PY{p}{)}\PY{o}{*}\PY{l+m+mf}{0.12}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio Return: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{rp}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+	
+Portfolio Return: 13.92\%
+\end{Verbatim}
+\end{tcolorbox}
+\end{Answer}	
+
+\begin{Exercise}[title={(CAPM Practicle Application III)}]
+You have a portfolio that consists of 35\% Microsoft stock, 35\% Amazon stock, and 30\% GE stock. Microsoft has a $\beta$ of 1, Amazon has a $\beta$ of 3.0, and GE has a $\beta$ of 0.5. Treasury bills (the risk-free asset) currently offer a return of 4\%, and the expected return on the market is 11.5\%. What return should you expect on your portfolio according to the CAPM ? 
+\end{Exercise}
+\begin{Answer}
+You can work this problem two different ways.
+
+\textbf{Method 1}: calculate the \(\beta\) of your portfolio and plug this
+\(\beta\) into the CAPM formula to get the required return of your
+portfolio.
+
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{rm} \PY{o}{=} \PY{l+m+mf}{0.115}
+\PY{n}{rf} \PY{o}{=} \PY{l+m+mf}{0.04}
+\PY{n}{beta\PYZus{}p} \PY{o}{=} \PY{l+m+mf}{0.35} \PY{o}{*} \PY{l+m+mi}{1} \PY{o}{+} \PY{l+m+mf}{0.35} \PY{o}{*} \PY{l+m+mi}{3} \PY{o}{+} \PY{l+m+mf}{0.3} \PY{o}{*} \PY{l+m+mf}{0.5}
+\PY{n}{rp} \PY{o}{=} \PY{n}{rf} \PY{o}{+} \PY{n}{beta\PYZus{}p}\PY{o}{*}\PY{p}{(}\PY{n}{rm} \PY{o}{\PYZhy{}} \PY{n}{rf}\PY{p}{)}
+	
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio beta: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{beta\PYZus{}p}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio return: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{rp}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+
+Portfolio beta: 1.55
+Portfolio return: 15.625\%
+\end{Verbatim}
+\end{tcolorbox}
+
+\textbf{Method 2}: using the CAPM, calculate the required return on each
+individual stock. Then,calculate the weighted average of those required
+returns to get the required return of your portfolio.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{Er\PYZus{}msft} \PY{o}{=} \PY{n}{rf} \PY{o}{+} \PY{l+m+mi}{1}\PY{o}{*}\PY{p}{(}\PY{n}{rm}\PY{o}{\PYZhy{}}\PY{n}{rf}\PY{p}{)}
+\PY{n}{Er\PYZus{}amzn} \PY{o}{=} \PY{n}{rf} \PY{o}{+} \PY{l+m+mi}{3}\PY{o}{*}\PY{p}{(}\PY{n}{rm}\PY{o}{\PYZhy{}}\PY{n}{rf}\PY{p}{)}
+\PY{n}{Er\PYZus{}ge} \PY{o}{=} \PY{n}{rf} \PY{o}{+} \PY{l+m+mf}{0.5}\PY{o}{*}\PY{p}{(}\PY{n}{rm}\PY{o}{\PYZhy{}}\PY{n}{rf}\PY{p}{)}
+	
+\PY{n}{rp2} \PY{o}{=} \PY{n}{Er\PYZus{}msft} \PY{o}{*} \PY{l+m+mf}{0.35} \PY{o}{+} \PY{n}{Er\PYZus{}amzn} \PY{o}{*}\PY{l+m+mf}{0.35} \PY{o}{+} \PY{n}{Er\PYZus{}ge} \PY{o}{*} \PY{l+m+mf}{0.3}
+	
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Er (MSFT): }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{Er\PYZus{}msft}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Er (AMZN): }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{Er\PYZus{}amzn}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Er (GE): }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{Er\PYZus{}ge}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio return: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{rp2}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+
+Er (MSFT): 11.50\%
+Er (AMZN): 26.50\%
+Er (GE): 7.75\%
+Portfolio return: 15.625\%
+\end{Verbatim}
+\end{tcolorbox}
+
+Notice that this is the same answer we got using method 1. When
+calculating the required return of a portfolio, it does not matter which
+way you do it. But method 1 is a little less work.
+\end{Answer}	
+

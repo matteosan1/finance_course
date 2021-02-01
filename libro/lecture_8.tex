@@ -1,551 +1,871 @@
-\chapter{Monte Carlo Simulation}\label{cap:montecarlo}
-The modern version of the Monte Carlo method was invented in the late
-1940s by Stanislaw Ulam, while he was working on nuclear weapon
-projects at the Los Alamos National Laboratory.
+\chapter{Swaps and Bootstrapping}\label{swaps-and-bootstrapping---practical-lesson-5}
 
-Monte Carlo methods, or experiments, are a broad class of computational
-algorithms that rely on repeated random sampling to obtain numerical
-results; the underlying concept is to use randomness to solve problems
-that might be deterministic in principle. Monte Carlo methods are mainly
-used in three problem classes: optimization, numerical integration, and
-generating draws from a probability distribution.
+% MODIFICARE LA PARTE DI FORWARD RATE PER AVERE UNA CLASSE CHE PARTE DAGLI SPOT 
 
-Monte Carlo simulations are widely used in many fields: Engineering,
-Physics, Computational biology, Computer graphics, Applied statistics,
-Artificial intelligence for games, Search and rescue and of course
-Finance and business.
+In this Chapter the Overnight Index Swap contract is reviewed and new class to represent it will be added to our financial module. Beside financial arguments another very important mathematical technique is introduced: the \emph{bootstrapping}.
 
-In this Chapter we will review it and see some useful application.
+\section{Payment Dates Generator}
+Before going to describe the Overnight Index Swap we need to develop a tool which helps us to generate list of dates (e.g. payment dates), a task that we will need to do often from now on. 
+The function we are writing will go in \texttt{finmarkets} module and will be used by the classes describing various kind of contracts (this is essentially the function that was required in Ex. 3.5).
 
-\section{The Algorithm}\label{whats-monte-carlo-simulation}
-
-Monte Carlo (MC) methods are used when a closed-form solution for a
-property being studied cannot be developed.
-
-A MC simulation performs analysis by building a model and producing 
-results by substituting a range of values drawn from probability
-distributions for any factor that has inherent uncertainty. 
-It then calculates results over and over, each time using a different set of
-random values from the probability distributions. 
-Depending upon the number of uncertainties and the ranges specified for them,
-a Monte Carlo simulation could involve thousands or tens of thousands of
-calculations before it is complete. Finally the simulation
-produces distributions of possible outcome values.
-
-A MC method/algorithm then can be described as follows: 
-\begin{itemize}
-	\item  select a
-	domain \(\Omega\) for the inputs (probability distributions for our
-	factors); 
-	\item generate random inputs from this domain \(\Omega\);
-	\item perform
-	a deterministic computation with those inputs;
-	\item aggregate the results.
-\end{itemize}
-
-In the next Sections we will see each point applied to practical examples.
-
-\section{Pseudo-Random Numbers}\label{pseudo-random-numbers}
-
-The second point above implies that Monte Carlo methods require 
-large amounts of random numbers to
-generate the inputs, and it was their use that spurred the development
-of pseudo-random number generators. 
-
-Every programming language has libraries that
-allows to produce huge series of random numbers (with a periodicity of
-\(2^{19937}\)). These series are calculated by algorithms that take as
-input a \emph{seed} which determines them uniquely. This means
-that choosing the same seed you will produce the same set of numbers
-every time (which is great for debugging purposes).
-
-In \texttt{python} one of the available modules to generate random numbers is \texttt{random} which has, among others, the following useful functions:
-\begin{itemize}
-\tightlist
-\item
-  \texttt{seed} set the seed of the random number generator;
-\item
-  \texttt{random} returns a random number between 0 and 1 (with uniform
-  probability);
-\item
-  \texttt{randint(min,\ max)} returns an integer random number between
-  \texttt{min} and \texttt{max} (with uniform probability);
-\item
-  \texttt{sample(aList,\ k=n)} samples n elements from the list
-  \texttt{aList}.
-\end{itemize}
-As usual for a more detailed description check \texttt{help(random)}.
-The following example shows an application of these functions besides the effect of  changing the seed of the random number generator.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{random} 
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
 
-\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{seed is 1}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+\PY{k}{def} \PY{n+nf}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{n\PYZus{}months}\PY{p}{)}\PY{p}{:}
+    \PY{n}{dates} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{n\PYZus{}months}\PY{p}{,} \PY{l+m+mi}{12}\PY{p}{)}\PY{p}{:}
+        \PY{n}{dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{months}\PY{o}{=}\PY{n}{i}\PY{p}{)}\PY{p}{)}
+    \PY{n}{dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{months}\PY{o}{=}\PY{n}{n\PYZus{}months}\PY{p}{)}\PY{p}{)}
+    
+    \PY{k}{return} \PY{n}{dates}
 
-\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{seed is 2}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{25}\PY{p}{)}\PY{p}{)}
 
-\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{seed is 1 again}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{randint}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{)}
-\PY{n}{aList} \PY{o}{=} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{a}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{b}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{c}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{d}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{f}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{n}{aList}\PY{p}{,} \PY{n}{k}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}
-
-seed is 1
-0.13436424411240122
-0.8474337369372327
-seed is 2
-0.9560342718892494
-0.9478274870593494
-seed is 1 again
-0.13436424411240122
-0.8474337369372327
-2
-['c', 'a']
+[datetime.date(2020, 10, 20), datetime.date(2021, 10, 20), datetime.date(2022,
+10, 20), datetime.date(2022, 11, 20)]
     \end{Verbatim}
 \end{tcolorbox}
 
-The next lines of code show instead how to draw a uniform distribution. Figure~\ref{fig:uniform_dist} shows the result.
+\section{Overnight Index Swap}\label{overnight-index-swap}
 
- \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+Interest rate swaps (IRS) are generally used to mitigate the risks of
+fluctuations of varying interest rates, or to benefit from lower rates.
+
+Overnight Index Swaps (OIS) are a particular kind of IRS which pay a
+floating coupon, determined by overnight rate fixings over the reference
+periods, against a fixed coupon. By definition an OIS is defined by:
+
+\begin{itemize}
+\tightlist
+\item
+  a notional amount \(N\);
+\item
+  a starting date \(d_0\);
+\item
+  a sequence of payment dates \(d_1,...,d_n\);
+\item
+  a fixed rate \(K\).
+\end{itemize}
+
+For simplicity in the following we are assuming that the fixed and
+floating legs of our OIS have the same notional and payment dates,
+although this is not necessarily always the case in practice.
+We will always look at these products from the point of view of the
+\textbf{receiver of the floating leg}.
+
+\subsection{OIS Valuation}\label{ois-valuation}
+To evaluate the net present value (NPV) of such products the cash flows
+of each leg have to be calculated; today's NPV then is the sum of all
+the discounted cash flows.
+
+\subsubsection{Floating leg}\label{floating-leg}
+
+At each payment date, the floating leg pays a cash flow determined as
+follows:
+
+\begin{equation}
+f_{\mathrm{float},~i} = N \Bigg\{\prod_{d=d_{i-1}}^{d=d_i-1}\Big(1+r_{\mathrm{O/N}}(d)\cdot\frac{1}{360}\Big) -1 \Bigg\}
+\label{eq:floati_ois}
+\end{equation}
+
+Strictly speaking this formula is valid for an EONIA swaps
+(i.e.\textasciitilde{}for OIS swaps in EUR) other currencies might have
+different conventions. The \(\frac{1}{360}\) fraction appears because
+EONIA rates are quoted using the ACT/360 day-count convention. In
+addition we are making the simplifying assumption of ignoring weekends
+and holidays, so we assume that each overnight rate is valid for only
+one day. The sum of the discounted expected values of these cash flows
+is
+
+\begin{equation}
+\mathrm{NPV}_{\mathrm{float}} = \sum_{i=1}^{n}D(d_i)\mathbb{E}[f_{\mathrm{float},~i}]
+\end{equation}
+where \(D(d)\) is the discount factor with expiry \(d\). On the other
+hand we have seen from the forward rate definition (see Section~\ref{calculating-forward-rates}) that
+
+\begin{equation}
+\underbrace{(1+r_{0,1}\Delta T)\underbrace{(1+r_{1,2}\Delta T)\ldots\underbrace{(1+r_{d-2,d-1}\Delta T)(1+r_{d-1,d}\Delta T)}_{=(1+r_{d-2,d}\Delta T)}}_{=(1+r_{1,d}\Delta T)}}_{=(1+r_{0,d}\Delta T)}
+\end{equation}
+So the product in Eq.~\ref{eq:floati_ois} can be simplified into
+
+\begin{equation}
+\mathbb{E}[f_{\mathrm{float},~i}] = N\cdot\Big(\frac{D_{\mathrm{OIS}}(d_{i-1})}{D_{\mathrm{OIS}}(d_{i})} - 1\Big)
+\end{equation}
+hence
+\begin{equation}
+\mathrm{NPV}_{\mathrm{float}} = N\cdot \sum_{i=1}^{n}D(d_i) \Big(\frac{D_{\mathrm{OIS}}(d_{i-1})}{D_{\mathrm{OIS}}(d_{i})} - 1\Big)
+\end{equation}
+where \(D_{\mathrm{OIS}}(d)\) is the discount factor implied by OIS
+prices (we will see how to derive it).
+
+%The correct curve to use for discounting the flows of a collateralized contract, like OIS, is the one associated with the collateral. Since OIS contracts are collateralized with cash, and cash accrues daily interest at the overnight rate, the OIS curve is itself the correct curve with which to discount the flows of an OIS contract ! 
+Since the financial crisis, in the Euro area the rates used for
+discounting has been the EONIA rates. Similarly, in other jurisdictions
+it has been used other overnight rates such us Fed fund rates in USA.
+This practice is consistent with the daily remuneration of the
+collateral (i.e. cash given or received as mitigants for credit risk
+arising from the mark to market of the derivatives contract).
+For arbitrage consideration the discounting curve of future cash flows
+in a derivative contract can only be the one derived from the rates
+applied for the collateral.
+
+So we have that \(D = D_{\mathrm{OIS}}\) and the NPV simplifies to
+
+\begin{equation}
+  \begin{split}
+    \mathrm{NPV}_{\mathrm{float}} & = N\cdot\sum_{i=1}^{n}[D(d_{i-1}) - D(d_i)] =  \\
+    &= N\cdot[(D(d_{0}) - D(d_{1})) + (D(d_{1}) - D(d_{2})) + ... + (D(d_{n-1}) - D(d_{n}))]\\
+    &= N \cdot [D(d_0) - D(d_n)]
+  \end{split}
+\end{equation}
+
+\subsubsection{Fixed leg}\label{fixed-leg}
+
+The calculation for the fixed leg is simpler; each cash flow is equal to
+
+\begin{equation}
+f_{\mathrm{fixed},~i}=N\cdot K\cdot \frac{d_i - d_{i-1}}{360}
+\end{equation}
+so the NPV of the fixed leg is
+
+\begin{equation}
+\mathrm{NPV}_{\mathrm{fixed}} = N\cdot K\cdot \sum_{i=1}^{n}D(d_{i})\frac{d_i - d_{i-1}}{360}
+\end{equation}
+
+\subsection{\texttt{OvernightIndexSwap} Class}\label{discount-factor-determination-from-market-quotes}
+
+Our ultimate goal is to take a series of Overnight Index Swap
+quotations, and determine the discount factors implied by their prices.
+To do this we will build a class to represent OIS and compute its value,
+given particular discount curve. Then we will use this class, put inside
+a numerical optimizer, to \emph{invert} so that the implied discount
+factors can be determined from their prices (market quotes).
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{numbers} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{10000}\PY{p}{)}\PY{p}{:}
-  \PY{n}{numbers}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{randint}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+\PY{k}{class} \PY{n+nc}{OvernightIndexSwap}\PY{p}{:}
+    \PY{l+s+sd}{\PYZdq{}\PYZdq{}\PYZdq{}}
+\PY{l+s+sd}{    OvernightIndexSwap: a class to valuate Overnight Index Swaps}
+\PY{l+s+sd}{    }
+\PY{l+s+sd}{    Attributes:}
+\PY{l+s+sd}{    \PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}}
+\PY{l+s+sd}{    notional: float}
+\PY{l+s+sd}{        Notional of the swap.}
+\PY{l+s+sd}{    payment\PYZus{}dates: list of datetime.date}
+\PY{l+s+sd}{        List of payment dates of the swap.}
+\PY{l+s+sd}{    fixed\PYZus{}rate: float}
+\PY{l+s+sd}{        Rate of the fixed leg of the swap.}
+\PY{l+s+sd}{    \PYZdq{}\PYZdq{}\PYZdq{}}
+    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{notional}\PY{p}{,} \PY{n}{payment\PYZus{}dates}\PY{p}{,} \PY{n}{fixed\PYZus{}rate}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{=} \PY{n}{notional}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates} \PY{o}{=} \PY{n}{payment\PYZus{}dates}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{=} \PY{n}{fixed\PYZus{}rate}
 
-\PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
-\PY{n}{plt}\PY{o}{.}\PY{n}{hist}\PY{p}{(}\PY{n}{numbers}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{n+nb}{range}\PY{o}{=}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.5}\PY{p}{,} \PY{l+m+mf}{5.5}\PY{p}{]}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Uniform distribution from randint}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+    \PY{k}{def} \PY{n+nf}{npv\PYZus{}floating\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
+        \PY{l+s+sd}{\PYZdq{}\PYZdq{}\PYZdq{}}
+\PY{l+s+sd}{        npv\PYZus{}floating\PYZus{}leg: computes the floating leg npv.}
+\PY{l+s+sd}{        }
+\PY{l+s+sd}{        Params:}
+\PY{l+s+sd}{        \PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}}
+\PY{l+s+sd}{        discount\PYZus{}curve: DiscountCurve}
+\PY{l+s+sd}{            Discount curve object used for npv calculation.}
+\PY{l+s+sd}{        \PYZdq{}\PYZdq{}\PYZdq{}}
+        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)} \PY{o}{\PYZhy{}}
+               \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+
+    \PY{k}{def} \PY{n+nf}{npv\PYZus{}fixed\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
+        \PY{l+s+sd}{\PYZdq{}\PYZdq{}\PYZdq{}}
+\PY{l+s+sd}{        npv\PYZus{}fixed\PYZus{}leg: computes the fixed leg npv.}
+\PY{l+s+sd}{        }
+\PY{l+s+sd}{        Params:}
+\PY{l+s+sd}{        \PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}}
+\PY{l+s+sd}{        discount\PYZus{}curve: DiscountCurve}
+\PY{l+s+sd}{            Discount curve object used for npv calculation.}
+\PY{l+s+sd}{        \PYZdq{}\PYZdq{}\PYZdq{}}
+        \PY{n}{npv} \PY{o}{=} \PY{l+m+mi}{0}
+        \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+            \PY{n}{start\PYZus{}date} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}
+            \PY{n}{end\PYZus{}date} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}
+            \PY{n}{tau} \PY{o}{=} \PY{p}{(}\PY{n}{end\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{start\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{360}
+            \PY{n}{df} \PY{o}{=} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{end\PYZus{}date}\PY{p}{)}
+            \PY{n}{npv} \PY{o}{=} \PY{n}{npv} \PY{o}{+} \PY{n}{df} \PY{o}{*} \PY{n}{tau}
+        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{*} \PY{n}{npv}
+    \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
+        \PY{l+s+sd}{\PYZdq{}\PYZdq{}\PYZdq{}}
+\PY{l+s+sd}{        npv: computes the total npv of the swap.}
+\PY{l+s+sd}{        }
+\PY{l+s+sd}{        Params:}
+\PY{l+s+sd}{        \PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}}
+\PY{l+s+sd}{        discount\PYZus{}curve: DiscountCurve}
+\PY{l+s+sd}{            Discount curve object used for npv calculation.        }
+\PY{l+s+sd}{        \PYZdq{}\PYZdq{}\PYZdq{}}
+        \PY{n}{float\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}floating\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
+        \PY{n}{fixed\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}fixed\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
+        \PY{k}{return} \PY{n}{float\PYZus{}npv} \PY{o}{\PYZhy{}} \PY{n}{fixed\PYZus{}npv}
 \end{Verbatim}
 \end{tcolorbox}
+
+    To test the newly developed class we need a discount curve. In the
+following example a fake curve will be defined, and then used with an
+OIS product.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}
+
+\PY{n}{ois} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}
+            \PY{c+c1}{\PYZsh{} the notional, one million}
+            \PY{l+m+mf}{1e6}\PY{p}{,}
+            \PY{c+c1}{\PYZsh{} the list of product dates,}
+            \PY{c+c1}{\PYZsh{} i.e. the start date then the payment dates}
+            \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
+             \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{7}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
+             \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}\PY{p}{,}
+            \PY{c+c1}{\PYZsh{} the fixed rate, 2.5\PYZpc{}}
+            \PY{l+m+mf}{0.025}\PY{p}{)}
+
+\PY{c+c1}{\PYZsh{} fake discount curve}
+\PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
+                      \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
+                       \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2022}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}\PY{p}{,}
+                      \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.98}\PY{p}{,} \PY{l+m+mf}{0.82}\PY{p}{]}\PY{p}{)}
+
+\PY{n}{ois}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{curve}\PY{p}{)}
+
+105332.192377
+\end{Verbatim}
+\end{tcolorbox}
+
+\section{Bootstrap Technique}\label{bootstrapping-technique}
+
+As we said before we would like to determine a \emph{real} discount
+curve starting from the market quotes of a set of Overnight Index Swaps
+with different maturities, this will be done via a technique called
+bootstrapping. This is the ABC of financial mathematics, since you
+almost always need a discount curve to price every contract. We are
+going to concentrate on EONIA swaps in order to build an EUR discount
+curve.
+
+\subsection{Building OIS instances}\label{building-ois-instances}
+
+The first step involves getting data, the swap market quotes, and this is not actually as simple as it sounds.
+
+The issue is that the EONIA swap market is over the counter (OTC) and it's not straightforward to access it. Unlike (some) listed futures, where anyone with a retail brokerage account can view and apply real time prices, to trade in the EONIA swap market you have to be a financial institution or at least a large company and have an agreement with a broker which operates in the market. One of the main brokers in the OIS market is ICAP, see Fig.~\ref{fig:icap}.
+The underlying assumption is that market quotes represent the \textbf{fair price} of the OIS so they make the swap NPVs null (the fair price is an estimate of what a willing buyer would pay a willing seller for a given asset, assuming both have a reasonable knowledge of the asset's worth).
+
+\begin{figure}[bth]
+  \centering
+\includegraphics[width=1.\linewidth]{figures/icap_3.png}
+\caption{Screenshot of market quotes from ICAP.}
+\label{fig:icap}
+\end{figure}
+
+Though there exist some electronic platform in which market participants post bids and offers and other participants can apply them, in practice a lot of trading is still done over "voice", i.e.~by phone or more
+commonly over chat. For convenience, however, Bloomberg provides a service which displays indicative real time rates as provided by a selection of relevant brokers. (\emph{N.B.~interest rate swap quotes vary from standard price quotes of commonly traded instruments, they can appear puzzling because the quotes are effectively interest rates})
+
+In the following we use a similarly created data-set (\href{https://drive.google.com/file/d/1LCEDmheKqwPXFpJ25hFz32QI5im2UJO1/view?usp=sharing}{\texttt{ois\_data.xlsx}}) to derive our discount curve; with the help of \texttt{pandas} the data-set can be inspected:
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{pandas}\PY{o}{,} \PY{n+nn}{datetime}
+
+\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
+
+\PY{n}{mq} \PY{o}{=} \PY{n}{pandas}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ois\PYZus{}data.xlsx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n}{mq}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}
+
+   months  quote
+0       1 -0.350
+1       2 -0.347
+2       3 -0.348
+3       4 -0.350
+4       5 -0.350
+\end{Verbatim}
+\end{tcolorbox}
+
+Next we could convert the data-set into a dictionary for later usage or
+use the \(\tt{DataFrame}\) directly, it is just matter of taste.
+
+Let's say we want to build a 15 months swap instance using data
+contained in \(\tt{ois\_data}\) file. Be careful when doing this
+operation and double check the units of rates, quotes, etc\ldots{}in
+this case for example quotes are expressed in percent so you need to
+multiply them by 0.01 before using them. Another detail to check is that
+15 months quote is not the fifteenth entry in the \(\tt{DataFrame}\)
+(actually it is the twelfth).
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm, colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{ois} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,}
+                         \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{,}
+                          \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{,}
+                          \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{]}\PY{p}{,}
+                         \PY{n}{mq}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{quote}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{12}\PY{p}{]}\PY{o}{*}\PY{l+m+mf}{0.01}\PY{p}{)}
+
+\PY{c+c1}{\PYZsh{} print the last payment date }
+\PY{c+c1}{\PYZsh{} (15 months after obs date)}
+\PY{n}{ois}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}
+
+datetime.date(2020, 1, 23)
+\end{Verbatim}
+\end{tcolorbox}
+
+Clearly to use the \texttt{npv} method to calculate the OIS' NPV we need a discount curve with which to evaluate it and here comes to hand the bootstrapping technique !
+
+\subsection{Constructing the Yield Curve}\label{the-bootstrapping-technique}
+
+Keep aside for a moment our swaps and introduce the \emph{bootstrap
+algorithm}. In finance, bootstrapping is a method for constructing a
+(zero-coupon) fixed-income yield curve from the prices of a set of
+coupon-bearing products, e.g.~bonds and swaps. The term structure of
+spot returns is obtained from the bond yields by solving for them
+recursively, by forward substitution: this iterative process is what is
+called the bootstrap method. The usefulness of bootstrap is that using
+only a few carefully selected zero-coupon products, it becomes possible
+to derive swap forward and spot rates for all maturities given the
+solved curve.
+
+To illustrate bootstrapping let's consider the following example which can be partially solved analytically: we have some coupon paying bond (coupon of 4\%, 5\%, 6\%, 7\% and 8\% respectively) with maturities ranging from 1 to 5 years, each having a value of \euro{100} and traded at par. To determine the zero-coupon yield curve proceed as follows:
+
+\begin{enumerate}
+\item at the end of the first year the $1^{st}$ bond will pay a coupon of \euro{4} (= \euro{100} * 4\%) plus the principal amount (= \euro{100}) which sums up to \euro{104} while the bond is trading at \euro{100}. Therefore, the implied 1-year spot \emph{fair} rate $S_{1y}$ can be calculated as, $\mbox{\euro{100}} = \mbox{\euro{104}} / (1 + S_{1y})$;
+
+\item at the end of second year the sum of the cash flows of the $2^{nd}$ bond can be compared to its trading price to compute the 2-year spot rate $S_{2y}$ as $\mbox{\euro{100}} = \mbox{\euro{5}} / (1 + S_{1y}) + \mbox{\euro{105}} / (1 + S_{2y})^{2}$ where the previously derived value of $S_{1y}$ is used;
+
+\item at the end of third year the sum of the cash flows of the $3^{rd}$ bond can be compared to its trading price to calculate the 3-year spot rate $S_{3y}$ as $\mbox{\euro{100}} = \mbox{\euro{6}} / (1 + S_{1y}) + \mbox{\euro{6}} / (1 + S_{2y})^{2} + \mbox{\euro{106}} / (1 + S_{3y})^{3}$, using $S_{1y}$ and $S_{2y}$ computed before;
+
+\item and so on for the other bonds\ldots
+\end{enumerate}
+
+Putting all together we can construct a system of equations (now omitting the currency symbol for simplicity):
+
+\begin{equation}
+\begin{cases}
+100 = \cfrac{104}{(1 + S_{1y})} \\
+100 = \cfrac{5}{(1 + S_{1y})} + \cfrac{105}{(1 + S_{2y})^{2}} \\
+100 = \cfrac{6} {(1 + S_{1y})} + \cfrac{6}{(1 + S_{2y})^{2}} + \cfrac{106} {(1 + S_{3y})^{3}} \\
+100 = \cfrac{7} {(1 + S_{1y})} + \cfrac{7} {(1 + S_{2y})^{2}} + \cfrac{7} {(1 + S_{3y})^{3}} + \cfrac{107} {(1 + S_{4y})^{4}} \\
+100 = \cfrac{8} {(1 + S_{1y})} + \cfrac{8} {(1 + S_{2y})^{2}}+ \cfrac{8} {(1 + S_{3y})^{3}} + \cfrac{8} {(1 + S_{4y})^{4}} + \cfrac{108} {(1 + S_{5y})^{5}}
+\end{cases}
+\label{eq:fifth_year_rate}
+\end{equation}
+
+This system can be solved quite easily: $S_{1y}$ can be derived from the first equation, $S_{2y}$ from the second, $S_{3y}$ from the third, \ldots. So
+
+\begin{equation}
+100 = 104 / (1 + S_{1y})\quad\Rightarrow\quad S_{1y} = 104/100 - 1 = 4\%
+\end{equation}
+Moving to the second equation:
+\begin{equation}
+\begin{split}
+& 100 = 5 / (1 + 0.04) + 105 / (1 + S_{2y})^{2}\quad\Rightarrow\quad S_{2y}^2  + 2 S_{2y}  - 0.103030 = 0 \\
+& S_{2y} = - 1 \pm \sqrt{1 + 0.103030} = \begin{cases}\text{\sout{-2.05023}} \\ 0.0503\end{cases}
+\end{split}
+\end{equation}
+where the first solution has been discarded because negative.
+
+From the third one on it is not as simple to solve them analytically since they involve third order (or more) equations, anyway it is possible to solve them numerically.
+Assume we have found all the rates up to the fourth year (they are reported in Table~\ref{tab:rates}) and let's try to determine the last one.
+
+\begin{table}[htb]
+\begin{center}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{years} & \textbf{coupon rate} & \textbf{bond price} & \textbf{spot rate} \\
+\hline
+1 & 1.00 \% & \euro{100} & 4.00\% \\
+\hline
+2 & 2.00 \% & \euro{100} & 5.03\% \\
+\hline
+3 & 3.00 \% & \euro{100} & 6.08\% \\
+\hline
+4 & 4.00 \% & \euro{100} & 7.19\% \\
+\hline
+5 & 5.00 \% & \euro{100} & ??? \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Table reporting maturity, coupon, bond price and implied spot rate for the example outlined in the text.}
+\label{tab:rates}
+\end{table}
+The last column of Table~\ref{tab:rates} provides the terms to fill the zero-coupon yield curve.
+To solve the last equation numerically we can use the \texttt{scipy.optimize.brentq} function which finds the zeros of a user-defined function given a validity interval.
+In Figure~\ref{fig:fifth_year_rate} the function to determine the 5 year rate expressed in the last of Eqs.~\ref{eq:fifth_year_rate} is shown. From the plot we expect tha rate to be around 8\%.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/bond_5_plot.png}
+  \caption{Plot of the discounted cash flow of bond 5 as a function of the 5 year spot rate.}
+  \label{fig:fifth_year_rate}
+\end{figure}
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{brentq}
+
+\PY{k}{def} \PY{n+nf}{func}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{l+m+mi}{100} \PY{o}{\PYZhy{}} \PY{l+m+mi}{8}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{l+m+mf}{0.04}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{8}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{l+m+mf}{0.0503}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{\PYZhy{}} \PY{l+m+mi}{8}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{l+m+mf}{0.0608}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{3} 
+               \PY{o}{\PYZhy{}} \PY{l+m+mi}{8}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{l+m+mf}{0.0719}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{4} \PY{o}{\PYZhy{}} \PY{l+m+mi}{108}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{n}{x}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{5}
+
+\PY{n}{a} \PY{o}{=} \PY{n}{brentq}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{0.10}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{5y rate: }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{a}\PY{p}{)}\PY{p}{)}
+
+5y rate: 0.0836
+\end{Verbatim}
+\end{tcolorbox}
+
+The very same mechanism can be generalized and extended to more maturities to get a more detailed yield curve. In general terms the previous system can be written as:
+
+\begin{equation}
+\begin{cases}
+f_1(S_1, p_1) = 0 \\
+f_2(S_1, S_2, p_2) = 0 \\
+f_3(S_1, S_2, S_3, p_3) = 0 \\
+f_4(S_1, S_2, S_3, S_4, p_4) = 0 \\
+\cdots
+\end{cases}
+\end{equation}
+where $S_i$ are the unknown spot rates and $p_i$ the market quotes of the considered products. The iterative procedure we have applied before exploits the first equation to find $S_1 = f_1^{-1}(p_1)$, the second to find $S_2 = f_2^{-1}(S_1, p_2)$ and so on and so forth; this algorithm works since each equation will determine exactly one \emph{free} spot rate which is not already determined by the others.
+
+\subsection{Bootstrapping as Minimization Problem}
+We can now describe the bootstrap algorithm in general terms as follows:
+\begin{enumerate}
+\item define a set of yielding products (e.g. coupon-bearing bonds, swaps);
+%\item derive discount factors for the corresponding terms;
+\item \emph{bootstrap} the zero-coupon curve, successively calibrating it such that it returns the market quotes of these inputs.
+\end{enumerate}
+
+Instead of iteratively finding the solution of each equation as before, we could define a vector of spot rates $\mathbf{S} = (S_1, S_2, S_3, \ldots)$ seeking for a particular $\mathbf{\hat{S}}$ which solves the following equation:
+
+\begin{equation}
+F = f_1^2(\hat{S}_1) + f_2^2(\hat{S}_1, \hat{S}_2) + f_3^2(\hat{S}_1, \hat{S}_2, \hat{S}_3) + f_4^2(\hat{S}_1, \hat{S}_2, \hat{S}_3, \hat{S}_4) + \ldots = 0
+\end{equation}
+
+Under this terms the bootstrap method can be considered as a minimization algorithm, indeed we need to find $\mathbf{\hat{S}}$ which \emph{minimize} $F$, or makes it as close as possible to 0.
+Notice how each \(f_i\) is squared since we want all of them to be minimized at the same time and not only \(F\) globally (i.e. without the square there may be cancellation effects between the terms of the sum).
+
+\subsection{Minimization Algorithm}\label{minimization-algorithm}
+
+A minimization algorithm follows these steps:
+
+\begin{itemize}
+\tightlist
+\item
+  define an \emph{objective function} i.e. the function that has to be
+  minimized to reach our goal;
+\item
+  set the initial value of the unknown parameters (\(\mathbf{x_0}\)) and their range of
+  variability;
+\item
+  the minimizer computes the objective function value;
+\item
+  then it moves the parameter values in such a way to find a smaller
+  value of the objective function (e.g. following the direction derivative w.r.t.
+  each parameter);
+\item if constraints are defined, they will be considered in the previous step;
+\item
+  the last three steps will be repeated until further variations of the
+  \(\mathbf{x}\) values won't change significantly the objective
+  function (i.e. we have found a minimum of the function so the
+  minimization process is completed !).
+\end{itemize}
+
+Let's see with a couple of example how minimization can be implemented in \texttt{python} using the function \texttt{scipy.optimize.minimize}.
+
+\subsubsection{Example}\label{example}
+
+Find the dimensions that will minimize the cost to
+manufacture a circular cylindrical can of volume, \(330~\mathrm{cm}^3\), see Figure~\ref{fig:cylinder}.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.7\textwidth]{figures/lesson4_3_0.png}
-\caption{Uniform distribution generated with \texttt{random.randint} function.}
-\label{fig:uniform_dist}
+\includegraphics[width=0.2\textwidth]{figures/cylinder.png}
+\caption{Graphical representation of the \emph{can} minimization example.}
+\label{fig:cylinder}
 \end{figure}
-    
-Another useful module that we will use later to generate random numbers is \texttt{numpy}. It has similar functionalities to \texttt{random} but in some cases it fits better to our needs.    
-Below an example with \texttt{numpy.random.normal} which allows to throw random numbers according to a normal distribution
-(\(\mathcal{N}(0, 1)\)), its plot is shown in Fig.~\ref{fig:gauss_dist}.
+
+Clearly to minimize the costs the company needs to reduce the can
+surface, given the required volume.
+
+\begin{equation} 
+S = 2\pi rh + 2\cdot(\pi r^2) 
+\end{equation}
+On the other hand we want the volume to be \(330~\mathrm{cm}^3\) so we
+can remove \(h\) from the previous equation:
+
+\begin{equation} 
+V = \pi r^2 h = 330\quad\implies h = \cfrac{330}{\pi r^2}
+\end{equation}
+So in the end the surface function to be minimized is:
+
+\begin{equation}
+S = 2\pi rh + 2\cdot(\pi r^2) = \cfrac{2\cdot 330}{r} + 2\cdot(\pi r^2)
+\end{equation}
+So we implement the objective function, \(\tt{x[0]}\) is the can radius:
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{numpy}\PY{n+nn}{.}\PY{n+nn}{random} \PY{k}{import} \PY{n}{normal}
-\PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
+\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{pi}
 
-\PY{n}{gauss} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{50000}\PY{p}{)}\PY{p}{:}
-  \PY{n}{gauss}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{normal}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-  
-\PY{n}{plt}\PY{o}{.}\PY{n}{hist}\PY{p}{(}\PY{n}{gauss}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{,} \PY{n+nb}{range}\PY{o}{=}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{]}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Example of Gaussian distribution from numpy}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\PY{k}{def} \PY{n+nf}{of}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{l+m+mi}{2}\PY{o}{*}\PY{l+m+mi}{330}\PY{o}{/}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{+} \PY{l+m+mi}{2}\PY{o}{*}\PY{n}{pi}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}
 \end{Verbatim}
 \end{tcolorbox}
 
- \begin{figure}
-   \centering
-   \includegraphics[width=0.7\textwidth]{figures/lesson4_5_0.png}
-   \caption{Normal distribution generated with \texttt{numpy.random.normal} function.}
-\label{fig:gauss_dist}
- \end{figure}
-
-\section{Practical Examples of Monte Carlo
-Simulation}\label{example-of-monte-carlo-simulation}
-
-In this Section we go through some applications of the Monte Carlo method.
-
-\subsection{Probability to draw two kings from a deck}
-Using a frequentist approach, we can calculate the
-probability of an event as the ratio of the number of favorable outcomes
-of an experiment (number of successes) and the number of all possible
-outcomes. 
-
-Imagine we would like to determine the probability of drawing two kings from a standard deck of cards.
-At the beginning we have 40 cards (i.e. the entire deck) with 4 possible kings so the probability to get a king is $4/40$. Next, assuming we got a king the first time, we are left with 39 cards and 3 kings only so the probability to get the second king is $3/39$. Since we want both events to happen, the final probability is the product of the two contributions:
-
-\[P_\textrm{two kings} = \frac{4}{40} \cdot \frac{3}{39} = \frac{1}{130} \approx 0.0077\]
-
-Let's now try with a MC simulation following the steps outlined above and check if we get the same number.
-\begin{itemize}
-\item \emph{Define a domain of possible inputs}: in this case the domain is a deck of cards. With the \texttt{*} operator a list can be easily repeated many times. In this case it is enough four times, once for each suit (in the example we also set the seed to 1 to make it reproducible).
+Set the limits to our unknown variable and its initial value:
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{random} \PY{k}{import} \PY{n}{sample}\PY{p}{,} \PY{n}{choices}\PY{p}{,} \PY{n}{seed}
-
-\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{deck} \PY{o}{=} \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{A}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{3}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{4}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{5}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{6}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{7}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{J}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Q}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{K}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{*} \PY{l+m+mi}{4}
- \end{Verbatim}
-\end{tcolorbox}
-
-\item \emph{Generate inputs randomly from a probability distribution over the defined domain}: which means we draw randomly cards with uniform probability since the deck is fair and all cards have the same probability to be drawn. 
-We plan to do 1 million simulations, each time with the \texttt{sample} function we pick up two cards with uniform probability from our virtual deck (for debugging purpose the first 10 trials are printed).
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{trials} \PY{o}{=} \PY{l+m+mi}{1000000}
-\PY{n}{successes} \PY{o}{=} \PY{l+m+mi}{0}
-
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{trials}\PY{p}{)}\PY{p}{:}
-  \PY{n}{cards} \PY{o}{=} \PY{n}{sample}\PY{p}{(}\PY{n}{deck}\PY{p}{,} \PY{n}{k}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}
-  \PY{k}{if} \PY{n}{i} \PY{o}{\PYZlt{}} \PY{l+m+mi}{10}\PY{p}{:}
-    \PY{n+nb}{print} \PY{p}{(}\PY{n}{cards}\PY{p}{)}
+\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}
+\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{)}\PY{p}{]}
 \end{Verbatim}
 \end{tcolorbox}
-
-\item \emph{Perform a deterministic computation on the generated inputs}: this step is particularly simple in this case, we just need to check if the draw is \texttt{['K', 'K']} and in case increase the counter of successes.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-  \PY{k}{if} \PY{n}{cards} \PY{o}{==} \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{K}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{K}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{:}
-    \PY{n}{successes} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
- \end{Verbatim}
-\end{tcolorbox}
-
-\item \emph{Aggregate the results}: finally we just print successes/trials which is the sought probability.
+Finally we run the minimization:
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{The probability to draw two kings is }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{successes}\PY{o}{/}\PY{n}{trials}\PY{p}{)}\PY{p}{)}
+\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{of}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{r}\PY{p}{)}
 
-['Q', '7']
-['5', '7']
-['J', '2']
-['Q', 'A']
-['5', '4']
-['7', '2']
-['2', '5']
-['J', 'Q']
-['A', 'Q']
-['J', '5']
-The probability to draw two kings is 0.0077
+      fun: 264.356810914805
+ hess\_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
+      jac: array([5.68434189e-06])
+  message: b'CONVERGENCE: NORM\_OF\_PROJECTED\_GRADIENT\_<=\_PGTOL'
+     nfev: 24
+      nit: 9
+   status: 0
+  success: True
+        x: array([3.7449385])
     \end{Verbatim}
 \end{tcolorbox}
-\end{itemize}
-The result is in agreement with our theoretical expectations.
 
-Since we relied on a frequentist approach naively we can say that the
-lower is the probability we need to estimate the higher has to be the
-number of simulated trials. This is because to get a reasonable number
-of "success" so that the uncertainty in the probability is small, we
-have to try many times. This is apparent playing with the number of
-trials in the above simulation. 
+So to minimize the cost the company should produce cans with a radius of
+about 3.745 cm (I suspect that Coke have done a similar calculation since the result is quite close to a real can).
 
-This is also the main reason why, despite its undoubted power, Monte Carlo simulation is not always the best approach to follow.
-Many times indeed the simulation of an experiment requires a lot of computing resources (and time) and it may not be practical to embark into such a large simulation.
+\subsubsection{Example with Constraint}\label{example-with-constraint}
 
-\subsection{Determine \(\pi\)}\label{determine-pi}
+We are going to fence in a rectangular field. If we look at the field
+from above the cost of the vertical sides are \$10/m, the cost of the
+bottom is \$2/m and the cost of the top is \$7/m. If we have \$700 determine
+the dimensions of the field that will maximize the enclosed area, see Fig.~\ref{fig:field}.
 
-Also in this case we know what to expect:
-\(\pi\approx 3.141592653589793\ldots\) In order to get an estimate through MC
-simulation a straightforward geometric approach has to be considered. Imagine a circle of diameter \(D\) which is inscribed in a square with side length \(D\), see Fig.~\ref{fig:circle_inscribed}.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.3\textwidth]{figures/circle_inscribed.jpeg}
-	\caption{A circle of diameter $D$ inscribed in a square.}
-	\label{fig:circle_inscribed}
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.4\textwidth]{figures/field.png}
+\caption{Graphical representation of the \emph{field} minimization example.}
+\label{fig:field}
 \end{figure}
 
-Computing the ratio of the area of the 2 figures
-
-\begin{equation}
-\frac{\textrm{Area Circle}}{\textrm{Area Square}} = \frac{\pi D^2/4}{D^2} = \frac{\pi}{4} 
-\end{equation}
-
-The algorithm to approximate \(\pi\) should be
-
-\begin{itemize}
-	\item select 2 random numbers, \(x_1\) and \(x_2\), from the interval
-\([0,D]\); 
-\item determine if the point defined by the ordered pair
-\((x_1, x_2)\) lies within or on the circle, keeping track of the total number of
-tested points and of those satisfying the condition \(D \le\sqrt{x_1^2 + x_2^2}\); 
-\item approximate the ratio of the areas by the number of points within or on
-the circle divided by the total number of tested points; 
-\item multiply the approximated area by 4 to get \(\pi\).
-\end{itemize}
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{random} \PY{k}{import} \PY{n}{random}\PY{p}{,} \PY{n}{seed}
-\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{sqrt}
-	
-\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{in\PYZus{}circle} \PY{o}{=} \PY{l+m+mf}{0.0}
-\PY{n}{trials} \PY{o}{=} \PY{l+m+mi}{10000}
-	
-\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{trials}\PY{p}{)}\PY{p}{:}
-    \PY{n}{x1} \PY{o}{=} \PY{n}{random}\PY{p}{(}\PY{p}{)}
-    \PY{n}{x2} \PY{o}{=} \PY{n}{random}\PY{p}{(}\PY{p}{)}
-    \PY{n}{r} \PY{o}{=} \PY{n}{sqrt}\PY{p}{(}\PY{n+nb}{pow}\PY{p}{(}\PY{n}{x1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{)} \PY{o}{+} \PY{n+nb}{pow}\PY{p}{(}\PY{n}{x2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}
-    \PY{k}{if} \PY{n}{r} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{l+m+mi}{1}\PY{p}{:}
-        \PY{n}{in\PYZus{}circle} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
-	
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Approx. pi: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{in\PYZus{}circle}\PY{o}{/}\PY{n}{trials}\PY{o}{*}\PY{l+m+mi}{4}\PY{p}{)}\PY{p}{)}
-
-Approx. pi: 3.1416
-\end{Verbatim}
-\end{tcolorbox}
-
-\section{Accuracy of Monte Carlo Simulation}
-
-The \href{https://en.wikipedia.org/wiki/Central_limit_theorem}{central limit theorem} states that if we have
-\(Y_1, Y_2,\dots, Y_n\) which are random samples from a distribution
-\(Y\) with true mean \(\mu\) and variance \(\sigma^{2}\), then if \(n\)
-is sufficiently large,
-
-\[ \mu_n = \cfrac{1}{n}\sum_i^n Y_i \] has approximately a normal
-distribution \(\mathcal{N}(\mu, \sigma^2/n)\).
-
-This means that if one repeats the MC experiment many times 
-(e.g. changing the seed of the random number generator) would obtain results normally distributed around the \emph{true} value \(\mu\).
-
-We can check the central limit theorem by repeating many times the
-MC experiment with our virtual deck and check how the distribution of $\mu_n$ behaves.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} define the domain of inputs}
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{random} \PY{k}{import} \PY{n}{sample}\PY{p}{,} \PY{n}{seed}
-	
-\PY{n}{deck} \PY{o}{=} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{A}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{K}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}  \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Q}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{J}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{3}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{4}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{5}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{6}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{7}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{*} \PY{l+m+mi}{4}
-\PY{n}{experiments} \PY{o}{=} \PY{l+m+mi}{10000}
-\PY{n}{trials} \PY{o}{=} \PY{l+m+mi}{10000}
-\PY{n}{r} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{e} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{experiments}\PY{p}{)}\PY{p}{:}
-    \PY{n}{seed}\PY{p}{(}\PY{n}{e}\PY{p}{)}
-    \PY{n}{successes} \PY{o}{=} \PY{l+m+mf}{0.0}
-    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{trials}\PY{p}{)}\PY{p}{:}
-        \PY{n}{cards} \PY{o}{=} \PY{n}{sample}\PY{p}{(}\PY{n}{deck}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{)}
-        \PY{k}{if} \PY{n}{cards} \PY{o}{==} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{K}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{K}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{:}
-            \PY{n}{successes} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
-	
-    \PY{n}{r}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{successes}\PY{o}{/}\PY{n}{trials}\PY{p}{)}
-	
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Mean: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{r}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Std : }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{r}\PY{p}{)}\PY{p}{)}
-
-Mean:  0.00769388
-Std :  0.0008770499105524154
-\end{Verbatim}
-\end{tcolorbox}
-
-\begin{figure}[tb]
-	\centering
-	\includegraphics[width=1\textwidth]{figures/lesson4_25_0.png}
-	\caption{Evolution of the distribution of $\mu_n$ with the increase of
-	the number of MC experiments (100, 500, 10000).}
-\label{fig:repeated_MC}
-\end{figure}
-
-Looking at Fig.~\ref{fig:repeated_MC} it is clear how increasing the number of
-experiments the distribution of the results becomes more and more Gaussian-like.
-From the central limit theorem hence: 
-
-\begin{equation}
-\mu_n - \mu \approx \mathcal{N}(0, \sigma^2/n)
-\end{equation}
-
-\begin{figure}[tb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/confidence_interval.png}
-	\caption{Confidence interval for a MC experiment.}
-	\label{fig:confidence_interval}
-\end{figure}
-
-Considering one single Monte Carlo experiment we can define an
-interval so that there is a certain probability to find \(\mu\) in
-there. Referring to Fig.~\ref{fig:confidence_interval} we can write:
-
-\begin{equation}
-P\left(\mu_n - \cfrac{1.96\sigma}{\sqrt{n}}\le \mu \le \mu_n + \cfrac{1.96\sigma}{\sqrt{n}}\right) = 0.95
-\end{equation}
-probability which correspond to the shaded area.
-
-This interval is called \textbf{95\% confidence interval} because
-it covers 95\% of the total area under the Gaussian. It can be
-interpreted like the following: if you repeat many times the simulation, 
-the fraction of calculated confidence intervals that contains the true
-parameter \(\mu\) would tend toward 95\%.
-
-The most commonly used intervals are 99\% and 95\% confidence level and are
-respectively defined as \(\pm \cfrac{2.57\sigma}{\sqrt{n}}\) and
-\(\pm \cfrac{1.96\sigma}{\sqrt{n}}\).
-
-To construct an interval with a custom confidence level $\alpha$, we have to find a number $A$ such that
-\begin{equation}
-\Phi(A) = 1 - \frac{1-\alpha}{2}\quad\implies\quad A = \Phi^{-1}\left(\cfrac{1+\alpha}{2}\right)
-\label{for:A}
-\end{equation}
-then the $\alpha$-confidence interval guarantees
-\begin{equation}
-P(\mu - A\sigma \le X \le \mu+ A\sigma) = \alpha 
-\end{equation}
-
-Below an example of how to compute a confidence level in \texttt{python} given a set of fake simulations. To note that the inverse of the Gaussian CDF ($\Phi^{-1}$), used in Equation~\ref{for:A}, is computed with the method \texttt{norm.ppf()} (more details on CDF in Chapter~\ref{quantile-function}).
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
-	
-\PY{n}{samples} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{p}{,}\PY{l+m+mf}{2.}\PY{p}{,}\PY{l+m+mf}{3.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{5.}\PY{p}{,}\PY{l+m+mf}{5.}\PY{p}{,}\PY{l+m+mf}{5.}\PY{p}{,}\PY{l+m+mf}{5.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{6.}\PY{p}{,}\PY{l+m+mf}{7.}\PY{p}{,}\PY{l+m+mf}{8.}\PY{p}{]}
-\PY{n}{alpha} \PY{o}{=} \PY{l+m+mf}{0.95}
-	
-\PY{n}{X} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{n}{samples}\PY{p}{)}
-\PY{n}{A} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{+} \PY{n}{alpha}\PY{p}{)}\PY{o}{/}\PY{l+m+mi}{2}\PY{p}{)}
-\PY{n}{m}\PY{p}{,} \PY{n}{se} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{X}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{X}\PY{p}{)}
-\PY{n}{h} \PY{o}{=} \PY{n}{A}\PY{o}{*}\PY{n}{se}\PY{o}{/}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{samples}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.0f\PYZcb{}}\PY{l+s+si}{\PYZpc{} c}\PY{l+s+s2}{onfidence interval: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{ +\PYZhy{} }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{alpha}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{,} \PY{n}{m}\PY{p}{,} \PY{n}{h}\PY{p}{)}\PY{p}{)}
-	
-95\% confidence interval: 4.4375 +- 0.8119808363806419
-\end{Verbatim}
-\end{tcolorbox}
-
-The confidence interval can be used to assess the accuracy of the Monte
-Carlo simulation. The root mean squared error on our best estimate of
-\(\mu\) is:
-
-\[ \mathrm{RMSE}(\mu_n) = \sqrt{\mathbb{E}((\mu_n - \mu )^2)} = \sqrt{\cfrac{\sigma^2}{n}}=\cfrac{\sigma}{\sqrt{n}} \]
-where \(\sigma^2 = \mathrm{Var}(Y)\).
-
-While it is obvious that the estimate should get worse with increased variance and better with increased sample size, this equation  gives us the exact rate of exchange. Indeed the RMSE tells us that to get one more decimal digit of accuracy (i.e. an RMSE one tenth as large) requires a 100-fold increase in computation. To get three more digits of accuracy requires one million times as much computation. From that it is clear that Monte Carlo computation is poorly suited for problems that must be answered with high precision.
-
-\section{Derivation of log-normal Stochastic Differential
-Equation}\label{derivation-of-log-normal-stochastic-differential-equation}
-
-In this Section we will see how to implement the simulation of a stock price which deviates from a steady state as a result of random fluctuations given by the trades. 
-
-Considering a stock with a price \(S_t\) and its expected rate of return \(\mu\); the relative change in its price during a period \(dt\) can be decomposed in two parts
+In this example there are two differences with respect to the previous one:
 
 \begin{itemize}
 \tightlist
 \item
-  a deterministic part: that is the expected return from the stock held
-  during the time period \(dt\) and which can be expressed as \(\mu S_tdt\)
+  we want to maximize a quantity (not minimize);
 \item
-  a stochastic part: which reflects the random changes of the market
-  (e.g. as a response to external effects such as unexpected news). A
-  reasonable assumption is to take this contribution proportional to the
-  stock so \(\sigma S_t dB_t\), where \(dB_t\) is a so called random walk process equal to \(\epsilon\sqrt{t}=\mathcal{N}(0,1)\sqrt{t}\).
+  there is a constraint (we have a limited amount of money).
 \end{itemize}
-Putting the two contributions together the resulting differential equation is:
 
-\begin{equation}
-  dS_t = \mu S_tdt + \sigma S_tdB_t
-  \label{eq:differential}
-\end{equation}
-or dividing by $S_t$
-\begin{equation}
-\frac{dS_t}{S_t} = d\textrm{log}(S_t) = \mu dt + \sigma dB_t
-\end{equation}
-
-The solution of this equation can be derived by applying the
-It\(\hat{o}\)'s formula which states that for any given function
-\(G(S, t)\) where \(S\) satisfies the following stochastic differential
-equation \(dS=a\cdot dt +b\cdot dB_t\) it holds:
-
-\begin{equation}
-dG=\big(a\frac{\partial G}{\partial S} + \frac{\partial G}{\partial t} + \frac{1}{2}b^2\frac{\partial^2 G}{\partial S^2} \big)dt + b \frac{\partial G}{\partial S}dB
-\label{eq:itos_lemma}
-\end{equation}
-
-Now if we set \(G = \textrm{log}(S_t)\) we can compute the derivatives:
-
-\begin{equation}
-\begin{gathered}
-\frac{\partial G}{\partial S} = \frac{1}{S_t}\\
-\frac{\partial G}{\partial t} = 0\\
-\frac{\partial^2 G}{\partial S^2} = -\frac{1}{S_t^{2}}
-\end{gathered}
-\end{equation}
-
-Substituting back into Eq.~\ref{eq:itos_lemma} and taking the values of $a$ and $b$ from Eq.~\ref{eq:differential} we get:
-
-\begin{equation}
-\begin{gathered}
-d(\textrm{log} S_t) = \big(\mu S_t \cfrac{1}{S_t} + \cfrac{1}{2}\sigma^2 S_t^2 (-\cfrac{1}{S_t^2})\big)dt + \sigma\epsilon\sqrt{dt}\\
-d(\textrm{log} S_t) = \textrm{log} (S_t) - \textrm{log} (S_{t-1}) = \textrm{log} \cfrac{S_t}{S_{t-1}} = \big(\mu - \cfrac{1}{2}\sigma^2\big)dt + \sigma\epsilon\sqrt{dt}\\
-S_t = S_{t-1}e^{\big(\mu - \cfrac{1}{2}\sigma^2\big)dt + \sigma\epsilon\sqrt{dt}}
-\end{gathered}
-\end{equation}
-
-As can be seen from the following equation:
-
-\begin{equation}
-d(\textrm{log} S_t) = \big(\mu - \cfrac{1}{2}\sigma^2\big)dt + \sigma\epsilon\sqrt{dt}
-\end{equation}
-the change in \(\textrm{log} S_t\) has a constant \emph{drift} with respect to time \(\mu - \frac{1}{2}\sigma^2\) and a constant variance rate \(\sigma^2\)
-(remember that \(\epsilon\) is a normally distributed random variable
-\(\mathcal{N}(0,1)\)). So you have a constant plus a Gaussian
-distributed variable, therefore \(\textrm{log} S_t\) at some time \(T\)
-is normally distributed with:
-
-\begin{equation}
-\textrm{log}S_t - \textrm{log}S_0 \approx\mathcal{N}\big[\big(\mu-\frac{\sigma^2}{2}\big)T, \sigma^2 T\big]
-\end{equation}
-
-This equation shows that \(\textrm{log}S_t\) is normally distributed,
-and \textbf{such a variable whose logarithm is normally distributed is said
-to be log-normal}. 
-
-The model we have just developed implies that
-the stock price at time T, given today's price, is log-normally
-distributed. One of the nicer properties of a log-normal distribution is to be positive defined and that's why log-normality is an important characteristic for stole prices: we need to \emph{ensure} that will never be negative. 
-
-Actually this result was expected, in fact looking at the initial \(dS\) equation (Eq.~\ref{eq:differential}) we had:
-
-\begin{equation}
-dS_t = \mu S_tdt + \sigma S_tdB_t
-\end{equation}
-which shows that the closer \(S_t\) is to 0, the smaller is its variation \(dS\), so it will never go negative.
-
-\subsection{Simulation of a Stock Price}
-
-Now that we are able to approximate the course of a stock price, let's implement a simulation.
+So let's repeat the steps as before. The objective is to maximize the
+enclosed area \(A\) but we are able to just minimize so we can define in the objective function the quantity \(-A\), so that if we minimize it
+we maximize the area $A$. Define the length and the width of the field with \(\tt{x[0]}\) and
+\(\tt{x[1]}\) (items of the list \(\tt{x}\)):
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{numpy}\PY{n+nn}{.}\PY{n+nn}{random} \PY{k}{import} \PY{n}{normal}\PY{p}{,} \PY{n}{seed} 
-\PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt} 
-\PY{k+kn}{import} \PY{n+nn}{math}
-		
-\PY{c+c1}{\PYZsh{}initial price}
-\PY{n}{S} \PY{o}{=} \PY{l+m+mi}{100}
-\PY{n}{mu} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{l+m+mf}{0.01} 
-\PY{n}{sigma} \PY{o}{=} \PY{l+m+mf}{0.05} 
-\PY{n}{T}\PY{o}{=}\PY{l+m+mi}{1}
-\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)} 
-\PY{n}{historical\PYZus{}series} \PY{o}{=} \PY{p}{[}\PY{n}{S0}\PY{p}{]}
-\PY{c+c1}{\PYZsh{} 30 days simulation}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{30}\PY{p}{)}\PY{p}{:}
-    \PY{n}{S} \PY{o}{=} \PY{n}{S} \PY{o}{*} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{p}{(}\PY{n}{mu} \PY{o}{\PYZhy{}} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{sigma} \PY{o}{*} \PY{n}{sigma}\PY{p}{)} \PY{o}{*} \PY{n}{T} \PY{o}{+}
-    \PY{n}{sigma} \PY{o}{*} \PY{n}{math}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{T}\PY{p}{)} \PY{o}{*} \PY{n}{normal}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-    \PY{n}{historical\PYZus{}series}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{S}\PY{p}{)}
+\PY{k}{def} \PY{n+nf}{of}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{o}{\PYZhy{}}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}
 \end{Verbatim}
 \end{tcolorbox}
-The result of the simulation is shown in Fig.~\ref{fig:stock_price_sim}.
 
-\begin{figure}[b]
+We can set the boundaries for length and width and their initial values (1~m each):
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}
+\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{)} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{x0}\PY{p}{)}\PY{p}{)}\PY{p}{]}
+\end{Verbatim}
+\end{tcolorbox}
+
+We have also to impose the constraint on the money. This is done by
+defining a function that compute the money spent with the fence and
+compare it to \$700. The constraint is passed to the minimizer with a
+dictionary which has two keys: \(\tt{type}\), in this case, with value \(\tt{eq}\)
+(like equality, since we want to spend all of our available money so the
+fence has to cost exactly \$700) and \(\tt{fun}\) whose value is the constraint function which will have to implement a calculation like
+
+\[\mathrm{fence~cost} = l\cdot10 + l\cdot10 + w\cdot2 + w\cdot7 = 700\]
+\[700 - l\cdot10 - l\cdot10 - w\cdot2 - w\cdot7 = 0\].
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{cons}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{l+m+mi}{700} \PY{o}{\PYZhy{}} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{l+m+mi}{20} \PY{o}{\PYZhy{}} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{\PYZhy{}} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{*}\PY{l+m+mi}{7}
+
+\PY{n}{constraints} \PY{o}{=} \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{cons}\PY{p}{\PYZcb{}}
+\end{Verbatim}
+\end{tcolorbox}
+Now we can call the minimizer.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{of}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{r}\PY{p}{)}
+
+     fun: -680.5555555555482
+     jac: array([-38.88889313, -17.5       ])
+ message: 'Optimization terminated successfully.'
+    nfev: 16
+     nit: 4
+    njev: 4
+  status: 0
+ success: True
+       x: array([17.49999818, 38.88889293])
+    \end{Verbatim}
+\end{tcolorbox}
+
+So the field will come out \(17.5\)~m long and \(38.9\)~m wide.
+
+\subsection{Local Minima}
+When the objective function has local minima the choice of the initial value of the parameters can be critical. 
+Assume we would like to minimize an objective function like 
+
+\[
+f(x) = \cfrac{\mathrm{cos}(3\pi x)}{x}
+\]
+This function is plotted in Fig.~\ref{fig:local_minima} in the range $[0, 2]$, and it is clear that it has many minima. 
+
+\begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.7\textwidth]{figures/lesson4_29_0.png}
-	\caption{Simulation with Monte Carlo method of a stock price, using the log-normal evolution.}
-	\label{fig:stock_price_sim}
+	\includegraphics[width=0.7\textwidth]{figures/local_minima.png}
+	\caption{Plot of an example function with many local minima. The red points highlights initial value and minimum found in a \emph{bad} minimization, green points for a good minimization.}
+	\label{fig:local_minima}
 \end{figure}
 
+Let's try to find a minimum and set the initial value to $x=1.1$.
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
+\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.1}\PY{p}{]}
+\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{]}
+		
+\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{r}\PY{p}{)}
 
+     fun: array([-1.00569871])
+hess\_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
+     jac: array([-4.4408921e-07])
+ message: b'CONVERGENCE: NORM\_OF\_PROJECTED\_GRADIENT\_<=\_PGTOL'
+    nfev: 16
+     nit: 5
+  status: 0
+ success: True
+       x: array([0.98865633])
+\end{Verbatim}
+\end{tcolorbox}
+The minimization worked perfectly and we found $x=0.98865633$ (i.e. the red point in Fig.~\ref{fig:local_minima}) but still from the same Figure it is clear that this is not the absolute minimum we wanted to find. The problem arise since the algorithm has got stuck in a local minimum without any possibility to jump out from the well.
+
+If we repeat the minimization using as initial value $0.5$ instead
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
+\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.5}\PY{p}{]}
+\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{]}
+		
+\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{r}\PY{p}{)}
+
+     fun: array([-3.17151711])
+hess\_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
+     jac: array([9.76996262e-07])
+ message: b'CONVERGENCE: NORM\_OF\_PROJECTED\_GRADIENT\_<=\_PGTOL'
+    nfev: 16
+     nit: 5
+  status: 0
+ success: True
+       x: array([0.29691798])
+\end{Verbatim}
+\end{tcolorbox}
+Now clearly the algorithm found the absolute minimum in $x=0.29691798$ (i.e. the green point in Fig.~\ref{fig:local_minima}) because there was no chance to find a local minimum during the iterations.
+
+This is just an example of what could happen, a possible solution for more complicated cases is to make a \emph{scan} of the objective function to try to approximately determine where the global minimum is and choose suitable initial values for our parameters.
+There shouldn't be such an issue in the application of the bootstrap algorithm though since the function that we are going to minimize is a sum of squared terms which has no local minima, just a global minimum (i.e. it is a hyper-parabola).
+
+\subsection{OIS Example}\label{ois-example}
+Back to our Overnight Index Swap, the general idea here is to get the discount curve \(\mathcal{C}\) such that it prices correctly each OIS by minimizing the sum of their NPV squared (our \(f_i\)):
+
+\begin{equation}
+\mathrm{min}_{\mathcal{C}} \Big\{\sum_{i=1}^{n}\mathrm{NPV}(\mathrm{OIS}_i, \mathcal{C})^2\Big\}
+\end{equation}
+
+A discount curve is characterized by pillar dates and the corresponding discount factors. The description of the problem we have given above does not, in theory, specifies any constraint on the number of pillar dates of the discount curve \(\mathcal{C}\). However, the pillar dates determine the number of unknown variables (i.e. the dimensionality \(N\) of the optimization problem). A curve with \(N\) pillar dates has \(N\) discount factors (note that the first discount factor with value date equal to the today date, is constrained to 1). \textbf{In practice, therefore, it makes sense to choose the pillar dates in such a way that there are exactly the right number of degrees of freedom in the optimization to match data.} So the natural choice is to choose the pillar dates of the discount curve equal to the set of expiry dates of the swaps.
+
+Once we've fixed \(\mathbf{d}\) to be a vector of pillar dates equal to the expiry dates of the swaps, and we use the notation \(\mathbf{x}\) to represent the vector of pillar discount factors, then the problem becomes:
+
+\begin{equation}
+\mathrm{min}_{\mathbf{x}} \Big\{\sum_{i=1}^{N}\mathrm{NPV}(\mathrm{OIS}_i, \mathcal{C}(\mathbf{d}, \mathbf{x}))^2\Big\}
+\end{equation}
+which is our optimization problem (\textbf{to find the minimum of the
+above expression as a function of x}) that can be solved using one of
+the available numerical optimization routines in \(\tt{python}\).
+
+So first let's create the swaps according to all the available market
+quotes and also the pillar dates of our final discount curve:
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
+
+\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}
+\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{observation\PYZus{}date}\PY{p}{]}
+\PY{n}{swaps} \PY{o}{=} \PY{p}{[}\PY{p}{]} \PY{c+c1}{\PYZsh{} container of the OIS objects}
+
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{df}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+    \PY{n}{swap} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,}
+                    \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,}  
+                                        \PY{n}{mq}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{months}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+                    \PY{l+m+mf}{0.01} \PY{o}{*} \PY{n}{mq}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{quote}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}
+
+    \PY{n}{swaps}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{swap}\PY{p}{)}
+    \PY{n}{pillar\PYZus{}dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{swap}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
+
+\PY{c+c1}{\PYZsh{} this shouldn\PYZsq{}t be necessary if the original}
+\PY{c+c1}{\PYZsh{} list of market quotes is sorted}
+\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{n+nb}{sorted}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+So let's implement the method with the swaps we have just created, of course we don't need to write our minimisation algorithm since we can use the one provided by \texttt{python} which is defined in \texttt{scipy.optimize}, function \texttt{minimize}.
+
+\begin{itemize}
+\tightlist
+\item
+  define the objective function: the sum of the squared NPVs of the OIS
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{objective\PYZus{}function}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
+    \PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{x}\PY{p}{)}
+    
+    \PY{n}{sum\PYZus{}sq} \PY{o}{=} \PY{l+m+mf}{0.0}
+    \PY{k}{for} \PY{n}{swap} \PY{o+ow}{in} \PY{n}{swaps}\PY{p}{:}
+        \PY{n}{sum\PYZus{}sq} \PY{o}{+}\PY{o}{=} \PY{n}{swap}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{curve}\PY{p}{)} \PY{o}{*}\PY{o}{*} \PY{l+m+mi}{2}
+    \PY{k}{return} \PY{n}{sum\PYZus{}sq}
+\end{Verbatim}
+\end{tcolorbox}
+
+\item
+  set the initial value of the discount factors (\(x_i^0\)) to 1 with a
+  range of variability \([ 0.01, 10]\), in addition the first element of
+  the list, today's discount factor, will be fixed to 1 (variability
+  \([1, 1]\))
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{]}
+
+\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{10.0}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{]}
+\PY{n}{bounds}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{1.0}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\item
+  finally we can launch the minimizer to find the discount factors
+  (\(\mathbf{x}\))
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
+
+\PY{n}{result} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{objective\PYZus{}function}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{result}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{Verbatim}[commandchars=\\\{\}]
+      fun: 0.000819919032900304
+ hess\_inv: <34x34 LbfgsInvHessProduct with dtype=float64>
+      jac: array([ 6.58948735e+05, -1.58720803e+01, -6.53143264e+01,
+-1.03323232e+02,
+       -1.26050260e+02, -1.31748898e+02, -1.20374599e+02, -9.15399651e+01,
+       -4.24363322e+01,  2.44903182e+01,  1.14345243e+02,  2.22002243e+02,
+       -3.72021700e+00,  4.21398633e+01,  4.21787852e+01,  4.22369487e+01,
+        4.23327026e+01,  4.31814758e+01,  4.44924460e+01,  4.62078978e+01,
+        4.82906823e+01, -3.69972738e+00, -1.42454702e+00,  7.53771932e-01,
+        2.79741018e+00,  4.62896699e+00,  6.24844054e+00,  9.93101553e+00,
+        1.31122434e+01,  1.42880909e+01,  1.48279215e+01,  1.50787019e+01,
+        1.43267935e+01,  1.38451324e+01])
+  message: b'CONVERGENCE: REL\_REDUCTION\_OF\_F\_<=\_FACTR*EPSMCH'
+     nfev: 840
+      nit: 7
+   status: 0
+  success: True
+        x: array([1.        , 1.00030147, 1.00058831, 1.00089012, 1.00119726,
+                  1.00147996, 1.00178743, 1.00208107, 1.00238467, 1.00267865,
+                  1.00298261, 1.00327737, 1.00357104, 1.00357104, 1.00355063,
+                  1.00352002, 1.00346901, 1.00302007, 1.00232627, 1.00141821,
+                  1.00031629, 0.99911234, 0.99790839, 0.99675545, 0.99567393,
+                  0.99470465, 0.9938476 , 0.99189884, 0.99021534, 0.98959296,
+                  0.98930728, 0.98917464, 0.98957256, 0.98982763])
+\end{Verbatim}
+\end{itemize}
+
+Printing the result gives us the a lot of information about the minimisation just performed, the most useful are:
+\begin{itemize}
+\item \texttt{func}: the value of the objective function at the last iteration;
+\item \texttt{message}: the summary message from the algorithm (if it is \texttt{CONVERGENCE} is OK);
+\item \texttt{success}: the name is self explanatory;
+\item \texttt{x}: the vector of unknown parameters that have been optimised.
+\end{itemize}
+
+Another useful check to perform in order to understand if everything went fine, is the comparison of the objective function with the initial guessed parameters and at the end of the minimisation.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Initial objective function value }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{objective\PYZus{}function}\PY{p}{(}\PY{n}{x0}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Final objective function value }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{objective\PYZus{}function}\PY{p}{(}\PY{n}{result}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}
+	
+Initial objective function value  26.27213544937082
+Final objective function value  5.664309920943246e-11
+\end{Verbatim}
+\end{tcolorbox}
+The objective function at the end of the minimisation is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied, we started with $30$ and now it is $10^{-11}$ so 13 orders of magnitude smaller. This means that with the derived discount curve the NPV's of our OIS won't be identically 0 but so small that we can consider them as they were.
+
+It can be very useful to also look at some diagnostic plots to check if the minimization was successful. Figure~\ref{fig:minimization_diagnostic} reports on the left the objective function value as a function of discount factor $(x_1)$; clearly we have found a minimum (the orange point represent $x_1$ value at the end of the minimization). On the right instead, the value of the objective function at each iteration is shown, its value is decreasing dramatically (notice that the $y$ axis is drawn in log scale).
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.45\linewidth]{figures/obj_func.png}
+	\includegraphics[width=0.45\linewidth]{figures/obj_func_iter.png}
+	\caption{Diagnostic plots for the minimization algorithm. On the left the objective function value as a function of the discount factor $x_1$, on the right the objective function value as a function of the iteration number (the orange point represent $x_1$ value at the end of the minimization).}
+	\label{fig:minimization_diagnostic}
+\end{figure}
+
+Finally we can create the discount curve implied by the market quotes of
+our swaps (see Fig.~\ref{fig:discount_curve}) and try to compute some implied rates.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{log}
+	
+\PY{n}{dfs} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{insert}\PY{p}{(}\PY{n}{result}\PY{o}{.}\PY{n}{x}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+\PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{dfs}\PY{p}{)}
+	
+\PY{n}{d} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2059}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{40y df: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{40y rate: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{log}\PY{p}{(}\PY{n}{curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d}\PY{p}{)}\PY{p}{)} \PY{o}{/} \PY{l+m+mi}{40}\PY{p}{)}\PY{p}{)}             
+	
+40y df: 0.6454865298509954
+40y rate: 0.01094377341721375
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/example_discount_curve.png}
+	\caption{Plot of the discount curve implied by Overnight Index Swap market quotes.}
+	\label{fig:discount_curve}
+\end{figure}
