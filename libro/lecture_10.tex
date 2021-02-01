@@ -21,16 +21,17 @@ irrelevant.
 
 A particular type of a Markov stochastic
 process and presumably the simplest process is the so called \emph{Wiener
-process} or elementary Brownian motion, which is characterized by stationary and independent increments that are normally distributed based on the size of the increments.
+process} or elementary Brownian motion, which is characterized by stationary and 
+independent increments that are normally distributed based on the size of the increments.
 Those increments can be expressed as
 
 \begin{equation}
 \Delta W = z\sqrt{\Delta t}
 \end{equation}
-where z is  assumed to be $z ∼ \phi (0, 1)$ and $\phi$ represents the standard normal Gaussian. 
+where z is  assumed to be $z ∼ \mathcal{N}(0, 1)$ and $\mathcal{N}$ represents the standard normal Gaussian. 
 The mean of $\Delta W$ is zero and its variance is 
 $\Delta t$, which means the standard deviation grows with the square root of time.
-It follows that $W(t) ∼ \phi (0, t)$. Figure~\ref{fig:wiener_process} shows two examples
+It follows that $W(t) ∼ \mathcal{N}(0, t)$. Figure~\ref{fig:wiener_process} shows two examples
 of Wiener processes.
 
 \begin{figure}[htb]
@@ -52,7 +53,7 @@ deterministic and independent of both the time $t$ and the variable $X$, the pro
 \begin{equation}
 dX(t) = \mu dt + \sigma dW(t)
 \end{equation}
-thus $X(t) ∼ \phi(\mu t, \sigma^2 t)$.
+thus $X(t) ∼ \mathcal{N}(\mu t, \sigma^2 t)$.
 
 Since an arithmetic Brownian motion can also take
 negative values, this type of process is apparently unsuitable for
@@ -152,6 +153,85 @@ Actually this result was expected, in fact looking at the initial \(dS\) equatio
 dS_t = \mu S_tdt + \sigma S_t dW_t
 \end{equation}
 which shows that the closer \(S_t\) is to 0, the smaller is its variation \(dS\), so it will never go negative.
+
+
+\section {Simulating Stochastic Differential Equations}
+It has been previously shown that we need to simulate SDEs in order to estimate 
+quantities of interest if we are unable to compute them analytically. 
+This means the simulation is no longer exact, but rather an approximation.
+
+There are several kinds of numerical schemes to solve different SDEs. 
+However, we restrict our discussion to the two probably most fundamental methods, 
+the Euler scheme and the Milstein scheme. 
+
+As a starting point for both methods, we firstly consider an ordinary SDE of the form
+\begin{equation}
+dX(t) = \mu(t, X(t))dt + \sigma(t, X(t)) dW (t)
+\label{eq:sde}
+\end{equation}
+
+Note that both the drift $\mu$ and the diffusion $\sigma$ are functions of the process 
+variable $X$ and the time $t$. Suppose that we are interested in simulating values of 
+$X(T)$ without knowing its distribution. Possible reasons for this are either 
+that Eq.~\ref{eq:sde} is simply not solvable and therefore one is not able to find 
+an explicit solution for $X(T)$.
+
+Keep in mind that when we are simulating an SDE, we are actually simulating a 
+discretized version of an SDE. Therefore, a general hat notation $\hat{X}$ 
+is introduced to indicate that $`\hat{X}$ is a time-discretized approximation of the true value $X$.
+
+\subsection{Euler Scheme}
+The Euler scheme is the simplest and probably most common discretization scheme 
+available. As already mentioned we generally simulate a discretized process, 
+$\{X_b, X_{2b},\ldots, X_{mb}\} = \{X(t_i), X(t_{i+1}),...,X(t_{i+n})\}$, where 
+the time steps $\Delta t$ are constant and denoted by $b$. Furthermore, the 
+variable $m$ indicates the total number of simulated time steps, while $mb = T$.
+
+Taking these preliminary considerations into account, the Euler scheme is given by
+\begin{equation}
+X(t_{i+1}) = X(t_i) + \mu(t_i , X(t_i))b + \sigma(t_i , X(t_i))\sqrt{b}Z_{i+1}
+\label{eq:euler_scheme}
+\end{equation}
+where $Z_i$ are independent standard normal random vectors, $Z_i ∼ \mathcal{N}(0,I)$. 
+The implementation of this method is straightforward, at least if the drift and the 
+diffusion are easy to evaluate.
+
+\subsection{Milstein Scheme}
+The accuracy of numerical solutions of ordinary differential equations may 
+often be improved by simple Taylor expansions. A very similar strategy also 
+applies to SDEs. Yet it is crucial to account for the rules of It$\hat{o}$ calculus 
+in order to maintain consistency.
+
+Inspecting the Euler scheme~\ref{eq:euler_scheme} from the perspective of Taylor 
+expansions leads to a possible inconsistency: running a Taylor approximation 
+expands the drift to the order $O(b)$ but the diffusion term only to $O(\sqrt{b})$. 
+This suggests that we focus on the diffusion term in order to advance the Euler 
+scheme. And exactly there the Milstein scheme is applied.
+
+The Milstein scheme is defined as an ordinary Euler scheme where the next order 
+terms of the It$\hat{o}$-Taylor expansion of Equation~\ref{eq:sde} are additionally 
+included. This eventually leads to
+
+\begin{equation}
+\begin{aligned}
+X(t_{i+1})= X(t_i) &+ \mu(t_i, X(t_i))b+\sigma(t_i,X(t_i))\sqrt{b}Z_{i+1} \\
+&+\cfrac{1}{2}\sigma'(t_i ,X(t_i))\sigma (t_i ,X(t_i))b(Z^2_{i+1} −1)
+\end{aligned}
+\end{equation}
+
+The Milstein approximation thus simply involves the addition of a term to the 
+Euler scheme so that both the drift and diffusion terms are expanded to $O(b)$ 
+in order to eliminate the inconsistency. The Milstein scheme therefore 
+provides a refinement of the Euler scheme based on expanding the 
+diffusion term to $O(b)$ rather than just $O(\sqrt{b})$.
+
+However, the question remains whether it is of great difference if 
+one applies Euler’s or Milstein’s approximation for a particular 
+diffusion equation. In conclusion, the approximations turn out to be very 
+close in many simple cases. In more sophisticated models, 
+the Milstein scheme appears to be a little better, which may be the additional 
+benefit of the increased complexity. Of course, the two approximations do 
+not differ at all if the diffusion coefficient $\sigma (t,X(t))$ does not depend on $X(t)$.
 
 \subsection{Simulation of a Stock Price}
 Note that the left-hand side of Eq.~\ref{eq:differential} represents the 
@@ -267,11 +347,6 @@ another proof that Monte Carlo provides correct results in the limit.
 \begin{thebibliography}{9}
 	%  %\bibitem{survey2019} StackOverflow \emph{The TEXbook}, Addison-Wesley, Reading,Massachusetts, second edition, 1984,
 	\bibitem{bib:ito_lemma}On Stochastic Differential Equations {[}58{]}
-	
-	\bibitem{bib:runge} \href{https://en.wikipedia.org/wiki/Runge\%27s_phenomenon}{Runge's phenomenon} [Online]
-	\bibitem{bib:str}
-	B. Guggenheim and A. Schrimpf, 
-	\href{https://www.bis.org/publ/work891.htm}{\emph{At the crossroads in the transition away from LIBOR - from overnight to term rates}}, BIS Working Papers No 891, 09 October 2020 [Online]
 \end{thebibliography}
 
 
