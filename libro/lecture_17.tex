@@ -1,1265 +1,930 @@
-\chapter{Machine Learning}\label{neural-network---practical-lesson-8}
+\chapter{Portfolio Optimization}\label{portfolio-optimization}
 
-In this Chapter we will see how machine learning techniques can be
-successfully applied to solve financial problems. We will first do a
-quick tour on the theory behind neural networks and then we will see an
-example and two practical applications regarding regression and
-classification issues.
+Portfolio optimization models look for the optimal way to make investments. Usually investors expect 
+either a maximum return for a given level of risk or a given return for a minimum risk so these models
+are typically based on two criteria: maximization of the expected return and/or minimization of the risk.
 
-This lecture just scratches the surface of the
-machine learning topic which has seen a huge development in the latest
-years leading to thousands of applications in many different fields.
-    
-\section{Neural Networks}\label{neural-networks}
+While the concept of return is straightforward there is a variety of measures of risk. 
+The most popular one has been variance in return and we will first look at it very closely before introducing some alternatives.
 
-Artificial Neural Networks (ANN or simply NN) are information processing
-models that are developed by inspiring from the working principles of
-human brain. Their most essential property is the ability of learning
-from sample sets.
-
-The basic unit of ANN architecture are neurons which internally may be in
-connection with other neurons.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/neuron}
-	\caption{Model of an artificial neuron.}
-        \label{fig:neuron}
-\end{figure}
-
-A neuron consists of weights (\(w_i\)) and real numbers (\(x_i\)). All
-inputs injected into a neuron are individually weighted, added together
-(sometimes it is added also a bias \(w_0\)) and passed into the
-activation function which produce the neuron output
-
-\[ \textrm{Inputs} = \sum_{i=1}^{N} x_i w_i +w_0 \rightarrow f(\textrm{Inputs}) = \textrm{Outputs}\]
-
-Figure~\ref{fig:neuron} shows an example.
-There are many different types of activation function and two of the simpler are the \emph{step function},
-which returns just 0 or 1 according
-to the input value, and the \emph{sigmoid} which can be thought
-of as the continuous version of the step function, see Fig.~\ref{fig:sigmoid}.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics{figures/sigmoid.png}
-	\caption{Sigmoidal activation function.}
-        \label{fig:sigmoid}
-\end{figure}
-
-Other commonly used activation functions are the \emph{Rectified Linear Unit}
-(ReLU) and the \emph{hyperbolic tangent} (tanh).
-
-For an deeper discussion of activation functions see
-\href{https://medium.com/the-theory-of-everything/understanding-activation-functions-in-neural-networks-9491262884e0}{this article}
-
-\subsection{Training of a Neuron}\label{training-of-a-neuron}
-
-When teaching children how to recognize a bus, we just tell them,
-showing an example: "This is a bus. That is not a bus." until they
-learn the concept of what a bus is. Furthermore, if the child sees new
-objects that she hasn't seen before, we could expect her to recognize
-correctly whether the new object is a bus or not.
-
-This is exactly the idea behind neurons. Similarly, inputs from a
-\emph{training} set are presented to the neuron one after the other
-together with the correct output and the neuron weights are modified
-accordingly.
-
-When an entire pass through all of the input training vectors is
-completed (\emph{epoch}) the neuron has learnt ! (to make it learn better
-training data can be processed multiple times)
-
-At this time, if an input vector \(\mathbf{x}\) (already in the training
-set) is given to the neuron, it will output the correct value. If
-\(\mathbf{x}\) is not in the training set, the network will respond with
-an output similar to other training vectors close to \(\mathbf{x}\).
-
-This kind of training is called \emph{supervised} because we have a set of training data with known targets and, during training, we want our model to learn to predict the target from the other variables.
-
-Unfortunately using just a neuron is not too useful since it is not
-possible to solve the interesting problems we would like to face with
-just that simple architecture. The next step is then to put together
-more neurons in \emph{layers}.
-
-\subsection{Multilayered Neural Networks}\label{multi-layered-neural-networks}
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/multilayer.jpeg}
-	\caption{A multi-layered neural network.}
-        \label{fig:multilayered_nn}
-\end{figure}
-
-Each input from the \emph{input layer} is fed up to each node in the
-next hidden layer, and from there to each node on the output layer. We
-should note that there can be any number of nodes per layer and there
-are usually multiple hidden layers to pass through before ultimately
-reaching the output layer. Figure~\ref{fig:multilayered_nn} shows a simple
-example of such architecture.
-
-\subsection{Training a Multilayered Neural Network}\label{training-a-multilayered-neural-network}
-
-The training of a multilayered NN follows these steps:
+Some notations that will be used later are
 
 \begin{itemize}
-	\tightlist
-	\item
-	present a training sample to the neural network (initialized with
-	random weights);
-	\item
-	compute the network output obtained by calculating activation functions of each layer;
-	\item
-	calculate the error (loss) as the difference between the NN predicted
-	output and the actual output;
-	\item
-	having calculated the error, re-adjust the weights of the network such
-	that the error (difference) decreases;
-	\item
-	continue the process for all samples several times (epochs) until the
-	weights are not changing too much (i.e. the process converged).
+\tightlist
+\item
+  expected return: \begin{equation} \mathbb{E}(R_{p}) = \sum _{i}w_{i} \mathbb{E}(R_{i}) \end{equation} where
+  \(R_{p}\) is the return on the portfolio, \(R_{i}\) is the return on
+  asset \(i\) and \(w_{i}\) is the weighting of component asset \(i\)
+  (that is, the proportion of asset \(i\) in the portfolio) and
+  \(\sum_{i}w_i = 1\) and \(0 \le w_i \le 1\);
+\item
+  portfolio return variance:
+  \begin{equation} \sigma _{p}^{2} = \sum _{i}w_{i}^{2}\sigma _{i}^{2} + \sum _{i}\sum _{j\neq i}w_{i}w_{j}\sigma _{i}\sigma _{j}\rho _{ij} \end{equation}
+  where \(\sigma\) is the (sample) standard deviation of the periodic
+  returns on an asset, and \(\rho _{ij}\) is the correlation coefficient
+  between the returns on assets \(i\) and \(j\). In a more compact way
+  it can be expressed as:
+  \begin{equation} \sigma _{p}^{2}=\sum _{i}\sum _{j}w_{i}w_{j}\sigma _{ij} \end{equation} where
+  \(\sigma _{ij}=\sigma _{i}\sigma _{j}\rho _{ij}\) is the (sample)
+  covariance of the periodic returns on the two assets, or alternatively
+  denoted as \(\Sigma\).
+  In matrix notation:
+  \begin{equation}\sigma_p^2 = \mathbf{w^T}\Sigma\mathbf{w} \end{equation}
+  where $\mathbf{w} = (w_1,w_2,\ldots,w_N)$ is the vector of weights. 
+  For a very brief introduction to matrices see Appendix~\ref{app:matrices};
+\item
+  portfolio return volatility (standard deviation):
+  \begin{equation}\sigma _{p}= \sqrt{\sigma _{p}^{2}}\end{equation}
 \end{itemize}
 
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/training_nn}
-	\caption{Optimization of the weights done minimizing the loss function.}
-        \label{fig:training}
-\end{figure}
+\section{The Markowitz Mean/Variance Portfolio Model}
+\label{the-markowitz-meanvariance-portfolio-model}
 
-In Figure~\ref{fig:training} an example of training is shown.
-The NN error is computed by the \emph{loss function}. Different loss
-functions will give different errors for the same prediction, and thus
-have a considerable effect on the performance of the model. Two are the
-main possible choices
+Although investors may expect a particular return when they buy a particular stock, they may be disappointed or pleasantly surprised, because fluctuations in stock prices result in fluctuating returns. 
+
+This model, first introduced by Markowitz, defines risk as the possibility that actual returns will deviate from expected returns, and the degree of potential fluctuation determines the degree of risk.
+So it it assumes that an investor has two considerations when constructing an investment portfolio: expected return and variance in return (i.e. measure of risk or of the variability in realized return around the expected return). 
+
+Hence the Markowitz model requires two major kinds of information:
 
 \begin{itemize}
-	\tightlist
-	\item
-	Mean Absolute Error (MAE): the average of the absolute value of the
-	differences between the predictions and true values;
-	\item
-	Root Mean Squared Error (MSE): the square root of the average of the
-	squared differences between the predictions and true values.
+\tightlist
+\item
+  the estimated expected return for each candidate investment;
+\item
+  the covariance matrix of returns, which characterizes not only the 
+  individual variability of the return on each investment, 
+  but also how each investment's return tends to move with the other (correlation).
 \end{itemize}
 
-The mean absolute error is easily interpretable, as it represents how
-far off we are on average from the correct value. The root mean squared
-error penalizes larger errors more heavily and is commonly used in
-regression tasks. Either metrics may be appropriate depending on the
-situation and you can use both for comparison.
-\href{https://medium.com/human-in-a-machine-world/mae-and-rmse-which-metric-is-better-e60ac3bde13d}{Here}
-is a discussion of the merits of these metrics.
-
-The error or loss is a function of the internal parameters of the model
-(i.e the weights and bias). For accurate predictions, one needs to
-minimize the calculated error. In a neural network, this is done using
-\emph{back propagation} (see
-\href{https://towardsdatascience.com/understanding-backpropagation-algorithm-7bb3aa2f95fd}{this article}).
-The current error is typically propagated backwards to previous layers,
-where it is used to modify the weights and bias in such
-a way that the error tends to be minimized.
-
-The weights are modified using a function called Optimization Function
-(we will use \emph{Adam} in the following but there are
-more).
-
-%\begin{figure}[htb]
-%	\centering
-%	\includegraphics[width=0.7\textwidth]{figures/loss_function}
-%	\caption{Optimization of the weights done minimizing the loss function.}
-%\end{figure}
-
-A common mistake to avoid is to \emph{overtrain} or \emph{overift} a NN. %Overtraining is  what happens when the NN learns too well the training sample but its performance degrade substantially in an independent testing sample.
-Overfitting is when a model is trained too well on the training data. You want to avoid overfitting, as this would mean that the model mostly just memorized the training data. This would account for a large accuracy with the training data but a low accuracy in the testing data. 
-
-At least it is required to split the available sample in two parts:
-training and testing (e.g.~80\% and 20\%) and to use the former to
-perform the training and the latter to cross-check the performance.
-\textbf{Usually performance are measured using the loss function value
-at the end of the training.}
-
-Actually you should split the sample in three parts: training, testing and validation. What you would usually do is take the model with the highest validation accuracy and then test the model with the testing set.
-%This makes sure that you don’t overfit the model. Using the validation set to choose the best model is a form of data leakage (or “cheating”) to get to pick the result that produced the best test score out of hundreds of them. Data leakage happens when information outside the training data set is used in the model.
-In this case, our testing and validation set are the same, since we have a smaller sample size.
-
-\subsection{Neural Network Design}\label{neural-network-design}
-
-There is no rule to guide developer into the design of a neural network
-in terms of number of layers and neuron per layer (the so called hyperparameters). 
-One popular method for hyperparameter optimization is grid search. What this method does is it takes lists of parameters and it runs the model with each parameter combination that it can find. It is the most thorough way but also the most computationally heavy way to do this.
-
-%The most common strategy is trail and error where you finally pick up the solution giving the best accuracy. In general a larger number of nodes is better to catch highly structured data with a lot of feature although it mayrequire larger training sample to work correctly.
-Anyway as a rule of thumb a NN with just one hidden layer with a number
-of neurons averaging the inputs and outputs is sufficient in most cases.
-
-In the following we will use more complex networks just for
-illustration, no strong attempt in optimizing the layout has been done
-though.
-
-\subsection{Regression and Classification}\label{regression-and-classification}
-
-The two main categories of problems that can be solved with neural
-networks are \emph{classification} and \emph{regression}. Let's see
-their characteristics and differences.
-
-\subsubsection{Classification}\label{classification}
-
-Classification is a process of finding a function which helps in dividing
-the dataset into classes based on different parameters. 
-The task of the classification algorithm is to find the mapping function
-to map the input (\(x\)) to the \textbf{discrete} output (\(y\)). We try
-to find the decision boundary, which can divide the dataset into
-different classes.
-
-A typical example of classification problem is
-\emph{email spam detection}. The model is trained on the basis of millions of
-emails on different parameters, and whenever it receives a new email, it
-identifies whether the email is spam or not. If the email is spam, then
-it is moved to the spam folder. Classification algorithms can also be used in
-speech recognition, car plates identification, etc.
-
-\subsubsection{Regression}\label{regression}
-
-Regression is the process of finding the correlations between dependent
-and independent variables. It helps in predicting continuous
-variables such as market trends, house prices, etc.
-
-The task of the regression algorithm is to find the mapping function to
-map the input variable (\(x\)) to the \textbf{continuous} output
-variable (\(y\)), trying to find the best fit which can predict the
-output more accurately.
-
-As an example suppose we want to do weather forecasting, so for this, we will
-use a regression algorithm. The model is trained
-on past data, and once the training is completed, it can predict the
-weather for future days. In general whenever we are dealing with
-function approximation this kind of algorithms can be applied.
-
-\subsubsection{Technical Note}\label{technical-note}
-
-Neural network training and testing is performed using two modules:
-\(\tt{keras}\) (which in turn is based on a Google open source library
-called \(\tt{tensorflow}\)) and \(\tt{scikit-learn}\) which provide many
-useful utilities.
-
-In order hide as much as possible the many little details that have to
-be set when developing NN I have developed a simple class
-(\(\tt{FinNN}\)) which relies on \(\tt{keras}\) anyway but should make
-the whole process easier.
-
-\section{Function approximation}\label{function-approximation}
-
-As a first practical example let's try to design an ANN which is capable
-of learning the functional form underlying a set of data.
-
-Let's generate a sample with \(x\) (input), \(f(x)\) (target output)
-pairs where \(f(x) = x^3 +2\) and let's start to code the NN structure.
-
-We start by importing the necessary modules.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{finnn} \PY{k}{import} \PY{n}{FinNN}
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\end{Verbatim}
-\end{tcolorbox}
-
-Then we generate the training sample (i.e. the \(x\), \(f(x)\) pairs)
-and apply a simple transformation on the sample in order to have all the
-inputs and outputs in the \([0, 1]\) range. This is usually done to
-provide the NN with \emph{normalized} data, in fact it could be fooled
-by large or very small numbers giving unstable results.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} define the dataset}
-\PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{n}{i} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mf}{0.001}\PY{p}{)}\PY{p}{]}\PY{p}{)}
-	
-\PY{n}{y} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{n}{i}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{3}\PY{o}{+}\PY{l+m+mi}{2} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n}{x}\PY{p}{]}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Distribution of original data }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{x}\PY{o}{.}\PY{n}{min}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{n}{x}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{n}{y}\PY{o}{.}\PY{n}{min}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{n}{y}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-	
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ANN}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{test\PYZus{}size}\PY{o}{=}\PY{l+m+mf}{0.2}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{normalize}\PY{p}{(}\PY{p}{)}
-	
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{The same data after the normalization }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{trainer}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{min}\PY{p}{(}\PY{p}{)}\PY{p}{,} 
-\PY{n}{trainer}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{n}{trainer}\PY{o}{.}\PY{n}{y}\PY{o}{.}\PY{n}{min}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{n}{trainer}\PY{o}{.}\PY{n}{y}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-
-Distribution of original data  -2.0 1.9989999999995596 -6.0 9.98800599899472
-The same data after the normalization  0.0 1.0 0.0 0.9999999999999999
-\end{Verbatim}
-\end{tcolorbox}
-
-Next we can define the structure of the neural network. Here the problem is quite simple so there is no need to use a complicated NN.
-In the end it has been decided to use two layers with 15 and 5 neurons and a
-\texttt{tanh} activation function, see Fig,~\ref{fig:ann_1}. The \(\tt{inputs}\) parameter has to be
-set to 1 since we have just one single input, the \(x\) value.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} design the neural network model}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addInputLayer}\PY{p}{(}\PY{n}{inputs}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{15}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{tanh}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addHiddenLayer}\PY{p}{(}\PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{tanh}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} define the loss function (mean squared error) }
-\PY{c+c1}{\PYZsh{} and optimization algorithm (Adam)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{mse}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} fit the model on the training dataset}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{2000}\PY{p}{,} \PY{n}{verbose}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-	
-Epoch 1/2000
-3200/3200 [==============================] - 0s 31us/step - loss: 0.2362
-Epoch 2/2000
-3200/3200 [==============================] - 0s 6us/step - loss: 0.1498
-...
-Epoch 1999/2000
-3200/3200 [==============================] - 0s 18us/step - loss: 8.7152e-06
-Epoch 2000/2000
-3200/3200 [==============================] - 0s 17us/step - loss: 5.9604e-06
-\end{Verbatim}
-\end{tcolorbox}
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/ann_1.png}
-	\caption{Graphical representation of the ANN used to approximate the function $f(x) = x^3 + 2$.}
-        \label{fig:ann_1}
-\end{figure}
-
-After the training is completed we can evaluate how good it is. To do
-this we can compute the residuals or the square root of the sum of the
-squared difference between the true value and the one predicted by the
-NN. To have a numerical estimate of the agreement it has been computed also the
-\emph{mean squared error} defined as:
-
-\begin{equation}\textrm{MSE} = \cfrac{\sum_{i=1}^n{\big(\frac{x_{i}^{pred} - x_i^{truth}}{x_i^{truth}}\big)^2}}{n}\end{equation}
-A \emph{perfect} prediction would lead to \(\textrm{MSE}=0\) so the
-lower this number the better the agreement.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{sklearn}\PY{n+nn}{.}\PY{n+nn}{metrics} \PY{k}{import} \PY{n}{mean\PYZus{}squared\PYZus{}error}
-	
-\PY{n}{trainer.fullPrediction()}
-\PY{c+c1}{\PYZsh{} report model error computing the mean squared error}
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{MSE: }\PY{l+s+si}{\PYZpc{}.7f}\PY{l+s+s1}{\PYZsq{}} \PY{o}{\PYZpc{}} \PY{n}{mean\PYZus{}squared\PYZus{}error}\PY{p}{(}\PY{n}{trainer}\PY{o}{.}\PY{n}{y}\PY{p}{,} \PY{n}{trainer}\PY{o}{.}\PY{n}{predictions}\PY{p}{)}\PY{p}{)}
-
-MSE: 0.0000062
-\end{Verbatim}
-\end{tcolorbox}
-
-To get an idea of what it is going on in Fig.~\ref{fig:training_vs_epochs} are shown the
-actual function we want to approximate and different predictions of our
-NN obtained with four epoch numbers (5, 100, 800, 5000).
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/training_vs_epoch}
-	\caption{Prediction of the target $f(x)$ using different number of epochs in the training (5, 100, 800 and 5000) respectively.}
-	\label{fig:training_vs_epochs}
-\end{figure}
-
-It is clear how the agreement improves with higher number of epochs
-which means that the NN has more opportunities to adapt the weights and
-reduce the loss (or error or distance) to the target values. Even in the
-case of 5000 epochs zooming in you could see discrepancies not visible
-at the scale of the plot. Remember that increasing too much the number
-of epochs may lead to overfitting. So in this case if we need more
-accuracy we need to either increase the training sample or to change the
-NN design.
-
-To check if this is the case we can \emph{evaluate} our NN with both the
-training ad the testing samples. If the losses are comparable the NN is
-ok otherwise if the training losses are much smaller than the testing we
-had overfitting.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{trainer}\PY{o}{.}\PY{n}{evaluate}\PY{p}{(}\PY{p}{)}
-
-3200/3200 [==============================] - 0s 83us/step
-Training: 6.1983578859781115e-06
-800/800 [==============================] - 0s 52us/step
-Test: 6.47684617433697e-06
-\end{Verbatim}
-\end{tcolorbox}
-
-Since the two numbers are in good agreement we can be confident that our
-NN didn't overfit.
-
-\subsection{Black-Scholes call
-options}\label{black-scholes-call-options}
-
-The first financial application of a NN concerns the pricing of european
-call options: essentially we will create a neural network capable of
-approximate the famous Black-Scholes pricing formula
-
-\begin{equation} P_\textrm{call} = F_\textrm{BS}(K, r, \sigma, \mathrm{ttm})\end{equation}
-
-Like before we are going to generate the training sample this time made
-of a grid of volatility-rate pairs \((\sigma, r)\) (for simplicity we
-are going to set moneyness and time to maturity to 1). The target values
-are the price of a call computed using the pricing function in the
-\(\tt{finmarkets.py}\) library with the corresponding inputs.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{call}
-	
-\PY{n}{data} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{rates} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.11}\PY{p}{,} \PY{l+m+mf}{0.001}\PY{p}{)}
-\PY{n}{sigmas} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.1}\PY{p}{,} \PY{l+m+mf}{0.6}\PY{p}{,} \PY{l+m+mf}{0.005}\PY{p}{)}
-	
-\PY{k}{for} \PY{n}{r} \PY{o+ow}{in} \PY{n}{rates}\PY{p}{:}
-    \PY{k}{for} \PY{n}{sigma} \PY{o+ow}{in} \PY{n}{sigmas}\PY{p}{:}
-        \PY{n}{call\PYZus{}price} \PY{o}{=} \PY{n}{call}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{sigma}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-        \PY{n}{data}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{p}{[}\PY{n}{r}\PY{p}{,} \PY{n}{sigma}\PY{p}{,} \PY{n}{call\PYZus{}price}\PY{p}{]}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} we transform the list to a numpy array just because }
-\PY{c+c1}{\PYZsh{} an array it is more convenient to use later}
-\PY{n}{data} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{n}{data}\PY{p}{)}
-\end{Verbatim}
-\end{tcolorbox}
-
-Since it takes some time to generate data samples, it is always
-advisable to save them in a file since we may need to load it many times
-during the NN development. This can be done with \(\tt{pandas}\).
+In the example proposed in this Chapter we are going to use real data
+of five companies:  AAPL, AMZN, FB, GOOG, NFLX.
+Data, shown in Figure~\ref{fig:stocks}, is made of the historical 
+series of the closing prices in the last 5 years which are saved in 
+\href{https://drive.google.com/file/d/1srCzNlKVY_LHRpkaKoUynnmI0KImfT6Y/view?usp=sharing}{portfolio\_data.csv}.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
-	
-\PY{n}{df} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{DataFrame}\PY{p}{(}\PY{p}{)}
-\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rate}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{data}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}
-\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{vol}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{data}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}
-\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{price}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{data}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{]}
-	
-\PY{n}{df}\PY{o}{.}\PY{n}{to\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{bs\PYZus{}training\PYZus{}sample.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{describe}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+		
+\PY{n}{df} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{portfolio\PYZus{}data.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{index\PYZus{}col}\PY{o}{=}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{date}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}\PY{p}{)}
 
-               rate           vol         price
-count  10000.000000  10000.000000  10000.000000
-mean       0.059500      0.347500      0.165274
-std        0.028868      0.144338      0.055387
-min        0.010000      0.100000      0.044852
-25%        0.034750      0.223750      0.119389
-50%        0.059500      0.347500      0.165476
-75%        0.084250      0.471250      0.212097
-max        0.109000      0.595000      0.277071
+                 AAPL     AMZN     FB    GOOG       NFLX
+date
+2014-03-27  71.865678  338.470  60.97  558.46  52.025714
+2014-03-28  71.785450  338.290  60.01  559.99  51.267143
+2014-03-31  71.769404  336.365  60.24  556.97  50.290000
+2014-04-01  72.425937  342.990  62.62  567.16  52.098571
+2014-04-02  72.546280  341.960  62.72  567.00  51.840000
 \end{Verbatim}
 \end{tcolorbox}
 
-Following the previous example we will use the \(\tt{FinNN}\) utility
-class to develop the NN and also we will \emph{normalize} data to get
-better results. \textbf{Beware that this time we have TWO input
-  parameters (rate and volatilty)} and not just one. See Figure~\ref{fig:ann_2} for
-a graphical representation of the used ANN.
+With \texttt{pandas} the main characteristics of these time series can
+be easily computed (e.g. daily returns, covariance matrix,\ldots):
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{data} \PY{o}{=}  \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{bs\PYZus{}training\PYZus{}sample.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-	
-\PY{n}{x} \PY{o}{=} \PY{n}{data}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{:}\PY{l+m+mi}{3}\PY{p}{]}\PY{o}{.}\PY{n}{values}
-\PY{n}{y} \PY{o}{=} \PY{n}{data}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{]}\PY{o}{.}\PY{n}{values}
+\PY{n}{daily\PYZus{}returns} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{pct\PYZus{}change}\PY{p}{(}\PY{p}{)}
+\PY{n}{returns} \PY{o}{=} \PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{252}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{returns}\PY{p}{)}
 
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ANN}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{test\PYZus{}size}\PY{o}{=}\PY{l+m+mf}{0.20}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{normalize}\PY{p}{(}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} define the NN architecture}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addInputLayer}\PY{p}{(}\PY{n}{inputs}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{20}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addHiddenLayer}\PY{p}{(}\PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{8}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{mse}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{3000}\PY{p}{,} \PY{n}{batch\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{500}\PY{p}{,} \PY{n}{verbose}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-
-Epoch 1/3000
-8000/8000 [==============================] - 0s 16us/step - loss: 0.3216
-Epoch 2/3000
-8000/8000 [==============================] - 0s 4us/step - loss: 0.2620
-...
-Epoch 2999/3000
-8000/8000 [==============================] - 0s 4us/step - loss: 3.7983e-07
-Epoch 3000/3000
-8000/8000 [==============================] - 0s 3us/step - loss: 3.6476e-07
-
-\PY{n}{trainer}\PY{o}{.}\PY{n}{evaluate}\PY{p}{(}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} when the training takes some time it is useful}
-\PY{c+c1}{\PYZsh{} to save the model weights in a file to use it later on}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{saveModel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{black\PYZus{}scholes}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-
-8000/8000 [==============================] - 0s 52us/step
-Training: 5.567638540924235e-07
-2000/2000 [==============================] - 0s 44us/step
-Test: 5.582978365055169e-07
+AAPL    0.239188
+AMZN    0.415127
+FB      0.263797
+GOOG    0.172818
+NFLX    0.528046
+dtype: float64
 \end{Verbatim}
 \end{tcolorbox}
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/ann_2.png}
-	\caption{Graphical representation of the ANN used to approximate the Black and Scholes oprion price function.}
-        \label{fig:ann_2}
-\end{figure}
-
-As you can see the training and test samples give roughly the same MSE
-value so we are reasonably sure that there hasn't been
-\emph{overfitting}.
-After the training is completed again we can
-evaluate graphically how good it is, see Fig.~\ref{fig:vol_rate}. 
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/vol_rate}
-	\caption{Mean squared error as a function of volatility and rate for our Black-Scholes function prediction.}
-	\label{fig:vol_rate}
-\end{figure}
-
-In general to judge if the level of accuracy we have reached is enough
-you have to
-
-\begin{itemize}
-	\tightlist
-	\item
-	if you are using the metric MSE you need to make the
-	\(\sqrt{\mathrm{MSE}}\) to get the \emph{real} error
-	\item
-	apply this error to a typical output and check if the accuracy is
-	enough.
-\end{itemize}
-
-In this example we know that our prices go from 0.04 to 0.28 and the
-final accuracy is 0.0007. So in the
-worst case we are able to price our call as \(0.04 \pm 0.0007\), which
-is not bad for our study but may not be ideal for deciding if we would
-like to invest in this call or not.
-
-We can compare the prediction in a practical case; let's say we
-want to know the price of a call (with moneyness 1 and time to maturity
-1 year) when the risk-free rate is 0.015 and the volatility 0.234:
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{call}
-	
-\PY{c+c1}{\PYZsh{} here we load the trained model}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{loadModel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{black\PYZus{}scholes}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} this is our input vector}
-\PY{n}{rv} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mf}{0.015}\PY{p}{,} \PY{l+m+mf}{0.234}\PY{p}{]}\PY{p}{]}\PY{p}{)}
-\PY{c+c1}{\PYZsh{} here we compare the predection with the BS call price}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s1}{ =\PYZgt{} }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s1}{ (expected }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s1}{)}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{rv}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,} 
-                                               \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{rv}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} 
-                                               \PY{n}{call}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{rv}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{rv}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\PY{n}{covariance} \PY{o}{=} \PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{252}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{covariance}\PY{p}{)}
 
-[[0.015, 0.234]] => 0.1001 (expected 0.1001)
+          AAPL      AMZN        FB      GOOG      NFLX
+AAPL  0.051902  0.025037  0.025737  0.022454  0.027760
+AMZN  0.025037  0.085839  0.041025  0.039501  0.048412
+FB    0.025737  0.041025  0.069550  0.036127  0.044528
+GOOG  0.022454  0.039501  0.036127  0.051797  0.040390
+NFLX  0.027760  0.048412  0.044528  0.040390  0.178298
 \end{Verbatim}
 \end{tcolorbox}
 
-It is very import to remeber that a \textbf{NN cannot estrapolate}.
-Indeed if you try to predict the price of a call from rate and
-volatility outside the training \emph{phase space} (with values that
-aren't in the intervals used in the training), say \(r = 0.22\) and
-\(\sigma = 0.01\)\ldots{}
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} this is our input vector}
-\PY{n}{rv} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mf}{0.22}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{]}\PY{p}{]}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} here we compare the predection with the BS call price}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s1}{ =\PYZgt{} }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s1}{ (expected }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s1}{)}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{rv}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,} 
-                                               \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{rv}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} 
-                                               \PY{n}{call}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{rv}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{rv}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-
-[[0.22, 0.01]] => 0.1628 (expected 0.1975)
-\end{Verbatim}
-\end{tcolorbox}
-
-\subsection{Model Calibration}\label{model-calibration}
-
-The function approximation capabilities of a neural network can serve
-other scopes rather than predicting the function values. A very useful
-application is indeed \emph{model calibration} which consists of
-deriving parameters of a model directly from market values. This is
-especially convenient to estimate parameters (e.g. volatility) which are
-otherwise complicated to compute.
-
-Assume we need to estimate the \emph{implied volatility} of a stock price
-in real time. If in the market are available call options with our stock
-as underlying we can exploit again the Black and Scholes formula. The
-idea is in fact to train a NN where the input is a list of price,
-moneyness, rate and time to maturity
-\((P_\textrm{call}, K, r, \mathrm{ttm})\) and the target output is the
-volatility. In our examples of function approximation we have never made any assumption on the functional form but we have just relied on the capability of NN to learn from the training dataset. So now we can reuse the same data used before to solve
-
-\begin{equation} \sigma = F^{-1}_\textrm{BS}(P_\textrm{call}, K, r, \mathrm{ttm})\end{equation}
-
-We can than calibrate our model by predicting the stock volatility with
-the trained NN using as input the market price of the option and its
-characteristics.
-
-\subsubsection{Historical vs.~Implied
-		Volatility}\label{historical-vs.-implied-volatility}
-
-Historical volatility is the realized volatility of the underlying asset over a previous time period. It is determined by measuring the standard deviation of the underlying asset from the mean during that time period.
-
-In contrast to historical volatility, which looks at actual stock prices in the past, implied volatility looks toward the future. Implied volatility is often interpreted as the market's expectation for the future volatility of a stock and can be derived from the price of an option (e.g. from the Black and Scholes formula).
-Specifically, it is the expected future volatility of the stock that is implied by the price of the stock's options.
-
-The implied volatility of an asset can also be compared with what it was in the past. If a stock has an implied volatility of 40\% compared with a 20\% implied volatility, say, a month ago, the market now considers the stock to be more volatile particularly going forward.
-
-Volatility shifts as markets go through different regimes. Thus, historical volatility may not be an accurate measure of future volatility. Implied volatility
-takes into account all of the information used by market participants to 
-determine prices in the options market, instead of just past prices.
-
-In general, if implied volatility is higher than historical volatility it gives some indication that option prices may be high. If implied volatility is below historical volatility, this may mean option prices are discounted and may be “cheap.”
-
-To reuse the training sample created before (again we
-are going to set \(\mathrm{ttm}=1\) and \(K=1\)) now \(\tt{x}\) we need to set the input as pairs of rate and price and \(\tt{y}\) will be the target volatility.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
-\PY{k+kn}{from} \PY{n+nn}{finnn} \PY{k}{import} \PY{n}{FinNN}
-	
-\PY{n}{data} \PY{o}{=}  \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{bs\PYZus{}training\PYZus{}sample.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{df} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{concat([data.iloc[:, 1:2], data.iloc[:, 3:4]], 1)}\PY{p}{)}
-\PY{n}{x} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{values}
-\PY{n}{y} \PY{o}{=} \PY{n}{data}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{o}{.}\PY{n}{values}
-
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ANN}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{test\PYZus{}size}\PY{o}{=}\PY{l+m+mf}{0.20}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{normalize}\PY{p}{(}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addInputLayer}\PY{p}{(}\PY{n}{inputs}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{20}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addHiddenLayer}\PY{p}{(}\PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{8}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{mse}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{2000}\PY{p}{,}  \PY{n}{verbose}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{evaluate}\PY{p}{(}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{saveModel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{calibration}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-
-Epoch 1/2000
-8000/8000 [==============================] - 0s 14us/step - loss: 0.1339
-Epoch 2/2000
-8000/8000 [==============================] - 0s 4us/step - loss: 0.1052
-...
-Epoch 1999/2000
-8000/8000 [==============================] - 0s 10us/step - loss: 1.9519e-06
-Epoch 2000/2000
-8000/8000 [==============================] - 0s 10us/step - loss: 1.9708e-06
-
-8000/8000 [==============================] - 0s 61us/step
-Training: 2.0318084630162047e-06
-2000/2000 [==============================] - 0s 48us/step
-Test: 1.8580968553578714e-06
-\end{Verbatim}
-\end{tcolorbox}
-
-Provided our training includes the correct range of market prices of our
-call we can quickly and easily estimate the implied volatility. For
-example if the risk-free rate is 2\% and the current price is 0.15
-(remember that we are using the BS formula in terms of moneyness)
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{trainer}\PY{o}{.}\PY{n}{loadModel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{calibration}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{rv} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mf}{0.02}\PY{p}{,} \PY{l+m+mf}{0.15}\PY{p}{]}\PY{p}{]}\PY{p}{)}
-	
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s1}{ =\PYZgt{} }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s1}{ (expected call price }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s1}{)}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{rv}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,} 
-                                               \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{rv}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} 
-                                               \PY{n}{call}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.02}\PY{p}{,} 
-                                                    \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{rv}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-
-[[0.02, 0.15]] => 0.3565 (expected call price 0.1502)
-\end{Verbatim}
-\end{tcolorbox}
-
-\section{Neural net to recognize handwritten
-		digits}\label{neural-net-to-recognize-handwritten-digits}
-
-We don't usually appreciate how tough a problem our visual system solve,
-maybe it is enough to consider that it involves 5 visual cortices
-containing 140 million neurons each. Anyway the difficulties of visual
-pattern recognition become apparent if you attempt to write a computer
-program to recognize digits like those in Fig.~\ref{fig:mnist}
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.5\textwidth]{figures/mnist_100_digits}
-	\caption{MNIST sample of handwritten digits.}
-	\label{fig:mnist}
-\end{figure}
-
-Simple intuition about how we recognize shapes (e.g.~a 9 has a loop at
-the top, and a vertical stroke in the bottom right) turns out to be not
-so simple to express algorithmically. When you try to make such rules
-precise, you quickly get lost in a morass of exceptions and caveats and
-special cases so that it seems hopeless.
-
-Neural networks approach the problem in a different way. The idea is to
-take a large number of handwritten digits and then develop a system
-which can learn from those.
-
-By increasing the number of training examples, the network can learn
-more and more about handwriting, and so improve its accuracy. So while
-it has been shown just 100 training digits above, we could certainly
-build a better handwriting recognizer by using thousands or even
-millions or billions of training examples (\textbf{as we have seen above
-	neural nets are not capable of extrapolating results, hence it won't
-	recongnize a digit written in some strange way not included in the
-	training sample !!!}).
-
-Let's first try to implement a NN that is capable of recognizing
-handwritten digits. In this example we will use tha sample provided with
-the \(\tt{mnist}\) module.
-
-Our program will be based on a slightly different kind of neural network
-than before, one type specifically designed for image/pattern
-recognition, the Convolutional Neural Network (CNN). We won't go into
-the details of its implementation since it is outside the scope of these
-lectures but it works essentially by applying on top of an image a
-series of filters (\emph{convolutional layers}) that works as edge
-detectors. With them it classifies the images according to their
-relevant features.
-
-Convolutional layers prove very effective, and stacking them allows to
-learn low-level features (e.g. lines) and high-order (more abstract)
-features, like shapes or specific objects, see FIg.~\ref{fig:conv_filters}.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=1.\textwidth]{figures/edges.jpg}
-	\caption{Edge detected by different layers of a convolutional neural network.}
-        \label{fig:conv_fitlers}
-\end{figure}
-
-Another important difference with respect to the previous examples is
-that in this case we are going to solve a classification problem
-(contrary to before when we were trying to regress a sample). Indeed our
-NN output won't be a single number but rather a list containing the
-probabilties that an image belonged to each class.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}\PY{o}{,} \PY{n+nn}{mnist}
-\PY{k+kn}{from} \PY{n+nn}{finnn} \PY{k}{import} \PY{n}{FinNN}
-	
-\PY{c+c1}{\PYZsh{} the actual images}
-\PY{n}{train\PYZus{}images} \PY{o}{=} \PY{n}{mnist}\PY{o}{.}\PY{n}{train\PYZus{}images}\PY{p}{(}\PY{p}{)} 
-\PY{c+c1}{\PYZsh{} the target (it is a 0, 1, 2...)}
-\PY{n}{train\PYZus{}labels} \PY{o}{=} \PY{n}{mnist}\PY{o}{.}\PY{n}{train\PYZus{}labels}\PY{p}{(}\PY{p}{)} 
-	
-\PY{c+c1}{\PYZsh{} no test\PYZus{}size option means not split the sample}
-\PY{c+c1}{\PYZsh{} in training and testing sets}
-\PY{c+c1}{\PYZsh{} (MNIST has already dont it for us)}
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CNN2D}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{train\PYZus{}images}\PY{p}{,} \PY{n}{train\PYZus{}labels}\PY{p}{)}
-\end{Verbatim}
-\end{tcolorbox}
-
-Next we define the CNN architecture, see Fig.~\ref{fig:cnn2d}.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} define our convolutional NN}
-\PY{c+c1}{\PYZsh{} we decide to apply 8 filters to the images }
-\PY{c+c1}{\PYZsh{} each with 3x3 pixels size}
-\PY{c+c1}{\PYZsh{} the input images have 28x28 pixels size instead}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addConv2DLayer}\PY{p}{(}\PY{n}{filters}\PY{o}{=}\PY{l+m+mi}{8}\PY{p}{,} \PY{n}{filter\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{3}\PY{p}{,} \PY{n}{input\PYZus{}shape}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{28}\PY{p}{,} \PY{l+m+mi}{28}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addMaxPooling2D}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addFlatten}\PY{p}{(}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addCNNOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{categorical\PYZus{}crossentropy}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} no batch\PYZus{}size means batch\PYZus{}size=len(images)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{verbose}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{saveModel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{digit\PYZus{}training}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-
-Epoch 1/5
-59999/59999 [==============================] - 13s 210us/step - loss: 2.1711
-Epoch 2/5
-59999/59999 [==============================] - 12s 201us/step - loss: 0.3964
-Epoch 3/5
-59999/59999 [==============================] - 12s 199us/step - loss: 0.2655
-Epoch 4/5
-59999/59999 [==============================] - 12s 198us/step - loss: 0.2244
-Epoch 5/5
-59999/59999 [==============================] - 12s 196us/step - loss: 0.1910
-\end{Verbatim}
-\end{tcolorbox}
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/cnn_2d.png}
-	\caption{Graphical representation of the CNN developed to recognize handwritten digits.}
-        \label{fig:cnn2d}
-\end{figure}
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm, colframe=cellborder, colback=cream]
-\subsubsection{For the Most Curious}\label{for-the-most-curious}
-
-If you look closely to the \(\tt{finnn.py}\) module you will notice that
-I have cheated when describing the CNN architecture. In particular I
-have not mentioned the \(\tt{MaxPooling2}\) layer, so let's clarify its
-feature.
-
-Convolutional layers in a convolutional neural network systematically
-apply learned filters to input images in order to create feature maps
-that summarize the presence of those features in the input.
-
-A limitation of the feature map output of convolutional layers is that
-they record the precise position of features in the input. This means
-that small movements in the position of the feature in the input image
-will result in a different feature map. This can happen with
-re-cropping, rotation, shifting, and other minor changes to the input
-image.
-
-Imagine a program that look for car plates in pictures taken by a speed
-radar, cars won't be in the same position in the frame so there may be
-differences in the classification of similar (but not equal) pictures.
-
-A common approach to address this problem from signal processing is
-called \emph{down sampling}. This is where a lower resolution version of
-an input signal (e.g.~the picture) is created that still contains the
-large or important structural elements, without the fine detail that may
-not be as useful to the task.
-
-Down sampling can be achieved using a pooling layer.
-
-Pooling involves selecting a pooling operation, much like a filter to be
-applied to feature maps. The size of the pooling operation or filter is
-smaller than the size of the feature map; specifically, it is almost
-always 2×2 pixels. This means that the pooling layer will always reduce
-the size of each feature map by a factor of 2, e.g.~each dimension is
-halved. For example, a pooling layer applied to a feature map of 6×6 (36
-pixels) will result in an output pooled feature map of 3×3 (9 pixels).
-
-The most common pooling operation are: * Average Pooling: calculate the
-average value for each patch on the feature map; * Maximum Pooling (or
-Max Pooling): calculate the maximum value for each patch of the feature
-map.
-\end{tcolorbox}
-
-Now let's try to see how well our NN predicts \(\tt{mnist}\) testing
-digits.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{trainer}\PY{o}{.}\PY{n}{loadModel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{digit\PYZus{}training}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} testing with mnist test sample}
-\PY{n}{test\PYZus{}images} \PY{o}{=} \PY{n}{mnist}\PY{o}{.}\PY{n}{test\PYZus{}images}\PY{p}{(}\PY{p}{)}
-\PY{n}{test\PYZus{}labels} \PY{o}{=} \PY{n}{mnist}\PY{o}{.}\PY{n}{test\PYZus{}labels}\PY{p}{(}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setTestData}\PY{p}{(}\PY{n}{test\PYZus{}images}\PY{p}{,} \PY{n}{test\PYZus{}labels}\PY{p}{)}
-\PY{n}{predictions} \PY{o}{=} \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{trainer}\PY{o}{.}\PY{n}{x\PYZus{}test}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{10}\PY{p}{]}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Tesing on MNIST digits...}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Predicted: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{argmax}\PY{p}{(}\PY{n}{predictions}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)} 
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Truth:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{test\PYZus{}labels}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{10}\PY{p}{]}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} this line returns the highest probability of the vector}
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{highest prob.:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.6f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{p}\PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{argmax}\PY{p}{(}\PY{n}{p}\PY{p}{)}\PY{p}{]}\PY{p}{)} \PY{k}{for} \PY{n}{p} \PY{o+ow}{in} \PY{n}{predictions}\PY{p}{]}\PY{p}{)}
-
-Tesing on MNIST digits{\ldots}
-Predicted:  [7 2 1 0 4 1 4 4 5 9]
-Truth: [7 2 1 0 4 1 4 9 5 9]
-highest prob.: ['0.999900', '1.000000', '0.999977', '1.000000', '0.999993',
-'0.999596', '0.970003', '0.900420', '0.840930', '0.999472']
-\end{Verbatim}
-\end{tcolorbox}
-
-Since the last but one digit has lower probability let's check the
-returned list to see which other number have non-zero probability.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{9th digit:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{dig }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:.6f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{p}\PY{p}{)} 
-                                      \PY{k}{for} \PY{n}{i}\PY{p}{,} \PY{n}{p} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{predictions}\PY{p}{[}\PY{l+m+mi}{8}\PY{p}{]}\PY{p}{)}\PY{p}{]}\PY{p}{)}
-
-9th digit: ['dig 0: 0.000080', 'dig 1: 0.000000', 'dig 2: 0.000091', 'dig 3:
-0.000000', 'dig 4: 0.000000', 'dig 5: 0.840930', 'dig 6: 0.158898', 'dig 7:
-0.000000', 'dig 8: 0.000001', 'dig 9: 0.000000']
-\end{Verbatim}
-\end{tcolorbox}
-
-So the second ranked digit is a 6 (which can be confused with a five if
-the lower loop is almost closed).
-
-To see how well our NN behaves with different kind of digits we will try
-to check how it works with my calligraphy.
-
-Before passing the image to the NN it has to be resized and this is done
-with an ad-hoc function, \(\tt{transform\_image}\), which is in the
- \href{https://drive.google.com/file/d/1FMYvOJDDOdIv7kDb2VIGhAkNNmReiOb_/view?usp=sharing}{(\(\tt{digit\_converter.py}\)} module.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{digit\PYZus{}converter} \PY{k}{import} \PY{n}{transform\PYZus{}image}
-	
-\PY{n}{filenames} \PY{o}{=} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{four.png}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{five.png}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
-	
-\PY{k}{for} \PY{n}{f} \PY{o+ow}{in} \PY{n}{filenames}\PY{p}{:}
-    \PY{n}{test\PYZus{}images} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{n}{transform\PYZus{}image}\PY{p}{(}\PY{n}{f}\PY{p}{)}\PY{p}{)}
-    \PY{n}{test\PYZus{}images} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{expand\PYZus{}dims}\PY{p}{(}\PY{n}{test\PYZus{}images}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{3}\PY{p}{)}
-	
-    \PY{n}{predict} \PY{o}{=} \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{test\PYZus{}images}\PY{p}{)}
-    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Tesing on custom digits...}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Predicted: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{argmax}\PY{p}{(}\PY{n}{predict}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-    \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{p}\PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{argmax}\PY{p}{(}\PY{n}{p}\PY{p}{)}\PY{p}{]}\PY{p}{)} \PY{k}{for} \PY{n}{p} \PY{o+ow}{in} \PY{n}{predict}\PY{p}{]}\PY{p}{)}
-    \PY{n+nb}{print}\PY{p}{(}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{p}\PY{p}{)} \PY{k}{for} \PY{n}{p} \PY{o+ow}{in} \PY{n}{predict}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{]}\PY{p}{)}
-
-Tesing on custom digits...
-Predicted:  [4]
-%: ['0.802']
-['0.00', '0.00', '0.00', '0.00', '0.80', '0.00', '0.00', '0.20', '0.00', '0.00']
-
-
-Tesing on custom digits...
-Predicted:  [5]
-%: ['0.981']
-['0.00', '0.00', '0.00', '0.01', '0.00', '0.98', '0.00', '0.01', '0.00', '0.00']
-\end{Verbatim}
-\end{tcolorbox}
-
-These are the images that have been checked
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.2\textwidth]{figures/four.png}
-	\includegraphics[width=0.2\textwidth]{figures/five.png}
-\end{figure}
-
-\subsection{Model Calibration cont.}\label{model-calibration-cont.}
-
-When the parameters of the model we want to calibrate can be expressed
-as a function of three variables we can implement a convolutional neural network to work with special images representing our model.
-
-Consider again the Black and Scholes formula for the call options.
-Assume you need to calibrate the rate \(r\) and the volatity \(\sigma\)
-at the same time. A convolutiona neural network can be trained using
-special images which represents \(\mathrm{ttm}, K\) and
-\(P_\textrm{call}\).
-
-A black-white image indeed can be interpreted as a map where each pixel
-is a pair (\(\mathrm{ttm}, K)\) and the pixel color, an integer between
-0 (black) and 255 (white), represents \(P_\textrm{call}\). As in the
-previous examples the neural network was classifing the pictures into
-digits, now it will assign them to classes identified by \(r, \sigma\)
-pairs.
-
-The creation of the training sample is a little more complicated now.
-For convenience we will use also a new format to save data image,
-\(\tt{numpy}\). This will be done through the corresponding module
-simply using the functions \(\tt{save}\) and \(\tt{load}\) to store and
-retrieve data. The module \(\tt{PIL}\) (pillow) is instead used to
-visualize the images.
-
-First we make the targets.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{call}
-	
-\PY{n}{labels} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{rates} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.11}\PY{p}{,} \PY{l+m+mf}{0.001}\PY{p}{)}
-\PY{n}{vols} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.1}\PY{p}{,} \PY{l+m+mf}{0.6}\PY{p}{,} \PY{l+m+mf}{0.005}\PY{p}{)}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{vols}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{rates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-        \PY{n}{labels}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{p}{(}\PY{n}{vols}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{,} \PY{n}{rates}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{)}\PY{p}{)} 
-	
-\PY{n}{np}\PY{o}{.}\PY{n}{save}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2d.np}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{labels}\PY{p}{)}
-\end{Verbatim}
-\end{tcolorbox}
-
-Then we can create the images.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{k} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.8}\PY{p}{,} \PY{l+m+mf}{1.2}\PY{p}{,} \PY{p}{(}\PY{l+m+mf}{1.2}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.8}\PY{p}{)}\PY{o}{/}\PY{l+m+mi}{20}\PY{p}{)}
-\PY{n}{ttm} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{4}\PY{o}{/}\PY{l+m+mi}{20}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} for each r, sigma pair}
-\PY{c+c1}{\PYZsh{} generate a matrix of prices}
-\PY{n}{maximum} \PY{o}{=} \PY{l+m+mi}{0}
-\PY{n}{minimum} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{inf}
-\PY{n}{prices} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{v} \PY{o+ow}{in} \PY{n}{vols}\PY{p}{:}
-    \PY{k}{for} \PY{n}{r} \PY{o+ow}{in} \PY{n}{rates}\PY{p}{:}
-        \PY{n}{price} \PY{o}{=}  \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{n}{shape}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{20}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{)}
-        \PY{k}{for} \PY{n}{ik}\PY{p}{,} \PY{n}{kv} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{k}\PY{p}{)}\PY{p}{:}
-        \PY{k}{for} \PY{n}{it}\PY{p}{,} \PY{n}{t} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{ttm}\PY{p}{)}\PY{p}{:}
-            \PY{n}{price}\PY{p}{[}\PY{n}{ik}\PY{p}{,} \PY{n}{it}\PY{p}{]} \PY{o}{=} \PY{n}{call}\PY{p}{(}\PY{n}{kv}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{v}\PY{p}{,} \PY{n}{t}\PY{p}{)}
-            \PY{n}{prices}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{price}\PY{p}{)}
-            \PY{c+c1}{\PYZsh{} max and min are saved to }
-            \PY{c+c1}{\PYZsh{} normalize our matrices}
-            \PY{n}{new\PYZus{}max} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{n}{price}\PY{p}{)}
-            \PY{n}{new\PYZus{}min} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{min}\PY{p}{(}\PY{n}{price}\PY{p}{)}
-            \PY{k}{if} \PY{n}{new\PYZus{}max} \PY{o}{\PYZgt{}} \PY{n}{maximum}\PY{p}{:}
-                \PY{n}{maximum} \PY{o}{=} \PY{n}{new\PYZus{}max}
-            \PY{k}{if} \PY{n}{new\PYZus{}min} \PY{o}{\PYZlt{}} \PY{n}{minimum}\PY{p}{:}
-                \PY{n}{minimum} \PY{o}{=} \PY{n}{new\PYZus{}min}
-	
-\PY{k}{for} \PY{n}{ip}\PY{p}{,} \PY{n}{p} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{prices}\PY{p}{)}\PY{p}{:}
-    \PY{n}{prices}\PY{p}{[}\PY{n}{ip}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{p}\PY{p}{,} \PY{p}{(}\PY{n}{minimum}\PY{p}{,} \PY{n}{maximum}\PY{p}{)}\PY{p}{,} \PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-	
-\PY{n}{np}\PY{o}{.}\PY{n}{save}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2d}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{prices}\PY{p}{)}
-\end{Verbatim}
-\end{tcolorbox}
-
-Below an example of the 20x20 images that have been created
 \begin{figure}[htb]
 \centering
-\includegraphics[width=0.4\textwidth]{figures/2d_training_images}
+\includegraphics[width=0.7\textwidth]{figures/portfolio_sample}
+\caption{Historical series of the closing price of five companies. To compare them, prices, have been normalized to the 
+first value in each series}
+\label{fig:stocks}
+\end{figure}
+    
+In order to "simulate" a portfolio it is enough to throw five random weights 
+with the constraint that they had to sum up to 1. 
+In Figure~\ref{fig:mc_portfolio} a large number of simulated portfolios are shown in the return vs volatility plane. 
+In this case no attempt of any optimization whatsoever has been made.
+
+\begin{figure}[hbt]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/return_variance}
+\caption{Distribution in the expected return/volatility plane of a large number of simulated portfolios.}
+\label{fig:mc_portfolio}
 \end{figure}
 
-Then the training is similar to what has been done for the handwritten
-digits.
+Investors may use short sales in their portfolios (a portfolio is short in those stocks with negative portfolio weights). 
+Although short selling extends the set of possible portfolios we are not going to consider them here.
+
+\section{Optimisation}\label{optimization}
+
+Markowitz model states that the weights of a portfolio should be chosen 
+such that its volatility (or its variance) is minimised. 
+So the application of this model reduces to
+an optimisation problem: given the covariance matrix of the portfolio
+$\Sigma$, estimated from their historical series, we need to find
+
+\begin{equation}\underset{\mathbf{w}}{\min}\{\sigma_p^2\} = \underset{\mathbf{w}}{\min}\{\mathbf{w^T}\Sigma\mathbf{w}\}\end{equation}
+with the constraints \(\sum_{i}w_i = 1\) and \(0 \le w_i \le 1\).
+
+In \texttt{python} we already know how to solve a minimisation problem
+(see bootstrapping in Chapter~\ref{swaps-and-bootstrapping---practical-lesson-5}) 
+so it is enough to repeat the same steps:
+
+\begin{itemize}
+\tightlist
+\item
+  define an objective function (in this case the portfolio variance);
+\item
+  define a set of constraints ($\sum w_i = 1$);
+\item
+  set an initial guess for the weights;
+\item
+  pass everything to \texttt{scipy.optimize.minimize}.
+\end{itemize}
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{finnn} \PY{k}{import} \PY{n}{FinNN}
-	
-\PY{n}{labels} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{load}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2d\PYZus{}labels.npy}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{images} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{load}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2d.npy}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-	
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CNN2D}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{images}\PY{p}{,} \PY{n}{labels}\PY{p}{,} \PY{n}{test\PYZus{}size}\PY{o}{=}\PY{l+m+mf}{0.2}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addConv2DLayer}\PY{p}{(}\PY{n}{filters}\PY{o}{=}\PY{l+m+mi}{8}\PY{p}{,} \PY{n}{filter\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{,} 
-                       \PY{n}{input\PYZus{}shape}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{20}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addFlatten}\PY{p}{(}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addHiddenLayer}\PY{p}{(}\PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{mse}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{500}\PY{p}{,}  \PY{n}{verbose}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{saveModel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2d}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{evaluate}\PY{p}{(}\PY{p}{)}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
+		
+\PY{k}{def} \PY{n+nf}{sum\PYZus{}weights}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{:} 
+    \PY{k}{return} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{w}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}
+		
+\PY{k}{def} \PY{n+nf}{markowitz}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{)}
+		
+\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{5}
+\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{,}\PY{p}{)} 
+\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
+		
+\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
+                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
 
+    fun: 0.03607029963784209
+    jac: array([0.0723022 , 0.07233166, 0.0718961 , 0.07199311, 0.07223676])
+message: 'Optimization terminated successfully.'
+   nfev: 63
+    nit: 9
+   njev: 9
+ status: 0
+success: True
+      x: array([0.44544146, 0.06252825, 0.12333117, 0.3662157 , 0.00248342])
 
-Epoch 1/500
-8000/8000 [==============================] - 1s 156us/step - loss: 0.0018
-Epoch 2/500
-8000/8000 [==============================] - 1s 142us/step - loss: 6.2310e-04
-...
-Epoch 499/500
-8000/8000 [==============================] - 2s 194us/step - loss: 1.4921e-06
-Epoch 500/500
-8000/8000 [==============================] - 2s 193us/step - loss: 1.4413e-06
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Expected portfolio return: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{,} \PY{n}{returns}\PY{p}{)}\PY{p}{)}\PY{p}{)}
 
-8000/8000 [==============================] - 1s 65us/step
-Training: 1.1013161047230825e-05
-2000/2000 [==============================] - 0s 70us/step
-Test: 1.116331470257137e-05
+Expected portfolio return: 0.230
 \end{Verbatim}
 \end{tcolorbox}
 
-At this point you should present to the trained CNN the prices of call
-referring to the same underlying in the pictorial form shown before and
-the in response it will give you the risk-free rate and the underlying
-volatility.
+The solution recommends to devote about 44\% of the portfolio to AAPL,
+about 6\% to AMZN, 12\% to FB and so on\ldots 
+The expected return is
+about 23\%, with a variance of about 0.036 or, equivalently, a standard deviation of 0.19.
+
+In this example we based the model simply on straightforward statistical
+data derived from daily returns. However it could be possible, rather
+than estimate the expected returns form historical data,
+to base this estimate on information about
+expected future performance of the asset.
+
+\section{Efficient Frontier}\label{efficient-frontier}
+There is no precise way for an investor to determine the “correct” trade off between risk and return. If she wants a higher expected return, she generally has to “pay for it” with higher risk. Thus, one is frequently interested in looking at the relative distribution of the two.
+
+In finance terminology, we would like to trace out the \emph{efficient frontier} of return and risk. This is doable solving for the minimum variance portfolio over a range of values for the expected return (e.g. ranging from 0.20 to 0.45).
+
+This time beside the constraint on the sum of weights, we have to add the one that forces the resulting return to be equal to the chosen target.
+
+The following example produce the efficient frontier plot shown in Fig.~\ref{fig:efficient_frontier}.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{:}
-    \PY{n+nb}{print} \PY{p}{(}\PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{trainer}\PY{o}{.}\PY{n}{x\PYZus{}test}\PY{p}{[}\PY{n}{i}\PY{p}{:}\PY{n}{i}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
-
-[[0.3825101  0.09229672]]
-[[0.4056808  0.02232919]]
-[[0.47402808 0.05630913]]
-[[0.2851617  0.05214534]]
-[[0.17245176 0.08815573]]
+\PY{k}{def} \PY{n+nf}{efficient\PYZus{}frontier}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{asset\PYZus{}returns}\PY{p}{,} \PY{n}{target\PYZus{}return}\PY{p}{)}\PY{p}{:} 
+    \PY{n}{portfolio\PYZus{}return} \PY{o}{=} \PY{n}{asset\PYZus{}returns}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)} 
+    \PY{k}{return} \PY{p}{(}\PY{n}{portfolio\PYZus{}return} \PY{o}{\PYZhy{}} \PY{n}{target\PYZus{}return}\PY{p}{)}
+		
+\PY{n}{results} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+		
+\PY{k}{for} \PY{n}{eff} \PY{o+ow}{in} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.20}\PY{p}{,} \PY{l+m+mf}{0.45}\PY{p}{,} \PY{l+m+mf}{0.005}\PY{p}{)}\PY{p}{:}
+    \PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{efficient\PYZus{}frontier}\PY{p}{,} 
+                    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{args}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{p}{(}\PY{n}{returns}\PY{p}{,} \PY{n}{eff}\PY{p}{,}\PY{p}{)}\PY{p}{\PYZcb{}}\PY{p}{,}
+                   \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}
+    \PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
+    \PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
+                    \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)} 
+		
+    \PY{n}{results}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{p}{,}
+                    \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{returns}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
 \end{Verbatim}
 \end{tcolorbox}
 
-\section{Technical Analysis}\label{technical-analysis}
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/efficient_frontier.png}
+\caption{Efficient frontier for our example portfolio obtained minimizing the the variance and requiring an expected return between 0.02 and 0.45.}
+\label{fig:efficient_frontier}
+\end{figure}
 
-In finance, \emph{technical analysis} is a security analysis discipline
-for forecasting the direction of prices through the study of past market
-data, primarily price and volume. Essentially the analyst looks for
-particular patterns in the price time series that are \emph{known} to
-develop in predictable ways to take profit of it, Fig.~\ref{fig:tech_ana} shows two
-os such patterns.
+Efficient portfolios offer investors the highest possible expected return for a given level of risk. As investors add stocks to a portfolio, the efficient portfolio improves.
+An investor seeking high expected returns and low volatility should invest only in efficient portfolios and will choose from the set of efficient portfolios based on her risk tolerance.
+    
+\subsection{Limits of the Markowitz Model}
+ \label{limits-of-the-markowitz-model}
+    
+Despite the significant utility of the Markowitz theory, there are some major limitations in this model:
+    
+\begin{itemize}
+  	\tightlist
+   	\item
+   	it is difficult to forecast asset returns with accuracy using
+   	historical data, which tends to be a poor forecasting source. As
+   	return estimations have a much larger impact on the asset allocations,
+   	small changes in return assumptions can lead to inefficient
+   	portfolios. Therefore, the model tends to lead to highly concentrated
+   	portfolios (out-of sample weights) that do not offer as much
+   	diversification benefits in practice as they seem to provide in
+   	theory;
+    	\item
+    	the model assumes that asset correlations are linear. In reality,
+    	asset correlations move dynamically, changing with the market cycles.
+    	During the global financial crisis, asset correlations approached
+    	almost 1, so if anything, diversification seemed to have insignificant
+    	impacts on the portfolios;
+    	\item
+    	last but not the least, the model assumes normality in return
+    	distributions. Therefore, it does not factor in extreme market moves
+    	which tend to make returns distributions either skewed, fat tailed or
+    	both. Without optimising the portfolio for asset that may actually
+    	have skewed distributions or fat tailed, it could lead to a riskier
+    	allocation that is intended.
+    \end{itemize}
+    
+Extensions of the Markowitz model are the  \href{https://en.wikipedia.org/wiki/Post-modern_portfolio_theory}{Post Modern Theory} and the \href{https://en.wikipedia.org/wiki/Black\%E2\%80\%93Litterman_model}{Black-Litterman Model}.
+    
+\section{Portfolios with a Risk-Free Asset}
+\label{portfolios-with-a-risk-free-asset}
+
+When one of the investments available is risk free, then the efficient
+frontier has a particularly simple form. The risk–return combinations of the risk-free investment and a risky portfolio lie on a straight line connecting the two investments: the capital allocation line (CAL). The slope of the CAL measures the trade off
+between risk and return. A higher slope means that investors receive a
+higher expected return in exchange for taking on more risk.
+
+The capital allocation line aids investors in choosing how much to
+invest in a risk-free asset and one or more risky assets.
+
+The simplest example of such kind of portfolios is the one containing only two assets: a risk-free Treasury bill and a stock. Assume that the expected return of the Treasury bill is \(\mathbb{E}(R_f)=3\%\) and its risk is 0\%. Further, assume that the expected return of the stock is \(\mathbb{E}(R_r)=10\%\) and its standard deviation is \(\sigma_r=20\%\). The question that needs to be answered
+for any individual investor is how much to invest in each of these
+assets.
+
+The expected return (\(\mathbb{E}(R_p)\)) of this portfolio is calculated as follows:
+
+\begin{equation} \mathbb{E}(R_p) = \mathbb{E}(R_f)\cdot w_f + \mathbb{E}(R_r)\cdot (1- w_f) \end{equation}
+where \(w_f\) is the relative allocation to the risk-free asset.
+
+The calculation of risk for this portfolio is simple because the
+standard deviation of the Treasury bill is 0\%. Thus it is calculated
+as
+
+\begin{equation} \sigma_p = (1-w_f)\cdot \sigma_r \end{equation}
+
+In this very simple example, if an investor invested 100\% into
+the risk-free asset (\(w_f=1\)), the expected return would be 3\% and
+the risk of the portfolio would be 0\%. Likewise, investing 100\% into
+the stock (\(w_f=0\)) would give an investor an expected return of 10\%
+and a portfolio risk of 20\%. If the investor allocated 25\% to the
+risk-free asset and 75\% to the risky asset, the portfolio expected
+return and risk calculations would be
+
+\[ \mathbb{E}(R_p) = (3\% \cdot 25\%) + (10\% \cdot 75\%) = 0.75\% + 7.5\% = 8.25\% \]
+
+\[ \sigma_p = 75\% \cdot 20\% = 15\% \]
+
+Applying the same reasoning to our example we can consider an additional
+risk-free asset with an expected return of 10\% and repeat the
+minimisation to determine the efficient frontier of the resulting
+portfolio. Notice how the objective function is almost the same as before, 
+while the target return constraint now includes the risk-free asset.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{6}
+		
+\PY{k}{def} \PY{n+nf}{markowitz\PYZus{}with\PYZus{}rf}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
+    \PY{k}{return} \PY{n}{w}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+		
+\PY{k}{def} \PY{n+nf}{efficient\PYZus{}frontier\PYZus{}with\PYZus{}rf}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{asset\PYZus{}returns}\PY{p}{,} \PY{n}{target\PYZus{}return}\PY{p}{,} \PY{n}{risk\PYZus{}free}\PY{p}{)}\PY{p}{:} 
+    \PY{n}{portfolio\PYZus{}return} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{asset\PYZus{}returns}\PY{o}{*}\PY{n}{w}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)} \PY{o}{+} \PY{n}{risk\PYZus{}free}\PY{o}{*}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{5}\PY{p}{]} 
+    \PY{k}{return} \PY{p}{(}\PY{n}{portfolio\PYZus{}return} \PY{o}{\PYZhy{}} \PY{n}{target\PYZus{}return}\PY{p}{)}
+	
+\PY{n}{rf\PYZus{}asset\PYZus{}return} \PY{o}{=} \PY{l+m+mf}{0.10}
+\PY{n}{results\PYZus{}rf} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+\PY{k}{for} \PY{n}{eff} \PY{o+ow}{in} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.10}\PY{p}{,} \PY{l+m+mf}{0.45}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{)}\PY{p}{:}
+    \PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{efficient\PYZus{}frontier\PYZus{}with\PYZus{}rf}\PY{p}{,} 
+                     \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{args}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{p}{(}\PY{n}{returns}\PY{p}{,} \PY{n}{eff}\PY{p}{,} \PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{)}\PY{p}{\PYZcb{}}\PY{p}{,}
+                    \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}
+    \PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
+    \PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz\PYZus{}with\PYZus{}rf}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{)}\PY{p}{,}
+                    \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
+    \PY{n}{results\PYZus{}rf}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{p}{,} 
+                       \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{returns}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{o}{+}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{5}\PY{p}{]}\PY{o}{*}\PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[htb]
+\centering
+    \includegraphics[width=0.7\textwidth]{figures/cal.png}
+    \caption{Comparison of efficient frontier with a risk-free asset (red) and with risky asset only (blue).}
+    \label{fig:cal}
+\end{figure}
+    
+As it is clear from Fig.~\ref{fig:cal} the efficient frontier has become a
+straight line, tangent to the frontier of the risky assets only. When
+the target is 10\% the entire investment is allocated to the risk-free
+asset, as the target increases the fraction of the risky assets grows
+proportionally to the volatility. 
+
+It is important to notice that in general the relative proportions
+devoted to risky investments do not change. Only the allocation between
+the risk-free asset and the risky assets change.
+
+\subsection{The Sharpe Ratio}
+\label{the-sharpe-ratio}
+The goal of an investor who is seeking to earn the highest possible expected return for any 
+level of volatility is to find the portfolio that generates the steepest possible line
+when combined with the risk-free investment. The slope of the line is called the \emph{Sharpe ratio} of the portfolio.
+
+For some portfolio of risky assets let
+
+\begin{itemize}
+\tightlist
+\item
+  \(R_r\) its expected return;
+\item
+  \(\sigma_r\) its standard deviation in return;
+\item
+  \(r_f\) the return of a risk-free asset.
+\end{itemize}
+
+A plausible single measure (as opposed to the two measures, risk and
+return) of attractiveness of portfolio is the Sharpe ratio:
+
+\begin{equation} \cfrac{R_r - r_f}{\sigma_r} \end{equation}
+
+In words, it measures how much additional return we achieved for the
+additional risk we took on, relative to putting all our money in the
+risk-free asset. The portfolio that maximizes this ratio has some interesting properties. Suppose
+
+\begin{itemize}
+\tightlist
+\item
+  \(R_\textrm{target}\) our desired target return;
+\item
+  \(w_r\) the fraction of our wealth we place in the portfolio (the
+  rest placed in the risk-free asset).
+\end{itemize}
+
+To meet our return target, we must have:
+
+\begin{equation} (1 - w_r) * r_f + w_r * R_r =R_\textrm{target} \end{equation}
+
+The standard deviation of our total investment is:
+\(w_r\cdot \sigma_r\). Solving for \(w_r\) in the equation above, we
+get:
+
+\begin{equation} w_r = \cfrac{R_\textrm{target} - r_f}{R_r - r_f} \end{equation}
+
+Thus, the standard deviation of the portfolio is:
+
+\begin{equation} w_r\cdot \sigma_r = \left(\cfrac{R_\textrm{target} - r_f}{R_r - r_f}\right)\cdot \sigma_r \end{equation}
+
+Minimising the portfolio standard deviation means:
+
+\begin{equation} \textrm{min}\left[\cfrac{R_\textrm{target} - r_f}{R_r - r_f}\cdot \sigma_r\right]\implies\textrm{max}\left[\cfrac{R_r - r_f}{\sigma_r}\right] \end{equation}
+
+So, regardless of our risk/return preference, the money we invest in
+risky assets should be invested in the portfolio that maximises
+the Sharpe ratio, because it will be also the portfolio that minimize 
+the risk (i.e. standard deviation) at the same time.
+
+Let's see the application of the Sharpe ratio on our sample.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{5}
+\PY{n}{rf\PYZus{}asset\PYZus{}return} \PY{o}{=} \PY{l+m+mf}{0.10}
+		
+\PY{k}{def} \PY{n+nf}{negativeSharpeRatio}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{asset\PYZus{}returns}\PY{p}{,} \PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:} 
+    \PY{n}{p\PYZus{}ret} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{asset\PYZus{}returns}\PY{o}{*}\PY{n}{w}\PY{p}{)}
+    \PY{n}{p\PYZus{}var} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+    \PY{n}{ratio} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{p}{(}\PY{n}{p\PYZus{}ret} \PY{o}{\PYZhy{}} \PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{)} \PY{o}{/} \PY{n}{p\PYZus{}var}
+    \PY{k}{return} \PY{n}{ratio}
+		
+\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}
+\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
+\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{negativeSharpeRatio}\PY{p}{,} \PY{n}{weights}\PY{p}{,} 
+                \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{returns}\PY{p}{,} \PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{,} \PY{n}{covariance}\PY{p}{)}\PY{p}{,}
+                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
+
+    fun: -1.259317843963551
+    jac: array([-0.37875988, -0.37936528, -0.26915939,  0.02855793,
+                -0.37932482])
+message: 'Optimization terminated successfully.'
+   nfev: 42
+    nit: 6
+   njev: 6
+ status: 0
+success: True
+      x: array([1.19754268e-01, 5.43974232e-01, 4.33680869e-19,
+                6.41847686e-17, 3.36271500e-01])
+
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Sharpe ratio: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{n}{opts}\PY{o}{.}\PY{n}{fun}\PY{p}{)}
+
+Sharpe ratio:  1.259317843963551
+\end{Verbatim}
+\end{tcolorbox}
+
+Figure~\ref{fig:sharpe_ratio} shows the result of the optimization for our example.    
+Notice that in general the relative proportions of the stocks are the
+same as in the previous case where we explicitly included a risk free
+asset (0.12, 0.54, 0., 0., 0.33).
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.4\linewidth]{figures/H_and_s_top_new.jpg}\qquad
-	\includegraphics[width=0.4\linewidth]{figures/Triangle-ascending.jpg}
-	\caption{Examples of patterns in real time series, head and shoulder (left), triangle (right).}
-        \label{fig:tech_ana}
+	\includegraphics[width=0.7\textwidth]{figures/sharpe_ratio.png}
+	\caption{Sharpe portfolio (green cross) compared to the efficient frontier with a risk-free asset (red) and with risky asset only (blue).}
+	\label{fig:sharpe_ratio}
 \end{figure}
 
-As you may imagine we will try to develop a CNN (like in the handwriting
-case) capable of classifying features in time series to be used in a
-technical analysis (this is much faster than having somebody looking at
-thousands of time series by eye\ldots{}).
+So the optimization using the Sharpe ratio gives us a portfolio that is
+on the minimum volatility efficient frontier, and gives the maximum
+return relative to putting all our money in the risk-free asset.
 
-I have generated myself the training set simulating 21600 time series
-(1/3 with head and shoulder patter, 1/3 with triangle pattern and 1/3
-with no pattern), see Fig~\ref{fig:no_pattern} to~\ref{fig:triangle}.
-\emph{To make the training easier the features have been exagerated.}
+Usually, any Sharpe ratio greater than 1.0 is considered acceptable to good by investors. A ratio higher than 2.0 is rated as very good. A ratio of 3.0 or higher is considered excellent. A ratio under 1.0 is sub-optimal.
 
-\begin{figure}
+\section{Capital Asset Pricing Model}
+\label{sec:capm}
+The Capital Asset Pricing Model (CAPM) describes the relationship between expected return of assets and \emph{systematic risk} of the market.
+
+Indeed we can divide a security’s total risk into \emph{unsystematic risk}, the portion peculiar to the company that can be diversified away, and systematic risk, the nondiversifiable portion that is related to the movement of the stock market and is therefore unavoidable. 
+
+The assumption of CAPM is that investors are risk averse and want to maximize return. This notion implies that investors demand compensation for taking on risk, which in the financial market means that higher-risk securities are priced to yield higher expected returns than lower-risk securities. 
+
+CAPM states that the expected return of an asset is equal to the risk-free return plus a risk premium. 
+Mathematically, we can summarize it with the following formula
+\begin{equation}
+r_i = r_f + \beta_i(r_m-r_f)
+\label{eq:capm}
+\end{equation}
+where:
+\begin{itemize}
+	\item $r_i$ is the expected return of the $i^{th}$ security;
+	\item $r_f$ is the risk-free rate with zero standard deviation (an example of a risk-free asset includes Treasury Bills as they are backed by the U.S. government);
+	\item $r_m - r_f$ is the risk premium ($r_m$ denotes the market return including all securities in the market, it can be represented with an index like S\&P 500);
+	\item $\beta_i$ is a measure of $i^{th}$ asset volatility in relation to the overall market. 
+	$\beta$ is used in the CAPM to describe the relationship between systematic risk, or market risk, and its expected return.
+\end{itemize}
+	
+Therefore the key point in CAPM is the determination of $\beta$. This can be achieved with the measurement of the slope of the \emph{regression line}, of the market vs individual stock return distribution.
+
+Given two sets of measurements $X$ and $y$ the linear regression determines the parameter $\alpha$ and $\beta$ such that
+
+\begin{equation}y=\beta X + \alpha\end{equation}
+by minimizing the sum of the squared differences between the predicted and true $y$ values.
+Figure~\ref{fig:linear_regression} shows an example of regression. 
+In our case the regressed line estimates the stock returns given the global market returns and in particular 
+
+\begin{equation}\beta \approx \cfrac{\textrm{cov}(X,y)}{\textrm {var}(X)}\end{equation}
+so provides insights about how \emph{volatile}, or how risky, a stock is relative to the rest of the market.
+In CAPM $\beta$ calculation is used to help investors understand whether a stock moves in the same direction as the rest of the market but for it to provide any useful insight, the market that is used as a benchmark should be related to the stock.
+
+If $\beta$ of an individual stock = 1.0, this means its price is perfectly correlated with the market, if $\beta < 1.0$, which is referred to as "defensive", this indicates the security is theoretically less volatile than the market (provides lower returns, so it is less risky), while if $\beta > 1.0$, or "aggressive", this indicates the assets price is more volatile than the market.
+
+Those who use CAPM pick individual stocks or portfolios, and compare them to different indexes. The point is to find stocks that have high $\beta$, and portfolios that have high $\alpha$. High $\beta$ values mean that the stock fares better than index with positive market and performs worse for negative market (contrary low $\beta$ gives lower performance for positive market and better returns in negative market), so those stocks have a chance at beating the market. $\alpha$ values above zero mean that your portfolio outperform market whatever it does.
+
+\begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.5\linewidth]{figures/image_1.png}
-	\caption{An example of training image with no pattern.}
-        \label{fig:no_pattern}
+	\includegraphics[width=0.7\textwidth]{figures/linear_regression}
+	\caption{Example of linear regression for the determination of $\beta$.}
+	\label{fig:linear_regression}
 \end{figure}
 
-\begin{figure}
+This risk/expected return relationship is called the \emph{security market line} (SML). An example of this line is shown in Fig.~\ref{fig:sel}. As indicated before, the expected return on a security generally equals the risk-free rate plus a risk premium. In CAPM the risk premium is measured as $\beta$ times the expected return on the market minus the risk-free rate. No measure of unsystematic risk appears in the risk premium, of course, for in the world of CAPM diversification has eliminated it.
+
+\begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.5\linewidth]{figures/image_2.png}
-	\caption{An example of training image with \emph{head and shoulder} pattern.}
-        \label{fig:head_and_shoulder}
+	\includegraphics[width=0.7\textwidth]{figures/sel}
+	\caption{Security market line.}
+	\label{fig:sel}
 \end{figure}
 
-\begin{figure}
-	\centering
-	\includegraphics[width=0.5\linewidth]{figures/image_0.png}
-	\caption{An example of training image with \emph{triangle} pattern.}
-        \label{fig:triangle}
-\end{figure}
+In the freely competitive financial markets described by CAPM, no security can sell for long at prices low enough to yield more than its appropriate return on the SML. The security would then be very attractive compared with other securities of similar risk, and investors would bid its price up until its expected return fell to the appropriate position on the SML. Conversely, investors would sell off any stock selling at a price high enough to put its expected return below its appropriate position. The resulting reduction in price would continue until the stock’s expected return rose to the level justified by its systematic risk.
+
+\subsection{Calculate $\beta$ and CAPM for a Stock}
+
+In order to see an example of CAPM application we use \href{https://drive.google.com/file/d/1G4U8foyhq9agGPs8cg83-aY4qU8K3jJI/view?usp=sharing}{capm.csv} file which contains the historical series of S\&P500 and of some stocks.
+As usual with \texttt{pandas} we can inspect the file and compute some useful quantities like daily and annualized expected returns.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{finnn} \PY{k}{import} \PY{n}{FinNN}
-	
-\PY{n}{train\PYZus{}labels} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{load}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{training\PYZus{}techana\PYZus{}labels.npy}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{train\PYZus{}images} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{load}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{training\PYZus{}techana\PYZus{}images.npy}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-	
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CNN1D}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{train\PYZus{}images}\PY{p}{,} \PY{n}{train\PYZus{}labels}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} define the CNN }
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addConv1DInputLayer}\PY{p}{(}\PY{n}{filters}\PY{o}{=}\PY{l+m+mi}{80}\PY{p}{,} \PY{n}{filter\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{20}\PY{p}{,} 
-                            \PY{n}{input\PYZus{}size}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{101}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addConv1DLayer}\PY{p}{(}\PY{n}{filters}\PY{o}{=}\PY{l+m+mi}{80}\PY{p}{,} \PY{n}{filter\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{15}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addMaxPooling1D}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addConv1DLayer}\PY{p}{(}\PY{n}{filters}\PY{o}{=}\PY{l+m+mi}{100}\PY{p}{,} \PY{n}{filter\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addConv1DLayer}\PY{p}{(}\PY{n}{filters}\PY{o}{=}\PY{l+m+mi}{100}\PY{p}{,} \PY{n}{filter\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addGlobalAveragePooling1D}\PY{p}{(}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addDropout}\PY{p}{(}\PY{l+m+mf}{0.5}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addCNNOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{3}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{categorical\PYZus{}crossentropy}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{80}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{saveModel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{techana}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
+		
+\PY{n}{capm} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{capm.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{index\PYZus{}col}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{date}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{capm}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+\PY{n}{daily\PYZus{}returns} \PY{o}{=} \PY{n}{capm}\PY{o}{.}\PY{n}{pct\PYZus{}change}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}
 
-Epoch 1/80
-- 23s 1ms/step - loss: 0.6773
-Epoch 2/80
-- 23s 1ms/step - loss: 0.5421
-...
-Epoch 79/80
-- 23s - loss: 0.0737
-Epoch 80/80
-- 23s - loss: 0.0692
+                 AAPL     AMZN          BA    GOOG         IBM        MGM 
+date
+27/03/2014  71.865678  338.470  111.078480  558.46  167.346339  24.629343
+28/03/2014  71.785450  338.290  112.205402  559.99  167.892905  24.609560
+31/03/2014  71.769404  336.365  113.133986  556.97  169.691285  25.578908
+01/04/2014  72.425937  342.990  115.586169  567.16  171.463219  26.241625
+02/04/2014  72.546280  341.960  115.676323  567.00  170.625738  26.409777
+
+                    T    TSLA        SP500
+date
+27/03/2014  28.801410  207.32  1849.040039
+28/03/2014  28.892032  212.37  1857.619995
+31/03/2014  28.892032  208.45  1872.339966
+01/04/2014  28.908509  216.97  1885.520020
+02/04/2014  29.139184  230.29  1890.900024
 \end{Verbatim}
 \end{tcolorbox}
+
+To recap $\beta$ is the slope of the regression line of the market return vs stock return plot (and $\alpha$ is the intercept of this line with the $y$ axis).
+
+These quantities can be calculated with \texttt{numpy.polyfit} passing as inputs the market and stock return lists. 
+The resulting fits for the stocks in our sample are shown in Fig.~\ref{fig:capm_fit}.
+
+With the daily returns and $\beta$ of each stock, we can apply the capital asset pricing model. First, we can calculate the average daily return of the market and annualize this return by multiplying it by the number of trading days in a year.
+Assuming a risk-free rate of 1\%, we can then calculate CAPM using Eq.~\ref{eq:capm}.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{rm} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SP500}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{252}
+\PY{n}{rf} \PY{o}{=} \PY{l+m+mf}{0.01} 
+	
+\PY{n}{betas} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
+\PY{n}{alphas} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
+\PY{n}{ERs} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
+\PY{k}{for} \PY{n}{i}\PY{p}{,} \PY{n}{k} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{columns}\PY{p}{)}\PY{p}{:}
+    \PY{k}{if} \PY{n}{k} \PY{o}{==} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{SP500}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}
+        \PY{k}{continue}
+    \PY{n}{betas}\PY{p}{[}\PY{n}{k}\PY{p}{]}\PY{p}{,} \PY{n}{alphas}\PY{p}{[}\PY{n}{k}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{polyfit}\PY{p}{(}\PY{n}{daily\PYZus{}returns}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SP500}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{,} 
+    \PY{n}{daily\PYZus{}returns}\PY{p}{[}\PY{n}{k}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+    \PY{n}{ERs}\PY{p}{[}\PY{n}{k}\PY{p}{]} \PY{o}{=} \PY{n}{rf} \PY{o}{+} \PY{p}{(}\PY{n}{betas}\PY{p}{[}\PY{n}{k}\PY{p}{]} \PY{o}{*} \PY{p}{(}\PY{n}{rm}\PY{o}{\PYZhy{}}\PY{n}{rf}\PY{p}{)}\PY{p}{)} 
+
+\PY{k}{for} \PY{n}{k}\PY{p}{,} \PY{n}{v} \PY{o+ow}{in} \PY{n}{ERs}\PY{o}{.}\PY{n}{items}\PY{p}{(}\PY{p}{)}\PY{p}{:} 
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:4\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:4.1f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{k}\PY{p}{,} \PY{n}{v}\PY{p}{)}\PY{p}{)}
+
+AAPL: 10.3\%
+AMZN: 10.8\%
+BA  : 10.3\%
+GOOG: 10.7\%
+IBM :  8.7\%
+MGM : 13.8\%
+T   :  5.9\%
+TSLA: 11.9\%
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=.8\textwidth]{figures/capm_fit.png}
+	\caption{Linear regression of market return vs stock return for a set of selected stocks. The fit results are also shown in red and the regression parameters are indicated in the legend.}
+	\label{fig:capm_fit}
+\end{figure}
+
+\subsection{Calculate $\beta$ and CAPM for a Portfolio}
+
+Now that we have the $\beta$s of each individual stock we can calculate the CAPM for a portfolio made of the same stocks (we assume equal weights for simplicity).
+It is enough indeed to perform a weighted sum of of the expected return according to the model of each stock.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n+nb}{sum}\PY{p}{(}\PY{n}{ERs}\PY{o}{.}\PY{n}{values}\PY{p}{(}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{1}\PY{o}{/}\PY{n+nb}{len}\PY{p}{(}\PY{n}{ERs}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+
+10.3\%
+\end{Verbatim}
+\end{tcolorbox}
+
+The expected return of the portfolio is roughly 10\% and this is what an investor should expect according to CAPM.
+
+\subsection{Criticism to CAPM}
+As we have seen the whole model is about plotting a line in a scatter plot, it’s not a very complex model. Assumptions under the model are even more simplistic. For example:
+\begin{itemize}
+\tightlist
+\item expect that all investors are rational and they avoid risk;
+\item everyone have full information about the market;
+\item everyone have similar investment horizons and expectations about future movements;
+\item stocks are all correctly priced.
+\end{itemize}
+
+Moreover, this is a model from the 1960s. Market dynamics were different back then. And of course, this is a retrospective model. We cannot know how future stock prices move and how the market behaves.
+Interesting extension of CAPM involves \emph{Bayesian regression} but it will not be discussed here.
+
+\section{Risk Parity Portfolio}
+\label{risk-parity-portfolio}
+
+An alternative approach to Markowitz theory is given by the
+\emph{risk parity}. A risk parity portfolio is an investment allocation
+strategy which focuses on the allocation of risk, rather than on the
+allocation of capital. 
+A risk parity (equal risk) portfolio is characterised by having equal risk contributions to the total risk from each individual asset. 
+
+Risk parity allocation is also referred to as equally-weighted risk
+contributions portfolio method. Equally-weighted risk contributions is
+not about \emph{having the same volatility}, it is about having each
+asset contributing in the same way to the portfolio overall volatility.
+For this we will have to define the contribution of each asset to the
+portfolio risk. 
+
+This allocation strategy has gained popularity in the
+last decades since it is believed to provide better risk adjusted return
+than capital based allocation strategies.
+
+Let's go over a very basic example to better illustrate how to construct
+a simple risk parity (equal risk) portfolio. Later we will see how
+to extend this technique to a risk budgeting portfolio (targeted risk
+allocation).
+
+Consider a portfolio of \(N\) assets: \(x_{1}, \ldots, x_N\) where as
+usual the weight of the $i^{th}$ asset is denoted by \(w_{i}\). The
+\(w_{i}\) form the allocation vector \(\mathbf{w}\). Let us further
+denote the covariance matrix of the assets as \(\Sigma\). The volatility
+of the portfolio is then defined as:
+
+\begin{equation} \sigma_p={\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} = \sum_{i=1}^{N}\sigma _{i}\qquad\textrm{with}~\sigma _{i} = w_{i}\cdot \cfrac{\partial\sigma_p}{\partial w_{i}}={\cfrac {w_{i}(\Sigma \mathbf{w})_{i}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}}\end{equation}
+so that \(\sigma _{i}\) can be interpreted as the contribution of the $i^{th}$ asset to the overall risk of the portfolio.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cream, colframe=cellborder]
-\subsubsection{Again for the Most Curious}\label{again-for-the-most-curious}
+This paragraph can be skipped if you are not interested in the derivation of the $\sigma_i$.
 
-Large neural nets trained on relatively small datasets can overfit the
-training data.
+Expressing explicitly in matrix form the standard deviation of the portfolio we get
+\[
+\begin{split}
+	\sigma_p={\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} & =
+	\sqrt{
+		\begin{bmatrix}
+			w_{1} \\
+			w_{2}
+		\end{bmatrix}
+		\begin{bmatrix}
+			\sigma_{11} & \sigma_{21} \\
+			\sigma_{12} & \sigma_{22} 
+		\end{bmatrix}
+		\begin{bmatrix}
+			w_{1} & w_{2} \\
+		\end{bmatrix}
+	}\\
+	&=
+	\sqrt{
+		\begin{bmatrix}
+			w_{1} \\
+			w_{2}
+		\end{bmatrix}
+		\begin{bmatrix}
+			w_{1}\sigma_{11} + w_{2}\sigma_{12} & w_{1}\sigma_{21} + w_{2}\sigma_{22} \\
+		\end{bmatrix}
+	} \\
+	&= \sqrt{
+		w_{1}w_{1}\sigma_{11} + w_{2}w_{1}\sigma_{12} + w_{1}w_{2}\sigma_{21} + w_{2}w_{2}\sigma_{22} }
+\end{split}
+\]
+Now performing for example the derivative with respect to $w_1$ we obtain
+\[\cfrac{\partial\sigma_p}{\partial w_1} = \cfrac{1}{2}\cdot\cfrac{2\cdot w_1\sigma_{11} + 2\cdot w_{2}\sigma_{21}}{\sigma_p} = \cfrac{w_1\sigma_{11} + w_{2}\sigma_{21}}{\sigma_p} = \cfrac{(\Sigma \mathbf{w})_{1}}{\sigma_p}\]
 
-This has the effect of the model learning the statistical noise in the
-training data, which results in poor performance when the model is
-evaluated on new data, e.g.~a test dataset.
-
-One approach to reduce overfitting is to fit all possible different
-neural networks on the same dataset and to average the predictions from
-each model. This is not feasible in practice, and can be approximated
-using a small collection of different models, called an ensemble. A
-problem even with the ensemble approximation is that it requires
-multiple models to be fit and stored, which can be a challenge if the
-models are large, requiring days or weeks to train and tune.
-
-\emph{Dropout} is a regularization method that approximates training a
-large number of neural networks with different architectures in
-parallel.
-
-During training, some number of layer outputs are randomly ignored or
-\emph{dropped out}. This has the effect of making the layer look-like
-and be treated-like a layer with a different number of nodes and
-connectivity to the prior layer. In effect, each update to a layer
-during training is performed with a different ``view'' of the configured
-layer.
-
-Even if the it may seems counter intuitive (better training when
-switching off nodes) indeed dropout breaks-up situations where network
-layers co-adapt to correct mistakes from prior layers, in turn making
-the model more robust.
+Summing up $\sum w_i\cdot\cfrac{\partial\sigma_p}{\partial w_i}$ we get back $\sigma_p$
 \end{tcolorbox}
 
-To test the perfomance I wanted to simulate a real case scenario where
-the time series are analyzed in real-time in order to predict as soon as
-possible a particular pattern and take advantage of the prediction.
+Equal risk contribution then means \(\sigma _{i} =\sigma _{j}\) for all
+\(i,j\) or equivalently \(\sigma _{i}=\sigma_p/N\). So
 
-To do so I have created a longer time series (i.e.~more time points) and
-passed as input to the CNN sliding time windows to simulate the
-evolution of the time series. So if for example the time series is made
-of 100 points, I presented to the network first the points between
-\([0, 80]\), then \([1, 81]\), \([2, 82]\) and so on simulating new real
-time data incoming. The goal was to check when the neural network was
-capable of predicting the incoming pattern. Figure~\ref{fig:frame_simulation}
-is showing the "temporal frames" that have been presented to the CNN for predicting possible incoming patterns.
+\begin{equation}\sigma _{i} = \cfrac{\sigma_p}{N}={\cfrac {w_{i}(\Sigma \mathbf{w})_{i}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}}\implies w_{i} = \frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}\end{equation}
+Since we want the previous expression to be true for each $i$, the solution for the weights can be found by solving the minimisation problem
 
-\begin{figure}
-	\centering
-	\includegraphics[width=\textwidth]{figures/tech_ana_frames.png}
-	\caption{Ten frames simulating closing price date incoming in real time. The CNN was tested to check if and when it would have been able to detect any pattern in data.}
-	\label{fig:frame_simulation}
-\end{figure}
+\begin{equation} \underset{\mathbf{w}}{\min } \sum _{i=1}^{N}\left[w_{i}-{\frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}}\right]^{2} \end{equation}
 
+Going back to our data sample let's find out the weights to give us a
+risk parity portfolio.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{test\PYZus{}images} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{load}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{testing\PYZus{}techana\PYZus{}frames.npy}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{loadModel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{techana}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-	
-\PY{n}{predictions} \PY{o}{=} \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{test\PYZus{}images}\PY{p}{)}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{predictions}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{n+nb}{print} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{argmax}\PY{p}{(}\PY{n}{predictions}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{,} \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{p}\PY{p}{)} \PY{k}{for} \PY{n}{p} \PY{o+ow}{in} \PY{n}{predictions}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{5}
+\PY{k}{def} \PY{n+nf}{risk\PYZus{}parity}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
+    \PY{n}{variance} \PY{o}{=} \PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{)} 
+    \PY{n+nb}{sum} \PY{o}{=} \PY{l+m+mi}{0}
+    \PY{n}{N} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{w}\PY{p}{)}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{N}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb}{sum} \PY{o}{+}\PY{o}{=} \PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{p}{(}\PY{n}{variance}\PY{o}{/}\PY{p}{(}\PY{n}{N}\PY{o}{*}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} 
+    \PY{k}{return} \PY{n+nb}{sum}
+		
+\PY{n}{args} \PY{o}{=} \PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}
+\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)} 
+\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
+\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{risk\PYZus{}parity}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
+                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
 
-0 ['0.942', '0.000', '0.058']
-0 ['0.970', '0.000', '0.030']
-0 ['1.000', '0.000', '0.000']
-0 ['0.999', '0.001', '0.000']
-0 ['0.784', '0.216', '0.000']
-1 ['0.000', '1.000', '0.000']
-1 ['0.000', '1.000', '0.000']
-1 ['0.000', '1.000', '0.000']
-1 ['0.000', '1.000', '0.000']
-1 ['0.000', '1.000', '0.000']
+    fun: 2.2543755363349716e-07
+    jac: array([-7.06474804e-04,  1.97343062e-04, -4.26326934e-05,
+                -8.04037852e-06,  1.11882164e-03])
+message: 'Optimization terminated successfully.'
+   nfev: 38
+    nit: 5 
+   njev: 5
+ status: 0
+success: True
+      x: array([0.25895309, 0.18118756, 0.19670379, 0.22208923, 
+                0.14106633])
+
+\PY{n}{sigma\PYZus{}i} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{n}{std} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
+    \PY{n}{a} \PY{o}{=} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]} 
+    \PY{n}{sigma\PYZus{}i}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{a}\PY{o}{/}\PY{n}{std}\PY{p}{)}
+		
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Risk contribution for asset }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}
+           \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{sigma\PYZus{}i}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{/}\PY{n+nb}{sum}\PY{p}{(}\PY{n}{sigma\PYZus{}i}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+
+Risk contribution for asset 0: 19.974\%
+Risk contribution for asset 1: 19.999\%
+Risk contribution for asset 2: 19.990\%
+Risk contribution for asset 3: 19.993\%
+Risk contribution for asset 4: 20.044\%
 \end{Verbatim}
 \end{tcolorbox}
 
-So at the 6th sample the CNN start recognizing the \emph{head and
-shoulder} pattern in the price evolution.
+%Figure~\ref{fig:risk_parity} shows the fraction of risk allocated to each asset and the corresponding weight within the portfolio.
 
+\subsection{Risk Budget Allocation}
+\label{risk-budget-allocation}
 
-https://arxiv.org/abs/1705.08807
-https://www.deeplearningbook.org/
+The same technique can be used if we would like to calculate a portfolio
+with risk budget allocation. In this case we want to associate to each asset a particular level of risk. If we consider the previous equation
 
-	arXiv:2101.09957 Activation Functions in Artificial Neural Networks: A Systematic Overview
-	Johannes Lederer
+\begin{equation} \sigma _{i}=\cfrac{\sigma_p}{N} \end{equation}
+where we set the risk contribution fraction to every asset to \(1/N\);
+now we can simply replace \(1/N\) with the desired fraction of risk (\(f_i\)) for each asset
+
+\begin{equation} \sigma _{i}=f_i \cdot \sigma_p \end{equation}
+so that the relation to minimise becomes
+
+\begin{equation} \underset{\mathbf{w}}{\min} \sum _{i=1}^{N}\left[w_{i}-{\frac {f_i \cdot \sigma_p^{2}}{(\Sigma \mathbf{w})_{i}}}\right]^{2} \end{equation}
+
+Translating it into \texttt{python} we get:
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{risk\PYZus{}budget}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{target\PYZus{}risk}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
+    \PY{n}{variance} \PY{o}{=} \PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{)} 
+    \PY{n+nb}{sum} \PY{o}{=} \PY{l+m+mi}{0}
+    \PY{n}{N} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{w}\PY{p}{)}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{N}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb}{sum} \PY{o}{+}\PY{o}{=} \PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{p}{(}\PY{n}{target\PYZus{}risk}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{variance}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} 
+    \PY{k}{return} \PY{n+nb}{sum}
+		
+\PY{n}{f\PYZus{}i} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.3}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.15}\PY{p}{,} \PY{l+m+mf}{0.15}\PY{p}{]} 
+\PY{n}{args} \PY{o}{=} \PY{p}{(}\PY{n}{f\PYZus{}i}\PY{p}{,} \PY{n}{covariance}\PY{p}{)}
+\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}          
+\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
+\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{risk\PYZus{}budget}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{f\PYZus{}i}\PY{p}{,} \PY{n}{covariance}\PY{p}{)}\PY{p}{,} 
+ersi                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
+		
+    fun: 4.798712878867406e-08
+    jac: array([-3.11920407e-04,  3.24431247e-04,  
+                 9.84173665e-05, -9.10631775e-05,  4.14667119e-04])
+message: 'Optimization terminated successfully.'
+   nfev: 45
+    nit: 6
+   njev: 6
+ status: 0
+success: True
+      x: array([0.34604471, 0.17973628, 0.19407208, 0.16911722, 
+                0.11102971])
+		
+\PY{n}{sigma\PYZus{}i} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+\PY{n}{std} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
+    \PY{n}{a} \PY{o}{=} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]} 
+    \PY{n}{sigma\PYZus{}i}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{a}\PY{o}{/}\PY{n}{std}\PY{p}{)}
+		
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Risk contribution for asset }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}
+            \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{sigma\PYZus{}i}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{/}\PY{n+nb}{sum}\PY{p}{(}\PY{n}{sigma\PYZus{}i}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+		
+Risk contribution for asset 0: 29.986\%
+Risk contribution for asset 1: 20.009\%
+Risk contribution for asset 2: 19.999\%
+Risk contribution for asset 3: 14.992\%
+Risk contribution for asset 4: 15.013\%
+\end{Verbatim}
+\end{tcolorbox}
+
+%Figure~\ref{risk_allocation} shows the amount of risk associated to each asset and their weights within the portfolio. 
+Indeed for each stock we have allocated the desired amount of risk.
+
+\section{Portfolio Diversification}
+
+Diversification is a common topic in portfolio construction and allows to combine risky stocks so that their combination (the portfolio) is less risky than any of its components. Although such diversification is a familiar notion, it may be worthwhile to review the manner in which diversification reduces risk.
+
+Suppose there are two companies located on an isolated island whose chief industry is tourism. One company manufactures suntan lotion. Its stock predictably performs well in sunny years and poorly in rainy ones. The other company produces disposable umbrellas. Its stock performs equally poorly in sunny years and well in rainy ones. Each company earns a 12\% average return.
+
+In purchasing either stock, investors incur a great amount of risk because of variability in the stock price driven by fluctuations in weather conditions. Investing half the funds in the suntan lotion stock and half in the stock of the umbrella manufacturer, however, results in a return of 12\% regardless of which weather condition prevails. Portfolio diversification thus transforms two risky stocks, each with an average return of 12\%, into a riskless portfolio certain of earning the expected 12\%.
+
+Unfortunately, the perfect negative relationship between the returns on these two stocks is very rare in the real world. To some extent, corporate securities move together, so complete elimination of risk through simple portfolio diversification is impossible. However, as long as some lack of parallelism in the returns of securities exists, diversification will always reduce risk.
+
+Empirical studies have demonstrated that unsystematic risk can be virtually eliminated in portfolios of 30 to 40 randomly selected stocks. Of course, if investments are made in closely related industries, more securities are required to eradicate unsystematic risk.
+
+As we have already seen no measure of unsystematic risk appears in the risk premium, of CAPM model, since it is assumed that diversification has eliminated it.
+
+In the Markowitz model instead diversification is achieved by seeking to combine in a portfolio assets with returns that are less than perfectly positively correlated, in an effort to lower portfolio risk (variance) without sacrificing return, through the reduction of the correlation matrix $\Sigma$.
+
+\subsection{Maximum Diversification Portfolio}
+\label{maximum-diversification-portfolio}
+
+As seen diversification it is most often either pursued in tandem with another objective, such as return maximization, or pursued simply by including more asset classes or adding constraints based on intuition.
+
+But it does not have to be this way and diversification can be pursued explicitly as the sole objective in portfolio construction.
+In a 2008 paper, the diversification ratio $D$ of a portfolio has been defined as
+
+\begin{equation}
+D=\cfrac{\mathbf{w^T}\boldsymbol{\sigma}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} 
+\end{equation}
+where $\boldsymbol{\sigma}$ is the vector of volatilities and $\Sigma$ is the covariance matrix. The denominator represents the volatility of the portfolio and the numerator the weighted average volatility of the assets. More diversification within a portfolio decreases the denominator and leads to a higher diversification ratio.
+Let's construct a portfolio that maximize this ratio.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{def} \PY{n+nf}{diversification\PYZus{}ratio}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{:}
+    \PY{n}{w\PYZus{}vol} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{diag}\PY{p}{(}\PY{n}{covariance}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{p}{)}
+    \PY{n}{port\PYZus{}vol} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{p}{,} \PY{n}{w}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+    \PY{n}{diversification\PYZus{}ratio} \PY{o}{=} \PY{n}{w\PYZus{}vol}\PY{o}{/}\PY{n}{port\PYZus{}vol}
+    \PY{k}{return} \PY{o}{\PYZhy{}}\PY{n}{diversification\PYZus{}ratio}
 	
+\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+\PY{n}{cons} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{,}\PY{p}{)}
+\PY{c+c1}{\PYZsh{}cons = cons + (\PYZob{}\PYZsq{}type\PYZsq{}: \PYZsq{}ineq\PYZsq{}, \PYZsq{}fun\PYZsq{}:  long\PYZus{}only\PYZus{}constraint\PYZcb{},)}
+\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
 	
+\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{diversification\PYZus{}ratio}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} 
+                \PY{n}{constraints}\PY{o}{=}\PY{n}{cons}\PY{p}{)}
+	
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
+
+    fun: -1.3603935531589488
+    jac: array([-0.00038704,  0.00023621, -0.00032043,  0.00083792,  
+                0.00020067])
+message: 'Optimization terminated successfully.'
+   nfev: 37
+    nit: 5
+   njev: 5
+ status: 0
+success: True
+      x: array([0.3495816 , 0.17887765, 0.1566318 , 0.12398934, 
+                0.19091962])
+
+\PY{n}{ret} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{returns}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}
+\PY{n}{vol} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Diversification: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{n}{opts}\PY{o}{.}\PY{n}{fun}\PY{p}{)}
+
+Diversification:  1.3603935531589488
+\end{Verbatim}
+\end{tcolorbox}
+
+Figure~\ref{fig:max_div} shows how the maximum diversified portfolio compares to the efficient frontier.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/max_div.png}
+	\caption{Portfolio constructed with the maximum diversification technique shown in the return/variance plane.}
+	\label{fig:max_div}
+\end{figure}

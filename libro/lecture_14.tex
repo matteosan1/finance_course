@@ -1,707 +1,546 @@
-\chapter{Modeling Correlation between Risks}
+\chapter{Copulas and Its Applications}
 
-In credit derivative valuation and credit risk management, one of the
-fundamentally important issues is the estimate of default
-probabilities and their correlations. For this, generally speaking,
-there are two ways: using historical default data or using mathematical
-models.
+Copulas (or couplae in Latin) are an interesting mathematical tool to represent correlations between probability distributions. They can be used to describe complex dependencies in multivariate risk models, when more basic tools such as multivariate Gaussian distributions are inappropriate. Another commonly used application is sampling from correlated random variables.
 
-Historical default data has played an important role in the estimation
-of default probabilities. However, because default events are rare,
-there is very limited default data available. Moreover, historical data only
-reflects the historical default pattern and it may not be a proper
-indicator of the future. This makes the estimate of default
-probabilities from historical data difficult and inexact. To use this
-same data to estimate default correlations is even more difficult and
-more inexact.
+In this Chapter the copula concept is reviewed and some example applications are shown. 
+Before going into the copulas we need to learn how to transform a distribution into another using the \emph{probability integral transform}. 
 
-The market trend now is towards more and more to the use of mathematical
-models that don't rely on historical default data. In
-Chapter~\ref{credit_default_swaps} we have seen how it is possible to derive default probabilities from market data,
-here we will see how the copula can be used to model their correlations. 
-
-\section{One Factor Gaussian Copula Model}\label{standard-market-model}
-While there are several types of copula function models, the first
-introduced was the \emph{one-factor Gaussian copula model}. This model 
-is quite simple and has,above all, the advantage that can be solved semi-analytically.
-In essence the one-factor Gaussian copula, is nothing but a numerical algorithm to generate samples of normally distributed random variables that have a given
-pair-wise correlation. 
-
-Consider a portfolio of \(N\) bonds and assume that the marginal
-probabilities of default are known for each issuer. Define:
-
-\begin{itemize}
-	\tightlist
-	\item
-	\(t_i\), the time of default of the \(i^{th}\) company:
-	\item
-	\(Q_i(t)\), the cumulative probability that company \(i\) will default
-	before time \(t\); that is, the probability that \(t_i \le t\).
-\end{itemize}
-
-To generate a one-factor model for the \(t_i\) we define random
-variables \(X_i\) \((1\le i \le N)\)
+\section{Default Correlation}\label{sec:default_correlation}
+Correlation is a precise mathematical concept that only has meaning 
+in reference to random variables. If $A$ and $B$ are random variables, the correlation coefficient, $\rho$, between $A$ and $B$ is defined as
 \begin{equation}
-X_i = a_i M + \sqrt{1-a_i^2}Z_i,\qquad i = 1, 2,\ldots, N
-\label{eq:normalized_var}
+\rho = \cfrac{\mathbb{E}[(A-\mu_A)(B-\mu_B)]}{\sigma_A \sigma_B}
+\label{eq:correlation_coefficient}
 \end{equation}
-where \(M\) and the \(Z_i\) are independent zero-mean unit-variance  distributions (hence $X_i$ are also distributed with zero-mean and unit standard-deviation) and \(-1 \le a_i \lt 1\).
+where $\mu$denotes the mean, $\sigma$ denotes the standard deviation, and $\mathbb{E}$ is the expected value operator. The indexes $A$ and $B$ refer to the random variables.
 
-Eq.~\ref{eq:normalized_var} defines a correlation structure between the
-\(X_i\) which are dependent on a single common factor \(M\). The $Z_i$ term is usually 
-called the idiosyncratic component of default. 
-The correlation between \(X_i\) and \(X_j\) is
+Thus, statements such as company $X$ and company $Y$ are correlated are
+meaningless. One needs to refer to a quantifiable variable associated with the two companies (e.g. stock price, revenue growth or credit default spreads) for that statement to make sense.
+In the same spirit, stating that the default behavior of companies 1 and 2 is
+correlated does not carry a lot of meaning unless one specifies a random
+variable that captures what \emph{default behavior} means. In summary, before
+we can talk about default correlation, we need to define a random variable
+that somehow captures \emph{default behavior}.
 
-\[
-\rho(X_i, X_j) = \cfrac{\mathbb{E}[(X_i-\mu_i)(X_j-\mu_j)]}{\sigma_{i}\sigma_{j}} =\mathbb{E}[X_i X_j] = a_i a_j \mathbb{E}[M^2] = a_i a_j
-\]
-where we just exploit the definition of $X_i$ and its properties.
-So the functional form of Eq.~\ref{eq:normalized_var} has been chosen to ensure the desired correlation structure among the $X_i$.
+Suppose we have two assets. Hence, we can use two random variables $P_1$ and $P_2$ (i.e. the default probabilities) to generate default scenarios for assets 1 and 2. If we generate $n$ possible default scenarios we can define two index variables ($v$ and $w$) to capture the default patterns of each asset (each variable, actually a vector, will be a sequence of $n$ 1’s and 0’s according to the default state).
 
-%Assume that the $i^{th}$ company has defaulted by the time $t_i$ if $X_i$ is below a threshold value $\bar{x}_i(t_i)$.
-If $F_i$ is the cumulative distribution function of the $X_i$,
-with a percentile to percentile transformation (see Section~\ref{distribution-transformation}) we can map the \(X_i\) to the \(t_i\), so that $Q_i(t_i) = P(X_i\le x)=F_i(x)$.
-Therefore a point \(X_i = x\) is transformed to \(t_i = t\) where
-\(x = F_i^{-1}[Q_i(t)]\).
-
-Let's note that, \textbf{conditional} on $M$, the $N$ default events are \textbf{independent}. So we can write
-\begin{equation}
-\begin{split}
-Q_i^{\textrm{corr}}(t_i|M) = P(X_i\le x|M) &= P(a_i M + \sqrt{1-a_i^2}Z_i\le x) =\\
-&= P\left(Z_i\le \cfrac{x-a_i M}{\sqrt{1-a_i^2}}\right)
-=H_i\left(\cfrac{F^{-1}[Q(t_i)]-a_i M}{\sqrt{1-a_i^2}}\right)
-\end{split}
-\label{eq:generic_copula}
-\end{equation}
-where $H_i$ is the cumulative distribution function of the $Z_i$.
-
-Although in principle any distribution could be used for \(M\) and the
-\(Z\)'s (provided they have zero mean and unit variance), one common
-choice is to let them be standard normal distributions (resulting in a
-Gaussian copula).
-So we can rewrite Eq.~\ref{eq:generic_copula} as
+Using a random sample generated as above we can compute an estimate of
+the statistic correlation coefficient between $v$ and $w$ in order to estimate
+the default correlation ($\rho_D$) between assets 1 and 2.
 
 \begin{equation}
-Q_i^{\textrm{corr}}(t_i|M) = \Phi\left(\cfrac{\Phi^{-1}[Q(t_i)]-a_i M}{\sqrt{1-a_i^2}}\right)
-\label{eq:gaussian_one_factor_copula}
+\rho_D = \cfrac{n\sum (v_i w_i) - \sum v_i \sum w_i}{\sqrt{(n\sum v_i^2 - (\sum v_i)^2)(n\sum w_i^2 - (\sum w_i)^2)}}
+\label{eq:discrete_correlation_coefficient}
 \end{equation}
-where $\Phi$ denotes the cumulative distribution function of the standard normal distribution.
 
-If we call $\mathcal{C}(t_1,\ldots,t_N)$ the joint distribution of the default times of the $N$ bonds in the portfolio then
+Equation~\ref{eq:discrete_correlation_coefficient} is just a discrete
+version of Eq.~\ref{eq:correlation_coefficient}.
+
+The challenge to do a Monte Carlo relies on the modeler’s ability to generate
+realistic default scenarios. That is, being able to be loyal to $p$ (the average
+default probability of the pool) and $\rho_D$ (the assets’ default correlation.) Note that if we are dealing with two assets, the default correlation is captured by one number. In the case of $N$ assets, $\rho_D$ is a symmetric matrix. In the
+simplest case, that is, when all the pair-wise correlations are the same, all the
+off-diagonals elements are identical. 
+
+\section{Distribution Transformation}\label{distribution-transformation}
+
+Distribution transformation is a very useful tool which will be
+extensively used with the copula concept that we discuss in the next
+Sections. The technique we are going to outline transforms every random
+variable, regardless its distribution, into uniform and vice versa and is called
+\emph{inverse transform} or (probability integral transform}.
+
+Computationally, this method involves computing the quantile function (see Section~\ref{quantile-function}) of
+a distribution, in other words, computing the cumulative
+distribution function ($F(x)$) of a distribution (which maps a number
+to a probability between 0 and 1) and then inverting that
+function. 
+
+Suppose a cumulative distribution function of the form
+\(F(x) = P(X \leq x)\) is given and that we would like to draw samples
+according to \(F\) . Applying the inverse transform method
 
 \begin{equation}
-\mathcal{C}(t_1,\ldots,t_N, \rho)=\Phi(\Phi^{-1}(Q_1(t_1)),\ldots,\Phi^{-1}(Q_N(t_N)), \rho)
+	X = F^{−1}(u),\qquad u \approx U[0,1]
 \end{equation}
-where $\rho$ represents the correlation matrix of the default probabilities, is the one factor Gaussian copula model (one factor because there is only a random variable, $M$, which determines the correlation between $X_i$).
+where \(F^{−1}\) is the inverse of \(F\), provides us with the random
+variable \(X\) according to the distribution of \(F\). The inverse of
+\(F\) is well-defined since the CDF \(F\) is strictly increasing.
 
-Clearly different choices of distributions result in different copula models, and in various natures of the default dependence. For example, copulas where the \(M\) have heavy tails generate models where there is a
-greater likelihood of a clustering of early defaults for several
-companies.
-
-\subsection{Standard Market Model}\label{standard-market-model}
-
-Assume the following two assumptions are made:
-
-\begin{itemize}
-	\tightlist
-	\item
-	all the companies have the same default intensity (hazard rates), i.e, \(\lambda_i = \lambda\) (which means they all have the same default probabilities);
-	\item
-	the pairwise default correlations are the same, i.e \(a_i = a\); in other words the contribution of the market
-	component $M$ is the same for all the companies and the correlation between any two companies is constant, \(\rho = a^2\).
-\end{itemize}
-
-Under these assumptions, given the market situation \(M = m\), all the
-companies have the same cumulative default probability
-\(Q_i^{\textrm{corr}}(t_i|m)=P(X_i < x|m)\). 
-Moreover, for a given value of the
-market component \(M\), the defaults are mutually independent for all
-the underlying companies. 
-
-Letting \(l(t|m)\) be the total defaults that
-have occurred by time \(t\) conditional on the market condition
-\(M = m\), then \(l(t|m)\) follows a binomial distribution (see Appendix~\ref{binomial-distribution}), and
+It is straightforward to verify that the random variables \(X\)
+generated by this method are characterized by \(F\):
 
 \begin{equation}
-DP(l(t|m) = j) = \cfrac{N!}{j!(N-j)!}(Q_i^{\textrm{corr}}(t_i|m))^j(1-Q_i^{\textrm{corr}}(t_i|m))^{N-j},\qquad  j=0, 1, 2,\ldots,N
+	P(X \leq x) = P(F^{−1}(u) \leq x) = F(u \leq F(x)) = F(x)
 \end{equation}
 
-In general to evaluate any function of $DP$, say $g(DP(l(t))$ (e.g. an NPV or a fair value), regardless the parameter $M$, is necessary to average according to all the possible values that $M$ can take. The average is performed with the following integral which represents the weighted sum of $g$ with the probability distribution of the random variable $M$  
+Let's see few examples of how this can be done in \(\tt{python}\).
 
-\begin{equation}
-g(DP(l(t) = j)) = \int_{-\infty}^{\infty}{g(DP(l(t|m) = j))\cdot f_M(m)dm}
-\label{eq:gaussian_quadrature}
-\end{equation}
-where $f_M(m)$ is the probability density function (PDF) of the random variable $M$.
+Imagine we want to transform an uniform distribution into a Gaussian.
+The transformation takes uniform samples of a variable \(u\) between 0 and
+1, interpreted as a probability, and then returns $F^{-1}(u)$. 
 
-With the assumption that have been made the one factor model is also called \emph{Market Standard Model}.
-
-If the default probabilities are not the same for each company then it is possible through an iterative procedure to determine $DP(l(t|M)=j)$ and proceed with the integration of Eq.~\ref{eq:gaussian_quadrature}.
-An example of this iterative technique will be shown in Section~\ref{sec:expected_losses}.
-
-\subsection{Extensions of the One Factor Copula Model}
-Many other one-factor model have been tried: Student t copula, Clayton copula and many others. In general we can define a new model by simply choosing particular functions for $M$ and $Z_i$ in Eq.~\ref{eq:normalized_var} provided they are with mean zero and standard deviation one. 
-
-If instead of the single factor $M$ there are two or more, Eq.~\ref{eq:normalized_var} would become
-
-\begin{equation}
-X_i = a_1 M_1 + a_2 M_2 + \sqrt{1 - a_1^2 - a^2_2}Z_i
-\end{equation}
-and similarly
-\begin{equation}
-Q^{\textrm{corr}}(t|M_1, M_2) = \Phi\left(\cfrac{\Phi^{-1}[Q(t)]-a_1 M_1 - a_2 M_2}{\sqrt{1 - a_1^2 - a^2_2}}\right)
-\end{equation}
-In terms of computation time, this kind of models are proportionally slower with the increase of the number of factors, since the integration of Eq.~\ref{eq:gaussian_quadrature} has to be carried on two or more random variables.
-
-Later in this Chapter we will also see that the correlation used in Eq.~\ref{eq:gaussian_one_factor_copula} can be implied from the market quotes of CDOs.
-
-\section{Basket Default Swaps}\label{basket-default-swaps}
-
-A Basket Default Swap is a credit derivative on a portfolio of reference
-entities. The simplest basket default swaps are first-to-default,
-second-to-default, or nth-to-default swaps. 
-
-This kind of contracts are very similar to normal CDS except for the protection they offer.
-With respect to a basket of reference entities, a first-to-default swap provides insurance for only the first default, a second-to-default swap provides insurance
-for only the second default, and a nth-to-default swap provides insurance for only the $n^{th}$ default. 
-
-For example, in the last case, the
-seller does not make a payment to the protection buyer for
-the first $n-1$ defaulted reference entities, and makes a payment only for the
-$n^{th}$ defaulted reference entity. Once there has been this payment the swap terminates.
-
-The cost of protection in nth-to-default basket is obviously dependent on default correlations. 
-
-Suppose that a basket of 100 reference entities is used to define a 5-year nth-to-default CDS and that each reference entity has a probability of 2\% of defaulting during the next
-5 years. When the default correlation between the reference entities is zero, the binomial distribution (see Appendix~\ref{binomial-distribution}) 
-shows that the probability of one or more defaults during 5 years is 86.74\% and the probability of ten or more defaults is 0.0034\%.
+Table~\ref{tab:transformation} shows samples taken from the
+uniform distribution and their representation on the standard normal
+distribution determined using the algorithm explained above.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{binom}
-	
-\PY{n}{b} \PY{o}{=} \PY{n}{binom}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,} \PY{l+m+mf}{0.02}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{P(\PYZgt{}=1) : }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{b}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{P(\PYZgt{}=10): }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{b}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{l+m+mi}{9}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-	
-P(>=1) : 0.8673804441052471
-P(>=10): 3.441680604299169e-05
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{uniform}\PY{p}{,} \PY{n}{norm}
+		
+\PY{n}{uniform\PYZus{}samples} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.5}\PY{p}{,} \PY{o}{.}\PY{l+m+mi}{975}\PY{p}{,} \PY{l+m+mf}{0.995}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{]}
+\PY{k}{for} \PY{n}{u} \PY{o+ow}{in} \PY{n}{uniform\PYZus{}samples}\PY{p}{:}
+    \PY{n+nb}{print} \PY{p}{(}\PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{u}\PY{p}{)}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
-A first-to-default is therefore quite valuable whereas a tenth-to-default CDS is worth almost nothing.
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|c|c|}
+    \hline
+    \(\mathbf{u}\) & \(\mathbf{F^{-1}(u)}\) \\
+    \hline
+    0.5 & 0 \\
+    \hline
+    .975 & 1.95996 \\
+    \hline
+    .995 & 2.5758 \\
+    \hline
+    .999999 & 4.75342 \\
+    \hline
+    \(1-2^{-52}\) & 8.12589 \\
+    \hline
+  \end{tabular}
+  \caption{Table of samples from the uniform distribution and their corresponding Gaussian quantiles.}
+\label{tab:transformation}
+\end{table}
 
-As the default correlation increases the probability of one or more defaults declines and the probability of ten or more defaults increases. In the limit where the default correlation is perfect the probability of one or more defaults equals the probability of ten or more defaults and it is 2\%. This is because in this extreme situation the reference entities are essentially the same : either they all default (with 2\% probability) or none of them default (with 98\% probability).
+Now let's see how this can be done directly with an entire distributions. The first step is to sample
+uniformly distributed values between 0 and 1. This can be done either using \texttt{random.random} 
+like in Section~\ref{pseudo-random-numbers} or with \texttt{scipy.stats.uniform}. 
+Each distribution defined in \texttt{scipy.stats} has a convenient method \texttt{rvs(size=aSize)} 
+(random variable sample) to sample from it as many time as specified by the arguments \texttt{size}. 
+Usually the second method is preferred since it exploits \texttt{numpy.array} and let us avoid a lot of for-loop cycles.
 
-\subsection{Basket CDS Valuation under Gaussian Copula Model}\label{basket-cds-valuation-under-market-standard-model}
-We now present some numerical results for an nth-to-default basket.
-We assume that the principals and expected recovery rates are the same
-for all underlying reference assets. The valuation procedure is similar
-to that for a regular CDS where there is only one reference entity.
-
-In a regular CDS indeed the valuation is based on the probability that a
-default occurred between times \(t_1\) and \(t_2\). Here instead the
-valuation will be based on the probability that the $n^{th}$ default happened
-between times \(t_1\) and \(t_2\).
-The buyer of protection makes quarterly payments at a
-specified rate until the $n^{th}$ default occurs or the end life
-of the contract is reached.
-
-In the event of the $n^{th}$ default occurring, the seller pays
-\(F\cdot(1-R)\). The contract can be valued in a similar way as done for the CDS.
-
-In the following we are going to develop a \texttt{BasketDefaultSwap} class that is able to compute the basket NPV and its break-even spread.
-The idea is:
-\begin{itemize}
-\item compute the correlated default probability of each name according to 
-\begin{equation}Q^{\textrm{corr}}(t|M) = \Phi\left(\cfrac{\Phi^{-1}[Q(t)]-\sqrt{\rho} M}{\sqrt{1-\rho}}\right)\end{equation}
-\item compute the probability of having at least $j$ defaults using the binomial distribution
-\begin{equation}DP(l(t|m) \ge j) = \sum_{k=j}^{N}\left[  \cfrac{N!}{k!(N-k)!}Q^{\textrm{corr}}(t|M)^k(1-Q^{\textrm{corr}}(t|M))^{N-k}\right]\end{equation}
-\item create a \textbf{credit curve}, $CC(DP)$ with those probabilities;
-\item re-use the \texttt{CreditDefaultSwap} class methods to compute NPV and break-even rate (with the appropriate discount curve and the credit curve determine above),through integration of
-\begin{equation}\mathrm{NPV}(DC, CC(DP)) = \int_{-\infty}^{\infty}{\mathrm{NPV}(DC, CC(DP)) f_M(m)dm} \end{equation}
-and similarly for the break-even rate.
-\end{itemize}
-
-Since to valuate a basket default swap we need to integrate let's see briefly how it works in \texttt{python}.
-
-To integrate a function \(f\) we can
-use the \(\tt{scipy.integrate.quad}\) function which takes in input: the function to integrate, the integration limits and optional arguments of
-the integrand. Since it is a numerical integration the result will be an tuple with the actual value and the associated error (we will always be interested in the first item only).
-
-So for example to integrate
-
-\[f(x) = \int_{-2}^{4}(ax^{3} + b)~dx\]
-for \(a=3\) and \(b=5\)
+In any case in the left plot of Fig.~\ref{fig:uniform_and_gauss} the resulting distribution is shown.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{integrate} \PY{k}{import} \PY{n}{quad}
-	
-\PY{k}{def} \PY{n+nf}{func}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{a}\PY{p}{,} \PY{n}{b}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{n}{a}\PY{o}{*}\PY{n}{x}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{3} \PY{o}{+} \PY{n}{b}
-	
-\PY{n}{s} \PY{o}{=} \PY{n}{quad}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{s}\PY{p}{)}
-
-(210.0, 2.475694446663456e-12)
+\PY{n}{x} \PY{o}{=} \PY{n}{uniform}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{l+m+mi}{10000}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
-Finally the implementation of the \texttt{BasketDefaultSwaps} class.
+Next we want to transform these samples so that instead of uniform they
+are normally distributed. As we have seen, see Section~\ref{quantile-function}, the transform that does this
+is the inverse of the cumulative density function of the normal 
+distribution, or \((\tt{ppf(x))}\) in \texttt{python}. 
 
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{CreditCurve}\PY{p}{,} \PY{n}{CreditDefaultSwap}
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}\PY{p}{,} \PY{n}{binom}
-\PY{k+kn}{from} \PY{n+nn}{numpy} \PY{k}{import} \PY{n}{sqrt}\PY{p}{,} \PY{n}{exp}, inf
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{integrate} \PY{k}{import} \PY{n}{quad}
-		
-\PY{k}{class} \PY{n+nc}{BasketDefaultSwaps}\PY{p}{:}
-    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{notional}\PY{p}{,} \PY{n}{names}\PY{p}{,}  \PY{n}{rho}\PY{p}{,} \PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{spread}\PY{p}{,} 
-                 \PY{n}{maturity}\PY{p}{,} \PY{n}{tenor=3}\PY{p}{,} \PY{n}{recovery=0.4}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{names} \PY{o}{=} \PY{n}{names}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rho} \PY{o}{=} \PY{n}{rho}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{cds} \PY{o}{=} \PY{n}{CreditDefaultSwap}\PY{p}{(}\PY{n}{notional}\PY{p}{,} \PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{spread}\PY{p}{,} 
-                                      \PY{n}{maturity}\PY{p}{,} \PY{n}{tenor}\PY{p}{,} \PY{n}{recovery}\PY{p}{)} 
-		
-    \PY{k}{def} \PY{n+nf}{one\PYZus{}factor\PYZus{}model}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{M}\PY{p}{,} \PY{n}{f}\PY{p}{,} \PY{n}{Q_dates}\PY{p}{,} \PY{n}{Q}\PY{p}{,} \PY{n}{dc}\PY{p}{,} \PY{n}{j}\PY{p}{)}\PY{p}{:}
-        \PY{n}{DP} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{p}{(}\PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{Q}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{sqrt}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rho}\PY{p}{)}\PY{o}{*}\PY{n}{M}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{n}{sqrt}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rho}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-        \PY{n}{b} \PY{o}{=} \PY{n}{binom}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{names}\PY{p}{,} \PY{n}{DP}\PY{p}{)}
-        \PY{n}{S} \PY{o}{=} \PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{b}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{j}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-        \PY{n}{cc} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{n}{Q_dates}\PY{p}{,} \PY{n}{S}\PY{p}{)}
-        \PY{k}{return} \PY{n}{f}\PY{p}{(}\PY{n}{dc}\PY{p}{,} \PY{n}{cc}\PY{p}{)}\PY{o}{*}\PY{n}{norm}\PY{o}{.}\PY{n}{pdf}\PY{p}{(}\PY{n}{M}\PY{p}{)}
-		
-    \PY{k}{def} \PY{n+nf}{breakeven}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{Q_dates}\PY{p}{,} \PY{n}{Q}\PY{p}{,} \PY{n}{dc}\PY{p}{,} \PY{n}{ndefaults}\PY{p}{)}\PY{p}{:}
-        \PY{n}{s} \PY{o}{=} \PY{n}{quad}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{one\PYZus{}factor\PYZus{}model}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{n}{inf}\PY{p}{,} \PY{n}{inf}\PY{p}{,} 
-                 \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{cds}\PY{o}{.}\PY{n}{breakevenRate}\PY{p}{,} \PY{n}{Q_dates}\PY{p}{,} \PY{n}{Q}\PY{p}{,} \PY{n}{dc}\PY{p}{,} \PY{n}{ndefaults}\PY{p}{)}\PY{p}{)}
-        \PY{k}{return} \PY{n}{s}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
-		
-    \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{Q_dates}\PY{p}{,} \PY{n}{Q}\PY{p}{,} \PY{n}{dc}\PY{p}{,} \PY{n}{ndefaults}\PY{p}{)}\PY{p}{:}
-        \PY{n}{s} \PY{o}{=} \PY{n}{quad}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{one\PYZus{}factor\PYZus{}model}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{n}{inf}\PY{p}{,} \PY{n}{inf}\PY{p}{,} 
-                 \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{cds}\PY{o}{.}\PY{n}{npv}\PY{p}{,} \PY{n}{Q_dates}\PY{p}{,} \PY{n}{Q}\PY{p}{,} \PY{n}{dc}\PY{p}{,} \PY{n}{ndefaults}\PY{p}{)}\PY{p}{)}
-        \PY{k}{return} \PY{n}{s}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}        
-\end{Verbatim}
-\end{tcolorbox}
+In the right plot of Fig.~\ref{fig:uniform_and_gauss} the Gaussian obtained 
+with the code below is shown
 
-So consider a 5-year 1st-to-default basket of ten
-reference entities in the situation where the copula correlation is 0.3
-and the expected recovery rate, \(R\), is \(40\%\). The term structure
-of interest rates is assumed to be flat at 5\%. The default
-probabilities for the ten entities are generated by Poisson processes
-with constant default intensities (hazard rates), \(\lambda_i=0.01\), so that
-
-\[ Q(t) = 1 - e^{-\lambda t} \]
-
-Using the \texttt{BasketDefaultSwap} class determine the breakeven spread.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{finmarkets\PYZus{}tot} \PY{k}{import} \PY{n}{DiscountCurve}
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-	
-\PY{n}{n\PYZus{}cds} \PY{o}{=} \PY{l+m+mi}{10}
-\PY{n}{rho} \PY{o}{=} \PY{l+m+mf}{0.3}
-\PY{n}{l} \PY{o}{=} \PY{l+m+mf}{0.01}
-\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
-	
-\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{observation\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{6}\PY{p}{)}\PY{p}{]}
-\PY{n}{dfs} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{l+m+mf}{0.05}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{n}{i} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{6}\PY{p}{)}\PY{p}{]}
-\PY{n}{dc} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{dfs}\PY{p}{)}
-\PY{n}{Q} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{p}{(}\PY{n}{l}\PY{o}{*}\PY{n}{t}\PY{p}{)}\PY{p}{)} \PY{k}{for} \PY{n}{t} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{6}\PY{p}{)}\PY{p}{]}
-	
-\PY{n}{ndefaults} \PY{o}{=} \PY{l+m+mi}{3}
-\PY{n}{basket} \PY{o}{=} \PY{n}{BasketDefaultSwaps}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{n\PYZus{}cds}\PY{p}{,} \PY{n}{rho}\PY{p}{,} \PY{n}{observation\PYZus{}date}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{basket}\PY{o}{.}\PY{n}{breakeven\PYZus{}rate}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{Q}\PY{p}{,} \PY{n}{dc}\PY{p}{,} \PY{n}{ndefaults}\PY{p}{)}\PY{p}{)}
-
-0.0017750563139599736
-\end{Verbatim}
-\end{tcolorbox}
-
-
-\section{Collateralized Debt Obligation}\label{collateralized-debt-obligation}
-
-A Collateralized Debt Obligation (CDO) is a credit derivative where the issuer, typically investment banks, gather risky assets and repackage them into discrete classes (\emph{tranches}) based on the level of credit risk assumed by the investor. These tranches of securities become the final investment product.
-
-Tranches are named to reflect their risk profile: senior, mezzanine and subordinated/equity and are delimited by the attachment ($L$) and detachment points ($U$), which represent the percentages of the total principal defining their boundaries. 
-
-Tranches are named to reflect their risk profile: senior, mezzanine and subordinated/equity and are delimited by the attachment ($L$) and detachment points ($U$), which represent the percentages of the total principal defining their boundaries. 
-For example, a 5-10\% tranche has an attachment point of 5\% and a detachment point of 10\%. 
-
-Each of these tranches has a different level of seniority relative to the others in the sense that a senior tranche has coupon
-and principal payment priority over a mezzanine tranche, while a mezzanine tranche has
-coupon and principal payment priority over an equity tranche. 
-
-Indeed they receive returns using a set of rules known as \emph{waterfall}. Incomes of the portfolio are first used to provide returns to the most senior tranche, then to the next and so on.
-So the senior tranches are generally safest because they have the first claim on the collateral, although they'll offer lower coupon rates.
-
-It is important to note
-that a CDO only redistributes the total risk associated with the underlying pool of assets
-to the priority ordered tranches. It neither reduces nor increases the total risk associated
-with the pool.
-
-There are various kind of CDOs:
-\begin{itemize}
-	\item in a \textbf{Cash CDO} the reference portfolio consists of corporate bonds owned by the CDO issuer. Cash flows from collateral are used to pay principal and interest to investors. If such cash flows prove inadequate, principal and interest is paid to tranches according to their seniority. Figure~\ref{fig:cdo_structure} shows a typical structure of a CDO;
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/cdo_structure}
-	\caption{Typical structure of a Cash CDO, with the reference portfolio made of bonds. These bonds form the collateral for the CDO.}
-	\label{fig:cdo_structure}
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=1.\textwidth]{figures/uniform_gauss.png}
+  \caption{On the left the generated uniform distribution, on the right its Gaussian transform.}
+  \label{fig:uniform_and_gauss}
 \end{figure}
 
-	\item in a \textbf{Synthetic CDO} the underlying reference portfolio is no longer a physical portfolio of bonds or loans, instead it is a \emph{fictitious} portfolio consisting of a number of reference obligations each with an associated notional amount. The value of a synthetic CDO usually comes from insurance premiums of credit default swaps paid for by investors. The seller assumes the underlying assets will perform while the investor, on the other hand, assumes the underlying assets will default.
-\end{itemize}
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{x\PYZus{}trans} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
 
-\subsection{Cash CDO Expected Losses}\label{sec:expected_losses}
+If we plot them together in a 2D plot we can get a sense of what is
+going on using the inverse CDF transformation.
+Indeed it stretches the outer regions of the uniform to yield a
+normal distribution. The transformation is shown in Fig.~\ref{fig:uniform_to_gauss}. 
+    
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.5\textwidth]{figures/lesson6_7_0.png}
+  \caption{2D plot showing the transformation that maps our initial uniform distribution to the resulting Gaussian.}
+  \label{fig:uniform_to_gauss}
+\end{figure}
+    
+The nice thing of this technique is that it can be used
+for any arbitrary (uni-variate) probability distribution, like for
+example \href{https://en.wikipedia.org/wiki/Student\%27s\_t-distribution}{t-Student}
+or \href{https://en.wikipedia.org/wiki/Gumbel_distribution}{Gumbel}.
+A similar transformation from uniform to t-Student is shown in Fig.~\ref{fig:uniform_to_tstudent}.
 
-Consider a Cash CDO with a maturity of 1 year, made of 125 bonds. Each bond pays a coupon of one unit after 1 year and it has not yet defaulted (the recovery rate $R$ is assumed 0). We are interested in the following three tranches: equity ([0, 3] defaults), mezzanine ([4, 6] defaults) and senior ([7, 9] defaults), see Fig.~\ref{fig:cdo_ex_1} (note that now tranches are identified through the number of defaults and not percentages of the principal). 
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{t}
 
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.5\textwidth]{figures/ex_cdo_1}
-	\caption{Structure of the simple Cash CDO considered in the example.}
-	\label{fig:cdo_ex_1}
+\PY{n}{x\PYZus{}trans} \PY{o}{=} \PY{n}{t}\PY{p}{(4}\PY{p}{)}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.5\textwidth]{figures/lesson6_9_0.png}
+  \caption{2D plot showing the transformation that maps a uniform distribution to a t-Student.}
+  \label{fig:uniform_to_tstudent}
 \end{figure}
 
-We also assume that the probability of default within 1 year are identical for each bond ($Q$) and that the correlation between each pair is also identical and equal to $\rho$.
-Under these assumptions we are in the position to use the Gaussian Copula Model. 
+Clearly to do the opposite transformation, that is from an arbitrary distribution
+to the uniform, we can just apply the inverse of the inverse CDF, that is the CDF itself\ldots
 
-We are interested in the expected losses for each tranche as a function of the correlation $\rho$.
+In such a way we can go from distribution A to distribution B passing through 
+a uniform distribution rather quickly. An example is shown in Figure~\ref{fig:a_to_b_to_a}.
 
-The probability of having $l$ defaults, conditional to the market parameter $M$ will follow a binomial distribution given by
-\begin{equation}
-p(l|M) = \binom{N}{l}Q_M^l (1-Q_M)^{N-l}
-\label{eq:def_prob_ex_cdo_1}
-\end{equation}
-where $N$ is the number of bonds in the portfolio and 
-\begin{equation}
-Q_M^{\textrm{corr}} = \Phi\left(\cfrac{\Phi^{-1}(Q)-\sqrt{\rho}M}{\sqrt{\-\rho}}\right)
-\end{equation}
-where $\Phi$ is the standard normal CDF and $Q$ the marginal probability of default within 1 year of a single name.
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=1.\textwidth]{figures/lesson6_11_0.png}
+	\caption{Example of transformation, it starts with a uniform distribution, goes into a Gaussian and back to the initial uniform.}
+	\label{fig:a_to_b_to_a}
+\end{figure}
 
-From the definition of each tranche with have that the expected losses are
+\section{Copula}\label{copula}
+
+In probability theory a \emph{copula} $\mathcal{C}(F_1, F_2, \ldots, F_n, \rho)$
+is a multivariate (multidimensional) cumulative distribution function
+whose marginal probability distributions (i.e. the probability
+distribution of each dimension) are uniform on the
+interval \([0, 1]\) (\(F_i = U_i =\)uniform(0,1)).
+\(\rho\) represent the correlation between each variable.
+
+Copulas are used to describe the dependencies between random variables and
+have been widely used in quantitative finance to model risk. Copulas are popular since
+they allow to easily model and estimate the distribution of random
+vectors by representing marginals and their correlation separately.
+
+Essentially we can split complicated problems into simpler components so that copula results to be very handy.
+
+Despite the obscure and daunting definition given above the concept of copula is
+quite simple so let's try to clarify it a bit with a practical example.
+
+\subsection{Example Problem Case}\label{example-problem-case}
+
+Imagine to measure two variables that are 
+correlated. For example, we look at various rivers and for every river
+we look at the maximum water level of that river over a certain
+time-period. In addition, we also count how many months each river
+caused floods.
+
+For the probability distribution of the maximum level of the river we
+know that maximums are Gumbel distributed, while the number of floods
+can be modeled according to a
+\href{https://en.wikipedia.org/wiki/Beta_distribution}{\emph{Beta}
+distribution}.
+
+Clearly it is pretty reasonable to assume that the maximum level and the
+number of floods is going to be correlated, however we don't know how
+we could model that correlated probability distribution.
+Above we only
+specified the distributions for individual variables, irrespective of
+the other one (i.e. the marginals), in reality we are dealing with a
+\emph{joint distribution} of both of these together.
+
+And here is where copulas come to our rescue.
+
+Copulas essentially allow to decompose a joint probability distribution
+into their marginals (which by definition have no correlation) and a
+function which \textbf{couples} (hence the name) them together and thus allows us
+to specify the correlation separately. The copula is just that coupling
+function.
+
+\subsection{Adding Correlation with Gaussian Copulas}\label{adding-correlation-with-gaussian-copulas}
+
+How does this help us with our problem of creating a custom joint
+probability distribution for maximum water level and floods ?
+
+We saw before how to convert
+anything uniformly distributed to an arbitrary probability distribution.
+Then we just need to
 \begin{itemize}
-	\item $\mathbb{E}_{\textrm{equity loss}}(l, Q_M^{\textrm{corr}})=3\cdot p(l\ge 3|M) + \sum_{k=1}^{2}k\cdot p(l=k|M)$
-	\item $\mathbb{E}_{\textrm{mezzanine loss}}(l, Q_M^{\textrm{corr}})=3\cdot p(l\ge 6|M) + \sum_{k=1}^{2}k\cdot p(l=k+3|M)$
-	\item $\mathbb{E}_{\textrm{senior loss}}(l, Q_M^{\textrm{corr}})=3\cdot p(l\ge 9|M) + \sum_{k=1}^{2}k\cdot p(l=k+6|M)$
+\tightlist
+\item
+  simulate a sample from a multivariate distribution with the specific correlation structure;
+\item
+  transform so that the marginals are uniform;
+\item
+  finally transform the uniform marginals to whatever we like.
 \end{itemize}
-	
-Each probability can be calculated by integrating the above with respect to $M$
-	
-\begin{equation} \mathbb{E}_{\mathrm{tranche}} = \int_{-\infty}^{\infty}{\mathbb{E}_{\mathrm{tranche}}(l, Q_M) f_M(m)dm}\end{equation}
 
-Let's see the corresponding \texttt{python} implementation.
-First we import the necessary modules and define the needed constants.
+In this example we sample from a multivariate (2D) normal with a 0.5 correlation, 
+see Fig.~ \ref{fig:multivariate_with_correlation}, although this is not mandatory since
+we could model correlations with different distribution either.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{binom}\PY{p}{,} \PY{n}{norm}
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{integrate} \PY{k}{import} \PY{n}{quad}
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-	
-\PY{n}{N} \PY{o}{=} \PY{l+m+mi}{125}
-\PY{n}{C} \PY{o}{=} \PY{l+m+mi}{1}
-\PY{n}{R} \PY{o}{=} \PY{l+m+mi}{0}
-\PY{n}{q} \PY{o}{=} \PY{l+m+mf}{0.02}
-\PY{n}{tranches} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,}\PY{l+m+mi}{3}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{l+m+mi}{7}\PY{p}{,}\PY{l+m+mi}{9}\PY{p}{]}\PY{p}{]}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{multivariate_normal}
+
+\PY{n}{mvnorm} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]} \PY{p}{,} \PY{n}{cov}\PY{o}{=}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.5}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{0.5}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+\PY{n}{x} \PY{o}{=} \PY{n}{mvnorm}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{l+m+mi}{100000}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
-The we define a function \texttt{p} which implements the expected losses for each tranche according to Eq.~\ref{eq:def_prob_ex_cdo_1}.
-The function depends on the parameter \texttt{M}, and takes as inputs the correlation \texttt{rho} and the tranche attach-detach limits.
-	
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{def} \PY{n+nf}{p}\PY{p}{(}\PY{n}{M}\PY{p}{,} \PY{n}{rho}\PY{p}{,} \PY{n}{lims}\PY{p}{)}\PY{p}{:}
-    \PY{n}{qM} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{p}{(}\PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{q}\PY{p}{)}\PY{o}{\PYZhy{}}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{rho}\PY{p}{)}\PY{o}{*}\PY{n}{M}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{rho}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-    \PY{n}{pN} \PY{o}{=} \PY{n}{binom}\PY{p}{(}\PY{n}{N}\PY{p}{,} \PY{n}{qM}\PY{p}{)}
-    \PY{n}{loss} \PY{o}{=} \PY{l+m+mi}{3}\PY{o}{*}\PY{p}{(}\PY{n}{pN}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{N}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{pN}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{lims}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{lims}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{lims}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{:}
-        \PY{n}{index} \PY{o}{=} \PY{n}{i}\PY{o}{\PYZhy{}}\PY{n}{lims}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{l+m+mi}{+1}
-        \PY{n}{loss} \PY{o}{+}\PY{o}{=} \PY{n}{index}\PY{o}{*}\PY{n}{pN}\PY{o}{.}\PY{n}{pmf}\PY{p}{(}\PY{n}{i}\PY{p}{)}  
-    \PY{k}{return} \PY{n}{norm}\PY{o}{.}\PY{n}{pdf}\PY{p}{(}\PY{n}{M}\PY{p}{)}\PY{o}{*}\PY{n}{loss}
-\end{Verbatim}
-\end{tcolorbox}
-
-Finally we loop over a range of possible values for the correlation on each tranche to draw the plot of the expected losses vs the correlation, shown in Fig.~\ref{fig:losses_rho}.
+\begin{figure}[hb]
+  \centering
+  \includegraphics[width=0.5\textwidth]{figures/lesson6_14_0.png}
+  \caption{2D multivariate normal distribution with a correlation factor of 0.5.}
+  \label{fig:multivariate_with_correlation}
+\end{figure}
+    
+Now use what we have just learned to make the marginals uniform using
+the \(\tt{cdf}\) function of the normal distribution:
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{res} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{p}{]}\PY{p}{,}\PY{p}{[}\PY{p}{]}\PY{p}{]}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{tranches}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{k}{for} \PY{n}{rho} \PY{o+ow}{in} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{1.05}\PY{p}{,} \PY{l+m+mf}{0.05}\PY{p}{)}\PY{p}{:}
-        \PY{k}{if} \PY{n}{rho} \PY{o}{==} \PY{l+m+mf}{1.0}\PY{p}{:}
-            \PY{n}{rho} \PY{o}{=} \PY{l+m+mf}{0.99}
-    \PY{n}{v} \PY{o}{=} \PY{n}{quad}\PY{p}{(}\PY{n}{p}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{n}{np}\PY{o}{.}\PY{n}{inf}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{inf}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{rho}\PY{p}{,} \PY{n}{tranches}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{)}
-    \PY{n}{res}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{v}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}
+\PY{n}{x\PYZus{}unif} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
-Some considerations can be done from these results. First of all, as expected, the equity tranche is the riskier, producing the highest level of loss. The 
-\begin{equation}
-\mathbb{E}_{\textrm{equity loss}} \ge \mathbb{E}_{\textrm{mezzanine loss}} \ge \mathbb{E}_{\textrm{senior loss}}
-\end{equation}
-relation holds only if each tranche has the same notional exposure (in our example 3).
-
-Then we can notice that in the equity tranche losses are decreasing in $\rho$. When the correlation is low indeed the probability to have few defaults is higher than that of many. As the correlation increases, there will be more and more "simultaneous" defaults so also other tranches start to suffer losses. In the extreme case of correlation equal to 1 all the tranches are the same (indeed the expected losses curves join together). 
-
-When considering all the tranches covering the entire number of names, the last tranche (the one with detachment point of 100\%) is always increasing in $\rho$. Again this can be explained with the correlated defaults. 
-Also, the total expected losses on the three tranches is independent of $\rho$. This is not an accident but it is due to the fact that every default scenario is affecting a tranche so that the total loss remain constant.
+The plots shown in Fig.~\ref{fig:copula} are usually how copulas are visualized. Since we have used a multivariate standard normal 
+to model the correlation this is an example of \textbf{Gaussian Copula}.
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/losses_vs_rho}
-	\caption{Expected losses for each tranche as a function of the correlation parameter.}
-	\label{fig:losses_rho}
+\centering
+\includegraphics[width=0.45\textwidth]{figures/lesson6_16_0.png}
+\quad
+\includegraphics[width=0.5\textwidth]{figures/copula_3d.png}
+\caption{Graphical representations of the copula, 2D on the left, 3D on the right.}
+\label{fig:copula}
 \end{figure}
 
-As noticed at the end of Section~\ref{standard-market-model}, in case the entities of the reference portfolio haven't the same default probabilities it is possible to determine Eq.~\ref{eq:def_prob_ex_cdo_1} numerically with an iterative procedure. The next snippet of code shows an example where ten names have different probabilities.
+Finally we can just transform the obtained marginals again from uniform to what we want
+(i.e. Gumbel and Beta in our river example):
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{N}\PY{o}{=}\PY{l+m+mi}{10}
-\PY{c+c1}{\PYZsh{} probabilities of default of the each name}
-\PY{n}{q} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.02}\PY{p}{,} \PY{l+m+mf}{0.15}\PY{p}{,} \PY{l+m+mf}{0.22}\PY{p}{,} \PY{l+m+mf}{0.03}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.024}\PY{p}{,} \PY{l+m+mf}{0.008}\PY{p}{,} \PY{l+m+mf}{0.015}\PY{p}{,} \PY{l+m+mf}{0.04}\PY{p}{]}
-\PY{c+c1}{\PYZsh{} p[k] probability of k defaults}
-\PY{n}{p} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{0} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{N}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
-\PY{n}{p}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{q}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}
-\PY{n}{p}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{=} \PY{n}{q}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
-		
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{N}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{:}
-    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{i}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{:}
-        \PY{n}{p}\PY{p}{[}\PY{n}{j}\PY{p}{]} \PY{o}{=} \PY{n}{p}\PY{p}{[}\PY{n}{j}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{*}\PY{n}{q}\PY{p}{[}\PY{n}{i}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{+} \PY{n}{p}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{q}\PY{p}{[}\PY{n}{i}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
-    \PY{n}{p}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{=} \PY{n}{p}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{q}\PY{p}{[}\PY{n}{i}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
-		
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{p}\PY{p}{)}
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{gumbel_l, beta}
 
-[0.5655235318063276, 0.350403844356834, 0.11955743831716371,
-0.03306691281696737, 0.007898676408014359, 0.0008119173181899153,
-5.3505698491409986e-05, 2.8142380742779974e-06, 1.2554827537575903e-07,
-5.2166123010999485e-09, 2.0866449204399796e-10]
+\PY{n}{m1} \PY{o}{=} \PY{n}{gumbel\PYZus{}l}\PY{p}{(}\PY{p}{)}
+\PY{n}{x1} \PY{o}{=} \PY{n}{m1}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{x_unif[\PY{l+m+mi}{:}][\PY{l+m+mi}{0}]}\PY{p}{)}
+
+\PY{n}{m2} \PY{o}{=} \PY{n}{beta}\PY{p}{(}\PY{n}{a}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{,} \PY{n}{b}\PY{o}{=}\PY{l+m+mi}{3}\PY{p}{)}
+\PY{n}{x2} \PY{o}{=} \PY{n}{m2}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{x_unif[\PY{l+m+mi}{:}][\PY{l+m+mi}{1}]}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
-\subsection{Synthetic CDO Valuation}
-Imagine a Synthetic CDO made of $N$ references in the portfolio, each one with the same notional amount (the total CDO notional is $F$).
-When the $i^{th}$ reference defaults the portfolio incurs in a loss of $F/N(1-R)$ (the recovery rate is assumed to be fixed for all names of the portfolio).
+Left plot of Figure~\ref{fig:gumbel_beta_with_corr} shows the two marginals and the joint distribution.
+    
+To see that it is actually working as expected we should now compare the joint
+distributions with and without correlation. 
+Compare the two plots in Figure~\ref{fig:gumbel_beta_with_corr} to spot the difference.
 
-The tranche loss function $TL^{L,U}(l)$ for a given time $t$ is a function of the number of defaults $l$ occurred up to that time and is given by
-\begin{equation}
-TL_{t}^{L,U}=\mathrm{max}(\mathrm{min}(l/N\cdot F(1-R), U)-L, 0)
-\end{equation}
-where $l/N\cdot F(1-R)$ is the total portfolio loss, if it is greater than $U$ then the tranche loss is $U$. Conversely if it is lower than $L$ there is no loss.
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{c+c1}{\PYZsh{} sample from Gumbel}
+\PY{n}{x1} \PY{o}{=} \PY{n}{m1}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{l+m+mi}{10000}\PY{p}{)}
+\PY{c+c1}{\PYZsh{} sample from Beta}
+\PY{n}{x2} \PY{o}{=} \PY{n}{m2}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{l+m+mi}{10000}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
 
-So for example suppose $L=3\%$ and $U=7\%$ and suppose also that the portfolio loss is $5\%$. Then the tranche loss is 2\% of the total portfolio notional (or 50\% of the tranche notional $=7\%-3\%=4\%$).
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.45\textwidth]{figures/lesson6_18_0.png}
+  \quad
+  \includegraphics[width=0.45\textwidth]{figures/lesson6_20_0.png}
+  \caption{Marginalized Gumbel and Beta distributions and their joint with (left) and without (right) correlation.}
+  \label{fig:gumbel_beta_with_corr}
+\end{figure}
+    
+Using the uniform distribution as a common base for our transformations
+we can easily introduce correlations and flexibly construct complex
+probability distributions. 
 
-When an investor \emph{sells protection} on a tranche she is guaranteeing to reimburse any realized losses on the tranche to the \emph{protection buyer} (to better understand this concept it is useful to think of the protection as an \emph{insurance}). 
-In return, the protection seller receives a premium at regular intervals (typically every three months) from the protection buyer.
+As a final note, the \emph{Sklar's theorem} states that any multivariate joint distribution
+can be written in terms of uni-variate marginal distribution functions
+and a copula which describes the dependence structure between the
+variables.
 
-\subsubsection{Premium Leg}
-The premium leg payments are made at the end of each time interval and are proportional to the \textbf{remaining notional} in the tranche (this is another important difference with respect to CDS, where the contract ends as soon as a default occurs).
+Everything discussed in this Section can be easily generalized to higher dimensions.
 
-We can then write the NPV of the premium leg as
+%\subsection{Other Copulas}
+%In the previous Section we have seen an application of a Gaussian copula but exists many other different 
+%kind of copulas. Two typical examples are the t-copula and the Clayton copula.
 
-\begin{equation}
-\mathrm{NPV}_{\mathrm{premium}}^{L,U}=S\sum^{n}_{i=1}D(d_i)\cfrac{(d_i - d_{i-1})}{360}\left(F(U-L)-\mathbb{E}[TL_{d-1}^{L,U}]\right)
-\label{eq:cdo_npv_premium}
-\end{equation}
-where $n$ is the number of payment dates, $D(d_i)$ is the discount factor, $S$ is the annualized premium. The expected value represents the notional remaining in the tranche at time 
-$d_{i-1}$.
-Note that for simplicity we are ignoring that the default may take place at any time between each payment date.
+%\subsubsection{t-copula}
 
-\subsubsection{Default Leg}
-The default leg represents the cash flows paid to the protection buyer upon losses occurring in the considered tranche. 
+%\subsubsection{Clayton copula}
 
-The NPV of the leg can be expressed as
-\begin{equation}
-\mathrm{NPV}_{\mathrm{default}}^{L,U}=\sum_{i=1}^{n}D(d_i)\left(\mathbb{E}[TL_{d_i}^{L,U}]-\mathbb{E}[TL_{d_{i-1}}^{L,U}]\right)
-\label{eq:cdo_npv_default}
-\end{equation}
-where the argument in parenthesis is the expected losses between time $d_{i-1}$ up to $d_i$. 
+\subsection{Generate Correlated Distributions}\label{generate-correlated-distributions}
 
-From Equations~\ref{eq:cdo_npv_premium} and~\ref{eq:cdo_npv_default} it is clear that the key ingredient for the valuation of a CDO is the calculation of $\mathbb{E}[TL_{d_i}^{L,U}]$ which appears in both.
-Luckily using the Gaussian copula it is relatively easy to compute it. Indeed we know that 
-\begin{equation}
-TL_{t}^{L,U}=\mathrm{max}(\mathrm{min}(l/N\cdot F(1-R), U)-L, 0)
-\label{eq:tl}
-\end{equation}
-where the only random variable is the number of defaults $l$. We also know that 
-\begin{equation}
-\mathbb{E}[TL_{t}^{L,U}] = \sum_{l=0}^{N}TL_{t}^{L,U}\cdot \int_{-\infty}^{\infty} DP(l(t|M)=j) \phi(M)dM
-\label{eq:etl}
-\end{equation}
+If we need to generate numbers from correlated distributions we can
+follow similar steps to those described before:
 
-And has we have already seen this calculation can be carried on without too much effort.
-The large popularity of the Gaussian copula just resides in this, it allows to compute very quickly very complicated contracts like CDOs which usually involve a large number of correlated names.
+\begin{itemize}
+\tightlist
+\item
+  generate a random vector \(\mathbf{x}=(x_1, x_2,\ldots)\) from the
+  original multivariate distribution with the desired correlation;
+\item
+  determine the single \(U_i(x_i)\) by applying \(\tt{cdf}\) to each
+  \(x_i\);
+\item
+  transform again each \(U_i(x_i)\) to the desired marginal
+  distributions using \(\tt{ppf}\);
+\item
+  each component of the vector \(\mathbf{x}\) is now converted to a set
+  of random numbers drawn from the desired distributions, with the
+  appropriate correlation.
+\end{itemize}
 
-\subsection{CDO Fair Value}
-The \emph{fair value} of a CDO tranche is that value of the premium $S^*$ for which the expected value of the premium leg equals the expected value of the default leg and for what we have seen depends on the expected value of the tranche loss function.
+A practical application concerns the probability of default. 
+Imagine three companies ($A$, $B$ and $C$) which have a
+cumulative probability of defaulting within the next two years of 10\%.
+Let's try to compute the probabilities to have the three of them all
+defaulting within the next two years in two cases: independent default probabilities and perfectly correlated probabilities.
 
-Given Equations~\ref{eq:cdo_npv_premium} and~\ref{eq:cdo_npv_default} it can be expressed as
+In the first case (independent probabilities), the
+odds to get three defaults within two years will be the product
+of the single probabilities, hence:
 
-\begin{equation}
-S^* = \cfrac{\mathrm{NPV_{default}}^{L,U}}{\sum^{n}_{i=1}D(d_i)\cfrac{(d_i - d_{i-1})}{360}\left(F(U-L)-\mathbb{E}[TL_{d-1}^{L,U}]\right)}
-\label{eq:cdo_fair_value}
-\end{equation}
+\[P_{\mathrm{uncorr}} = 10\% \cdot 10\% \cdot 10\% = 0.1 \%\]
 
-Equation~\ref{eq:cdo_fair_value} defines the CDO fair value, but can also be used to calibrate the implied correlation parameter from the market.
-This can be obtained by plugging into the equation the market premium value and solve for the correlation parameter $\rho$.
-It must be noted though that the derivation of the implied correlation coefficient is not that easy since the assumed model is so simple that may not fit well to real data. Indeed it is most likely that there will be different implied $\rho$s for each tranche.
+We can verify this in \(\tt{python}\) by applying the method outlined above: first generate a random sample from an uncorrelated multivariate normal distribution, then transform each sampled vector into uniform distribution with the \(\tt{norm.cdf}\) function (i.e. we
+convert the samples into cumulative probabilities) and then count how many times the
+three of them are lower than 10\% to check whether a default occurred in next two year.
 
-As a last consideration we have to notice that all equations shown previously have been derived under the assumptions of the same notional and recovery rate for each entity in the portfolio. Nonetheless their generalization to different notional and recovery rate is pretty straightforward.
- 
-%Each tranche has an attachment percentage and a detachment
-%percentage. When the cumulative percentage loss of the portfolio reaches
-%the attachment percentage, investors in the tranche start to lose their
-%principal, and when the cumulative percentage loss of principal reaches
-%the detachment percentage, the investors in the tranche lose all their
-%principal and no further loss can occur to them.
+In this case, since we are interested in cumulative probabilities we can neglect the last transformation and work directly with the 
+uniform marginals.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{multivariate\PYZus{}normal}\PY{p}{,} \PY{n}{uniform}\PY{p}{,} \PY{n}{norm}
+\PY{k+kn}{import} \PY{n+nn}{numpy}
+	
+\PY{n}{numpy}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{)}
+\PY{n}{trials} \PY{o}{=}\PY{l+m+mi}{10000}
+\PY{n}{mvnorm\PYZus{}no\PYZus{}corr} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{cov}\PY{o}{=}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}
+                                                          \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}
+                                                          \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+\PY{n}{defaults} \PY{o}{=} \PY{l+m+mi}{0}
+\PY{n}{x} \PY{o}{=} \PY{n}{mvnorm\PYZus{}no\PYZus{}corr}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{trials}\PY{p}{)}
+\PY{n}{x\PYZus{}trans} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{x\PYZus{}trans}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+    \PY{k}{if} \PY{n}{x\PYZus{}trans}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1} \PY{o+ow}{and} \PY{n}{x\PYZus{}trans}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1} \PY{o+ow}{and} \PY{n}{x\PYZus{}trans}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1}\PY{p}{:}
+	\PY{n}{defaults} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
+	
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Defaults w/o correlation: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{defaults}\PY{o}{/}\PY{n}{trials}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+
+Defaults w/o correlation: 0.10\%
+\end{Verbatim}
+\end{tcolorbox}
+The result is 0.1\% as expected.
+
+If we repeat the same Monte Carlo experiment with perfectly correlated
+default probabilities we have
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{n}{mvnorm\PYZus{}corr} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{cov}\PY{o}{=}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{]}\PY{p}{,}
+                                                     \PY{p}{[}\PY{l+m+mf}{0.999999}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{]}\PY{p}{,}
+                                                     \PY{p}{[}\PY{l+m+mf}{0.999999}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+\PY{n}{defaults} \PY{o}{=} \PY{l+m+mi}{0}
+\PY{n}{x} \PY{o}{=} \PY{n}{mvnorm\PYZus{}corr}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{trials}\PY{p}{)}
+\PY{n}{x\PYZus{}trans} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+
+\PY{k}{for} \PY{n}{v} \PY{o+ow}{in} \PY{n}{x\PYZus{}trans}\PY{p}{:}
+    \PY{k}{if} \PY{n+nb}{max}\PY{p}{(}\PY{n}{v}\PY{p}{)} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1}\PY{p}{:}
+        \PY{n}{defaults} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
+
+\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Defaults w/ correlation: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{defaults}\PY{o}{/}\PY{n}{trials}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+
+Defaults w/ correlation: 9.89\%
+\end{Verbatim}
+\end{tcolorbox}
+In this case the result is close to 10\%, like we had only one single company. 
+Indeed given the perfect correlation between the probabilities either there is no default or three
+"simultaneous" defaults with 10\% probability.
+
+%\subsubsection{Independent Defaults}\label{independent-defaults}
 %
-%A common analogy compares the cash flow from the CDO's portfolio of securities (say mortgage payments from mortgage-backed bonds) to water flowing into cups of the investors where senior tranches were filled first and overflowing cash flowed to junior tranches, then equity tranches. If a large portion of the mortgages enter default, there is insufficient cash flow to fill all these cups and equity tranche investors face the losses first.
-
-The following class implements the formulas discussed in the previous Sections regarding CDO contracts.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}\PY{p}{,} \PY{n}{CreditCurve}\PY{p}{,} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{integrate} \PY{k}{import} \PY{n}{quad}
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}\PY{p}{,} \PY{n}{binom}
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{numpy} \PY{k}{import} \PY{n}{exp}\PY{p}{,} \PY{n}{sqrt}
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
-	
-\PY{k}{class} \PY{n+nc}{CollDebtObligation}\PY{p}{:}
-    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{notional}\PY{p}{,} \PY{n}{names}\PY{p}{,} \PY{n}{tranches}\PY{p}{,} \PY{n}{rho}\PY{p}{,} \PY{n}{cc}\PY{p}{,}
-                 \PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{spreads}\PY{p}{,}
-                 \PY{n}{maturity}\PY{p}{,} \PY{n}{tenor}\PY{o}{=}\PY{l+m+mi}{3}\PY{p}{,} \PY{n}{recovery}\PY{o}{=}\PY{l+m+mf}{0.4}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{=} \PY{n}{notional}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{names} \PY{o}{=} \PY{n}{names}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{tranches} \PY{o}{=} \PY{n}{tranches}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates} \PY{o}{=} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{maturity} \PY{o}{*} \PY{l+m+mi}{12}\PY{p}{,} \PY{n}{tenor}\PY{p}{)}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{spreads} \PY{o}{=} \PY{n}{spreads}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rho} \PY{o}{=} \PY{n}{rho}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{recovery} \PY{o}{=} \PY{n}{recovery}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{cc} \PY{o}{=} \PY{n}{cc}
-	
-    \PY{k}{def} \PY{n+nf}{one\PYZus{}factor\PYZus{}model}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{M}\PY{p}{,} \PY{n}{Q}\PY{p}{,} \PY{n}{l}\PY{p}{,} \PY{n}{L}\PY{p}{,} \PY{n}{U}\PY{p}{)}\PY{p}{:}
-        \PY{n}{P} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{p}{(}\PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{Q}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{sqrt}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rho}\PY{p}{)} \PY{o}{*} \PY{n}{M}\PY{p}{)} \PY{o}{/} \PY{p}{(}\PY{n}{sqrt}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rho}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-        \PY{n}{b} \PY{o}{=} \PY{n}{binom}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{names}\PY{p}{,} \PY{n}{P}\PY{p}{)}
-        \PY{k}{return} \PY{n}{b}\PY{o}{.}\PY{n}{pmf}\PY{p}{(}\PY{n}{l}\PY{p}{)} \PY{o}{*} \PY{n}{norm}\PY{o}{.}\PY{n}{pdf}\PY{p}{(}\PY{n}{M}\PY{p}{)} \PY{o}{*} \PY{n+nb}{max}\PY{p}{(}\PY{n+nb}{min}\PY{p}{(}\PY{n}{l}\PY{o}{/}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{names} \PY{o}{*} 
-               \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{recovery}\PY{p}{)}\PY{p}{,} \PY{n}{U}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{L}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{)}
-	
-    \PY{k}{def} \PY{n+nf}{expected\PYZus{}tranche\PYZus{}loss}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{d}\PY{p}{,} \PY{n}{L}\PY{p}{,} \PY{n}{U}\PY{p}{)}\PY{p}{:}
-        \PY{n}{Q} \PY{o}{=} \PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{d}\PY{p}{)}
-        \PY{n}{v} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{k}{for} \PY{n}{l} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{names}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{:}
-            \PY{n}{i} \PY{o}{=} \PY{n}{quad}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{one\PYZus{}factor\PYZus{}model}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{n}{np}\PY{o}{.}\PY{n}{inf}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{inf}\PY{p}{,} 
-                     \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{Q}\PY{p}{,} \PY{n}{l}\PY{p}{,} \PY{n}{L}\PY{p}{,} \PY{n}{U}\PY{p}{)}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
-            \PY{n}{v} \PY{o}{+}\PY{o}{=} \PY{n}{i}
-        \PY{k}{return} \PY{n}{v}
-	
-    \PY{k}{def} \PY{n+nf}{npv\PYZus{}premium}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{tranche}\PY{p}{,} \PY{n}{dc}\PY{p}{)}\PY{p}{:}
-        \PY{n}{L} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{tranches}\PY{p}{[}\PY{n}{tranche}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional}
-        \PY{n}{U} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{tranches}\PY{p}{[}\PY{n}{tranche}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional}
-        \PY{n}{v} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-            \PY{n}{ds} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}\PY{p}{]}
-            \PY{n}{de} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}
-            \PY{n}{D} \PY{o}{=} \PY{n}{dc}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{de}\PY{p}{)}
-            \PY{n}{ETL} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{expected\PYZus{}tranche\PYZus{}loss}\PY{p}{(}\PY{n}{ds}\PY{p}{,} \PY{n}{L}\PY{p}{,} \PY{n}{U}\PY{p}{)}
-            \PY{n}{v} \PY{o}{+}\PY{o}{=} \PY{n}{D} \PY{o}{*} \PY{p}{(}\PY{n}{de} \PY{o}{\PYZhy{}} \PY{n}{ds}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{360} \PY{o}{*} \PY{n+nb}{max}\PY{p}{(}\PY{p}{(}\PY{n}{U} \PY{o}{\PYZhy{}} \PY{n}{L}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{ETL}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{)}
-    \PY{k}{return} \PY{n}{v} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{spreads}\PY{p}{[}\PY{n}{tranche}\PY{p}{]}
-	
-    \PY{k}{def} \PY{n+nf}{npv\PYZus{}default}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{tranche}\PY{p}{,} \PY{n}{dc}\PY{p}{)}\PY{p}{:}
-        \PY{n}{U} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{tranches}\PY{p}{[}\PY{n}{tranche}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional}
-        \PY{n}{L} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{tranches}\PY{p}{[}\PY{n}{tranche}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional}
-        \PY{n}{v} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-            \PY{n}{ds} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}\PY{p}{]} 
-            \PY{n}{de} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}
-            \PY{n}{ETL1} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{expected\PYZus{}tranche\PYZus{}loss}\PY{p}{(}\PY{n}{ds}\PY{p}{,} \PY{n}{L}\PY{p}{,} \PY{n}{U}\PY{p}{)}
-            \PY{n}{ETL2} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{expected\PYZus{}tranche\PYZus{}loss}\PY{p}{(}\PY{n}{de}\PY{p}{,} \PY{n}{L}\PY{p}{,} \PY{n}{U}\PY{p}{)}
-            \PY{n}{v} \PY{o}{+}\PY{o}{=} \PY{n}{dc}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{de}\PY{p}{)} \PY{o}{*} \PY{p}{(}\PY{n}{ETL2} \PY{o}{\PYZhy{}} \PY{n}{ETL1}\PY{p}{)}
-        \PY{k}{return} \PY{n}{v}
-	
-    \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{tranche}\PY{p}{,} \PY{n}{dc}\PY{p}{)}\PY{p}{:}
-        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}default}\PY{p}{(}\PY{n}{tranche}\PY{p}{,} \PY{n}{dc}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}premium}\PY{p}{(}\PY{n}{tranche}\PY{p}{,} \PY{n}{dc}\PY{p}{)}
-	
-    \PY{k}{def} \PY{n+nf}{fair\PYZus{}value}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{tranche}\PY{p}{,} \PY{n}{dc}\PY{p}{)}\PY{p}{:}
-        \PY{n}{num} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}default}\PY{p}{(}\PY{n}{tranche}\PY{p}{,} \PY{n}{dc}\PY{p}{)}
-        \PY{n}{den} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}premium}\PY{p}{(}\PY{n}{tranche}\PY{p}{,} \PY{n}{dc}\PY{p}{)} \PY{o}{/} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{spreads}\PY{p}{[}\PY{n}{tranche}\PY{p}{]}
-        \PY{k}{return} \PY{n}{num} \PY{o}{/} \PY{n}{den}
-\end{Verbatim}
-\end{tcolorbox}
-
-Then we test the class with a CDO with 1 year maturity and a reference portfolio of 125 names. Each of them have the same default probabilities, defined through a credit curve (\texttt{cc}) and the correlation is set to 0.3. The risk free rate is flat at 5\%. The tenor has been chosen to 12 months mainly for performance reasons since the computation of the expected losses implies the integration in Equations~\ref{eq:tl} and \ref{eq:etl}, for each name, and for each payment date and this can be quite time consuming.
-Tranches and premium are defined as follows:
-\begin{itemize}
-	\item equity: [0.0, 0.03] (spread 0.15);
-	\item mezzanine: [0.03, 0.06] (spread 0.07);
-	\item senior: [0.06, 0.09] (spread 0.03);
-	\item super-senior: [0.09, 1.0] (spread 0.01).
-\end{itemize}
-
-In the following example we are going to evaluate the fair value of each tranche of the contract.
-
-\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}\PY{p}{,} \PY{n}{CreditCurve}
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
-
-\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{df} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
-		
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{:}
-    \PY{n}{pillar\PYZus{}dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{observation\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{n}{i}\PY{p}{)}\PY{p}{)}
-    \PY{n}{df}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{/} \PY{p}{(}\PY{l+m+mi}{1} \PY{o}{+} \PY{l+m+mf}{0.05}\PY{p}{)} \PY{o}{*}\PY{o}{*} \PY{n}{i}\PY{p}{)}
-\PY{n}{dc} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{df}\PY{p}{)}
-		
-\PY{n}{cc} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{p}{[}\PY{n}{observation\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{]}\PY{p}{,}
-                 \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.99}\PY{p}{,} \PY{l+m+mf}{0.97}\PY{p}{,} \PY{l+m+mf}{0.95}\PY{p}{,} \PY{l+m+mf}{0.93}\PY{p}{]}\PY{p}{)}
-		
-\PY{n}{tranches} \PY{o}{=} \PY{p}{[}\PY{p}{[}\PY{l+m+mf}{0.0}\PY{p}{,} \PY{l+m+mf}{0.03}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{0.03}\PY{p}{,} \PY{l+m+mf}{0.06}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{0.06}\PY{p}{,} \PY{l+m+mf}{0.09}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{0.09}\PY{p}{,} \PY{l+m+mf}{1.0}\PY{p}{]}\PY{p}{]}
-\PY{n}{spreads} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.15}\PY{p}{,} \PY{l+m+mf}{0.07}\PY{p}{,} \PY{l+m+mf}{0.03}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{]}
-		
-\PY{n}{cdo} \PY{o}{=} \PY{n}{CollDebtObligation}\PY{p}{(}\PY{l+m+mf}{100e6}\PY{p}{,} \PY{l+m+mi}{125}\PY{p}{,} \PY{n}{tranches}\PY{p}{,} \PY{l+m+mf}{0.3}\PY{p}{,} \PY{n}{cc}\PY{p}{,}
-                         \PY{n}{observation\PYZus{}date}\PY{p}{,} \PY{n}{spreads}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{12}\PY{p}{)}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{tranches}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Tranche }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{ (}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{): }\PY{l+s+si}{\PYZob{}:.5f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{tranches}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{,} 
-                                            \PY{n}{cdo}\PY{o}{.}\PY{n}{fair\PYZus{}value}\PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{dc}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-
-Tranche 0 ([0.0, 0.03]): 0.15942
-Tranche 1 ([0.03, 0.06]): 0.02505
-Tranche 2 ([0.06, 0.09]): 0.00773
-Tranche 3 ([0.09, 1.0]): 0.00017
-\end{Verbatim}
-\end{tcolorbox}
-
-As expected the equity tranche has the higher fair value being the riskier, while the senior tranche is the safest hence the one with lower premium.
-
-\section{Complex Correlation Structures and the Financial
-	Crisis}\label{complex-correlation-structures-and-the-financial-crisis}
-
-In the derivation of the Gaussian Copula Model we have used the normal distributions. However, we could have used other and more complex
-copulas as well. For example we might want to assume the correlation is
-non-symmetric which is useful in finance when correlations become
-very strong during market crashes and returns very negative.
-
-In fact, Gaussian copulas are said to have played a key role in the 2008
-financial crisis as tail-correlations were severely underestimated.
-Consider a set of mortgages in a CDO (a particular kind of contract that will be introduced in the next Chapter): they are clearly correlated, since if one mortgage fails,
-the likelihood that another failing is increased. In the early 2000s,
-the banks only knew how to model the marginals of the default rates. Then an
-(in)famous paper by Li suggested to use Gaussian copulas to model the
-correlations between those marginals. Rating agencies relied on this model so heavily, that severely underestimated the risk and gave false ratings\ldots
-
-If you are interested in the argument read
-\href{http://samueldwatts.com/wp-content/uploads/2016/08/Watts-Gaussian-Copula_Financial_Crisis.pdf}{this paper}
-for an excellent description of Gaussian copulas and the Financial
-Crisis, which argues that different copula choices would not have made a
-difference but instead the assumed correlation was way too low.
+%If the default times of the number of companies are independent,
+%default probabilities can be
+%calculated through multiplication and integration of the single default
+%probability curves without Monte Carlo simulation.
+%
+%As an example, consider the probability to have two defaults among four
+%companies. Let \(\tau_i\) be the default time of name \(i\) and \(F_i(t)\)
+%its distribution. Then the probability that name 1 defaults second in
+%the basket before time \(t\) is:
+%
+%\begin{equation}
+%\begin{split}
+%&\mathbb{P}((\tau_2\lt\tau_1)\cap (\tau_1\lt t)\cap (\tau_1\lt\tau_3)\cap (\tau_1\lt\tau_4)) +\\
+%&\mathbb{P}((\tau_3\lt\tau_1)\cap (\tau_1\lt t)\cap (\tau_1\lt\tau_2)\cap (\tau_1\lt\tau_4)) =\\
+%&\int_0^t{F_2 (s)\cdot (1-F_3 (s)) \cdot (1-F_4 (s))~dF_1(s)} +  \int_0^t{F_3 (s)\cdot (1-F_2 (s)) \cdot (1-F_4 (s))~dF_1(s)}
+%\end{split}
+%\label{eq:indep_default}
+%\end{equation}
+%
+%Suppose the default probabilities of three companies, $A$, $B$ and $C$ are
+%given as in the following table (in each interval are linear):
+%
+%\begin{center}
+%	\begin{tabular}{|c|c|c|c|}
+%		\hline
+%		time in years & A & B & C \\
+%		\hline
+%		\hline
+%		0 & 0 & 0 & 0 \\
+%		1 & 0.022032 & 0.0317 & 0.035 \\
+%		2 & 0.046242 & 0.0655 & 0.075 \\
+%		3 & 0.07266 & 0.1022 & 0.121 \\
+%		4 & 0.101233 & 0.142 & 0.153 \\
+%		5 & 0.131885 & 0.1752 & 0.205 \\
+%		\hline
+%	\end{tabular}
+%\end{center}
+%and suppose that the default events of the three companies are
+%independent. The integral in Eq.~\ref{eq:indep_default} can be solved by substitution:
+%
+%\[ \int_{x_0}^{x_1}{(1-F_B(x))(1-F_C(x))dF_A(x)}\]
+%
+%Setting \(t=m_A x + q_A\) it becomes:
+%
+%\[ \int_{m_A x_0 + q_A}^{m_A x_1 + q_A}{(1-F_B(x(t)))(1-F_C(x(t)))dt}\qquad\Big(\textrm{with}~x(t) = \cfrac{t -q_A}{m_A}\Big) \]
+%and similarly for company $B$ and $C$.
+%
+%To convert it into \texttt{python} we can use \texttt{scipy.integrate.quad} to
+%perform the integral and \texttt{numpy.interp} to determine the
+%intermediate default probabilities.
+%
+%\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+%	\begin{Verbatim}[commandchars=\\\{\}]
+%	\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{integrate} \PY{k}{import} \PY{n}{quad}
+%	\PY{k+kn}{from} \PY{n+nn}{numpy} \PY{k}{import} \PY{n}{interp}
+%	
+%	\PY{n}{default\PYZus{}rates} \PY{o}{=} \PY{p}{\PYZob{}}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{A}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{0.022032}\PY{p}{,} \PY{l+m+mf}{0.046242}\PY{p}{,} \PY{l+m+mf}{0.07266}\PY{p}{,} \PY{l+m+mf}{0.101233}\PY{p}{,} \PY{l+m+mf}{0.131885}\PY{p}{)}\PY{p}{,}
+%	\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{B}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{0.0317}\PY{p}{,} \PY{l+m+mf}{0.0655}\PY{p}{,} \PY{l+m+mf}{0.1022}\PY{p}{,} \PY{l+m+mf}{0.142}\PY{p}{,} \PY{l+m+mf}{0.1752}\PY{p}{)}\PY{p}{,}
+%	\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{C}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{0.035}\PY{p}{,} \PY{l+m+mf}{0.075}\PY{p}{,} \PY{l+m+mf}{0.121}\PY{p}{,} \PY{l+m+mf}{0.153}\PY{p}{,} \PY{l+m+mf}{0.205}\PY{p}{)}\PY{p}{\PYZcb{}}
+%	
+%	\PY{k}{def} \PY{n+nf}{func}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{default}\PY{p}{,} \PY{n}{companies}\PY{p}{,} \PY{n}{t}\PY{p}{)}\PY{p}{:}
+%	\PY{n}{m} \PY{o}{=} \PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{]}\PY{p}{[}\PY{n}{t}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{]}\PY{p}{[}\PY{n}{t}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}
+%	\PY{n}{q} \PY{o}{=} \PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{]}\PY{p}{[}\PY{n}{t}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{n}{m} \PY{o}{*} \PY{p}{(}\PY{n}{t}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}
+%	\PY{n}{t} \PY{o}{=} \PY{p}{(}\PY{n}{x}\PY{o}{\PYZhy{}}\PY{n}{q}\PY{p}{)}\PY{o}{/}\PY{n}{m}
+%	\PY{n}{F2} \PY{o}{=} \PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{interp}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+%	\PY{n}{F3} \PY{o}{=} \PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{interp}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+%	\PY{k}{return} \PY{n}{F2}\PY{o}{*}\PY{n}{F3}
+%	
+%	\PY{k}{def} \PY{n+nf}{integral}\PY{p}{(}\PY{n}{default}\PY{p}{,} \PY{n}{companies}\PY{p}{,} \PY{n}{t}\PY{p}{)}\PY{p}{:}
+%	\PY{k}{return} \PY{n}{quad}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{]}\PY{p}{[}\PY{n}{t}\PY{p}{]}\PY{p}{,} 
+%	
+%	\PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{default}\PY{p}{,} \PY{n}{companies}\PY{p}{,} \PY{n}{t}\PY{p}{)}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
+%	\PY{k}{for} \PY{n}{companies} \PY{o+ow}{in} \PY{p}{[}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{A}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{B}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{C}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}\PY{p}{,} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{B}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{A}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{C}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}\PY{p}{,} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{C}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{A}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{B}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}\PY{p}{]}\PY{p}{:}
+%	\PY{n}{prob} \PY{o}{=} \PY{l+m+mi}{0}
+%	\PY{k}{for} \PY{n}{t} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{)}\PY{p}{:}
+%	\PY{n}{prob} \PY{o}{=} \PY{n}{integral}\PY{p}{(}\PY{n}{default\PYZus{}rates}\PY{p}{,} \PY{n}{companies}\PY{p}{,} \PY{n}{t}\PY{p}{)}
+%	\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{P(1st def) at time (}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{) for company }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:.5f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{t}\PY{p}{,} 
+%	\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{prob}\PY{p}{)}\PY{p}{)}
+%	
+%	First to default prob at time (1) for company A: 0.02131
+%	First to default prob at time (2) for company A: 0.04301
+%	First to default prob at time (3) for company A: 0.06460
+%	First to default prob at time (4) for company A: 0.08573
+%	First to default prob at time (5) for company A: 0.10606
+%	First to default prob at time (1) for company B: 0.03080
+%	First to default prob at time (2) for company B: 0.06160
+%	...
+%	\end{Verbatim}
+%\end{tcolorbox}
