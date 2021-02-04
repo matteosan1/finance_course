@@ -795,6 +795,163 @@ It is possible to exit prematurely from a \texttt{while} loop using the $\tt{bre
 \end{Verbatim}
 \end{tcolorbox}
 
+\section{Errors and Exceptions}
+There are (at least) two distinguishable kinds of errors: 
+syntax errors and exceptions.
+
+\subsection{Syntax Errors}
+Syntax errors, also known as parsing errors, are perhaps the most 
+common kind of complaint you get while you are still learning Python
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+	\begin{Verbatim}[commandchars=\\\{\}]
+	\PY{k}{while} \PY{k+kc}{True} \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Hello world}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+	
+	File "<ipython-input-1-2b688bc740d7>", line 1
+	while True print('Hello world')
+	^
+	SyntaxError: invalid syntax
+	\end{Verbatim}
+\end{tcolorbox}
+
+The parser repeats the offending line and displays a little ‘arrow’ 
+pointing at the earliest point in the line where the error was detected. 
+The error is caused by the token preceding the arrow: in the example, 
+the error is detected at the function \texttt{print()}, 
+since a colon (\texttt{:}) is missing before it. 
+File name and line number are printed so you know where to look in case the input came from a script.
+
+\subsection{Exceptions}
+Even if a statement or expression is syntactically correct, it may cause 
+an error when an attempt is made to execute it. 
+Errors detected during execution are called exceptions and are not unconditionally fatal.
+Most exceptions are not handled by programs and result in error 
+messages as shown here:
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+	\begin{Verbatim}[commandchars=\\\{\}]
+	\PY{l+m+mi}{10} \PY{o}{*} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{/}\PY{l+m+mi}{0}\PY{p}{)}
+	
+	---------------------------------------------------------------------------
+	ZeroDivisionError                         Traceback (most recent call last)
+	
+	<ipython-input-2-f858149a2d27> in <module>
+	----> 1 10 * (1/0)
+	
+	ZeroDivisionError: division by zero
+	
+	\PY{l+m+mi}{4} \PY{o}{+} \PY{n}{spam}\PY{o}{*}\PY{l+m+mi}{3}
+	
+	---------------------------------------------------------------------------
+	NameError                                 Traceback (most recent call last)
+	
+	<ipython-input-3-c98bb92cdcac> in <module>
+	----> 1 4 + spam*3
+	
+	NameError: name 'spam' is not defined
+	
+	\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2}\PY{l+s+s1}{\PYZsq{}} \PY{o}{+} \PY{l+m+mi}{2}
+	
+	---------------------------------------------------------------------------
+	TypeError                                 Traceback (most recent call last)
+	
+	<ipython-input-4-d2b23a1db757> in <module>
+	----> 1 '2' + 2
+	
+	TypeError: must be str, not int
+	\end{Verbatim}
+\end{tcolorbox}
+
+The last line of the error message indicates what happened. 
+Exceptions come in different types, and the type is printed as part 
+of the message: the types in the example are 
+\texttt{ZeroDivisionError}, \texttt{NameError} and \texttt{TypeError}.
+The string printed as the exception type is the name of the built-in 
+exception that occurred. 
+The rest of the line provides detail based on the type of exception and what caused it.
+
+The preceding part of the error message shows the context where the 
+exception occurred, in the form of a stack traceback. In general it 
+contains a stack traceback listing source lines.
+
+\subsection{Handling Exceptions}
+It is possible to write programs that handle selected exceptions. 
+Look at the following example, which asks the user for input until 
+a valid integer has been entered, but allows the user to interrupt 
+the program (e.g. using Control-C); note that a user-generated 
+interruption is signalled by raising the KeyboardInterrupt exception.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+	\begin{Verbatim}[commandchars=\\\{\}]
+	\PY{k}{while} \PY{k+kc}{True}\PY{p}{:}
+	\PY{k}{try}\PY{p}{:}
+	\PY{n}{x} \PY{o}{=} \PY{n+nb}{int}\PY{p}{(}\PY{n+nb}{input}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Please enter a number: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}\PY{p}{)}
+	\PY{k}{break}
+	\PY{k}{except} \PY{n+ne}{ValueError}\PY{p}{:}
+	\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Oops!  That was no valid number.  Try again...}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+	
+	Please enter a number: pippo
+	Oops!  That was no valid number.  Try again...
+	
+	Please enter a number:
+	---------------------------------------------------------------------------
+	
+	KeyboardInterrupt                         Traceback (most recent call last)
+	...
+	
+	\end{Verbatim}
+\end{tcolorbox}
+
+The \texttt{try} statement works as follows.
+First, the \texttt{try} clause is executed.
+If no exception occurs, the \texttt{except} clause is skipped and 
+execution of the \texttt{try} statement is finished.
+
+If an exception occurs during execution of the \texttt{try} clause, 
+the rest of the clause is skipped. Then if its type matches the 
+exception named after the except keyword, the \texttt{except} clause 
+is executed, and then execution continues after the \texttt{try} statement.
+
+If an exception occurs which does not match the exception named in the 
+\texttt{except} clause, it is passed on to outer \texttt{try} statements; 
+if no handler is found, it is an unhandled exception and execution stops 
+with a message as shown above.
+
+A \texttt{try} statement may have more than one \texttt{except} clause, 
+to specify handlers for different exceptions. At most one handler will be
+executed. Handlers only handle exceptions that occur in the corresponding 
+\texttt{try} clause, not in other handlers of the same \texttt{try} statement.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+	\begin{Verbatim}[commandchars=\\\{\}]
+	\PY{k}{except} \PY{p}{(}\PY{n+ne}{RuntimeError}\PY{p}{,} \PY{n+ne}{TypeError}\PY{p}{,} \PY{n+ne}{NameError}\PY{p}{)}\PY{p}{:}
+	\PY{k}{pass}
+	\end{Verbatim}
+\end{tcolorbox}
+
+The last \texttt{except} clause may omit the exception name(s), to serve as a wildcard.
+Use this with extreme caution, since it is easy to mask a real programming 
+error in this way! 
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+	\begin{Verbatim}[commandchars=\\\{\}]
+	\PY{k+kn}{import} \PY{n+nn}{sys}
+	
+	\PY{k}{try}\PY{p}{:}
+	\PY{k}{with} \PY{n+nb}{open}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{myfile.txt}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)} \PY{k}{as} \PY{n}{f}\PY{p}{:}
+	\PY{n}{s} \PY{o}{=} \PY{n}{f}\PY{o}{.}\PY{n}{readline}\PY{p}{(}\PY{p}{)}
+	\PY{n}{i} \PY{o}{=} \PY{n+nb}{int}\PY{p}{(}\PY{n}{s}\PY{o}{.}\PY{n}{strip}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+	\PY{k}{except} \PY{n+ne}{OSError} \PY{k}{as} \PY{n}{err}\PY{p}{:}
+	\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{OS error: }\PY{l+s+si}{\PYZob{}0\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{err}\PY{p}{)}\PY{p}{)}
+	\PY{k}{except} \PY{n+ne}{ValueError}\PY{p}{:}
+	\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Could not convert data to an integer.}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+	\PY{k}{except}\PY{p}{:}
+	\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Unexpected error:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{sys}\PY{o}{.}\PY{n}{exc\PYZus{}info}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}
+	
+	OS error: [Errno 2] No such file or directory: 'myfile.txt'
+	\end{Verbatim}
+\end{tcolorbox}
+
 %\bibliographystyle{plainnat}
 %\bibliography{biblio}
 \begin{thebibliography}{9}

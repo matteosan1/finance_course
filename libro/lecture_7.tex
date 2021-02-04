@@ -407,16 +407,39 @@ Let's see what these look like when plotted on a linear graph instead:
 Discrepancies in the linear plot are most likely due to rounding.
 
 \section{Forward Rates}\label{calculating-forward-rates}
+While the \emph{spot rate} is used by buyers and sellers looking 
+to make an immediate purchase or sale, the forward rate is considered to 
+be the market's expectations for future prices. It can serve as an indicator 
+of how the market expects the future to perform (spot rates are not 
+indicators of market expectations, and are instead the starting point to any
+financial transaction).A forward rate is an interest rate applicable to a financial transaction that will take place in the future. 
 
-A forward rate is an interest rate applicable to a financial transaction that will take place in the future. Forward rates are calculated from the spot rate by exploiting the no arbitrage condition which states that investing at rate \(r_1\) for the period \((0, T_1)\) and then \emph{re-investing} at rate \(r_{1,2}\) for the time period \((T_1, T_2)\) is equivalent to invest at rate \(r_2\) for the full time period \((0, T_2)\). Essentially two investors shouldn't be able to earn money from arbitraging between different interest periods. That said:
+Forward rates are calculated from the spot rate by exploiting the no arbitrage condition which states that investing at rate \(r_1\) for the period \((0, T_1)\) and then \emph{re-investing} at rate \(r_{1,2}\) for the time period \((T_1, T_2)\) is equivalent to invest at rate \(r_2\) for the full time period \((0, T_2)\). Essentially two investors shouldn't be able to earn money from arbitraging between different interest periods. That said:
 
 \begin{equation}
 (1+r_1 T_1)(1+r_{1,2}(T_2 - T_1)) = 1 + r_2 T_2
+\label{eq:no_arbitrage_r}
 \end{equation}
 Solving for \(r_{1,2}\) leads to
 
 \begin{equation}
-F(T_1, T_2) = r_{1,2} = \frac{1}{T_2-T_1}\Big(\frac{D(T_1)}{D(T_2)} - 1 \Big)\quad\textrm{(where $D{(T_i)}=\frac{1}{1+r_iT_{i}}$)}
+F(T_1, T_2) = r_{1,2} = \frac{1}{T_2 - T_1}\Big(\frac{1+r_2 T_2}{1+r_1 T_1} - 1 \Big)
+\label{eq:forward_rate_simple}
+\end{equation}
+The same expression in terms of the discount factor $ D{(0, T_i)}=\frac{1}{1+r_iT_{i}}$ becomes
+\begin{equation}
+F(T_1, T_2) = \frac{1}{T_2 - T_1}\Big(\frac{D(0, T_1)}{D(0, T_2)} - 1 \Big)
+\end{equation}
+Considering continuously compounded rates Eq.~\ref{eq:no_arbitrage_r} can be
+written as
+\begin{equation}
+e^{{(r}_{2}T_{2})}=e^{{(r}_{1}T_{1})}\ast \ e^{\left(r_{1,2} \left(T_{2}-T_{1}\right)\right)}
+\end{equation}
+and the corresponding expression for the forward rate is
+\begin{equation}
+F(T_1, T_2) = r_{1,2} = \frac {1}{T_{2}-T_{1}}(\ln DF(0,T_{1})-\ln DF(0,T_{2}))
+\quad(\textrm{since now } D(0, T_i)=e^{-r_i T_i})
+\label{eq:forward_rate_continous}
 \end{equation}
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
@@ -441,60 +464,72 @@ F(T_1, T_2) = r_{1,2} = \frac{1}{T_2-T_1}\Big(\frac{D(T_1)}{D(T_2)} - 1 \Big)\qu
 \end{Verbatim}
 \end{tcolorbox}
 
-\subsection{2008 Financial Crisis}\label{financial-crisis}
+\section{Multi-curve Framework}
+\label{sec:financial-crisis}
 
-Looking at the historical series of the Euribor (6M) rate versus the Eonia Overnight Indexed Swap (OIS-6M) rate over the time interval 2006-2011 it becomes apparent how before August 2007 the two rates display strictly overlapping trends differing of no more than 6 bps.
+Prior to the 2008 financial crisis, interbank deposits posed little 
+credit/liquidity issues, interbank lending rates (Ibor rates, e.g. Libor, Euribor)
+were essentially a good proxy for risk free rates. 
+Basis swap spreads were negligible and thereby neglected. 
+
+Looking at the historical series of the Euribor (6M) rate versus the Eonia 
+Overnight Indexed Swap (OIS-6M) rate over the time interval 2006-2011 in Fig.~\ref{fig:libor_vs_eonia} it becomes
+apparent how before August 2007 the two rates display strictly overlapping trends differing of no more than 6 bps.
 
 \begin{figure}[h]
-\centering
-\includegraphics[width=0.7\linewidth]{figures/credit_crunch.png}
+	\centering
+	\includegraphics[width=0.7\linewidth]{figures/credit_crunch.png}
+	\label{fig:libor_vs_eonia}
 \end{figure}
 
-In August 2007 however we observe a sudden increase of the Euribor rate and a simultaneous decrease of the OIS rate that leads to the explosion of the corresponding basis spread, touching the peak of 222 bps in October 2008, when Lehman Brothers filed for bankruptcy. Successively the basis has sensibly reduced and stabilized between 40 bps and 60 bps (notice that the pre-crisis level has never been recovered). The same effect is observed for other similar couples of series, e.g.~Euribor 3M vs OIS 3M.
+A single yield curve constructed out of selected deposit rates, FRA/EDF rates 
+and swap rates served both the cashflow projection and discounting purposes.
 
-The reason of the abrupt divergence between the Euribor and OIS rates can be explained by considering both the monetary policy decisions adopted by international authorities in response to the financial turmoil, and the impact of the credit crunch on both credit and liquidity risk perception of the market, coupled with the different financial meaning and dynamics of these rates.
+During the 2008 financial crisis, the failure of some banks however proved that interbank lending rates (e.g. Libor, Euribor etc.) were not risk-free. Meanwhile
+there was also significant counterparty credit risk arising from derivative
+transactions that were not subject to collateral or margin calls. 
+Basis swap spreads greatly widened, and persist to this day. 
 
-\begin{itemize}
-\tightlist
-\item
-  The Euribor rate is the reference rate for over-the-counter (OTC)
-  transactions in the Euro area. It is defined as the rate at which
-  Euro inter-bank deposits are being offered within the EMU zone by one
-  prime bank to another at 11:00 a.m. Brussels time. The rate fixings
-  for a strip of 15 maturities (from one day to one year) are
-  constructed as the average of the rates submitted (excluding the
-  highest and lowest 15\% tails) by a panel of 42 banks, selected
-  among the EU banks with the highest volume of business in the Euro
-  zone money markets, plus some large international bank from non-EU
-  countries with important euro zone operations. \emph{Thus, Euribor
-  rates reflect the average cost of funding of banks in the inter bank
-  market at each given maturity. During the crisis the solvency and
-  solidity of the whole financial sector was brought into question and
-  the credit and liquidity risk and uremia associated to inter-bank
-  counter-parties sharply increased.} The Euribor rates immediately
-  reflected these dynamics and raise to their highest values over more
-  than 10 years. As seen in the plot above, the Euribor 6M rate suddenly
-  increased on August 2007 and reached 5.49\% on 10th October 2008.
-\item
-  The Eonia rate is the reference rate for overnight OTC transactions in
-  the Euro area. It is constructed as the average rate of the overnight
-  transactions (one day maturity deposits) executed during a given
-  business day by a panel of banks on the inter-bank money market,
-  weighted with the corresponding transaction volumes. \emph{The Eonia
-  Contribution Panel coincides with the Euribor Contribution Panel, thus
-  Eonia rate includes information on the short term (overnight)
-  liquidity expectations of banks in the Euro money market. It is also
-  used by the European Central Bank (ECB) as a method of effecting and
-  observing the transmission of its monetary policy actions. During the
-  crisis the central banks were mainly concerned about stabilizing the
-  level of liquidity in the market, thus they reduced the level of the
-  official rates.} Furthermore, the daily tenor of the Eonia rate makes
-  negligible the credit and liquidity risks reflected on it: for this
-  reason the OIS rates are considered the best proxies available in the
-  market for the risk-free rate.
-\end{itemize}
+Still looking at Fig.~\ref{fig:libor_vs_eonia} it is clear how in August 2007
+a sudden increase of the Euribor rate and a simultaneous decrease of the OIS rate
+leads to the explosion of the corresponding basis spread, touching the peak of 222
+bps in October 2008, when Lehman Brothers filed for bankruptcy. Successively the
+basis has sensibly reduced and stabilized between 40 bps and 60 bps (notice that the pre-crisis level has never been recovered). 
+The same effect is observed for other similar couples of series, e.g.~Euribor 3M 
+vs OIS 3M.
 
-As a practical result of the divergence of the two indices, after the 2008 financial crisis, it is not possible anymore to use a single discount curve to correctly price forward rates of all tenors. For example, if we want to calculate the net present value of a forward 6-month Libor coupon, we need to simultaneously use two different discount curves:
+The existence of such significant basis swap spreads reflects the fact that after
+the crisis the interest rate market has been segmented into subareas corresponding
+to instruments with different underlying rate tenors, characterized by different 
+rate dynamics. 
+
+Traditional single curve based pricing approach ignores these differences. 
+It mixes different underlying rate tenors and incorporates different rate dynamics,
+eventually leads to inconsistency.
+After the crisis, the market practice has thus evolved to take into account the new
+market information (e.g. the basis swap spreads, collateralization, etc.), that
+translate into the additional requirement of homogeneity and funding. 
+The homogeneity requirement means that interest rate derivatives with a given
+underlying rate tenor must be priced and hedged using vanilla interest rate
+market instruments with the same underlying. The funding requirement means that 
+the discount rate of any cashflow generated by the derivative must be consistent, 
+by no-arbitrage, with the funding rate associated with that cashflow. 
+
+Derivatives that trade over-the-counter make use of ISDA agreements to
+standardize the contract documents. 
+
+Driven by the crisis, many derivative contracts have been updated to include permissible credit mitigants for a transaction, such as netting and collateralization in cash.
+Since standard agreements stipulate daily margination on collateral and the cash
+collateral earns a return at overnight rate,
+overnight rate becomes a natural choice for the risk-free discount rate or
+the funding rate. This is referred to as \emph{OIS discounting}.
+
+The large spread between risk free rate and interbank lending rate during and after
+2008 financial crisis it is not possible anymore to use a single curve for
+discounting and derivative valuation. The traditional single curve used for both cashflow projection and discounting turned out to be obsolete. The markets
+have since nearly switched to multi-curve framework. 
+
+For example, if we want to calculate the net present value of a forward 6-month Libor coupon, we need to simultaneously use two different discount curves:
 
 \begin{itemize}
 \tightlist
@@ -502,10 +537,53 @@ As a practical result of the divergence of the two indices, after the 2008 finan
 \item the EONIA curve for discounting the expected cash flow.
 \end{itemize}
 
+%The reason of the abrupt divergence between the Euribor and OIS rates can be explained by considering both the monetary policy decisions adopted by international authorities in response to the financial turmoil, and the impact of the credit crunch on both credit and liquidity risk perception of the market, coupled with the different financial meaning and dynamics of these rates.
+
+%\begin{itemize}
+%\tightlist
+%\item
+%  The Euribor rate is the reference rate for over-the-counter (OTC)
+%  transactions in the Euro area. It is defined as the rate at which
+%  Euro inter-bank deposits are being offered within the EMU zone by one
+%  prime bank to another at 11:00 a.m. Brussels time. The rate fixings
+%  for a strip of 15 maturities (from one day to one year) are
+%  constructed as the average of the rates submitted (excluding the
+%  highest and lowest 15\% tails) by a panel of 42 banks, selected
+%  among the EU banks with the highest volume of business in the Euro
+%  zone money markets, plus some large international bank from non-EU
+%  countries with important euro zone operations. \emph{Thus, Euribor
+%  rates reflect the average cost of funding of banks in the inter bank
+%  market at each given maturity. During the crisis the solvency and
+%  solidity of the whole financial sector was brought into question and
+%  the credit and liquidity risk and uremia associated to inter-bank
+%  counter-parties sharply increased.} The Euribor rates immediately
+%  reflected these dynamics and raise to their highest values over more
+%  than 10 years. As seen in the plot above, the Euribor 6M rate suddenly
+%  increased on August 2007 and reached 5.49\% on 10th October 2008.
+%\item
+%  The Eonia rate is the reference rate for overnight OTC transactions in
+%  the Euro area. It is constructed as the average rate of the overnight
+%  transactions (one day maturity deposits) executed during a given
+%  business day by a panel of banks on the inter-bank money market,
+%  weighted with the corresponding transaction volumes. \emph{The Eonia
+%  Contribution Panel coincides with the Euribor Contribution Panel, thus
+%  Eonia rate includes information on the short term (overnight)
+%  liquidity expectations of banks in the Euro money market. It is also
+%  used by the European Central Bank (ECB) as a method of effecting and
+%  observing the transmission of its monetary policy actions. During the
+%  crisis the central banks were mainly concerned about stabilizing the
+%  level of liquidity in the market, thus they reduced the level of the
+%  official rates.} Furthermore, the daily tenor of the Eonia rate makes
+%  negligible the credit and liquidity risks reflected on it: for this
+%  reason the OIS rates are considered the best proxies available in the
+%  market for the risk-free rate.
+%\end{itemize}
+
+
 Our financial library will have to implement the following calculation:
 
 \[\mathrm{NPV} = D_{\mathrm{EONIA}}(T_1) \cdot \frac{1}{T_2-T_1}\Big(\frac{D_{\mathrm{LIBOR}}(T_1)}{D_{\mathrm{LIBOR}}(T_2)} - 1 \Big)\]
-and this will asked to be done in the exercises relative to this chapter.
+and this will asked to be done in the exercises relative to this Chapter.
 
 To exploit the Object Oriented capabilities we will implement a \texttt{DiscountCurve} class, below a skeleton class to give you an idea of how could be this new class.
 \begin{Shaded}
