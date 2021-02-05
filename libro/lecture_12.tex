@@ -4,265 +4,470 @@ The volume of traded interest rate derivatives in both the OTC and exchange-trad
 markets have been increasing sharply over the past decades. As the number of new 
 and simultaneously exotic interest rate products virtually exploded, 
 it has been a key challenge to find good and primarily robust procedures for 
-pricing and also hedging these products. Interest rate derivatives are more 
-difficult to value than equity derivatives, which are often priced by an ordinary 
-or some slight variation of the Black-Scholes model. 
-The following points give some reasons for this:
-- Interest rates do typically not follow a GBM as stock prices normally do.
-- In most cases, we have to describe the development and general behavior of the entire term structure in order to get reasonable prices.
-- Volatilities can no longer assumed to be constant since they highly depend on particular points of the yield curve. This makes intuitively sense if we consider the volatility of a bond price, which becomes smaller and smaller as the duration decreases and its maturity is approaching.
+pricing and also hedging these products. 
 
+\section{Short Rate Models}
+The \emph{short rate}, \(r(t)\), at time \(t\) is the rate that applies to an
+infinitesimally short period of time at time \(t\) (also called
+\emph{instantaneous short rate}). Bond, option and other derivative prices
+depend only on the process folllowed by \(r\) in a risk neutral world.
+The price can be expresses as
 
-\section{Short Rate}
-The \emph{short rate}, $r_{t}$ is the (continuously compounded, annualized)
-interest rate at which an entity can borrow money for an infinitesimally short
-period of time from time $t$. In terms of short rate the discount factor 
-can be expressed as
+\[\mathbb{E}[e^{-r(T-t)}\textrm{payoff}]\]
 
-\begin{equation}
-P(t,T)=\exp{\left(-\int _{t}^{T}r_{s}\,ds\right)}
-\end{equation}
+If \(Z(t, T)\) is the price of a zero coupon bond then from the previous
+equation
+
+\[Z(t, T) = \mathbb{E}[e^{-r(T-t)}]\]
 
 The interest rates implied by the zero coupon bonds form a yield curve, 
-or more precisely, a zero curve. Thus, specifying a model for the short rate
-specifies future bond prices. This means that instantaneous forward rates are
-also specified by
+or more precisely, a zero curve.
 
-\begin{equation}
-f(t,T) =-\frac {\partial }{\partial T}\ln(P(t,T)) 
-\end{equation}
+This equation enables the term structure of interest rates at any time
+to be obtined from the value of \(r\) at that time and the risk neutral
+process for \(r\). It shows that once the process for \(r\) has been
+defined, everything about the inital zero cure and its evolution through
+time can be determined.
 
-\section{Interest Rate Modeling}
-The need to go beyond Black’s closed-form formula in order to be able to 
-value more sophisticated products has led to the development of several 
-methods for simulating stochastic
-interest rate models. More precisely, these models describe the entire 
-term structure instead of a single final value. 
+Short rate models have been introduced in order to be able to explore the development
+of the dynamics of an instantaneous continuously compounded short rate $r(t)$.
+Short rate models generally owe their popularity to both their high degree of
+tractability and their flexibility. For many models one can find explicit solutions
+for bond prices and for bond option prices. They may be applied to price simple
+instruments in closed form or sometimes by deterministic numerical methods.
 
-The ultimate purpose of 
-interest rate modeling is to acquire a profound understanding of interest 
-rate behavior. We would like to explore the dynamics of interest rates by 
-fitting a model to available interest rate data. Furthermore, we are 
-interested in the way that interest rates and corresponding derivative 
-prices eventually relate together, both to understand them and last 
-but not least to be able to price interest rate products correctly.
+In particular, the stochastic evolution of short rate models is identified by
+the following generalized SDE
 
+$$dr(t) = (\theta(t) − \alpha(t)r(t)) dt + \sigma(t)r(t)^{\gamma} dW$$
 
-Number of stochastic factors
-In the simplest models, the so called one factor models, we describe the 
-dynamics of the short rate r(t) (Section 6.2) or the forward 
-rate f (t, T ) (Section 6.3) by just one stochastic factor, thus there 
-is one source of uncertainty only. As a matter of fact, bond prices, 
-for instance, depend not only on one single but rather on the entire 
-term structure of interest rates. Therefore, one factor models are 
-essentially assuming that the dynamics of the whole term structure is 
-captured by the short or forward rate, and its future evolution. Nevertheless, 
-one factor models are not as restrictive as it might appear. They imply 
-that all rates move in the same direction over any short time interval, 
-but they do not assume that they move by the same amount [56, p.650].
+This equation denotes a general Gaussian Markov process with $\theta$, $\alpha$ and $\sigma$
+all deterministic functions of time.
 
-Yet, it is sometimes difficult or even infeasible to find a more or less 
-realistic model based on one factor only. 
+\section{Equilibrium Models}\label{equilibrium-models}
 
-On the other hand, a multifactor model means that we have to deal with an 
-increased complexity of the model as we will learn in the course of the 
-following sections. Generally, in a q-factor model, where q denotes an 
-arbitrary, usually small number of factors, the price changes of 
-these q bonds completely explain the changes in the prices of all 
-other existing bonds. Moreover, with additional factors the required 
-number of sample paths to achieve a particular level of accuracy in the 
-simulation grows with the power of the number of factors. 
-Therefore, the choice of the number of factors in a model should be made with care.
-
-Equilibrium or no-arbitrage models
-The starting point for equilibrium models is usually given by 
-assumptions about how the economy works and about economic 
+Equilibrium models usually start with assumptions about how the economy works and about economic 
 variables themselves. Then they attempt to derive a process 
-for the short rate r(t) and explore what the defined process 
-for r may imply for bond and option prices [56, p.650]. Thus, 
-the key idea behind this approach is to build an economically 
-sound model, whose output are interest rates evolved as a consequence 
-of market equilibrium [15, p.126]. It may happen that the initial 
-theoretical set of bond prices is not equal to the prices observed 
-on the market. This might result in possible arbitrage opportunities. 
-This is exactly the point where equilibrium models have often been criticized. 
+for the short rate $r(t)$ and explore what the defined process 
+for r may imply for bond and option prices.
 
+Thus, the key idea behind this approach is to build an economically 
+sound model, whose output are interest rates evolved as a consequence 
+of market equilibrium.
 They do not automatically fit today’s term structure of interest rates. 
 The current term structure is included as an output rather than an input. 
 This eventually gives rise to inconsistencies with the actual term structure. 
-Therefore, in practice there is little confidence in the bond option 
-prices when the applied model is not even able to price the underlying 
-bond correctly.
-The no-arbitrage model is an alternative idea which is trying to build models that match the currently observed term structure exactly, that means the current term structure is used as an input. Thus, these models also provide us with underlying bond prices that are correct. However, in order to fit today’s term structure, the model parameters have to be calibrated to prevailing market data. The calibration process is, amongst others, responsible that a model eventually yields consistent instrument prices. Nonetheless, calibrating a model correctly is somehow burdensome and takes significant additional computing effort [77, p.93].
 
-\section{Short Rate Models}
-Short rate models have been introduced in order to be able to explore the development of the dynamics of an instantaneous continuously compounded short rate $r(t)$. 
-Assume that an investment of 1 in a money market account at time t, earning an interest rate of r(u) at time u, grows to a value of
+In a one-factor equilibrium model, the process for \(r\) involves only
+one source of uncertainty. Usually the risk neutral process for the
+short rate is described by an It\(\hat{o}\) process of the form
 
-V (T ) = exp r(u)du (6.1)
-at time T [46, 60, p.108, p.176f]. Therefore, the arbitrage-free price of a derivative instrument at time t that yields a payoff of Y (T) at time T is the expected value of Y (T)/V (T) [20, p.52]:
+\[dr = \mu(r)dt + \sigma(r)dW\]
+Both \(\mu\) and \(\sigma\) are assumed to be function of \(r\) but independent of time.
+Therefore, one factor models are essentially assuming that the dynamics of the whole term structure is 
+captured by the short or forward rate, and its future evolution. Nevertheless, 
+one factor models are not as restrictive as it might appear. They imply 
+that all rates move in the same direction over any short time interval, 
+but they do not assume that they move by the same amount.
+Yet, it is sometimes difficult or even infeasible to find a more or less 
+realistic model based on one factor only.
 
-Et exp − r(u)du Y(T) , (6.2)
-t
-where Et stands for the time t-conditional expectation. Even though (6.1) is now a stochastic
-quantity, it remains the numeraire for risk-neutral pricing. Particularly, the price of a zero
-coupon bond at time t that pays 1 at time T is defined, given that V (T) = 1, as 
+Let's consider closely some of such models.
 
-P (t, T ) = Et exp − r(u)du . (6.3) t
-47
+\subsection{Vasicek Model}\label{vasicek-model}
 
-Equation (6.3) guarantees that we are always able to calculate bond prices P whenever we can
+In Vasicek model the process for \(r\) is described by
 
-define the distribution of exp − r(u)du in terms of a certain dynamic structure for r(t) [20,
-t
-p.51].
-Short rate models generally owe their popularity to both their high degree of tractability and
-their flexibility [60, p.177]. For many models one can find explicit solutions for bond prices and for bond option prices. They may be applied to price simple instruments in closed form or sometimes by deterministic numerical methods. However, there are still some extensions of the basic models which require Monte Carlo simulation for the computation of expressions of the form (6.2) [46, p.108].
-In particular, the stochastic evolution of short rate models is identified by the following gen- eralized SDE [20, 25, 77, 92, p.52f, p.51f, p.91, p.181]:
-dr(t) = (θ(t) − α(t)r(t)) dt + σ(t)r(t)γ dW (t). (6.4)
-This equation denotes a general Gaussian Markov process with θ, α and σ all deterministic functions of time. Most of the particular short rate models can be expressed by (6.4). Notice that this process does not follow a GBM anymore. Interest rates, unlike stock prices, appear to be pulled back so some long-run average interest rate level over time. This phenomenon is well-known as mean reversion. The process in (6.4) does exhibit mean reversion where the parameter α measures the mean reversion speed towards a long-term interest rate level θ/α = b. Additionally, γ is a measure of the degree to which the volatility σ of the short rate depends on the current level of r(t). Obviously, a higher γ simultaneously means that the volatility reacts sensitively [77, p.91]. Note that in short rate models, in contrast to other models we will look at in Sections 6.3, 7 and 8, the dynamics of all interest rates are totally determined by the dynamics of the overnight rate.
-Vasicek
-One of the earliest one factor stochastic equilibrium models of the term structure was developed and proposed by Vasicek [102] in 1977. This classical model describes the short rate through a so called Ornstein-Uhlenbeck process. An unspecified short-term interest rate serves as a basis for the model. Furthermore, the Vasicek model corresponds to the choices α(t) ≡ α, θ(t)/α(t) ≡ b and σ(t) ≡ σ constant while γ = 0 [25, p.52]. Thus, the risk adjusted dynamics in the Vasicek model of r(t) are given by the following SDE [20, 25, 102, p.53, p.52, p.185]:
-dr(t) = α(b − r(t))dt + σdW (t). (6.5) In order to be able to simulate this process, we require the solution for the SDE (6.5). The
-solution for any 0 < u < t [25, 46, p.53, p.109]
+\[dr = k(\theta - r_t)dt + \sigma dW\]
+where \(k\), \(\theta\) and \(\sigma\) are constants.
 
-r(t) = r(u)e−α(t−u) + α e−α(t−s)b(s)ds + σ e−α(t−s)dW (s) (6.6) uu
-48
+One important difference between interest rates and other stochastic
+quantities is that interest rates appear to be pulled back to some
+long-run average level over time. This characteristic is called
+\emph{mean reversion}. When \(r\) is high , mean
+reversion tends to cause it to have a negative drift; when \(r\) is low,
+mean reversion tends to cause it to have a positive drift.
 
-6 Term structure modeling
-can be found through an application of Itˆo’s formula. Consequently, for a given r(u) the value r(t) is normally distributed with mean [46, 102, p.109f, p.186]
-and variance
-r(u)e−α(t−u) + μ(u, t), with μ(u, t) ≡ α
-t u
-e−α(t−s)b(s)ds,
-σ2(u, t) ≡ σ2
-e−2α(t−s)ds =
-1 − e−2α(t−u)
-2α
-In a next step we are interested in how we may eventually simulate a short rate process by
-Vasicek’s model. The simulation of r at the discrete-time steps 0 = t0 < t1 < · · · < tn can be carried out by [46, p.110]
-r(t )=r(t)e−α(ti+1−ti)+μ(t,t )+σ(t,t )Z , (6.7) i+1 i i i+1 r i i+1 i+1
-where we repeatedly draw Zi, . . . , Zn independent variates from φ(0, 1). Note that Equation (6.7) allows an exact simulation. Exact in the sense that the distribution of the simulated short rates r(t1),...,r(tn) is precisely that of the original Vasicek process at times t1,...,tn for the identical value of r(0) [46, p.110].
-The main advantage of the Vasicek model is its analytical tractability what makes the model relatively easy to understand, implement and eventually apply. However, there are also some shortcomings compared to rival models. Firstly, under the risk-neutral measure the short rate r is normally distributed. Thus there is a positive probability that r becomes negative. Secondly, the Vasicek model does not leave complete flexibility in simulating any specific shapes of the term structure. In particular, possible shapes are upward-sloping, downward-sloping or slightly humped only. Furthermore, since the parameter γ is assumed to be equal to zero, the volatility of changes is forced to be both constant and independent of r. This assumption is restrictive with respect to the incorporation of different volatility structures [16, 20, 56, 60, p.168f, p.58ff, p.651f, p.181].
-Cox, Ingersoll and Ross
-Cox, Ingersoll and Ross [31] proposed a new class of equilibrium processes, generally referred to as CIR models, which include a square-root diffusion term. The risk adjusted dynamics of the short term rate in a CIR model are defined by the SDE [31, p.391]
-dr(t) = α(b − r(t))dt + σr(t)dW (t) (6.8)
-and correspond to the choices α(t) ≡ α, θ(t)/α(t) ≡ b and σ(t) ≡ σ constant equal to the Vasicek model, whereas now γ = 1/2 [25, p.53]. In this general equilibrium framework holds if the change in production opportunities is assumed to follow a process of the form (6.8), then the short rate does as well [46, p.120]. The CIR model has been very successful and often applied for many years and thus established some kind of a benchmark. The reason for this lies in its analytical tractability and the fact that the instantaneous short rates remain always positive.
-49
-u
+There are real economic arguments in favor of mean reversion. When rates
+are high, the economy tends to slow down and there is low demand for
+funds from borrowers. As a result, rates decline. When rates are low,
+there tends to be a high demand for funds on the part of borrowers and
+rates tend to rise.
 
-Contrary to the Vasicek model, the square-root diffusion term σr(t) drops off to zero while r(t) approaches the origin and this prevents r(t) from becoming negative [20, 25, p.64, p.52]. As in the Vasicek model, the term structure in a CIR model may take the forms upward- and downward-sloping as well as slightly humped. The level of the entire term structure, yet not the general shape, at time t is fully determined by the value of r(t) [56, p.653].
-Since there are still explicit derivative pricing formulae available, though harder to find than in the Vasicek model, numerical approaches as simulation techniques are not the center stage and therefore the CIR model is not amplified in this paper.
-Ho-Lee
+The Vasicek model incorporates mean reversion: the
+short rate is pulled to a level \(\theta\) at a rate \(k\), which is a good
+property, but interest rates can easily go negative, which is a very bad
+property.
+
+\subsubsection{Vasicek Stochastic Differential Equation}
+\label{vasicek-stochastic-differential-equation}
+
+Multiplying both sides of Eq.... by \(e^{kdt}\) and rearranging
+the terms gives
+
+\[e^{kdt}dr_t + e^{kdt}kr_t dt = e^{kt}k\theta dt + e^{kt}\sigma dW\]
+
+Now we observe that the left hand side follows the product rule for the
+derivative:
+
+\[d(e^{kdt}r_t) = e^{kdt}dr_t + e^{kdt}kr_t dt= e^{kt}k\theta dt + e^{kt}\sigma dW\]
+
+To solve for \(r\) we integrate both sides:
+
+\[\int^{t=T}_{t=s} d(e^{kdt}r_t)\,dt = \int^T_s e^{kt}k\theta dt +\int^T_s e^{kt}\sigma dW\]
+
+To solve the left-hand side remember that
+\(\int^b_a\,dx = \int^b_a 1 dx= x(b)-x(a)\). Using the above:
+
+\[e^{kT}r_T - e^{ks}r_s = \int^T_s e^{kt}k\theta\,dt +\int^T_s e^{kt}\sigma\,dW\]
+
+Solving for \(r(T)\):
+
+\[r_T=e^{-k(T-s)}r_s+ e^{-kT}\int^T_s e^{kt}k\theta\,dt +e^{-kT}\int^T_s e^{kt}\sigma dW\]
+
+We can also operate on the deterministic terms to obtain the following
+representation:
+
+\[e^{-kT}\int^T_s e^{kt}k\theta\,dt=e^{-kT}k\theta\int^T_s e^{kt}d_t=e^{-kT}k\theta\frac{1}{k}(e^{kt}|^T_s)= e^{-kT}\theta(e^{kT}-e^{ks})=\theta\left(1-e^{-k(T-s)}\right)\]
+
+Replacing on the equation for \(r(T)\) we get:
+
+\[r_T=e^{-k(T-s)} r_s+\theta(1-e^{-k(T-s)})+ \sigma e^{-kT}\int^T_s e^{kt}\,dW\]
+
+The first thing to determine is the probability distribution of this
+rate, so we can use some of its properties. We note that the first term
+on the right-hand side is deterministic with the
+second term being a stochastic integral.
+Therefore, the rate is distributed like a normal Gaussian
+
+\[r_T \sim N(\mathbb{E}(r_t), \textrm{var}(r_t))\]
+
+Normal random variables can be fully characterized by its mean and
+variance, which we calculate below:
+
+\[\mathbb{E}(r_T)=e^{-k(T-s)} r_s+\theta\left(1-e^{-k(T-s)}\right)\]
+
+Using the property that
+\(\mathbb{E}(\textrm{stochastic~Integral}) = 0\).
+
+For the variance, we remember that the variance of a deterministic
+variable is zero, therefore we only need to calculate it for the
+stochastic integral. %We can do this by using the It\(\hat{o}\) Isometry,
+%as the terms inside the Stochastic Integral are deterministic functions
+%of time.
+
+\[\textrm{var}(r_T)=\mathbb{E}(r^2_t)-(\mathbb{E}(r_t))^2\] where:
+\((\mathbb{E}(r_t))^2 =0\) Therefore:
+
+\[\textrm{var}(r_T)=\mathbb{E}(r^2_t)\] Applying It\(\hat{o}\) Isometry:
+
+\[
+\begin{gathered}
+\textrm{var}(r_T)&=\mathbb{E}(r^2_t)=\mathbb{E}(\sigma^2 \int^T_s e^{-2k(T-t)}\,dt)
+=\sigma^2 e^{-2kT} \mathbb{E}( \int^T_s e^{-2k(-t)}\,dt)=\\
+&=\sigma^2 e^{-2kT} \frac {1}{2k}(e^{2kT}-e^{2ks})
+=\sigma^2 \frac {1}{2k}(1-e^{2k(T-s)}) 
+\end{gathered}
+\]
+
+where we have used that for deterministic variables
+\(\mathbb{E}(c) = c\) Therefore the distribution of the stochastic rate
+is:
+
+\[r_T \sim N(e^{-k(T-s)} r_s+\theta(1-e^{-k(T-s)}),\sigma^2 \frac {1}{2k}(1-e^{2k(T-s)}))\]
+
+\subsubsection{Bond Pricing Equation}\label{bond-pricing-equation}
+
+When interest rates are stochastic a bond has a price of the form
+\(Z(r, t; T)\). Although applied to bonds this kind of technique is more
+general and may be used to price many other contracts.
+
+Since the whole idea relies on building a hedged portfolio we need to
+face the technical problem of the lack of an underlying asset with which
+to hedge a bond (since it is a ``derivstive'' of \(r\)). The only way to
+do that is by hedging one bond with another of a different maturity.
+
+So let's set up a portfolio containing two bonds with different
+maturities \(T_1\) and \(T_2\) and price respectively \(Z_1(r, t; T_1)\)
+and \(Z_2(r, t; T_2)\). We hold one of the former and a number
+\(\Delta\) of the latter
+
+\[\Pi = Z_1 − \Delta Z_2\]
+
+The change in this portfolio in a time \(dt\) is given by
+
+\[d\Pi = \cfrac{\partial Z_1}{\partial t}dt + \cfrac{\partial Z_1}{\partial r}dr + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt - \Delta\left(\cfrac{\partial Z_1}{\partial t}dt + \cfrac{\partial Z_1}{\partial r}dr + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt\right)
+\]
+where we have applied It\(\hat{o}\)'s lemma to functions of \(r\) and
+\(t\). All the randomness in this expression comes from \(dr\) terms
+given that the rate follows Eq.~\ref{} hence depends on
+\(dW\) terms. So to eliminate it (hedging) we need to choose \(\Delta\)
+such that \(dr\) terms cancelled out
+
+\[\Delta = \cfrac{\cfrac{\partial Z_1}{\partial r}}{\cfrac{\partial Z_2}{\partial r}}\]
+
+We then have
+
+\[d\Pi = \cfrac{\partial Z_1}{\partial t}dt + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt - \Delta\left(\cfrac{\partial Z_1}{\partial t}dt + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt\right) = r \Pi dt = r \left(Z_1 - \Delta Z_2\right)dt
+\]
+where we have used arbitrage arguments to set the return on the
+portfolio equal to the risk-free rate (i.e.~this risk-free rate is just
+the spot rate). Rearranging the terms
+
+\[\cfrac{\cfrac{\partial Z_1}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2} - rZ_1}{\cfrac{\partial Z_1}{\partial r}}=\cfrac{\cfrac{\partial Z_2}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_2}{\partial r^2} - rZ_2}{\cfrac{\partial Z_2}{\partial r}}
+\]
+
+Since the two sides of the equation depend on \(T_1\) and \(T_2\)
+separately the only way for this to be possible is for both sides to be
+independent of the maturity date. So in general
+
+\[\cfrac{\cfrac{\partial Z}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial r^2} - rZ}{\cfrac{\partial Z}{\partial r}}= a(r, t)
+\]
+
+for some function a(r, t). I shall find it convenient to write
+
+\[a(r, t) = w(r, t )\lambda(r, t ) − u(r, t)\]
+
+which leads to the bond pricing equation
+
+\[\cfrac{\partial Z}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial r^2} + (u - \lambda\sigma)\cfrac{\partial Z}{\partial r} - rZ = 0
+\]
+
+The function \(\lambda\) is called the market price of risk since it can
+be interpreted as the excess return above the risk-free rate for
+accepting a certain level of risk.
+
+ \subsubsection{Solution for the VasicekModel}
+ \label{solution-for-the-vasicek-model}
+
+The value of a zero-coupon bond is assumed to be of the form
+
+\[ Z = e^{A(t;T)−rB(t;T)} \]
+where
+
+\[B(t; T) = \cfrac{1 - e^{-k(T-t)}}{k}\]
+
+\[A(t; T) = \cfrac{(B - T - t)(k^2\theta - \sigma^2/2)}{k^2} - \cfrac{\sigma^2 B^2}{4k}\]
+
+In Figure 30.2 are shown three types of yield curves predicted by the
+Vasicek model, each using different parameters.
+
+\[R(t, T) = \cfrac{1}{T-t}\ln A(t,T)+\cfrac{1}{T-t}B(t, T)r(t)\]
+
+showing the the entire term structure can be determined as a function of
+\(r(t)\) once the model parameters have been chosen.
+
+\subsection{Cox, Ingersoll and Ross (CIR) Model}
+\label{cox-ingersoll-and-ross-cir-model}
+
+In Vasicek model the short term interest rate, \(r\) can become
+negative. In the CIR model this can never happen. The process is
+expressed as
+
+\[dr = k(\theta - r_t)dt + \sigma\sqrt{r_t}dW\]
+
+This has still mean reverting drift but the standard deviation of the
+change in the short rate in a short period of time is proportional to
+\(\sqrt{r}\). This means that, as the short-term interest rate
+increases, its standard deviation increases.
+
+In CIR bond prices have similar general form as in Vasicek model
+Eq\ldots{}. where
+
+\[B(t, T) = \cfrac{2(e^{\gamma(T-t)}-1)}{(\gamma+k)(e^{\gamma(T-t)}-1)+2\gamma}\]
+
+\[A(t, T) = \left[\cfrac{2\gamma e^{(a+\gamma)(T-T)/2}}{(\gamma+k)(e^{\gamma(T-t)}-1)+2\gamma}\right]\]
+with \(\gamma = \sqrt {k^2 + 2\sigma^2}\). As in the Vasicek model the
+long rate \(R(t, T)\) is linearly dependent on \(r(t)\). THis means that
+the value of \(r(t)\) determined the level of the term structure at time
+\(t\).
+
+\section{No-arbitrage Model}
+\label{no-arbitrage-model}
+
+The main disadvantage of the equilibrium, models is that they do not
+automatically fit today's term structure of interest rates. By choosing
+the appropriate parameters they can provide an approximate fit to many
+of the term structures but the fit is not usually exact and in some
+cases no reasonable fit can be found.
+
+A no-arbitrage model is designed to be exactly consistent with today's
+term structure of interest rates (i.e.~todas's term structure of
+interest rate is an input of the model). In this kind of models the
+drift term is in general dependent on time since the shape of the
+initial zero curve governs the average path taken by \(r\).
+
+However, in order to fit today’s term structure, the model parameters have
+to be calibrated to prevailing market data. The calibration process is,
+amongst others, responsible that a model eventually yields consistent
+instrument prices. Nonetheless, calibrating a model correctly is somehow
+burdensome and takes significant additional computing effort [77, p.93].
+
+
+\subsection{Ho-Lee Model}\label{ho-lee-model}
 Ho and Lee [55] did pioneer work by proposing the first no-arbitrage model consistent with the initial term structure. Allowing for time-dependent drift parameters typically makes short rate models consistent with a prevailing set of bond prices. In the continuous-time Ho-Lee model the stochastic process followed by the short rate is [55, 60, p.1020, p.184]
-dr(t) = θ(t)dt + σdW (t). (6.9)
-Equation (6.9) corresponds to an Ornstein-Uhlenbeck process with a time dependent drift pa- rameter. This enables the model to be consistent with current market data. θ(t) directly defines the average direction that r moves at time t. The fact that the SDE (6.9) does not incorporate mean reversion is clearly a shortcoming of this approach [56, p.654f]. Similar to the Vasicek model, for every t there is a positive probability that the interest rates become negative. On the other hand, the main advantage of the Ho-Lee model is that the market price of risk is irrelevant and does not have to be estimated in order to determine the risk-adjusted process required to price interest rate derivatives. The risk-neutral process is automatically defined by fitting the model to the current term structure [54, 56, 77, p.11ff, p.654f, p.93].
-Applying Itˆo’s lemma, the SDE (6.9) can be solved explicitly for bond prices and short rates. There is an explicit formula available in the Ho-Lee model and thus the term structures are defined as [46, 60, p.111, p.184]
 
-Given this equation, only a small step brings us to the simulation of the Ho-Lee model. Sampling Z1, Z2, . . . from a standard normal distribution and inserting into (6.10) gives us a possible term structure generated by Ho-Lee.
-Hull-White
+This model was presented by Ho and Lee in the form of a binomial tree of
+bond prices with two parameters: the short rate standard deviation and
+the market price of risck of the short rate. It has since been shown
+that the model is
+
+\[dr=\theta(t)dt +\sigma dW\]
+where \(\sigma\), the instantaneous standard deviation of the short
+rate, is constant and \(\theta(t)\) is a function of time chosen to
+ensure that the model fits the initial term structure.
+The variable
+\(\theta(t)\) defines the average direction that \(r\) moves at time
+\(t\). This is independent of the level of \(r\).
+
+The variable \(\theta(t)\) can be calculated analytically, it is
+
+\[\theta(t)=F_t(0, t) + \sigma^2 t\]
+
+where \(F(0, t)\) is the instantaneous forward rate for the maturity
+\(t\) as seen at time zero and the subscript \(t\) denotes a partial
+derivstive with respect to \(t\). As an approximantion \(\theta(t)\)
+equals \(F_t(0, t)\). This means that the average direction that the
+short rate will be moving in the future is approximately equal to the
+slope of the instantaneous forward curve.
+Similar to the Vasicek model, for every t there is a positive probability that the interest rates become negative.
+
+Applying Itˆo’s lemma, the SDE (6.9) can be solved explicitly for bond prices and short rates. There is an explicit formula available in the Ho-Lee model and thus the term structures are defined as
+
+In Ho-Lee model bond price can be determined analytically
+
+\[Z(t, T)=A(t, T)e^{-r(t)(T-t)}\]
+where
+
+\[\ln A(t, T)=\ln\cfrac{Z(0,T)}{Z(0,t)}+(T-t)F(0,t)-\cfrac{1}{2}\sigma^2 t(T-t)^2\]
+
+In these equations, time zero is today, Times \(t\) and \(T\) are
+general times in the future with \(T\geq t\). The equations, therefore,
+define the price of a zero coupon bons at a future time \(t\) in terms
+of the short rate at time \(t\) and the prices of bonds today. The
+latter can be calculater from today's term structure.
+
+\subsection{Hull-White Model}
+\label{hull-white-model}
 The unsatisfactory fitting of the observed term structure of interest rates implied by the Vasicek model brought Hull and White in their paper [57] to propose a new model that basically combines the advantages of the Vasicek and the Ho-Lee model. Therefore, in literature the Hull-White
-50
-r(t) = r(0) +
-θ(s)ds + σdW (t). (6.10)
 
-model is also referred to as Extended Vasicek model. The dynamics of the short rates in the Hull-White model are given by the SDE [20, 57, p.72, p.577]
-dr(t) = α (b(t) − r(t)) dt + σdW (t). (6.11)
-Firstly, the Hull-White model makes the parameter b time-dependent. Thereby enough degrees of freedom are available to fit the model to the initial term structure and the term structure of spot or forward rate volatilities. Thus the Hull-White model falls into the category of no- arbitrage models and is therefore consistent with the current market data [16, 57, p.173, p.577f]. Secondly, it can be characterized as the Ho-Lee model with mean reversion at rate α. The model is to the same extent analytically tractable as the Ho-Lee model. The mean reversion level, i.e. the function b(t), can be directly calculated from the initial term structure [56, p.656].
-For an extensive discussion of this model the interested reader is referred either to the initial paper of Hull and White [57] or to the Chapter 3.3 of the book written by Brigo and Mercurio [20, p.71-80].
-Table 5, according to Brigo and Mercurio [20, p.57], gives a review of some established instan- taneous short rate models. Even though this list is not exhaustive, it includes most fundamental approaches in order to model a term structure of short rates. Note that some of these models, Hull-White, for instance, have been further developed and extended to multifactor models.
-51
+In this model it has been explored the possibility to extend the vasicek
+model to fit the initial term structure. The process is
 
-6.3 Forward rate models
-6 Term structure modeling
-Forward rate models describe the arbitrage-free dynamics of the term structure of interest rates through the evolution of forward rates f (t, T ). The distinguishing feature of these models is that they explicitly describe the evolution of the full term structure, contrary to the previously discussed short rate models, which do only provide a description of the dynamics of the short rate r(t) [46, p.149]. Instantaneous short rate models, as we have seen before, are mostly easy to implement and are usually able to price many standard and also nonstandard interest rate derivatives consistently [56, p.679].
-However, to legitimize the application of forward rate models, there are the two major limi- tations of short rate models that are generally overcome by using different types of forward rate models:
-- In short rate models the current value of all term structure quantities is solely determined by the current value of the short rate. Thus, the term structure is entirely summarized by today’s short rate. In multifactor models the complexity of the yield curve dynamics is subsumed into the current values of a finite, but usually small number of underlying factors [46, 56, p.149, p.679f]. The new generation of correlation-dependent instruments, however, requires models that describe the state of the world by the full term structure and not necessarily by a finite number of factors, which are often not able to deal with this new dimension of complexity [92, p.311].
-- Short rate models do not provide us with a complete freedom in the choice of the corre- sponding volatility structure. In a forward rate framework the forward rate dynamics are completely specified through their instantaneous volatility structure. In contrast, in short rate models the volatility of the short rate alone is not sufficient to fully characterize the relevant interest rate model [20, 56, 92, p.183, p.679, p.311f].
-Forward rate models can basically be divided into two classes, namely models based on con- tinuous and simple rates, respectively. The by far most popular continuous forward rate model is the Heath, Jarrow and Morton framework. It was one of the first forward rate models pro- posed and simultaneously establishes a basis for models based on simple rates. These models are therefore closely related to the Heath, Jarrow and Morton approach and called LIBOR market models. The seemingly minor shift from continuous to simple rates has surprisingly far-reaching practical and theoretical implications [46, p.165f], as we will see later on. As in the application of both models, Heath–Jarrow–Morton as well as LIBOR market model, Monte Carlo tech- niques play a decisive role, we will give these two approaches a fundamental treatment and will implement them in Section 7 and 8, respectively.
-52
+\[dr = k\left(\cfrac{\theta(t)}{k}-r_t \right)dt + \sigma dW\]
 
-7 Heath, Jarrow and Morton
-In 1992 Heath, Jarrow and Morton (hereafter, HJM) published the important paper Bond pricing and the term structure of interest rates [53] describing an alternative framework for modeling the term structure of interest rates. Under the risk-neutral measure, they derived a generalized formula for the drifts of instantaneous forward rates in terms of the volatilities of the forward rates. One of the key insights of this framework is that the HJM model is completely defined by specifying the volatilities of forward rates. Consequently, by using the observed term structure of forward rates as an input one can easily match a HJM model with the current market discount bond prices [6, p.310]
-Basically, there are two common formulations of the model. Firstly, the price based and secondly the forward based approach. The former technique is based on the dynamics of discount bonds, i.e. it takes them as the fundamental building block. The latter directly obtains the no- arbitrage SDE which is obeyed by the forward rates [92, p.314]. For a rigorous proof of the equivalence of these two approaches it is referred to the paper of Carverhill [27]. Note, though, that, historically, the pioneering results of the HJM were first achieved in the forward rates context.
-The virtue of the HJM theory lies in the fact that within such a framework virtually any (exogenous term structure) interest rate model can be derived. Even market models (see Section 8), for instance, have evolved starting from the instantaneous forward rate dynamics of the HJM approach. However, the disadvantage is that there are only a few volatility structures which lead to a corresponding short rate process which is indeed Markovian. This means that models of this form will, except for some wise choices of volatility specifications, which we will look at in Section 7.2, generally be path-dependent and thus non-Markovian processes [6, 20, p.310, p.184]. A short rate process can be characterized as being Markovian if its future evolution is in no way affected, in a stochastic sense, by its past realizations. If a process is indeed not influenced by its past, then the short rate process is, to use Carverhill’s [26] apt oxymoron, randomly determined [92, p.347f].
-In general, prices of fixed-income instruments, e.g. bonds, do not depend on the values of a few individual factors but rather on the entire history of the forward rate process. This fact makes computation exceptionally difficult and often only possible by simulation since the nodes of non-recombining, or bushy trees grow exponentially and therefore the approximating lattice will literally explode already after a small number of steps [6, p.310]. As a result, Monte Carlo simulation is the computational tool of choice in the HJM setting.
-7.1 Framework
-As mentioned before, the HJM characterizes the dynamics of the entire forward rate curve f (t, T ), whereas 0 ≤ t ≤ T ≤ τ . The origin of any consistent implementation of the HJM approach is the current yield curve, which is obviously based on market data. This yield curve can be described either by the collection of discount bonds P(0,T) or by the instantaneous
-53
+where \(k\) and \(\sigma\) are constants. This can be seen as a Ho-Lee
+model with mean reversion at rate \(k\) and at the same time, as a
+Vasicek model with a time-dependent reversion level.
+Firstly, the Hull-White model makes the parameter b time-dependent. Thereby enough degrees of freedom are available to fit the model to the initial term structure and the term structure of spot or forward rate volatilities.
 
-7 Heath, Jarrow and Morton
-forward rates f (t, T ). The forward rate at time t for date T > t is defined by [46, 53, 92, p.150, p.79, p.314]
-∂lnP(t,T) ∂T
-By solving the differential equation of Expression (7.1) the relationship between forward rates, spot rates and bond prices become obvious. In particular, spot rates, r(t,T), and bond prices, P(t,T), are written in terms of forward rates, f(t,T), as
-and
-r(t, T ) = P(t,T) = exp −
-f(t,T) = −
-. (7.1)
-1T T−tt
-f (t, s)ds 
-f(t,s)ds ,
+The function \(\theta(t)\) can be calculated from the initial term
+structure
 
-respectively, for all T ∈ [0,τ], t ∈ [0,T] [6, 53, 92, p.310, p.80, p.314]. Note that the spot rate at time t, r(t), is exactly the same as the instantaneous forward rate at time t for date t, i.e., r(t) = f (t, t) [53, p.80].
-In the HJM setting, the dynamics of the instantaneous forward rate curve are specified, under a given measure, through the SDE [46, 53, 60, p.150, p.80f, p.200]
-df(t,T) = α(t,T,ω)dt+σ(t,T,ω)dW(t), (7.4)
-where ω is a vector containing the past and present values of interest rates as well as bond prices at time t in the sample space Ω. The process W is a standard d-dimensional Brownian motion, whereas d is the number of factors or volatility curves which describe the forward rates. Thus, the HJM approach can be constructed as a one factor as well as a multifactor model.
-Due to the absence of arbitrage, requested by the no-arbitrage condition, asset prices must
-be martingales when divided by the numeraire, which in this case is exp 0t r(s)ds. However,
-forward rates and asset prices are by no means the same. Therefore, the restrictions imposed
-on the dynamics in (7.4) with the purpose to avoid any arbitrage opportunities are different.
-Nevertheless, asset prices, particularly bonds, serve as a starting point in order to find theset
-restrictions. To ensure that the discounted bond prices P (t, T ) exp − r(s)ds are positive
-0
-martingales, Heath et al. [53, p.81f] derived the dynamics of the form dP(t,T)
-P(t,T) =r(t)dt+v(t,T,ω)dW(t), (7.5)
-where 0 ≤ t ≤ T ≤ τ [46, 60, p.151, p.200]. The volatilities of the bonds v(t, T, ω) may either be functions of observed bond prices or, equivalently, of current forward rates since (7.1) indicates that they are one-to-one related to each other. Applying Itˆo’s formula yet again, Heath et al. showed [53, p.80ff] that forward rate volatilities may be derived from bond price volatilities and we therefore must have
-∂ ∂T
-σ(t,T,ω) = − 54
-v(t,T,ω)
+\[\theta(t)=F_t(0,t)+kF(0,t)+\cfrac{\sigma^2}{2k}\left(1-e^{-2kt}\right)\]
 
-7 Heath, Jarrow and Morton
-and T
-v(t, T, ω) = − σ(t, s)ds + constant, (7.6)
-t
-simultaneously [46, p.152]. Notice, however, that P (t, T ) approaches 1 as t → T and therefore we must have v(T,T,ω) = 0 because bond’s price volatility declines to zero at maturity [92, p.318]. Thus the constant in Equation (7.6) is zero which allows us to rewrite the expression for α as [20, 46, 60, p.186, p.152f, p.200f]
+Bond price at time \(t\) is given by Eq\ldots{}.
 
-α(t, T, ω) = σ(t, T, ω) σ(t, s)ds = σi(t, T, ω) σi(t, s)ds. (7.7)
-t i=1 t
-This expression represents the risk-neutral drift imposed by the no-arbitage condition. Addition- ally, (7.7) reveals a key result of the HJM research activities. The assumption of arbitrage-free dynamics has led to a specific relationship between the drift and the volatility. Namely that the drift of the dynamics in (7.4) is completely determined by the volatility structure of the instantaneous forward rates. Thus we know that the HJM drifts themselves are simply a function of the volatilities, either of forward rates, or of discount bonds. If we substitute (7.7) into (7.4) then the new HJM dynamics are [46, 53, 92, p.152, p.89f, p.318ff]
+with
 
-df(t,T)= σ(t,T,ω) σ(t,s)ds dt+σ(t,T,ω)dW(t). (7.8)
-t
-This SDE defines the no-arbitrage dynamics of the forward rate curve under the risk-neutral measure and is simultaneously the central insight of the HJM approach. Recall why the model eventually fulfills the required no-arbitrage condition. While deriving the forward rate restriction (7.7) and the corresponding dynamics (7.8), a proper specification of the drift was chosen in order to guarantee the absence of arbitrage, or more precisely, to make the discounted bond prices martingales. However, integrating (7.8) leads to the dynamics of f(t,T
-f(t,T) = f(0,T)+ σ(u,T,ω) σ(u,s)dsdu+ σ(s,T,ω)dW(s), (7.9)
-0u0
-which are completely determined once the vector volatility function σ is specified [20, 53, p.186, p.89f]. Only a small step takes us now from the dynamics of the forward rates to the dynamics of the zero coupon bond price P(t,T):
-dP(t,T)=P(t,T) r(t)dt− σ(t,s)ds dW(t) , (7.10)
-t
-where r(t) denotes the instantaneous short term interest rate at time t. The dynamics of r(t) are given by [20, 53, p.186, p.90]
+\[B(t,T)=\cfrac{1-e^{-k(T-t)}}{k}\]
 
-r(t) = f (t, t) = f (0, t) + σ(u, t, ω) σ(u, s)ds du + σ(s, t, ω)dW (s). (7.11)
-0u0
-55
+\[\ln A(t,T)=\ln\cfrac{P(0,T)}{P(0,t)}+B(t,T)F(0,T)-\cfrac{1}{4k^3}\sigma^{2}(e^{-kT}-e^{-kt})^2(e^{2kt}-1)\]
 
-7 Heath, Jarrow and Morton
-The decisive discrepancy between HJM and previously discussed instantaneous short rate models has become apparent. We know that the HJM drift is determined once the volatility is finally specified. In contrast, the derivation of the short rate models disclosed that their dynamics and thus their drift parameters could be completely specified independent of any diffusion coefficients. Even though no volatility structures were taken into account, there was still no arbitrage introduced. A wise choice of the drift parameters is indeed crucial for calibrating short rate models to the observed bond prices. Provided that the initial forward rate curve is chosen in a way that the consistency, implied by (7.1), is guaranteed, the HJM model, however, is automatically calibrated to prevailing bond prices. To conclude, while calibrating a HJM model the initial forward curve conditions rather than individual parameters are essential. With regard to the calibrating process of a HJM framework itself, the main effort lies in choosing σ properly to firstly match bond prices and eventually the market prices of interest rate derivatives [46, 60, 92, p.153, p.200, p.312f].
-7.2 Volatility functions
-The proceeding section has already foreshadowed that the consequences of the choice of volatility specification for the implementation and simulation of a HJM model are enormous. The short rate process (7.11) is, as mentioned before, not a Markov process in general. However, there are suitable specifications of the volatility function σ(t, T, ω) for which r(t) is yet Markovian [20, 60, p.186f, p.203f]. For an extensive treatment of Markovian short rate processes it is referred to either the paper of Carverhill [26] or the Chapter 16 of Rebonato [92, p.347-359]. In the general case when σ(t,T,ω) is not Markovian, we may encounter major computational problems when discretizing the Dynamics (7.11) for the pricing of even simple derivatives. However, several standard Markovian functional forms for σ(t,T,ω) have been explored. Two of them, both single factor models (d = 1), are listed and shortly explained below [60, p.203]:
-- Constant σ: σ(t, T, ω) ≡ σ.
-In this one factor model with constant volatility each increment dW(t) moves the entire forward curve, i.e. all existing points on the curve, by an equal amount of σdW(t). Thus, the forward curve is constrained to move only in parallel [46, p.153]. For this particularly simple specification, bond prices are assumed to be lognormal and all forward rates are normal and exhibit exactly the same volatility. If these distributional assumptions are fulfilled, the according models are qualified as Gaussian [92, p.317f]. They are analytically well-tractable but also unrealistic to some extent, what we will see later on. If we insert σ into Equation (7.7) the resulting drift of a HJM model with constant σ has the form [46, p.153]
-T
-α(t, T, ω) = σ σ ds = σ2(T − t).
-t
-Solving (7.8) with constant σ leads to the dynamics of the forward rates f(t,T)=f(0,T)+ 12σ2[T2 −(T −t)2]+σW(t),
-56
+%6.3 Forward rate models
+%6 Term structure modeling
+%Forward rate models describe the arbitrage-free dynamics of the term structure of interest rates through the evolution of forward rates f (t, T ). The distinguishing feature of these models is that they explicitly describe the evolution of the full term structure, contrary to the previously discussed short rate models, which do only provide a description of the dynamics of the short rate r(t) [46, p.149]. Instantaneous short rate models, as we have seen before, are mostly easy to implement and are usually able to price many standard and also nonstandard interest rate derivatives consistently [56, p.679].
+%However, to legitimize the application of forward rate models, there are the two major limi- tations of short rate models that are generally overcome by using different types of forward rate models:
+%- In short rate models the current value of all term structure quantities is solely determined by the current value of the short rate. Thus, the term structure is entirely summarized by today’s short rate. In multifactor models the complexity of the yield curve dynamics is subsumed into the current values of a finite, but usually small number of underlying factors [46, 56, p.149, p.679f]. The new generation of correlation-dependent instruments, however, requires models that describe the state of the world by the full term structure and not necessarily by a finite number of factors, which are often not able to deal with this new dimension of complexity [92, p.311].
+%- Short rate models do not provide us with a complete freedom in the choice of the corre- sponding volatility structure. In a forward rate framework the forward rate dynamics are completely specified through their instantaneous volatility structure. In contrast, in short rate models the volatility of the short rate alone is not sufficient to fully characterize the relevant interest rate model [20, 56, 92, p.183, p.679, p.311f].
+%Forward rate models can basically be divided into two classes, namely models based on con- tinuous and simple rates, respectively. The by far most popular continuous forward rate model is the Heath, Jarrow and Morton framework. It was one of the first forward rate models pro- posed and simultaneously establishes a basis for models based on simple rates. These models are therefore closely related to the Heath, Jarrow and Morton approach and called LIBOR market models. The seemingly minor shift from continuous to simple rates has surprisingly far-reaching practical and theoretical implications [46, p.165f], as we will see later on. As in the application of both models, Heath–Jarrow–Morton as well as LIBOR market model, Monte Carlo tech- niques play a decisive role, we will give these two approaches a fundamental treatment and will implement them in Section 7 and 8, respectively.
+%52
+%
+%7 Heath, Jarrow and Morton
+%In 1992 Heath, Jarrow and Morton (hereafter, HJM) published the important paper Bond pricing and the term structure of interest rates [53] describing an alternative framework for modeling the term structure of interest rates. Under the risk-neutral measure, they derived a generalized formula for the drifts of instantaneous forward rates in terms of the volatilities of the forward rates. One of the key insights of this framework is that the HJM model is completely defined by specifying the volatilities of forward rates. Consequently, by using the observed term structure of forward rates as an input one can easily match a HJM model with the current market discount bond prices [6, p.310]
+%Basically, there are two common formulations of the model. Firstly, the price based and secondly the forward based approach. The former technique is based on the dynamics of discount bonds, i.e. it takes them as the fundamental building block. The latter directly obtains the no- arbitrage SDE which is obeyed by the forward rates [92, p.314]. For a rigorous proof of the equivalence of these two approaches it is referred to the paper of Carverhill [27]. Note, though, that, historically, the pioneering results of the HJM were first achieved in the forward rates context.
+%The virtue of the HJM theory lies in the fact that within such a framework virtually any (exogenous term structure) interest rate model can be derived. Even market models (see Section 8), for instance, have evolved starting from the instantaneous forward rate dynamics of the HJM approach. However, the disadvantage is that there are only a few volatility structures which lead to a corresponding short rate process which is indeed Markovian. This means that models of this form will, except for some wise choices of volatility specifications, which we will look at in Section 7.2, generally be path-dependent and thus non-Markovian processes [6, 20, p.310, p.184]. A short rate process can be characterized as being Markovian if its future evolution is in no way affected, in a stochastic sense, by its past realizations. If a process is indeed not influenced by its past, then the short rate process is, to use Carverhill’s [26] apt oxymoron, randomly determined [92, p.347f].
+%In general, prices of fixed-income instruments, e.g. bonds, do not depend on the values of a few individual factors but rather on the entire history of the forward rate process. This fact makes computation exceptionally difficult and often only possible by simulation since the nodes of non-recombining, or bushy trees grow exponentially and therefore the approximating lattice will literally explode already after a small number of steps [6, p.310]. As a result, Monte Carlo simulation is the computational tool of choice in the HJM setting.
+%7.1 Framework
+%As mentioned before, the HJM characterizes the dynamics of the entire forward rate curve f (t, T ), whereas 0 ≤ t ≤ T ≤ τ . The origin of any consistent implementation of the HJM approach is the current yield curve, which is obviously based on market data. This yield curve can be described either by the collection of discount bonds P(0,T) or by the instantaneous
+%forward rates f (t, T ). The forward rate at time t for date T > t is defined by [46, 53, 92, p.150, p.79, p.314]
+%∂lnP(t,T) ∂T
+%By solving the differential equation of Expression (7.1) the relationship between forward rates, spot rates and bond prices become obvious. In particular, spot rates, r(t,T), and bond prices, P(t,T), are written in terms of forward rates, f(t,T), as
+%and
+%r(t, T ) = P(t,T) = exp −
+%f(t,T) = −
+%. (7.1)
+%1T T−tt
+%f (t, s)ds 
+%f(t,s)ds ,
+%
+%respectively, for all T ∈ [0,τ], t ∈ [0,T] [6, 53, 92, p.310, p.80, p.314]. Note that the spot rate at time t, r(t), is exactly the same as the instantaneous forward rate at time t for date t, i.e., r(t) = f (t, t) [53, p.80].
+%In the HJM setting, the dynamics of the instantaneous forward rate curve are specified, under a given measure, through the SDE [46, 53, 60, p.150, p.80f, p.200]
+%df(t,T) = α(t,T,ω)dt+σ(t,T,ω)dW(t), (7.4)
+%where ω is a vector containing the past and present values of interest rates as well as bond prices at time t in the sample space Ω. The process W is a standard d-dimensional Brownian motion, whereas d is the number of factors or volatility curves which describe the forward rates. Thus, the HJM approach can be constructed as a one factor as well as a multifactor model.
+%Due to the absence of arbitrage, requested by the no-arbitrage condition, asset prices must
+%be martingales when divided by the numeraire, which in this case is exp 0t r(s)ds. However,
+%forward rates and asset prices are by no means the same. Therefore, the restrictions imposed
+%on the dynamics in (7.4) with the purpose to avoid any arbitrage opportunities are different.
+%Nevertheless, asset prices, particularly bonds, serve as a starting point in order to find theset
+%restrictions. To ensure that the discounted bond prices P (t, T ) exp − r(s)ds are positive
+%0
+%martingales, Heath et al. [53, p.81f] derived the dynamics of the form dP(t,T)
+%P(t,T) =r(t)dt+v(t,T,ω)dW(t), (7.5)
+%where 0 ≤ t ≤ T ≤ τ [46, 60, p.151, p.200]. The volatilities of the bonds v(t, T, ω) may either be functions of observed bond prices or, equivalently, of current forward rates since (7.1) indicates that they are one-to-one related to each other. Applying Itˆo’s formula yet again, Heath et al. showed [53, p.80ff] that forward rate volatilities may be derived from bond price volatilities and we therefore must have
+%∂ ∂T
+%σ(t,T,ω) = − 54
+%v(t,T,ω)
+%and T
+%v(t, T, ω) = − σ(t, s)ds + constant, (7.6)
+%t
+%simultaneously [46, p.152]. Notice, however, that P (t, T ) approaches 1 as t → T and therefore we must have v(T,T,ω) = 0 because bond’s price volatility declines to zero at maturity [92, p.318]. Thus the constant in Equation (7.6) is zero which allows us to rewrite the expression for α as [20, 46, 60, p.186, p.152f, p.200f]
+%
+%α(t, T, ω) = σ(t, T, ω) σ(t, s)ds = σi(t, T, ω) σi(t, s)ds. (7.7)
+%t i=1 t
+%This expression represents the risk-neutral drift imposed by the no-arbitage condition. Addition- ally, (7.7) reveals a key result of the HJM research activities. The assumption of arbitrage-free dynamics has led to a specific relationship between the drift and the volatility. Namely that the drift of the dynamics in (7.4) is completely determined by the volatility structure of the instantaneous forward rates. Thus we know that the HJM drifts themselves are simply a function of the volatilities, either of forward rates, or of discount bonds. If we substitute (7.7) into (7.4) then the new HJM dynamics are [46, 53, 92, p.152, p.89f, p.318ff]
+%
+%df(t,T)= σ(t,T,ω) σ(t,s)ds dt+σ(t,T,ω)dW(t). (7.8)
+%t
+%This SDE defines the no-arbitrage dynamics of the forward rate curve under the risk-neutral measure and is simultaneously the central insight of the HJM approach. Recall why the model eventually fulfills the required no-arbitrage condition. While deriving the forward rate restriction (7.7) and the corresponding dynamics (7.8), a proper specification of the drift was chosen in order to guarantee the absence of arbitrage, or more precisely, to make the discounted bond prices martingales. However, integrating (7.8) leads to the dynamics of f(t,T
+%f(t,T) = f(0,T)+ σ(u,T,ω) σ(u,s)dsdu+ σ(s,T,ω)dW(s), (7.9)
+%0u0
+%which are completely determined once the vector volatility function σ is specified [20, 53, p.186, p.89f]. Only a small step takes us now from the dynamics of the forward rates to the dynamics of the zero coupon bond price P(t,T):
+%dP(t,T)=P(t,T) r(t)dt− σ(t,s)ds dW(t) , (7.10)
+%t
+%where r(t) denotes the instantaneous short term interest rate at time t. The dynamics of r(t) are given by [20, 53, p.186, p.90]
+%
+%r(t) = f (t, t) = f (0, t) + σ(u, t, ω) σ(u, s)ds du + σ(s, t, ω)dW (s). (7.11)
+%0u0
 
-7 Heath, Jarrow and Morton
-which is simultaneously the continuous-time equivalent of the Ho-Lee model [60, 92, p.202, p.318].
-Flesaker [40] conducted an empirical test about the constant volatility version of the HJM model for Eurodollar futures and futures options. He found that this general version of the HJM model is unable to explain cross-sectional pricing pattern of futures options and that it exhibits systematic biases, why the model is eventually soundly rejected. Moreover, he observed that the model tends to overvalue short-term options relative to long-term options. Accordingly, he clearly motivated further empirical studies of HJM models where the volatility is allowed to vary over time rather than artificially kept constant.
--Exponentialσ: σ(t,T,ω)=σexp(−λ(T−t)),forsomeconstantsσ,λ>0.
-This diffusion term σ(t,T,ω) has a greater impact on forward rates for short maturities than on forward rates for long maturities [46, p.154]. Due to this fact the HJM model in- cluding an exponential σ is eventually completely equal to the general short rate dynamics proposed by Hull and White [57], see (6.11). This makes clear that one can establish a one-to-one equivalence between the HJM one factor model and the general formulation of the Gaussian one factor instantaneous short rate model of Hull and White [20, p.187].
-This volatility specification keeps its analytical tractability but is able to perform slightly better than the HJM model with constant σ. Yet, the results are still unsatisfactory and therefore the HJM model including exponential volatility is also rejected [60, p.203].
-Asides from many standard approaches with the goal of finding suitable specifications of σ(t,T,ω), which make the short rate process indeed Markovian, there have been developed some more sophisticated techniques, too. They basically exploit that, even though a short rate process might not be Markovian, there may yet exist a higher-dimensional Markov process that possesses the instantaneous short rate as one of its components [20, p.188]. Ritchken and Sankarasubramanian [95], for instance, proposed a model for simply capturing the path dependence of the short rate r(t) through a single statistic. In particular, they found a few necessary and sufficient conditions which are imposed on the volatility structure of the forward rates. These conditions enable them to control the short rate’s path dependence and make them analytically tractable [20, 60, p.189, p.205].
-A second model, which was proposed by Mercurio and Moraleda [78], derives an interest rate model within the HJM framework which explicitly assumes a humped volatility structure in the instantaneous forward rate dynamics and thus is also analytically tractable. They motivate their assumption of a humped volatility structure by the fact that forward rates themselves commonly exhibit humped volatility functions that are generally implied by simple market quotes. They have shown that their model consequently outperforms similar existing models, which do not explicitly contain such a humped shape in volatilities [20, 78, p.191f, p.213].
-57
+%The decisive discrepancy between HJM and previously discussed instantaneous short rate models has become apparent. We know that the HJM drift is determined once the volatility is finally specified. In contrast, the derivation of the short rate models disclosed that their dynamics and thus their drift parameters could be completely specified independent of any diffusion coefficients. Even though no volatility structures were taken into account, there was still no arbitrage introduced. A wise choice of the drift parameters is indeed crucial for calibrating short rate models to the observed bond prices. Provided that the initial forward rate curve is chosen in a way that the consistency, implied by (7.1), is guaranteed, the HJM model, however, is automatically calibrated to prevailing bond prices. To conclude, while calibrating a HJM model the initial forward curve conditions rather than individual parameters are essential. With regard to the calibrating process of a HJM framework itself, the main effort lies in choosing σ properly to firstly match bond prices and eventually the market prices of interest rate derivatives [46, 60, 92, p.153, p.200, p.312f].
+%7.2 Volatility functions
+%The proceeding section has already foreshadowed that the consequences of the choice of volatility specification for the implementation and simulation of a HJM model are enormous. The short rate process (7.11) is, as mentioned before, not a Markov process in general. However, there are suitable specifications of the volatility function σ(t, T, ω) for which r(t) is yet Markovian [20, 60, p.186f, p.203f]. For an extensive treatment of Markovian short rate processes it is referred to either the paper of Carverhill [26] or the Chapter 16 of Rebonato [92, p.347-359]. In the general case when σ(t,T,ω) is not Markovian, we may encounter major computational problems when discretizing the Dynamics (7.11) for the pricing of even simple derivatives. However, several standard Markovian functional forms for σ(t,T,ω) have been explored. Two of them, both single factor models (d = 1), are listed and shortly explained below [60, p.203]:
+%- Constant σ: σ(t, T, ω) ≡ σ.
+%In this one factor model with constant volatility each increment dW(t) moves the entire forward curve, i.e. all existing points on the curve, by an equal amount of σdW(t). Thus, the forward curve is constrained to move only in parallel [46, p.153]. For this particularly simple specification, bond prices are assumed to be lognormal and all forward rates are normal and exhibit exactly the same volatility. If these distributional assumptions are fulfilled, the according models are qualified as Gaussian [92, p.317f]. They are analytically well-tractable but also unrealistic to some extent, what we will see later on. If we insert σ into Equation (7.7) the resulting drift of a HJM model with constant σ has the form [46, p.153]
+%T
+%α(t, T, ω) = σ σ ds = σ2(T − t).
+%t
+%Solving (7.8) with constant σ leads to the dynamics of the forward rates f(t,T)=f(0,T)+ 12σ2[T2 −(T −t)2]+σW(t),
+%which is simultaneously the continuous-time equivalent of the Ho-Lee model [60, 92, p.202, p.318].
+%Flesaker [40] conducted an empirical test about the constant volatility version of the HJM model for Eurodollar futures and futures options. He found that this general version of the HJM model is unable to explain cross-sectional pricing pattern of futures options and that it exhibits systematic biases, why the model is eventually soundly rejected. Moreover, he observed that the model tends to overvalue short-term options relative to long-term options. Accordingly, he clearly motivated further empirical studies of HJM models where the volatility is allowed to vary over time rather than artificially kept constant.
+%-Exponentialσ: σ(t,T,ω)=σexp(−λ(T−t)),forsomeconstantsσ,λ>0.
+%This diffusion term σ(t,T,ω) has a greater impact on forward rates for short maturities than on forward rates for long maturities [46, p.154]. Due to this fact the HJM model in- cluding an exponential σ is eventually completely equal to the general short rate dynamics proposed by Hull and White [57], see (6.11). This makes clear that one can establish a one-to-one equivalence between the HJM one factor model and the general formulation of the Gaussian one factor instantaneous short rate model of Hull and White [20, p.187].
+%This volatility specification keeps its analytical tractability but is able to perform slightly better than the HJM model with constant σ. Yet, the results are still unsatisfactory and therefore the HJM model including exponential volatility is also rejected [60, p.203].
+%Asides from many standard approaches with the goal of finding suitable specifications of σ(t,T,ω), which make the short rate process indeed Markovian, there have been developed some more sophisticated techniques, too. They basically exploit that, even though a short rate process might not be Markovian, there may yet exist a higher-dimensional Markov process that possesses the instantaneous short rate as one of its components [20, p.188]. Ritchken and Sankarasubramanian [95], for instance, proposed a model for simply capturing the path dependence of the short rate r(t) through a single statistic. In particular, they found a few necessary and sufficient conditions which are imposed on the volatility structure of the forward rates. These conditions enable them to control the short rate’s path dependence and make them analytically tractable [20, 60, p.189, p.205].
+%A second model, which was proposed by Mercurio and Moraleda [78], derives an interest rate model within the HJM framework which explicitly assumes a humped volatility structure in the instantaneous forward rate dynamics and thus is also analytically tractable. They motivate their assumption of a humped volatility structure by the fact that forward rates themselves commonly exhibit humped volatility functions that are generally implied by simple market quotes. They have shown that their model consequently outperforms similar existing models, which do not explicitly contain such a humped shape in volatilities [20, 78, p.191f, p.213].
+%    
+    
+
+    
+O.A. Vasicek ``An Equilibrium Characterization of the Term Structure'',
+Journal of Financial Economics, 5 (1977); 177-188.
+
+T.S.Y. Ho and S.B. Lee, ``Term Structure Movements and Pricing Interest
+Rate Contingent Claims'', Journal of Finance, 41 (December 1986):
+1011-29.
+
+J. Hull and A. White, ``Pricing Interest Rate Derivative Securities'',
+Review of Financial Studies, 3, 4 (1990): 573-92.
+
+
