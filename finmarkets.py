@@ -3,6 +3,21 @@ import numpy
 from math import log, exp, sqrt
 from scipy.stats import norm
 from dateutil.relativedelta import relativedelta
+from matplotlib import pyplot as plt
+ 
+def plotVectors(vecs, cols, alpha=1):
+    plt.figure()
+    plt.axvline(x=0, color='#A9A9A9', zorder=0)
+    plt.axhline(y=0, color='#A9A9A9', zorder=0)
+ 
+    for i in range(len(vecs)):
+        x = numpy.concatenate([[0,0],vecs[i]])
+        plt.quiver([x[0]],
+                   [x[1]],
+                   [x[2]],
+                   [x[3]],
+                   angles='xy', scale_units='xy', scale=1, color=cols[i],
+                   alpha=alpha)
 
 def d1(S_t, K, r, vol, ttm):
     num = log(S_t/K) + (r + 0.5*pow(vol, 2)) * ttm

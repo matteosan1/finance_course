@@ -5,32 +5,61 @@ markets have been increasing sharply over the past decades. As the number of new
 and simultaneously exotic interest rate products virtually exploded, 
 it has been a key challenge to find good and primarily robust procedures for 
 pricing and also hedging these products. 
+To reach this goal it is essential to have reliable models to describe the 
+evolution of the interest rate with time.
+
+In this Chapter the most common interest rate modeling techniques are reviewed
+together with related \texttt{python} applications.
 
 \section{Short Rate Models}
+Bond, option and other derivative prices
+depend only on the process followed by \(r\) in a risk neutral world.
+Let $Z(R, t, T)$ be the price of a zero coupon bond with maturity $T$ at time $t$. 
+It defines the corresponding interest rate $R(T)$ by the formula
+
+\begin{equation}
+	\begin{gathered}
+	Z(R, t, T) = e^{−R(T)(T−t)} \\
+	R(T) = -\cfrac{\ln Z(R, t, T)}{T − t}
+	\end{gathered}
+\label{eq:zcb}
+\end{equation}
+
+Zero-coupon yield curve, also called term structure of interest rates, is then
+formed by interest rates with different maturities
+
+
 The \emph{short rate}, \(r(t)\), at time \(t\) is the rate that applies to an
 infinitesimally short period of time at time \(t\) (also called
-\emph{instantaneous short rate}). Bond, option and other derivative prices
-depend only on the process folllowed by \(r\) in a risk neutral world.
-The price can be expresses as
+\emph{instantaneous short rate}). 
+It can be seen as the beginning of the yield curve: 
 
-\[\mathbb{E}[e^{-r(T-t)}\textrm{payoff}]\]
+\begin{equation}
+r(t) = \underset{T\rightarrow t^{+}}{lim}R(T)
+\label{eq:short_rate}
+\end{equation}
 
-If \(Z(t, T)\) is the price of a zero coupon bond then from the previous
-equation
+%The price can be expresses as
+%
+%\[\mathbb{E}[e^{-r(T-t)}\textrm{payoff}]\]
+%
+%If \(Z(t, T)\) is the price of a zero coupon bond then from the previous
+%equation
+%
+%\[Z(t, T) = \mathbb{E}[e^{-r(T-t)}]\]
 
-\[Z(t, T) = \mathbb{E}[e^{-r(T-t)}]\]
+%The interest rates implied by the zero coupon bonds form a yield curve, 
+%or more precisely, a zero curve.
 
-The interest rates implied by the zero coupon bonds form a yield curve, 
-or more precisely, a zero curve.
-
-This equation enables the term structure of interest rates at any time
-to be obtined from the value of \(r\) at that time and the risk neutral
-process for \(r\). It shows that once the process for \(r\) has been
-defined, everything about the inital zero cure and its evolution through
+From Equations~\ref{eq:zcb} and~\ref{eq:short_rate} it is clear that 
+the term structure of interest rates at any time can be obtained from 
+the value of \(r\) at that time and the evolution process for \(r\). 
+They show that once the process for \(r\) has been
+defined, everything about the initial zero curve and its evolution through
 time can be determined.
 
 Short rate models have been introduced in order to be able to explore the development
-of the dynamics of an instantaneous continuously compounded short rate $r(t)$.
+of the dynamics of the instantaneous continuously compounded short rate $r(t)$.
 Short rate models generally owe their popularity to both their high degree of
 tractability and their flexibility. For many models one can find explicit solutions
 for bond prices and for bond option prices. They may be applied to price simple
@@ -39,53 +68,59 @@ instruments in closed form or sometimes by deterministic numerical methods.
 In particular, the stochastic evolution of short rate models is identified by
 the following generalized SDE
 
-$$dr(t) = (\theta(t) − \alpha(t)r(t)) dt + \sigma(t)r(t)^{\gamma} dW$$
+\begin{equation}
+dr(t) = (\theta(t) − \alpha(t)r(t)) dt + \sigma(t)r(t)^{\gamma} dW
+\label{eq:short_rate_sde}
+\end{equation}
 
 This equation denotes a general Gaussian Markov process with $\theta$, $\alpha$ and $\sigma$
-all deterministic functions of time.
+that in general are all deterministic functions of time, $dW$ is a Brownian motion.
 
 \section{Equilibrium Models}\label{equilibrium-models}
 
-Equilibrium models usually start with assumptions about how the economy works and about economic 
-variables themselves. Then they attempt to derive a process 
+Equilibrium models usually start with assumptions about how the economy works 
+and about economic variables themselves. Then they attempt to derive a process 
 for the short rate $r(t)$ and explore what the defined process 
-for r may imply for bond and option prices.
+for $r$ may imply for bond and option prices.
 
 Thus, the key idea behind this approach is to build an economically 
 sound model, whose output are interest rates evolved as a consequence 
 of market equilibrium.
-They do not automatically fit today’s term structure of interest rates. 
-The current term structure is included as an output rather than an input. 
-This eventually gives rise to inconsistencies with the actual term structure. 
+It is important to stress that they do not automatically fit today’s term 
+structure of interest rates, but rather the current term structure is 
+included as an output. 
 
-In a one-factor equilibrium model, the process for \(r\) involves only
-one source of uncertainty. Usually the risk neutral process for the
-short rate is described by an It\(\hat{o}\) process of the form
+Usually the risk-neutral process for the short rate is described by a SDE analogous 
+to Eq.~\ref{eq:short_rate_sde} where
+\(\theta\), \(\alpha\) and $\sigma$ are assumed to be function of \(r\) but independent of time.
 
-\[dr = \mu(r)dt + \sigma(r)dW\]
-Both \(\mu\) and \(\sigma\) are assumed to be function of \(r\) but independent of time.
-Therefore, one factor models are essentially assuming that the dynamics of the whole term structure is 
-captured by the short or forward rate, and its future evolution. Nevertheless, 
+A subset of such models, called \emph{one-factor equilibrium models},
+is made of those whose process for \(r\) involves only
+one source of uncertainty (i.e. one stochastic term). 
+
+One factor models are essentially assuming that the dynamics of the whole term structure is 
+captured by the short rate, and its future evolution. Nevertheless, 
 one factor models are not as restrictive as it might appear. They imply 
 that all rates move in the same direction over any short time interval, 
 but they do not assume that they move by the same amount.
 Yet, it is sometimes difficult or even infeasible to find a more or less 
 realistic model based on one factor only.
 
-Let's consider closely some of such models.
-
 \subsection{Vasicek Model}\label{vasicek-model}
 
 In Vasicek model the process for \(r\) is described by
 
-\[dr = k(\theta - r_t)dt + \sigma dW\]
+\begin{equation}
+	dr = k(\theta - r_t)dt + \sigma dW
+\label{eq:vasicek_process}
+\end{equation}
 where \(k\), \(\theta\) and \(\sigma\) are constants.
 
 One important difference between interest rates and other stochastic
 quantities is that interest rates appear to be pulled back to some
 long-run average level over time. This characteristic is called
-\emph{mean reversion}. When \(r\) is high , mean
-reversion tends to cause it to have a negative drift; when \(r\) is low,
+\emph{mean reversion}. When \(r\) is high, mean reversion tends to 
+cause it to have a negative drift; when \(r\) is low,
 mean reversion tends to cause it to have a positive drift.
 
 There are real economic arguments in favor of mean reversion. When rates
@@ -94,168 +129,252 @@ funds from borrowers. As a result, rates decline. When rates are low,
 there tends to be a high demand for funds on the part of borrowers and
 rates tend to rise.
 
-The Vasicek model incorporates mean reversion: the
-short rate is pulled to a level \(\theta\) at a rate \(k\), which is a good
-property, but interest rates can easily go negative, which is a very bad
-property.
+The Vasicek model incorporates this feature (the
+short rate is pulled to a level \(\theta\) at a rate \(k\)), which is a good
+property, but interest rates can go negative, which instead is a very bad property.
+
+In the following code it has been implemented a \texttt{VasicekModel} class which 
+implements the process described by Eq.~\ref{eq:vasicek_process}.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{random}
+\PY{k+kn}{from} \PY{n+nn}{array} \PY{k+kn}{import} \PY{n}{array}
+\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+
+\PY{k}{class} \PY{n+nc}{VasicekModel}\PY{p}{:}
+    \PY{k}{def} \PY{n+nf+fm}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{k}\PY{p}{,} \PY{n}{theta}\PY{p}{,} \PY{n}{sigma}\PY{p}{)}\PY{p}{:}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{k} \PY{o}{=} \PY{n}{k}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{theta} \PY{o}{=} \PY{n}{theta}
+        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{sigma} \PY{o}{=} \PY{n}{sigma}
+
+    \PY{k}{def} \PY{n+nf}{r\PYZus{}generator}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{r0}\PY{p}{,} \PY{n}{t}\PY{p}{,} \PY{n}{T}\PY{p}{,} \PY{n}{N}\PY{p}{)}\PY{p}{:}
+        \PY{n}{r} \PY{o}{=} \PY{p}{[}\PY{n}{r0}\PY{p}{]}
+        \PY{n}{dt} \PY{o}{=} \PY{p}{(}\PY{n}{T}\PY{o}{\PYZhy{}}\PY{n}{t}\PY{p}{)}\PY{o}{/}\PY{n+nb}{float}\PY{p}{(}\PY{n}{N}\PY{p}{)}
+        \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{N}\PY{p}{)}\PY{p}{:} 
+            \PY{n}{r\PYZus{}new} \PY{o}{=} \PY{n}{r}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{+} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{k}\PY{o}{*}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{theta} \PY{o}{\PYZhy{}} \PY{n}{r}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{o}{*}\PY{n}{dt} \PY{o}{+} 
+                    \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{sigma}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{normal}\PY{p}{(}\PY{p}{)}
+            \PY{n}{r}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{r\PYZus{}new}\PY{p}{)}
+        \PY{k}{return} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n}{T}\PY{o}{+}\PY{n}{dt}\PY{p}{,} \PY{n}{dt}\PY{p}{)}\PY{p}{,} \PY{n}{r}
+
+\PY{n}{v} \PY{o}{=} \PY{n}{VasicekModel}\PY{p}{(}\PY{l+m+mf}{0.02}\PY{p}{,} \PY{l+m+mf}{0.5}\PY{p}{,} \PY{l+m+mf}{0.02}\PY{p}{)}
+\PY{n}{t}\PY{p}{,} \PY{n}{rs} \PY{o}{=} \PY{n}{v}\PY{o}{.}\PY{n}{r\PYZus{}generator}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{200}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+Figure~\ref{fig:vasicek_path} shows just one simulation to observe what the interest 
+rates from the Vasicek model will look like. 
+As observed, the interest rates did become negative at some point and grew on an 
+average at 0.01.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\linewidth]{figures/vasicek_short_rate}
+	\caption{A realization of a path determined with Vasicek model ($k=0.02, \theta=0.5, \sigma=0.02$).}
+	\label{fig:vasicek_path}
+\end{figure}
 
 \subsubsection{Vasicek Stochastic Differential Equation}
 \label{vasicek-stochastic-differential-equation}
 
-Multiplying both sides of Eq.... by \(e^{kdt}\) and rearranging
-the terms gives
+In this Section we outline the steps necessary to determine the solutions 
+of Eq.~\ref{eq:vasicek_process}.
+Multiplying both sides by \(e^{kdt}\) and rearranging the terms gives
 
-\[e^{kdt}dr_t + e^{kdt}kr_t dt = e^{kt}k\theta dt + e^{kt}\sigma dW\]
+\begin{equation*}
+	e^{kdt}dr_t + e^{kdt}kr_t dt = e^{kt}k\theta dt + e^{kt}\sigma dW
+\end{equation*}
+The left-hand side follows the product rule for the derivative
 
-Now we observe that the left hand side follows the product rule for the
-derivative:
+\begin{equation*}
+	d(e^{kdt}r_t) = e^{kdt}dr_t + e^{kdt}kr_t dt= e^{kt}k\theta dt + e^{kt}\sigma dW
+\end{equation*}
+Then we can integrate both sides
 
-\[d(e^{kdt}r_t) = e^{kdt}dr_t + e^{kdt}kr_t dt= e^{kt}k\theta dt + e^{kt}\sigma dW\]
+\begin{equation*}
+	\int^{t=T}_{t=s} d(e^{kdt}r_t)\,dt = \int^T_s e^{kt}k\theta dt +\int^T_s e^{kt}\sigma dW
+\end{equation*}
+The integral on the left-hand is trivial since \(\int^b_a\,dx = x(b)-x(a)\), so
 
-To solve for \(r\) we integrate both sides:
+\begin{equation*}
+	e^{kT}r_T - e^{ks}r_s = \int^T_s e^{kt}k\theta\,dt +\int^T_s e^{kt}\sigma\,dW
+\end{equation*}
+and solving for \(r(T)\)
 
-\[\int^{t=T}_{t=s} d(e^{kdt}r_t)\,dt = \int^T_s e^{kt}k\theta dt +\int^T_s e^{kt}\sigma dW\]
-
-To solve the left-hand side remember that
-\(\int^b_a\,dx = \int^b_a 1 dx= x(b)-x(a)\). Using the above:
-
-\[e^{kT}r_T - e^{ks}r_s = \int^T_s e^{kt}k\theta\,dt +\int^T_s e^{kt}\sigma\,dW\]
-
-Solving for \(r(T)\):
-
-\[r_T=e^{-k(T-s)}r_s+ e^{-kT}\int^T_s e^{kt}k\theta\,dt +e^{-kT}\int^T_s e^{kt}\sigma dW\]
-
-We can also operate on the deterministic terms to obtain the following
-representation:
+\begin{equation*}
+	r_T=e^{-k(T-s)}r_s+ e^{-kT}\int^T_s e^{kt}k\theta\,dt +e^{-kT}\int^T_s e^{kt}\sigma dW
+\end{equation*}
+The second term of the right-hand side is a simple deterministic integral
 
 \[e^{-kT}\int^T_s e^{kt}k\theta\,dt=e^{-kT}k\theta\int^T_s e^{kt}d_t=e^{-kT}k\theta\frac{1}{k}(e^{kt}|^T_s)= e^{-kT}\theta(e^{kT}-e^{ks})=\theta\left(1-e^{-k(T-s)}\right)\]
+Substituting back we get the searched solution
 
-Replacing on the equation for \(r(T)\) we get:
+\begin{equation}
+	r_T=e^{-k(T-s)} r_s+\theta(1-e^{-k(T-s)})+ \sigma e^{-kT}\int^T_s e^{kt}\,dW
+\end{equation}
 
-\[r_T=e^{-k(T-s)} r_s+\theta(1-e^{-k(T-s)})+ \sigma e^{-kT}\int^T_s e^{kt}\,dW\]
-
-The first thing to determine is the probability distribution of this
-rate, so we can use some of its properties. We note that the first term
-on the right-hand side is deterministic with the
-second term being a stochastic integral.
+The first thing to note is that the short rate is made of a deterministic term
+and a stochastic integral.
 Therefore, the rate is distributed like a normal Gaussian
 
-\[r_T \sim N(\mathbb{E}(r_t), \textrm{var}(r_t))\]
+\[r_T \sim \mathcal{N}(\mathbb{E}(r_t), \textrm{var}(r_t))\]
+We can also determine the mean and the variance of such a distribution.
+Concerning the mean
 
-Normal random variables can be fully characterized by its mean and
-variance, which we calculate below:
+\begin{equation}
+	\mathbb{E}(r_T)=e^{-k(T-s)} r_s+\theta\left(1-e^{-k(T-s)}\right)
+\end{equation}
+where the property that \(\mathbb{E}(\textrm{stochastic~Integral}) = 0\) has been used.
 
-\[\mathbb{E}(r_T)=e^{-k(T-s)} r_s+\theta\left(1-e^{-k(T-s)}\right)\]
-
-Using the property that
-\(\mathbb{E}(\textrm{stochastic~Integral}) = 0\).
-
-For the variance, we remember that the variance of a deterministic
-variable is zero, therefore we only need to calculate it for the
+Regarding the variance, noting that the variance of a deterministic
+variable is zero, we only need to calculate it for the
 stochastic integral. %We can do this by using the It\(\hat{o}\) Isometry,
 %as the terms inside the Stochastic Integral are deterministic functions
 %of time.
 
-\[\textrm{var}(r_T)=\mathbb{E}(r^2_t)-(\mathbb{E}(r_t))^2\] where:
-\((\mathbb{E}(r_t))^2 =0\) Therefore:
+\begin{equation*}
+	\textrm{var}(r_T)=\mathbb{E}(r^2_T)-(\mathbb{E}(r_T))^2
+\end{equation*}
+where \((\mathbb{E}(r_T))^2 = 0\) therefore
 
-\[\textrm{var}(r_T)=\mathbb{E}(r^2_t)\] Applying It\(\hat{o}\) Isometry:
+\begin{equation}
+\begin{aligned}
+\textrm{var}(r_T)&=\mathbb{E}(r^2_T)=\mathbb{E}(\sigma^2 \int^T_s e^{-2k(T-t)}\,dt)=\sigma^2 e^{-2kT} \mathbb{E}( \int^T_s e^{-2k(-t)}\,dt)=\\
+&=\sigma^2 e^{-2kT} \frac {1}{2k}(e^{2kT}-e^{2ks})=\sigma^2 \frac {1}{2k}(1-e^{2k(T-s)}) 
+\end{aligned}
+\end{equation}
+where we have used that $dW^2 = dt$.
+So in conclusion the distribution of the stochastic rate is
 
-\[
-\begin{gathered}
-\textrm{var}(r_T)&=\mathbb{E}(r^2_t)=\mathbb{E}(\sigma^2 \int^T_s e^{-2k(T-t)}\,dt)
-=\sigma^2 e^{-2kT} \mathbb{E}( \int^T_s e^{-2k(-t)}\,dt)=\\
-&=\sigma^2 e^{-2kT} \frac {1}{2k}(e^{2kT}-e^{2ks})
-=\sigma^2 \frac {1}{2k}(1-e^{2k(T-s)}) 
-\end{gathered}
-\]
-
-where we have used that for deterministic variables
-\(\mathbb{E}(c) = c\) Therefore the distribution of the stochastic rate
-is:
-
-\[r_T \sim N(e^{-k(T-s)} r_s+\theta(1-e^{-k(T-s)}),\sigma^2 \frac {1}{2k}(1-e^{2k(T-s)}))\]
+\begin{equation}
+	r_T \sim \mathcal{N}(e^{-k(T-s)} r_s+\theta(1-e^{-k(T-s)}),\sigma^2 \frac {1}{2k}(1-e^{2k(T-s)}))
+\end{equation}
 
 \subsubsection{Bond Pricing Equation}\label{bond-pricing-equation}
 
-When interest rates are stochastic a bond has a price of the form
-\(Z(r, t; T)\). Although applied to bonds this kind of technique is more
+Although applied to bonds this kind of technique is more
 general and may be used to price many other contracts.
 
 Since the whole idea relies on building a hedged portfolio we need to
 face the technical problem of the lack of an underlying asset with which
-to hedge a bond (since it is a ``derivstive'' of \(r\)). The only way to
+to hedge a bond (since it is a ``derivative'' of \(r\)). The only way to
 do that is by hedging one bond with another of a different maturity.
 
 So let's set up a portfolio containing two bonds with different
-maturities \(T_1\) and \(T_2\) and price respectively \(Z_1(r, t; T_1)\)
-and \(Z_2(r, t; T_2)\). We hold one of the former and a number
+maturities \(T_1\) and \(T_2\) and price respectively \(Z_1(r, t, T_1)\)
+and \(Z_2(r, t, T_2)\). We hold one of the former and a number
 \(\Delta\) of the latter
 
-\[\Pi = Z_1 − \Delta Z_2\]
-
+\begin{equation*}
+	\Pi = Z_1 − \Delta Z_2
+\end{equation*}
 The change in this portfolio in a time \(dt\) is given by
 
-\[d\Pi = \cfrac{\partial Z_1}{\partial t}dt + \cfrac{\partial Z_1}{\partial r}dr + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt - \Delta\left(\cfrac{\partial Z_1}{\partial t}dt + \cfrac{\partial Z_1}{\partial r}dr + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt\right)
-\]
+\begin{equation*}
+	d\Pi = \cfrac{\partial Z_1}{\partial t}dt + \cfrac{\partial Z_1}{\partial r}dr + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt - \Delta\left(\cfrac{\partial Z_2}{\partial t}dt + \cfrac{\partial Z_2}{\partial r}dr + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_2}{\partial r^2}dt\right)
+\end{equation*}
 where we have applied It\(\hat{o}\)'s lemma to functions of \(r\) and
 \(t\). All the randomness in this expression comes from \(dr\) terms
-given that the rate follows Eq.~\ref{} hence depends on
-\(dW\) terms. So to eliminate it (hedging) we need to choose \(\Delta\)
-such that \(dr\) terms cancelled out
+given that the rate follows Eq.~\ref{eq:vasicek_process} which contains the Brownian
+motion \(dW\). So to eliminate it (hedging) we need to choose \(\Delta\)
+such that \(dr\) terms canceled out
 
-\[\Delta = \cfrac{\cfrac{\partial Z_1}{\partial r}}{\cfrac{\partial Z_2}{\partial r}}\]
+\begin{equation*}
+	\Delta = \cfrac{\cfrac{\partial Z_1}{\partial r}}{\cfrac{\partial Z_2}{\partial r}}
+\end{equation*}
+So we get
 
-We then have
-
-\[d\Pi = \cfrac{\partial Z_1}{\partial t}dt + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt - \Delta\left(\cfrac{\partial Z_1}{\partial t}dt + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt\right) = r \Pi dt = r \left(Z_1 - \Delta Z_2\right)dt
-\]
-where we have used arbitrage arguments to set the return on the
-portfolio equal to the risk-free rate (i.e.~this risk-free rate is just
+\begin{equation*}
+	d\Pi = \cfrac{\partial Z_1}{\partial t}dt + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt - \Delta\left(\cfrac{\partial Z_1}{\partial t}dt + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt\right) = r\, \Pi dt = r \left(Z_1 - \Delta Z_2\right)dt
+\end{equation*}
+where we have used arbitrage arguments to set the return of the
+portfolio equal to the risk-free rate (i.e. this risk-free rate is just
 the spot rate). Rearranging the terms
 
-\[\cfrac{\cfrac{\partial Z_1}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2} - rZ_1}{\cfrac{\partial Z_1}{\partial r}}=\cfrac{\cfrac{\partial Z_2}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_2}{\partial r^2} - rZ_2}{\cfrac{\partial Z_2}{\partial r}}
-\]
+\begin{equation*}
+\cfrac{\cfrac{\partial Z_1}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2} - rZ_1}{\cfrac{\partial Z_1}{\partial r}}=\cfrac{\cfrac{\partial Z_2}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_2}{\partial r^2} - rZ_2}{\cfrac{\partial Z_2}{\partial r}}
+\end{equation*}
 
 Since the two sides of the equation depend on \(T_1\) and \(T_2\)
 separately the only way for this to be possible is for both sides to be
 independent of the maturity date. So in general
 
-\[\cfrac{\cfrac{\partial Z}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial r^2} - rZ}{\cfrac{\partial Z}{\partial r}}= a(r, t)
-\]
-
-for some function a(r, t). I shall find it convenient to write
-
-\[a(r, t) = w(r, t )\lambda(r, t ) − u(r, t)\]
-
+\begin{equation*}
+	\cfrac{\cfrac{\partial Z}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial r^2} - rZ}{\cfrac{\partial Z}{\partial r}}= a(r, t)
+\end{equation*}
+for some function $a(r, t)$. A convenient definition for $a$ is 
+\[a(r, t) = \sigma(r, t )\lambda(r, t) − u(r, t)\]
 which leads to the bond pricing equation
-
-\[\cfrac{\partial Z}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial r^2} + (u - \lambda\sigma)\cfrac{\partial Z}{\partial r} - rZ = 0
-\]
+\begin{equation}
+	\cfrac{\partial Z}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial r^2} + (u - \lambda\sigma)\cfrac{\partial Z}{\partial r} - rZ = 0
+\label{eq:bond_pricing_equation}
+\end{equation}
 
 The function \(\lambda\) is called the market price of risk since it can
 be interpreted as the excess return above the risk-free rate for
 accepting a certain level of risk.
 
- \subsubsection{Solution for the VasicekModel}
- \label{solution-for-the-vasicek-model}
+\subsubsection{Solution for the VasicekModel}
+\label{solution-for-the-vasicek-model}
+The value of a zero-coupon bond according to Eq.~\ref{eq:bond_pricing_equation} 
+in the context of the Vasicek model is
 
-The value of a zero-coupon bond is assumed to be of the form
-
-\[ Z = e^{A(t;T)−rB(t;T)} \]
-where
-
-\[B(t; T) = \cfrac{1 - e^{-k(T-t)}}{k}\]
-
-\[A(t; T) = \cfrac{(B - T - t)(k^2\theta - \sigma^2/2)}{k^2} - \cfrac{\sigma^2 B^2}{4k}\]
-
-In Figure 30.2 are shown three types of yield curves predicted by the
-Vasicek model, each using different parameters.
-
-\[R(t, T) = \cfrac{1}{T-t}\ln A(t,T)+\cfrac{1}{T-t}B(t, T)r(t)\]
-
-showing the the entire term structure can be determined as a function of
+\begin{equation} 
+\begin{gathered}
+Z = e^{A(t,T)−rB(t,T)} \\
+B(t, T) = \cfrac{1 - e^{-k(T-t)}}{k}\\
+A(t, T) = \cfrac{(B(t, T) - T - t)(k^2\theta - \sigma^2/2)}{k^2} - \cfrac{\sigma^2 B(t, T)^2}{4k}
+\label{eq:zcb_vasicek}
+\end{gathered}
+\end{equation}
+Furthermore
+\begin{equation}
+R(t, T) = \cfrac{1}{T-t} A(t,T)+\cfrac{1}{T-t}B(t, T)r(t)
+\label{eq:term_structure_vasicek}
+\end{equation}
+showing that the entire term structure can be determined as a function of
 \(r(t)\) once the model parameters have been chosen.
+
+In the following code we have extended the \texttt{VasicekModel} class with two new methods 
+that compute the zero coupon bound price and the evolution of the interest rate for the 
+term $\tau$ as described by Equations~\ref{eq:zcb_vasicek} and~\ref{eq:term_structure_vasicek}.
+
+\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{class} \PY{n+nc}{VasicekModel}\PY{p}{:}
+    ...
+        
+    \PY{k}{def} \PY{n+nf}{ZCB}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{tau}\PY{p}{,} \PY{n}{r0}\PY{o}{=}\PY{l+m+mi}{0}\PY{p}{)}\PY{p}{:}
+        \PY{n}{B} \PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{k}\PY{o}{*}\PY{n}{tau}\PY{p}{)}\PY{p}{)}\PY{o}{/}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{k}
+        \PY{n}{A} \PY{o}{=} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{theta}\PY{o}{*}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{k}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{o}{\PYZhy{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{sigma}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{o}{/}\PY{l+m+mi}{2}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{k}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)} \PY{o}{*} \PYZbs{}
+            \PY{p}{(}\PY{n}{B}\PY{o}{\PYZhy{}}\PY{n}{tau}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{sigma}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{4}\PY{o}{*}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{k}\PY{p}{)}\PY{o}{*}\PY{p}{(}\PY{n}{B}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)}
+        \PY{k}{return} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{A}\PY{o}{\PYZhy{}}\PY{n}{r0}\PY{o}{*}\PY{n}{B}\PY{p}{)}
+
+    \PY{k}{def} \PY{n+nf}{R}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{r0}\PY{p}{,} \PY{n}{t}\PY{p}{,} \PY{n}{tau}\PY{p}{,} \PY{n}{N}\PY{p}{)}\PY{p}{:}
+        \PY{n}{x}\PY{p}{,} \PY{n}{r} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{r\PYZus{}generator}\PY{p}{(}\PY{n}{r0}\PY{p}{,} \PY{n}{t}\PY{p}{,} \PY{n}{t}\PY{o}{+}\PY{n}{tau}\PY{p}{,} \PY{n}{N}\PY{p}{)}
+        \PY{n}{R} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+        \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{:}
+            \PY{n}{tau} \PY{o}{=} \PY{n}{x}\PY{p}{[}\PY{n}{i}\PY{p}{]}
+            \PY{n}{B} \PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{k}\PY{o}{*}\PY{n}{tau}\PY{p}{)}\PY{p}{)}\PY{o}{/}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{k}
+            \PY{n}{A} \PY{o}{=} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{theta}\PY{o}{*}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{k}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{o}{\PYZhy{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{sigma}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{o}{/}\PY{l+m+mi}{2}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{k}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)} \PY{o}{*} \PYZbs{}
+                \PY{p}{(}\PY{n}{B}\PY{o}{\PYZhy{}}\PY{n}{tau}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{sigma}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{4}\PY{o}{*}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{k}\PY{p}{)}\PY{o}{*}\PY{p}{(}\PY{n}{B}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}\PY{p}{)}
+            \PY{n}{R}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{/}\PY{n}{tau}\PY{o}{*}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{A}\PY{o}{+}\PY{n}{r}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{B}\PY{p}{)}\PY{p}{)}
+        \PY{k}{return} \PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,} \PY{n}{R}
+
+\PY{n}{v} \PY{o}{=} \PY{n}{VasicekModel}\PY{p}{(}\PY{l+m+mf}{0.02}\PY{p}{,} \PY{l+m+mf}{0.5}\PY{p}{,} \PY{l+m+mf}{0.02}\PY{p}{)}
+\PY{n}{t}\PY{p}{,} \PY{n}{R} \PY{o}{=} \PY{n}{v}\PY{o}{.}\PY{n}{R}\PY{p}{(}\PY{l+m+mf}{0.015}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{50}\PY{p}{)}
+\end{Verbatim}
+\end{tcolorbox}
+
+Figure~\ref{fig:term_structure_vasicek} shows the continuously compounded interest rate 
+for the term 1 year.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\linewidth]{figures/vasicek_interest_rate}
+	\caption{The continuously compounded interest rate for the term 1 year as computer by Eq.~\ref{eq:term_structure_vasicek} ($k=0.02, \theta=0.5, \sigma=0.02$).}
+	\label{fig:term_structure_vasicek}
+\end{figure}
 
 \subsection{Cox, Ingersoll and Ross (CIR) Model}
 \label{cox-ingersoll-and-ross-cir-model}
