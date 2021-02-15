@@ -1,12 +1,11 @@
 \chapter{Swaps and Bootstrapping}\label{swaps-and-bootstrapping---practical-lesson-5}
 
-% MODIFICARE LA PARTE DI FORWARD RATE PER AVERE UNA CLASSE CHE PARTE DAGLI SPOT 
-
-In this Chapter the Overnight Index Swap contract is reviewed and new class to represent it will be added to our financial module. Beside financial arguments another very important mathematical technique is introduced: the \emph{bootstrapping}.
+In this Chapter the Overnight Index Swap contract is reviewed and a new class to represent 
+will be added to our financial module. Beside financial arguments another very important mathematical technique is introduced: the \emph{bootstrapping}.
 
 \section{Payment Dates Generator}
-Before going to describe the Overnight Index Swap we need to develop a tool which helps us to generate list of dates (e.g. payment dates), a task that we will need to do often from now on. 
-The function we are writing will go in \texttt{finmarkets} module and will be used by the classes describing various kind of contracts (this is essentially the function that was required in Ex. 3.5).
+Before going to describe the Overnight Index Swap we need to develop a tool which helps us to generate list of dates (e.g. payment dates), a task that we need to do often from now on. 
+The function we are writing will go in \texttt{finmarkets} module and will be used by the classes describing various kind of contracts.
 
 \begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -85,10 +84,10 @@ is
 where \(D(d)\) is the discount factor with expiry \(d\). On the other
 hand we have seen from the forward rate definition (see Section~\ref{calculating-forward-rates}) that
 
-\begin{equation}
+\begin{equation*}
 \underbrace{(1+r_{0,1}\Delta T)\underbrace{(1+r_{1,2}\Delta T)\ldots\underbrace{(1+r_{d-2,d-1}\Delta T)(1+r_{d-1,d}\Delta T)}_{=(1+r_{d-2,d}\Delta T)}}_{=(1+r_{1,d}\Delta T)}}_{=(1+r_{0,d}\Delta T)}
-\end{equation}
-So the product in Eq.~\ref{eq:floati_ois} can be simplified into
+\end{equation*}
+So the product in Eq.~\ref{eq:floating_ois} can be simplified into
 
 \begin{equation}
 \mathbb{E}[f_{\mathrm{float},~i}] = N\cdot\Big(\frac{D_{\mathrm{OIS}}(d_{i-1})}{D_{\mathrm{OIS}}(d_{i})} - 1\Big)
@@ -143,51 +142,24 @@ so the NPV of the fixed leg is
 Our ultimate goal is to take a series of Overnight Index Swap
 quotations, and determine the discount factors implied by their prices.
 To do this we will build a class to represent OIS and compute its value,
-given particular discount curve. Then we will use this class, put inside
-a numerical optimizer, to \emph{invert} so that the implied discount
-factors can be determined from their prices (market quotes).
+given a particular discount curve. Then we will use this class, put inside
+a numerical optimizer, to \emph{invert} the relationship that connects 
+NPV and discount curve so that the \emph{implied} discount
+factors can be determined from OIS market quotes.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k}{class} \PY{n+nc}{OvernightIndexSwap}\PY{p}{:}
-    \PY{l+s+sd}{\PYZdq{}\PYZdq{}\PYZdq{}}
-\PY{l+s+sd}{    OvernightIndexSwap: a class to valuate Overnight Index Swaps}
-\PY{l+s+sd}{    }
-\PY{l+s+sd}{    Attributes:}
-\PY{l+s+sd}{    \PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}}
-\PY{l+s+sd}{    notional: float}
-\PY{l+s+sd}{        Notional of the swap.}
-\PY{l+s+sd}{    payment\PYZus{}dates: list of datetime.date}
-\PY{l+s+sd}{        List of payment dates of the swap.}
-\PY{l+s+sd}{    fixed\PYZus{}rate: float}
-\PY{l+s+sd}{        Rate of the fixed leg of the swap.}
-\PY{l+s+sd}{    \PYZdq{}\PYZdq{}\PYZdq{}}
     \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{notional}\PY{p}{,} \PY{n}{payment\PYZus{}dates}\PY{p}{,} \PY{n}{fixed\PYZus{}rate}\PY{p}{)}\PY{p}{:}
         \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{=} \PY{n}{notional}
         \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates} \PY{o}{=} \PY{n}{payment\PYZus{}dates}
         \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{=} \PY{n}{fixed\PYZus{}rate}
 
     \PY{k}{def} \PY{n+nf}{npv\PYZus{}floating\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{l+s+sd}{\PYZdq{}\PYZdq{}\PYZdq{}}
-\PY{l+s+sd}{        npv\PYZus{}floating\PYZus{}leg: computes the floating leg npv.}
-\PY{l+s+sd}{        }
-\PY{l+s+sd}{        Params:}
-\PY{l+s+sd}{        \PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}}
-\PY{l+s+sd}{        discount\PYZus{}curve: DiscountCurve}
-\PY{l+s+sd}{            Discount curve object used for npv calculation.}
-\PY{l+s+sd}{        \PYZdq{}\PYZdq{}\PYZdq{}}
         \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)} \PY{o}{\PYZhy{}}
                \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
 
     \PY{k}{def} \PY{n+nf}{npv\PYZus{}fixed\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{l+s+sd}{\PYZdq{}\PYZdq{}\PYZdq{}}
-\PY{l+s+sd}{        npv\PYZus{}fixed\PYZus{}leg: computes the fixed leg npv.}
-\PY{l+s+sd}{        }
-\PY{l+s+sd}{        Params:}
-\PY{l+s+sd}{        \PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}}
-\PY{l+s+sd}{        discount\PYZus{}curve: DiscountCurve}
-\PY{l+s+sd}{            Discount curve object used for npv calculation.}
-\PY{l+s+sd}{        \PYZdq{}\PYZdq{}\PYZdq{}}
         \PY{n}{npv} \PY{o}{=} \PY{l+m+mi}{0}
         \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
             \PY{n}{start\PYZus{}date} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}
@@ -197,21 +169,13 @@ factors can be determined from their prices (market quotes).
             \PY{n}{npv} \PY{o}{=} \PY{n}{npv} \PY{o}{+} \PY{n}{df} \PY{o}{*} \PY{n}{tau}
         \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{*} \PY{n}{npv}
     \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{l+s+sd}{\PYZdq{}\PYZdq{}\PYZdq{}}
-\PY{l+s+sd}{        npv: computes the total npv of the swap.}
-\PY{l+s+sd}{        }
-\PY{l+s+sd}{        Params:}
-\PY{l+s+sd}{        \PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}\PYZhy{}}
-\PY{l+s+sd}{        discount\PYZus{}curve: DiscountCurve}
-\PY{l+s+sd}{            Discount curve object used for npv calculation.        }
-\PY{l+s+sd}{        \PYZdq{}\PYZdq{}\PYZdq{}}
         \PY{n}{float\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}floating\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
         \PY{n}{fixed\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}fixed\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
         \PY{k}{return} \PY{n}{float\PYZus{}npv} \PY{o}{\PYZhy{}} \PY{n}{fixed\PYZus{}npv}
 \end{Verbatim}
 \end{tcolorbox}
 
-    To test the newly developed class we need a discount curve. In the
+To test the newly developed class we need a discount curve. In the
 following example a fake curve will be defined, and then used with an
 OIS product.
 
@@ -231,7 +195,6 @@ OIS product.
             \PY{c+c1}{\PYZsh{} the fixed rate, 2.5\PYZpc{}}
             \PY{l+m+mf}{0.025}\PY{p}{)}
 
-\PY{c+c1}{\PYZsh{} fake discount curve}
 \PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
                       \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
                        \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2022}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}\PY{p}{,}
@@ -248,17 +211,17 @@ OIS product.
 As we said before we would like to determine a \emph{real} discount
 curve starting from the market quotes of a set of Overnight Index Swaps
 with different maturities, this will be done via a technique called
-bootstrapping. This is the ABC of financial mathematics, since you
-almost always need a discount curve to price every contract. We are
+bootstrapping. It is the ABC of financial mathematics, since you
+always need a discount curve to price a contract. We are
 going to concentrate on EONIA swaps in order to build an EUR discount
 curve.
 
-\subsection{Building OIS instances}\label{building-ois-instances}
+\subsection{Building OIS Instances}
+\label{building-ois-instances}
 
 The first step involves getting data, the swap market quotes, and this is not actually as simple as it sounds.
 
-The issue is that the EONIA swap market is over the counter (OTC) and it's not straightforward to access it. Unlike (some) listed futures, where anyone with a retail brokerage account can view and apply real time prices, to trade in the EONIA swap market you have to be a financial institution or at least a large company and have an agreement with a broker which operates in the market. One of the main brokers in the OIS market is ICAP, see Fig.~\ref{fig:icap}.
-The underlying assumption is that market quotes represent the \textbf{fair price} of the OIS so they make the swap NPVs null (the fair price is an estimate of what a willing buyer would pay a willing seller for a given asset, assuming both have a reasonable knowledge of the asset's worth).
+The issue is that EONIA swap market is over the counter (OTC) and it's not straightforward to access it. Unlike (some) listed futures, where anyone with a retail brokerage account can view and apply real time prices, to trade in the EONIA swap market you have to be a financial institution or at least a large company and have an agreement with a broker which operates in the market. One of the main brokers in the OIS market is ICAP, see Fig.~\ref{fig:icap}.
 
 \begin{figure}[bth]
   \centering
@@ -268,7 +231,7 @@ The underlying assumption is that market quotes represent the \textbf{fair price
 \end{figure}
 
 Though there exist some electronic platform in which market participants post bids and offers and other participants can apply them, in practice a lot of trading is still done over "voice", i.e.~by phone or more
-commonly over chat. For convenience, however, Bloomberg provides a service which displays indicative real time rates as provided by a selection of relevant brokers. (\emph{N.B.~interest rate swap quotes vary from standard price quotes of commonly traded instruments, they can appear puzzling because the quotes are effectively interest rates})
+commonly over chat. For convenience, however, Bloomberg provides a service which displays indicative real time rates as provided by a selection of relevant brokers (\emph{interest rate swap quotes vary from standard price quotes of commonly traded instruments, they can appear puzzling because the quotes are effectively interest rates}).
 
 In the following we use a similarly created data-set (\href{https://drive.google.com/file/d/1LCEDmheKqwPXFpJ25hFz32QI5im2UJO1/view?usp=sharing}{\texttt{ois\_data.xlsx}}) to derive our discount curve; with the help of \texttt{pandas} the data-set can be inspected:
 
@@ -278,7 +241,7 @@ In the following we use a similarly created data-set (\href{https://drive.google
 
 \PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
 
-\PY{n}{mq} \PY{o}{=} \PY{n}{pandas}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ois\PYZus{}data.xlsx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n}{mq} \PY{o}{=} \PY{n}{pandas}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ois\PYZus{}data.csv}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
 \PY{n}{mq}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}
 
    months  quote
@@ -289,13 +252,13 @@ In the following we use a similarly created data-set (\href{https://drive.google
 4       5 -0.350
 \end{Verbatim}
 \end{tcolorbox}
-
+\noindent
 Next we could convert the data-set into a dictionary for later usage or
 use the \(\tt{DataFrame}\) directly, it is just matter of taste.
 
 Let's say we want to build a 15 months swap instance using data
 contained in \(\tt{ois\_data}\) file. Be careful when doing this
-operation and double check the units of rates, quotes, etc\ldots{}in
+operation and double check the units of rates, quotes\ldots in
 this case for example quotes are expressed in percent so you need to
 multiply them by 0.01 before using them. Another detail to check is that
 15 months quote is not the fifteenth entry in the \(\tt{DataFrame}\)
@@ -304,13 +267,10 @@ multiply them by 0.01 before using them. Another detail to check is that
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm, colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{n}{ois} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,}
-                         \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{,}
-                          \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{,}
+                         \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{,}
                           \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{]}\PY{p}{,}
                          \PY{n}{mq}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{quote}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{12}\PY{p}{]}\PY{o}{*}\PY{l+m+mf}{0.01}\PY{p}{)}
 
-\PY{c+c1}{\PYZsh{} print the last payment date }
-\PY{c+c1}{\PYZsh{} (15 months after obs date)}
 \PY{n}{ois}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}
 
 datetime.date(2020, 1, 23)
@@ -324,7 +284,7 @@ Clearly to use the \texttt{npv} method to calculate the OIS' NPV we need a disco
 Keep aside for a moment our swaps and introduce the \emph{bootstrap
 algorithm}. In finance, bootstrapping is a method for constructing a
 (zero-coupon) fixed-income yield curve from the prices of a set of
-coupon-bearing products, e.g.~bonds and swaps. The term structure of
+coupon-bearing products, e.g. bonds and swaps. The term structure of
 spot returns is obtained from the bond yields by solving for them
 recursively, by forward substitution: this iterative process is what is
 called the bootstrap method. The usefulness of bootstrap is that using
@@ -332,8 +292,12 @@ only a few carefully selected zero-coupon products, it becomes possible
 to derive swap forward and spot rates for all maturities given the
 solved curve.
 
-To illustrate bootstrapping let's consider the following example which can be partially solved analytically: we have some coupon paying bond (coupon of 4\%, 5\%, 6\%, 7\% and 8\% respectively) with maturities ranging from 1 to 5 years, each having a value of \euro{100} and traded at par. To determine the zero-coupon yield curve proceed as follows:
+The underlying assumption is that market quotes represent the \textbf{fair price} of 
+the contracts so they make the theis NPVs null (the fair price is an estimate of what 
+a willing buyer would pay a willing seller for a given asset, assuming both have 
+a reasonable knowledge of the asset's worth).
 
+To illustrate bootstrapping let's consider the following example which can be partially solved analytically: we have some coupon paying bond (coupons of 4\%, 5\%, 6\%, 7\% and 8\% respectively) with maturities ranging from 1 to 5 years, each having a value of \euro{100} and traded at par. To determine the zero-coupon yield curve proceed as follows:
 \begin{enumerate}
 \item at the end of the first year the $1^{st}$ bond will pay a coupon of \euro{4} (= \euro{100} * 4\%) plus the principal amount (= \euro{100}) which sums up to \euro{104} while the bond is trading at \euro{100}. Therefore, the implied 1-year spot \emph{fair} rate $S_{1y}$ can be calculated as, $\mbox{\euro{100}} = \mbox{\euro{104}} / (1 + S_{1y})$;
 
@@ -371,7 +335,7 @@ Moving to the second equation:
 \end{equation}
 where the first solution has been discarded because negative.
 
-From the third one on it is not as simple to solve them analytically since they involve third order (or more) equations, anyway it is possible to solve them numerically.
+From the third on it is not as simple to solve them analytically since they involve third order (or more) equations, anyway it is possible to solve them numerically.
 Assume we have found all the rates up to the fourth year (they are reported in Table~\ref{tab:rates}) and let's try to determine the last one.
 
 \begin{table}[htb]
@@ -396,8 +360,8 @@ Assume we have found all the rates up to the fourth year (they are reported in T
 \label{tab:rates}
 \end{table}
 The last column of Table~\ref{tab:rates} provides the terms to fill the zero-coupon yield curve.
-To solve the last equation numerically we can use the \texttt{scipy.optimize.brentq} function which finds the zeros of a user-defined function given a validity interval.
-In Figure~\ref{fig:fifth_year_rate} the function to determine the 5 year rate expressed in the last of Eqs.~\ref{eq:fifth_year_rate} is shown. From the plot we expect tha rate to be around 8\%.
+To solve the last equation numerically we can use \texttt{scipy.optimize.brentq} algorithm which finds zeros of a user-defined function given a validity interval.
+In Figure~\ref{fig:fifth_year_rate} the function to determine the 5 year rate expressed in the last of Eqs.~\ref{eq:fifth_year_rate} is shown. From the plot we expect the rate to be around 0.08.
 
 \begin{figure}[htb]
   \centering
@@ -421,7 +385,7 @@ In Figure~\ref{fig:fifth_year_rate} the function to determine the 5 year rate ex
 \end{Verbatim}
 \end{tcolorbox}
 
-The very same mechanism can be generalized and extended to more maturities to get a more detailed yield curve. In general terms the previous system can be written as:
+The very same mechanism can be generalized and extended to more maturities to get a more detailed yield curve. In general terms the previous system becomes
 
 \begin{equation}
 \begin{cases}
@@ -479,10 +443,11 @@ A minimization algorithm follows these steps:
 
 Let's see with a couple of example how minimization can be implemented in \texttt{python} using the function \texttt{scipy.optimize.minimize}.
 
-\subsubsection{Example}\label{example}
+\subsubsection{A Simple Minimization Example}
+\label{example}
 
-Find the dimensions that will minimize the cost to
-manufacture a circular cylindrical can of volume, \(330~\mathrm{cm}^3\), see Figure~\ref{fig:cylinder}.
+Find the size of a circular cylindrical can of volume, \(330~\mathrm{cm}^3\),
+that minimizes the cost of manufacture, see Figure~\ref{fig:cylinder}.
 
 \begin{figure}[h]
 \centering
@@ -491,34 +456,35 @@ manufacture a circular cylindrical can of volume, \(330~\mathrm{cm}^3\), see Fig
 \label{fig:cylinder}
 \end{figure}
 
-Clearly to minimize the costs the company needs to reduce the can
-surface, given the required volume.
+Clearly to minimize the costs, the company needs to reduce the can
+surface
 
-\begin{equation} 
+\begin{equation*} 
 S = 2\pi rh + 2\cdot(\pi r^2) 
-\end{equation}
-On the other hand we want the volume to be \(330~\mathrm{cm}^3\) so we
-can remove \(h\) from the previous equation:
+\end{equation*}
+On the other hand the volume is fixed to \(330~\mathrm{cm}^3\) so previous
+equation can be simplified by removing \(h\)
 
-\begin{equation} 
+\begin{equation*} 
 V = \pi r^2 h = 330\quad\implies h = \cfrac{330}{\pi r^2}
-\end{equation}
-So in the end the surface function to be minimized is:
+\end{equation*}
+In the end the function to be minimized is
 
 \begin{equation}
 S = 2\pi rh + 2\cdot(\pi r^2) = \cfrac{2\cdot 330}{r} + 2\cdot(\pi r^2)
 \end{equation}
-So we implement the objective function, \(\tt{x[0]}\) is the can radius:
+This is the objective function, and the parameter set is represented 
+by \(\tt{x[0]}\) which is the can radius.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{pi}
 
-\PY{k}{def} \PY{n+nf}{of}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
+\PY{k}{def} \PY{n+nf}{obj_func}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
     \PY{k}{return} \PY{l+m+mi}{2}\PY{o}{*}\PY{l+m+mi}{330}\PY{o}{/}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{+} \PY{l+m+mi}{2}\PY{o}{*}\PY{n}{pi}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}
 \end{Verbatim}
 \end{tcolorbox}
-
+\noindent
 Set the limits to our unknown variable and its initial value:
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
@@ -527,11 +493,12 @@ Set the limits to our unknown variable and its initial value:
 \PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{)}\PY{p}{]}
 \end{Verbatim}
 \end{tcolorbox}
+\noindent
 Finally we run the minimization:
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{of}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
+\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{obj_func}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
 \PY{n+nb}{print} \PY{p}{(}\PY{n}{r}\PY{p}{)}
 
       fun: 264.356810914805
@@ -549,11 +516,12 @@ Finally we run the minimization:
 So to minimize the cost the company should produce cans with a radius of
 about 3.745 cm (I suspect that Coke have done a similar calculation since the result is quite close to a real can).
 
-\subsubsection{Example with Constraint}\label{example-with-constraint}
+\subsubsection{Another Example with Constraint}
+\label{example-with-constraint}
 
-We are going to fence in a rectangular field. If we look at the field
+We are going to fence a rectangular field. If we look at the field
 from above the cost of the vertical sides are \$10/m, the cost of the
-bottom is \$2/m and the cost of the top is \$7/m. If we have \$700 determine
+bottom is \$2/m and the cost of the top side is \$7/m. If we have a \$700 budget determine
 the dimensions of the field that will maximize the enclosed area, see Fig.~\ref{fig:field}.
 
 \begin{figure}[h]
@@ -568,15 +536,17 @@ In this example there are two differences with respect to the previous one:
 \begin{itemize}
 \tightlist
 \item
-  we want to maximize a quantity (not minimize);
+  we want to \emph{maximize} a quantity (not minimize);
 \item
-  there is a constraint (we have a limited amount of money).
+  there is a constraint (we have a limited budget).
 \end{itemize}
 
 So let's repeat the steps as before. The objective is to maximize the
-enclosed area \(A\) but we are able to just minimize so we can define in the objective function the quantity \(-A\), so that if we minimize it
-we maximize the area $A$. Define the length and the width of the field with \(\tt{x[0]}\) and
-\(\tt{x[1]}\) (items of the list \(\tt{x}\)):
+enclosed area \(A\) but our algorithm can only minimize; we can define the objective function 
+to return the quantity \(-A\), so that if we minimize it at the same time 
+we are maximizing our real objective, $A$. 
+Define length and width of the field respectively as \(\tt{x[0]}\) and
+\(\tt{x[1]}\) (items of the list \texttt{x}):
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -584,8 +554,8 @@ we maximize the area $A$. Define the length and the width of the field with \(\t
     \PY{k}{return} \PY{o}{\PYZhy{}}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}
 \end{Verbatim}
 \end{tcolorbox}
-
-We can set the boundaries for length and width and their initial values (1~m each):
+\noindent
+We can set the boundaries for length and width with their initial values (1~m each):
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -594,15 +564,20 @@ We can set the boundaries for length and width and their initial values (1~m eac
 \end{Verbatim}
 \end{tcolorbox}
 
-We have also to impose the constraint on the money. This is done by
-defining a function that compute the money spent with the fence and
+Finally we have to impose the constraint on the money. This is done by
+defining a function that computes the money spent with the fence and
 compare it to \$700. The constraint is passed to the minimizer with a
-dictionary which has two keys: \(\tt{type}\), in this case, with value \(\tt{eq}\)
+dictionary which has two keys: \(\tt{type}\), in this case set to \texttt{'eq'}
 (like equality, since we want to spend all of our available money so the
-fence has to cost exactly \$700) and \(\tt{fun}\) whose value is the constraint function which will have to implement a calculation like
+fence has to cost equal to \$700) and \texttt{'fun'} which defines the constraint 
+function which for this example implements a calculation like
 
-\[\mathrm{fence~cost} = l\cdot10 + l\cdot10 + w\cdot2 + w\cdot7 = 700\]
-\[700 - l\cdot10 - l\cdot10 - w\cdot2 - w\cdot7 = 0\].
+\begin{equation*}
+\begin{gathered}
+\mathrm{fence~cost} = l\cdot10 + l\cdot10 + w\cdot2 + w\cdot7 = 700\\
+700 - l\cdot10 - l\cdot10 - w\cdot2 - w\cdot7 = 0
+\end{gathered}
+\end{equation*}
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -612,6 +587,7 @@ fence has to cost exactly \$700) and \(\tt{fun}\) whose value is the constraint 
 \PY{n}{constraints} \PY{o}{=} \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{cons}\PY{p}{\PYZcb{}}
 \end{Verbatim}
 \end{tcolorbox}
+\noindent
 Now we can call the minimizer.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
@@ -695,26 +671,32 @@ hess\_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
 \end{tcolorbox}
 Now clearly the algorithm found the absolute minimum in $x=0.29691798$ (i.e. the green point in Fig.~\ref{fig:local_minima}) because there was no chance to find a local minimum during the iterations.
 
-This is just an example of what could happen, a possible solution for more complicated cases is to make a \emph{scan} of the objective function to try to approximately determine where the global minimum is and choose suitable initial values for our parameters.
+This is just an example of what could happen when minimizing a function.
+When dealing with complicated cases it is possible to make a \emph{scan} of the objective 
+function to try to approximately determine where the global minimum is and choose 
+suitable initial values of the guess parameters.
 There shouldn't be such an issue in the application of the bootstrap algorithm though since the function that we are going to minimize is a sum of squared terms which has no local minima, just a global minimum (i.e. it is a hyper-parabola).
 
-\subsection{OIS Example}\label{ois-example}
-Back to our Overnight Index Swap, the general idea here is to get the discount curve \(\mathcal{C}\) such that it prices correctly each OIS by minimizing the sum of their NPV squared (our \(f_i\)):
+\subsection{Back to OIS Example}\label{ois-example}
+The general idea here is to get the discount curve \(\mathcal{C}\) that prices correctly 
+each OIS by minimizing the sum of their NPV squared (our \(f_i\)):
 
 \begin{equation}
 \mathrm{min}_{\mathcal{C}} \Big\{\sum_{i=1}^{n}\mathrm{NPV}(\mathrm{OIS}_i, \mathcal{C})^2\Big\}
 \end{equation}
 
-A discount curve is characterized by pillar dates and the corresponding discount factors. The description of the problem we have given above does not, in theory, specifies any constraint on the number of pillar dates of the discount curve \(\mathcal{C}\). However, the pillar dates determine the number of unknown variables (i.e. the dimensionality \(N\) of the optimization problem). A curve with \(N\) pillar dates has \(N\) discount factors (note that the first discount factor with value date equal to the today date, is constrained to 1). \textbf{In practice, therefore, it makes sense to choose the pillar dates in such a way that there are exactly the right number of degrees of freedom in the optimization to match data.} So the natural choice is to choose the pillar dates of the discount curve equal to the set of expiry dates of the swaps.
+A discount curve is characterized by pillar dates and discount factors. The description of the problem we have given above does not, specifies any constraint on the number of pillar dates of 
+the discount curve \(\mathcal{C}\). However, the pillar dates determine the number of unknown variables of the optimization problem. A curve with \(N\) pillar dates has \(N\) discount factors (note that the first discount factor, with value date equal to the today date, is constrained to 1). \textbf{In practice, therefore, it makes sense to choose the pillar dates in such a way that 
+	there are exactly the right number of degrees of freedom in the optimization to match data.} 
+The natural choice is to choose the pillar dates of the discount curve equal to the set of expiry dates of the swaps.
 
-Once we've fixed \(\mathbf{d}\) to be a vector of pillar dates equal to the expiry dates of the swaps, and we use the notation \(\mathbf{x}\) to represent the vector of pillar discount factors, then the problem becomes:
+Once we've fixed \(\mathbf{d}\) to be a vector of pillar dates equal to the expiry dates of the swaps, and we use \(\mathbf{x}\) to represent the vector of discount factors, then the problem becomes:
 
 \begin{equation}
 \mathrm{min}_{\mathbf{x}} \Big\{\sum_{i=1}^{N}\mathrm{NPV}(\mathrm{OIS}_i, \mathcal{C}(\mathbf{d}, \mathbf{x}))^2\Big\}
 \end{equation}
-which is our optimization problem (\textbf{to find the minimum of the
-above expression as a function of x}) that can be solved using one of
-the available numerical optimization routines in \(\tt{python}\).
+which is our optimization problem: (\textbf{to find the minimum of the above expression as a function of x}) that can be solved using one of the available numerical optimization routines 
+in \texttt{python}.
 
 So first let's create the swaps according to all the available market
 quotes and also the pillar dates of our final discount curve:
@@ -725,24 +707,21 @@ quotes and also the pillar dates of our final discount curve:
 
 \PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}
 \PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{observation\PYZus{}date}\PY{p}{]}
-\PY{n}{swaps} \PY{o}{=} \PY{p}{[}\PY{p}{]} \PY{c+c1}{\PYZsh{} container of the OIS objects}
+\PY{n}{swaps} \PY{o}{=} \PY{p}{[}\PY{p}{]} 
 
 \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{df}\PY{p}{)}\PY{p}{)}\PY{p}{:}
     \PY{n}{swap} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,}
                     \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,}  
                                         \PY{n}{mq}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{months}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{,}
                     \PY{l+m+mf}{0.01} \PY{o}{*} \PY{n}{mq}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{quote}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}
-
     \PY{n}{swaps}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{swap}\PY{p}{)}
     \PY{n}{pillar\PYZus{}dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{swap}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
 
-\PY{c+c1}{\PYZsh{} this shouldn\PYZsq{}t be necessary if the original}
-\PY{c+c1}{\PYZsh{} list of market quotes is sorted}
 \PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{n+nb}{sorted}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}
 \end{Verbatim}
 \end{tcolorbox}
 
-So let's implement the method with the swaps we have just created, of course we don't need to write our minimisation algorithm since we can use the one provided by \texttt{python} which is defined in \texttt{scipy.optimize}, function \texttt{minimize}.
+So let's review step by step the implementation of the bootstrapping just described.
 
 \begin{itemize}
 \tightlist
@@ -751,7 +730,10 @@ So let's implement the method with the swaps we have just created, of course we 
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
+\PY{k}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n}{np}
+
 \PY{k}{def} \PY{n+nf}{objective\PYZus{}function}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
+    \PY{n}{x = np.insert(x, 0, 1)}
     \PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{x}\PY{p}{)}
     
     \PY{n}{sum\PYZus{}sq} \PY{o}{=} \PY{l+m+mf}{0.0}
@@ -763,16 +745,14 @@ So let's implement the method with the swaps we have just created, of course we 
 
 \item
   set the initial value of the discount factors (\(x_i^0\)) to 1 with a
-  range of variability \([ 0.01, 10]\), in addition the first element of
-  the list, today's discount factor, will be fixed to 1 (variability
-  \([1, 1]\))
+  range of variability \([ 0.01, 10]\), today's discount factor is not considered 
+  in the list since it is fixed to 1 but is added explicitly in the objective function
+  for the calculation of the NPV's (see \texttt{insert} command)
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{]}
-
-\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{10.0}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{]}
-\PY{n}{bounds}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{1.0}\PY{p}{)}
+\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)-1}\PY{p}{)}\PY{p}{]}
+\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{10.0}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)-1}\PY{p}{)}\PY{p}{]}
 \end{Verbatim}
 \end{tcolorbox}
 
@@ -820,7 +800,7 @@ So let's implement the method with the swaps we have just created, of course we 
 Printing the result gives us the a lot of information about the minimisation just performed, the most useful are:
 \begin{itemize}
 \item \texttt{func}: the value of the objective function at the last iteration;
-\item \texttt{message}: the summary message from the algorithm (if it is \texttt{CONVERGENCE} is OK);
+\item \texttt{message}: the summary message from the algorithm (if it is \texttt{CONVERGENCE} is almost always OK);
 \item \texttt{success}: the name is self explanatory;
 \item \texttt{x}: the vector of unknown parameters that have been optimised.
 \end{itemize}
@@ -838,13 +818,13 @@ Final objective function value  5.664309920943246e-11
 \end{tcolorbox}
 The objective function at the end of the minimisation is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied, we started with $30$ and now it is $10^{-11}$ so 13 orders of magnitude smaller. This means that with the derived discount curve the NPV's of our OIS won't be identically 0 but so small that we can consider them as they were.
 
-It can be very useful to also look at some diagnostic plots to check if the minimization was successful. Figure~\ref{fig:minimization_diagnostic} reports on the left the objective function value as a function of discount factor $(x_1)$; clearly we have found a minimum (the orange point represent $x_1$ value at the end of the minimization). On the right instead, the value of the objective function at each iteration is shown, its value is decreasing dramatically (notice that the $y$ axis is drawn in log scale).
+It can be very useful to also look at some diagnostic plots to check if the minimization was successful. Figure~\ref{fig:minimization_diagnostic} reports on the left the objective function value as a function of discount factor $(x_0)$; clearly we have found a minimum (the orange point represent $x_0$ value at the end of the minimization). On the right instead, the value of the objective function at each iteration is shown, its value is decreasing dramatically (notice that the $y$ axis is drawn in log scale).
 
 \begin{figure}[htb]
 	\centering
 	\includegraphics[width=0.45\linewidth]{figures/obj_func.png}
 	\includegraphics[width=0.45\linewidth]{figures/obj_func_iter.png}
-	\caption{Diagnostic plots for the minimization algorithm. On the left the objective function value as a function of the discount factor $x_1$, on the right the objective function value as a function of the iteration number (the orange point represent $x_1$ value at the end of the minimization).}
+	\caption{Diagnostic plots for the minimization algorithm. On the left the objective function value as a function of the discount factor $x_0$, on the right the objective function value as a function of the iteration number (the orange point represent $x_0$ value at the end of the minimization).}
 	\label{fig:minimization_diagnostic}
 \end{figure}
 
@@ -873,3 +853,7 @@ our swaps (see Fig.~\ref{fig:discount_curve}) and try to compute some implied ra
 	\caption{Plot of the discount curve implied by Overnight Index Swap market quotes.}
 	\label{fig:discount_curve}
 \end{figure}
+
+\begin{thebibliography}{9}
+	\bibitem{bib:bootsrap} \href{https://financetrain.com/bootstrapping-spot-rate-curve-zero-curve}{\emph{Bootstrapping Spot Rate Curve}} [Online]
+\end{thebibliography}
