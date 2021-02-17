@@ -3,36 +3,35 @@
 Copulas (or couplae in Latin) are an interesting mathematical tool to represent correlations between probability distributions. They can be used to describe complex dependencies in multivariate risk models, when more basic tools such as multivariate Gaussian distributions are inappropriate. Another commonly used application is sampling from correlated random variables.
 
 In this Chapter the copula concept is reviewed and some example applications are shown. 
-Before going into the copulas we need to learn how to transform a distribution into another using the \emph{probability integral transform}. 
+%Before going into the copulas we need to learn how to transform a distribution into another using the \emph{probability integral transform}. 
 
 \section{Default Correlation}\label{sec:default_correlation}
-Correlation is a precise mathematical concept that only has meaning 
-in reference to random variables. If $A$ and $B$ are random variables, the correlation coefficient, $\rho$, between $A$ and $B$ is defined as
+Correlation is a precise mathematical concept that has only meaning 
+in reference to random variables. If $A$ and $B$ are random variables, the \emph{correlation coefficient}, $\rho$, between $A$ and $B$ is defined as
 \begin{equation}
 \rho = \cfrac{\mathbb{E}[(A-\mu_A)(B-\mu_B)]}{\sigma_A \sigma_B}
 \label{eq:correlation_coefficient}
 \end{equation}
-where $\mu$denotes the mean, $\sigma$ denotes the standard deviation, and $\mathbb{E}$ is the expected value operator. The indexes $A$ and $B$ refer to the random variables.
+where $\mu$ denotes the mean, $\sigma$ denotes the standard deviation, and $\mathbb{E}$ is the expected value operator. The indexes $A$ and $B$ refer to the random variables.
 
 Thus, statements such as company $X$ and company $Y$ are correlated are
 meaningless. One needs to refer to a quantifiable variable associated with the two companies (e.g. stock price, revenue growth or credit default spreads) for that statement to make sense.
 In the same spirit, stating that the default behavior of companies 1 and 2 is
 correlated does not carry a lot of meaning unless one specifies a random
-variable that captures what \emph{default behavior} means. In summary, before
-we can talk about default correlation, we need to define a random variable
-that somehow captures \emph{default behavior}.
+variable that captures what \emph{default behavior} means. %In summary, before
+%we can talk about default correlation, we need to define a random variable
+%that somehow captures \emph{default behavior}.
 
-Suppose we have two assets. Hence, we can use two random variables $P_1$ and $P_2$ (i.e. the default probabilities) to generate default scenarios for assets 1 and 2. If we generate $n$ possible default scenarios we can define two index variables ($v$ and $w$) to capture the default patterns of each asset (each variable, actually a vector, will be a sequence of $n$ 1’s and 0’s according to the default state).
+Suppose we have two assets. Hence, we can use two random variables $P_1$ and $P_2$ (i.e. the default probabilities) to generate default scenarios for assets 1 and 2. If we generate $n$ possible default scenarios we can define two index variables ($v$ and $w$) to capture the default pattern of each asset (each variable, actually a vector, will be a sequence of $n$ 1’s and 0’s according to the default state).
 
 Using a random sample generated as above we can compute an estimate of
-the statistic correlation coefficient between $v$ and $w$ in order to estimate
+the correlation coefficient between $v$ and $w$ in order to estimate
 the default correlation ($\rho_D$) between assets 1 and 2.
 
 \begin{equation}
 \rho_D = \cfrac{n\sum (v_i w_i) - \sum v_i \sum w_i}{\sqrt{(n\sum v_i^2 - (\sum v_i)^2)(n\sum w_i^2 - (\sum w_i)^2)}}
 \label{eq:discrete_correlation_coefficient}
 \end{equation}
-
 Equation~\ref{eq:discrete_correlation_coefficient} is just a discrete
 version of Eq.~\ref{eq:correlation_coefficient}.
 
@@ -50,38 +49,38 @@ Sections. The technique we are going to outline transforms every random
 variable, regardless its distribution, into uniform and vice versa and is called
 \emph{inverse transform} or (probability integral transform).
 
-Computationally, this method involves computing the quantile function (see Section~\ref{quantile-function}) of
-a distribution, in other words, computing the cumulative
-distribution function ($F(x)$) of a distribution (which maps a number
+Computationally, this method involves computing the quantile function 
+(see Section~\ref{quantile-function}) of
+the original distribution; in other words, computing the cumulative
+distribution function ($F_X(x)$) (which maps a number
 to a probability between 0 and 1) and then inverting that
 function. 
 
-Suppose a cumulative distribution function of the form
-\(F(x) = P(X \leq x)\) is given and that we would like to draw samples
-according to \(F\) . Applying the inverse transform method
+\begin{attention}
+\subsubsection{Demonstration}
+Let's start with a random variable $X$ with an arbitrary distribution and let $F_X$ be the 
+cumulative distribution function of $X$ (\(F(x) = P(X \leq x)\)).
+We would like to find a transformation $T:[0,1]\rightarrow\mathbb{R}$ such that $T(U)=X$, where
+$U$ is the uniform distribution in $[0,1]$. 
+\begin{equation*}
+F_{X}(x)= P(X\leq x)=P(T(U)\leq x)= P(U\leq T^{-1}(x))=T^{-1}(x),{\text{ for }}x\in \mathbb {R}
+\end{equation*}
+where the last step used that $P(U\leq y)=y$ when $U$ is uniform on $(0,1)$.
 
+So we got $F_{X}$ to be the inverse function of $T$, or, equivalently $T(u)=F_{X}^{-1}(u)$, $u\in [0,1]$.
+\end{attention}
+
+Therefore to transform a generic random variable to uniform (and vice versa) we can use
 \begin{equation}
-	X = F^{−1}(u),\qquad u \approx U[0,1]
-\end{equation}
-where \(F^{−1}\) is the inverse of \(F\), provides us with the random
-variable \(X\) according to the distribution of \(F\). The inverse of
-\(F\) is well-defined since the CDF \(F\) is strictly increasing.
-
-It is straightforward to verify that the random variables \(X\)
-generated by this method are characterized by \(F\):
-
-\begin{equation}
-	P(X \leq x) = P(F^{−1}(u) \leq x) = F(u \leq F(x)) = F(x)
-\end{equation}
+x = F_{X}^{-1}(u)\quad\mathrm{and}\quad u = F_X(x)	
+\end{equation} 
 
 Let's see few examples of how this can be done in \(\tt{python}\).
-
 Imagine we want to transform an uniform distribution into a Gaussian.
 The transformation takes uniform samples of a variable \(u\) between 0 and
 1, interpreted as a probability, and then returns $F^{-1}(u)$. 
 
-Table~\ref{tab:transformation} shows samples taken from the
-uniform distribution and their representation on the standard normal
+Table~\ref{tab:transformation} shows the samples of $U$ and their representation on the standard normal
 distribution determined using the algorithm explained above.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
@@ -115,12 +114,13 @@ distribution determined using the algorithm explained above.
 \label{tab:transformation}
 \end{table}
 
-Now let's see how this can be done directly with an entire distributions. The first step is to sample
-uniformly distributed values between 0 and 1. This can be done either using \texttt{random.random} 
+Now let's see how this can be done directly with an entire distribution. Let's start again from 
+the uniform distribution. This can be sampled either using \texttt{random.random} 
 like in Section~\ref{pseudo-random-numbers} or with \texttt{scipy.stats.uniform}. 
 Each distribution defined in \texttt{scipy.stats} has a convenient method \texttt{rvs(size=aSize)} 
 (random variable sample) to sample from it as many time as specified by the arguments \texttt{size}. 
-Usually the second method is preferred since it exploits \texttt{numpy.array} and let us avoid a lot of for-loop cycles.
+Usually the second method is preferred since it exploits \texttt{numpy.array} and let us avoid a 
+lot of for-loop cycles.
 
 In any case in the left plot of Fig.~\ref{fig:uniform_and_gauss} the resulting distribution is shown.
 
@@ -131,19 +131,12 @@ In any case in the left plot of Fig.~\ref{fig:uniform_and_gauss} the resulting d
 \end{tcolorbox}
 
 Next we want to transform these samples so that instead of uniform they
-are normally distributed. As we have seen, see Section~\ref{quantile-function}, the transform that does this
+are normally distributed. As we have just seen the transform that does this
 is the inverse of the cumulative density function of the normal 
 distribution, or \((\tt{ppf(x))}\) in \texttt{python}. 
 
 In the right plot of Fig.~\ref{fig:uniform_and_gauss} the Gaussian obtained 
 with the code below is shown
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=1.\textwidth]{figures/uniform_gauss.png}
-  \caption{On the left the generated uniform distribution, on the right its Gaussian transform.}
-  \label{fig:uniform_and_gauss}
-\end{figure}
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -151,10 +144,17 @@ with the code below is shown
 \end{Verbatim}
 \end{tcolorbox}
 
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=1.\textwidth]{figures/uniform_gauss.png}
+	\caption{On the left the generated uniform distribution, on the right its Gaussian transform.}
+	\label{fig:uniform_and_gauss}
+\end{figure}
+
 If we plot them together in a 2D plot we can get a sense of what is
 going on using the inverse CDF transformation.
 Indeed it stretches the outer regions of the uniform to yield a
-normal distribution. The transformation is shown in Fig.~\ref{fig:uniform_to_gauss}. 
+normal distribution. This is shown in Fig.~\ref{fig:uniform_to_gauss}. 
     
 \begin{figure}[htbp]
   \centering
@@ -164,9 +164,8 @@ normal distribution. The transformation is shown in Fig.~\ref{fig:uniform_to_gau
 \end{figure}
     
 The nice thing of this technique is that it can be used
-for any arbitrary (uni-variate) probability distribution, like for
-example \href{https://en.wikipedia.org/wiki/Student\%27s\_t-distribution}{t-Student}
-or \href{https://en.wikipedia.org/wiki/Gumbel_distribution}{Gumbel}.
+for any arbitrary (univariate) probability distribution, like for
+example t-Student~\cite{bib:t_student} or Gumbel~\cite{bib:gumbel}.
 A similar transformation from uniform to t-Student is shown in Fig.~\ref{fig:uniform_to_tstudent}.
 
 \begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
@@ -177,9 +176,9 @@ A similar transformation from uniform to t-Student is shown in Fig.~\ref{fig:uni
 \end{Verbatim}
 \end{tcolorbox}
 
-\begin{figure}[htbp]
+\begin{figure}[htb]
   \centering
-  \includegraphics[width=0.5\textwidth]{figures/lesson6_9_0.png}
+  \includegraphics[width=0.5\textwidth]{figures/tstudent_to_uniform}
   \caption{2D plot showing the transformation that maps a uniform distribution to a t-Student.}
   \label{fig:uniform_to_tstudent}
 \end{figure}
@@ -188,12 +187,13 @@ Clearly to do the opposite transformation, that is from an arbitrary distributio
 to the uniform, we can just apply the inverse of the inverse CDF, that is the CDF itself\ldots
 
 In such a way we can go from distribution A to distribution B passing through 
-a uniform distribution rather quickly. An example is shown in Figure~\ref{fig:a_to_b_to_a}.
+a uniform distribution rather quickly. An example is shown in Fig.~\ref{fig:a_to_b_to_a}.
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=1.\textwidth]{figures/lesson6_11_0.png}
-	\caption{Example of transformation, it starts with a uniform distribution, goes into a Gaussian and back to the initial uniform.}
+	\includegraphics[width=1.\textwidth]{figures/a_to_b_to_a}
+	\caption{Example of transformation, it starts with a uniform distribution, 
+		goes into a Gaussian and back to the initial uniform.}
 	\label{fig:a_to_b_to_a}
 \end{figure}
 
@@ -203,20 +203,22 @@ In probability theory a \emph{copula} $\mathcal{C}(F_1, F_2, \ldots, F_n, \rho)$
 is a multivariate (multidimensional) cumulative distribution function
 whose marginal probability distributions (i.e. the probability
 distribution of each dimension) are uniform on the
-interval \([0, 1]\) (\(F_i = U_i =\)uniform(0,1)).
-\(\rho\) represent the correlation between each variable.
+interval $[0, 1]$ ($F_i = U_i =\mathrm{uniform}(0,1)$),
+\(\rho\) represents the correlation between each variable.
 
 Copulas are used to describe the dependencies between random variables and
 have been widely used in quantitative finance to model risk. Copulas are popular since
 they allow to easily model and estimate the distribution of random
 vectors by representing marginals and their correlation separately.
 
-Essentially we can split complicated problems into simpler components so that copula results to be very handy.
+Essentially we can split a complicated problem into simpler components so that 
+copula results to be very handy.
 
 Despite the obscure and daunting definition given above the concept of copula is
 quite simple so let's try to clarify it a bit with a practical example.
 
-\subsection{Example Problem Case}\label{example-problem-case}
+\subsection{Example Case}
+\label{example-problem-case}
 
 Imagine to measure two variables that are 
 correlated. For example, we look at various rivers and for every river
@@ -544,3 +546,5 @@ Indeed given the perfect correlation between the probabilities either there is n
 %	...
 %	\end{Verbatim}
 %\end{tcolorbox}
+\href{https://en.wikipedia.org/wiki/Student\%27s\_t-distribution}{t-Student}
+\href{https://en.wikipedia.org/wiki/Gumbel_distribution}{Gumbel}
