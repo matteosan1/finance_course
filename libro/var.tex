@@ -2,21 +2,20 @@
 
 \section{Value at Risk}\label{value-at-risk}
 
-The value at risk (VaR) of a portfolio is a function of two parameters:
-time horizon and confidence level. It is usually used when it
+The \emph{Value at Risk} (VaR) of a portfolio is usually used when it
 is important to know to a certain confidence level how
-much will be the maximum loss in the next $N$ days (i.e. time horizon). 
-It can be interpreted as the loss level over \(N\) days that has a 
+much will be the maximum loss in the next $N$ days (time horizon).
+It can be interpreted as the loss level over $N$ days that has a 
 probability of only \((100 - X)\%\) of being exceeded.
+By definition it is a function of two parameters:
+the time horizon and the confidence level. 
 
 Mathematically the VaR is the loss corresponding to the
-\((100-X)\textrm{th}\) percentile of the distribution of the change in
-the value of the portfolio over the next \(N\) days. 
-
-For example, with \(N=1\) and \(X=95\), VaR is the fifth percentile of the distribution of
-changes in the value of the portfolio over the next day (e.g. in Figure~\ref{fig:var_loss}
+\((100-X)\textrm{th}\) percentile of the portfolio 
+change in value distribution over the next $N$ days 
+(e.g. in Figure~\ref{fig:var_loss}
 the graphical representation of the VaR assuming a normal
-distribution for the changes of value is shown).
+distribution for the changes of value is shown, with $N=1$ and $X=95$).
 
 \begin{figure}[htb]
 \centering
@@ -27,9 +26,9 @@ distribution for the changes of value is shown).
     
 VaR is useful to summarize all the information about the risk of a
 portfolio in one single number, but this can also be considered its main
-limitation as it implies too much simplification.
+limitation as it implies too much simplification of such a complex task.
 
-Concerning the time horizon parameter it is usually set to \(N=1\) since
+Concerning the time horizon parameter it is usually set to $N=1$ since
 it is not easy to estimate market variables over periods longer than one
 day. Nevertheless to generalize the VaR estimate it is assumed
 
@@ -37,82 +36,104 @@ day. Nevertheless to generalize the VaR estimate it is assumed
 \textrm{N-day VaR} = \textrm{1-day VaR}\times \sqrt{N}
 \label{eq:var_horizon}
 \end{equation}
-This relation is true only if the changes of value of the portfolio over
+This relation is true only if the portfolio changes of value over
 the considered period of time have independent and identical normal
-distributions with mean 0 (otherwise it is just an approximation).
+distributions with zero mean (otherwise it is just an approximation).
 
-\section{How to Estimate the VaR}\label{how-to-estimate-the-var}
+In the next Section the methods that can be used to estimate the VaR
+will be reviewed.
 
-Three are the methods that can be used to estimate the VaR and 
-in this Section they will be all reviewed.
+\section{How to Estimate the VaR}
+\label{how-to-estimate-the-var}
 
-In the proposed examples the historical series of Apple and Netflix
-are used. Data is saved in \href{https://drive.google.com/file/d/1pxzLjR_dsFdF3vildeh6vbmZJQmS6Qx7/view?usp=sharing}{historical\_data.csv}
-and it can be inspected as usual with \texttt{pandas}.
-Also we will assume to have a portfolio made of \textbf{60\% of AAPL and 40\% NFLX stocks}.
+In the proposed examples historical series of Apple and Netflix
+are used also we will assume to have a portfolio made of 
+\textbf{60\% of AAPL and 40\% NFLX stocks}.
+ 
+You can download the dateset with \texttt{ffn} as in the following code or to
+check out \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/historical_data.csv}{historical\_data.csv}.
 
-In the following code we are going to add a new column with the daily return to the dataframe.
+\begin{codebox}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{ffn}
+	
+\PY{n}{df} \PY{o}{=} \PY{n}{ffn}\PY{o}{.}\PY{n}{get}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl,nflx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{start}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2014\PYZhy{}01\PYZhy{}02}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{end}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2018\PYZhy{}03\PYZhy{}27}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+
+                 aapl       nflx
+Date
+2014-01-02  17.598297  51.831429
+2014-01-03  17.211735  51.871429
+2014-01-06  17.305593  51.367142
+2014-01-07  17.181829  48.500000
+2014-01-08  17.290642  48.712856
+\end{Verbatim}
+\end{codebox}
+\noindent
+In the following we are going to add a new column with the daily return to the dataframe.
 
 \begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
 \PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-
+	
 \PY{n}{w} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{l+m+mf}{0.6}\PY{p}{,} \PY{l+m+mf}{0.4}\PY{p}{]}\PY{p}{)}
-\PY{n}{df} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{historical_date.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{aapl} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ticker}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{==}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{AAPL}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
-\PY{n}{nlfx} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ticker}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{==}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{NFLX}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{o}{.}\PY{n}{copy}\PY{p}{(}\PY{p}{)}
-		
-\PY{n}{aapl}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{aapl}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{/}\PY{n}{aapl}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{shift}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}
-\PY{n}{nflx}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{nflx}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{/}\PY{n}{nflx}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{shift}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}
+	
+\PY{c+c1}{\PYZsh{} uncomment if the file has been checked out}
+\PY{c+c1}{\PYZsh{}df = pd.read\PYZus{}csv(\PYZdq{}historical\PYZus{}data.csv\PYZdq{}, index\PYZus{}col=\PYZsq{}Date\PYZsq{})}
+	
+\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl\PYZus{}rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{/}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{shift}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}
+\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nflx\PYZus{}rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nflx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{/}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nflx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{shift}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}
 
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{aapl}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-
-            date ticker adj\_close      rets
-4201  2018-03-27   AAPL    168.340       NaN
-4202  2018-03-26   AAPL    172.770  0.026316
-4203  2018-03-23   AAPL    164.940 -0.045320
-4204  2018-03-22   AAPL    168.845  0.023675
-4205  2018-03-21   AAPL    171.270  0.014362
+                 aapl       nflx  aapl_rets  nflx_rets
+Date
+2014-01-02  17.598297  51.831429        NaN        NaN
+2014-01-03  17.211735  51.871429  -0.021966   0.000772
+2014-01-06  17.305593  51.367142   0.005453  -0.009722
+2014-01-07  17.181829  48.500000  -0.007152  -0.055817
+2014-01-08  17.290642  48.712856   0.006333   0.004389
 \end{Verbatim}
 \end{codebox}
 
 \subsection{Historical Simulation}\label{historical-simulation}
 
 In order to estimate the VaR from a historical series, we need to
-collect the market variables affecting the portfolio over the last \(N\) days (with \(N\) quite large).
+collect the market variables "affecting" the portfolio over the last $N$ days 
+(with $N$ quite large).
 
 The variation over each day in our time interval will provide different
 scenarios to be applied to today's market values.
-For each "scenario" we can apply the historical variation and compute the distribution of the change in the portfolio value
-(\(\Delta P\)). The VaR estimate will be the (100 - X)\% percentile of this distribution. 
+For each scenario we can apply the historical variation and compute the distribution of portfolio change in value (\(\Delta P\)). 
+The VaR estimate will be the $(100 - X)\%$ percentile of this distribution. 
 
 Of course such kind of simulation relies on the assumption that past
 behaviors are indicative of what might happen in the future, that's why it is important that out historical series was as large as possible.
 
-As an example imagine a portfolio \(P\) whose value depends only on two market variables (\(x_1(t) , x_2(t)\)). From the historical series of these variables we can simulate the evolution of the portfolio as
+As an example imagine a portfolio $P$ whose value depends only on two market variables (\(x_1(t), x_2(t)\)). From the historical series of these variables we can simulate the evolution of the portfolio as
 
-\begin{equation}P_i(t_n+1) = P\Big(x_1(t_n)\cfrac{(x_1(t_i)-x_1(t_{i-1}))}{x_1(t_{i-1})}, x_2(t_n)\cfrac{(x_2(t_i)-x_2(t_{i-1}))}{x_2(t_{i-1})}\Big)\end{equation}
+\begin{equation}
+P_i(t_n+1) = P\left(x_1(t_n)\cfrac{(x_1(t_i)-x_1(t_{i-1}))}{x_1(t_{i-1})}, x_2(t_n)\cfrac{(x_2(t_i)-x_2(t_{i-1}))}{x_2(t_{i-1})}\right)
+\end{equation}
 
 Essentially re-scaling the market variables according to the variation
-between day \(i\) and \(i-1\) we can draw a distribution of the possible
+between day \(i\) and \(i-1\) we can draw a distribution of possible
 changes in the portfolio value \(P_i\) and then compute the VaR taking
 the appropriate percentile.
 
-Using the historical series seen above the procedure can be outlined as follows. Figure~\ref{fig:hist_var} shows the resulting VaR. 
-
-In the code we are using the scalar product between the invested amount ($w_i$) and the price of each portfolio component ($p_i$) to compute the portfolio price. It is indicated with \texttt{.dot} and defined as $\sum_{i} w_i \cdot p_i$.
-For more information about scalar product, vector and matrices see Appendix~\ref{app:matrices}. 
+Using the historical series seen above the procedure can be outlined as follows.
+To compute the portfolio value the \emph{scalar product} between the invested 
+amount ($w_i$) and the price of each portfolio component ($p_i$) is used. 
+It is indicated with \texttt{.dot} function and defined as $\sum_{i} w_i \cdot p_i$.
+For more information about scalar product, vector and matrices Chapter~\ref{sec:matrices}. 
+Figure~\ref{fig:hist_var} shows the resulting VaR. 
 
 \begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-				
 \PY{n}{rets} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n}{aapl}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{n}{rets}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{n}{aapl}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{+} \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{*}\PY{n}{nflx}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}
+\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n}{df}\PY{p}{)}\PY{p}{)}\PY{p}{:}
+    \PY{n}{aapl_rets}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{n}{df}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl_rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{+} \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{*}\PY{n}{df}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nflx_rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}
 		
-\PY{n}{price} \PY{o}{=} \PY{p}{[}\PY{n}{aapl}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{n}{nflx}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{]}
+\PY{n}{price} \PY{o}{=} \PY{p}{[}\PY{n}{df}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{n}{df}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{]}
 \PY{n}{portfolio\PYZus{}price} \PY{o}{=} \PY{n}{w}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{price}\PY{p}{)}
 \PY{n}{hist\PYZus{}var} \PY{o}{=} \PY{n}{portfolio\PYZus{}price}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{rets}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
 \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Historical VAR is }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{hist\PYZus{}var}\PY{p}{)}\PY{p}{)}
@@ -124,18 +145,18 @@ Historical VAR is -2.412
 \begin{figure}[htb]
 	\centering
 	\includegraphics[width=0.7\textwidth]{figures/historical_var.png}
-	\caption{Distribution of the changes of values estimated from historical data. The red line shows the 99\% VaR.}
+	\caption{Distribution of the changes of values estimated from historical data. 
+		The red line shows the 99\% VaR.}
 	\label{fig:hist_var}
 \end{figure}
 
 \subsection{Model Approach}\label{model-approach}
 
-Our portfolio \(P\) consists of different amounts \(w_i\)
-invested on two assets. If with \(\Delta x_i\) we denote the daily
-return of the $i^{th}$ asset the change in the value of the portfolio can be
-expressed as
+Our portfolio $P$ consists of different amounts $w_i$ invested on two assets. If with $\Delta x_i$ we denote the daily return of the $i^{th}$ asset the portfolio change in the value can be expressed as
 
-\begin{equation}\Delta P = \sum_{i=1}^n w_i \Delta x_i\end{equation}
+\begin{equation}
+\Delta P = \sum_{i=1}^n w_i \Delta x_i
+\end{equation}
 
 If we then assume that the asset variations are normally distributed
 with zero mean (in this approach is typical to assume the expected change
@@ -144,10 +165,10 @@ be also normally distributed (as a sum of normal distribution) with zero
 mean.
 
 To estimate the VaR we just need to compute the standard deviation of
-\(\Delta P\). In the general case with many different assets we define
-\(\sigma_i\) the daily volatility of the $i^{th}$ asset and with
-\(\rho_{ij}\) the correlation coefficient between the assets $i$ and $j$.
-The variance of \(\Delta P\) can then be expressed as
+$\Delta P$. In the general case with many different assets we define
+$\sigma_i$ the daily volatility of the $i^{th}$ asset and with
+$\rho_{ij}$ the correlation coefficient between the assets $i$ and $j$.
+The variance of $\Delta P$ can then be expressed as
 
 \begin{align}
 \begin{split}
@@ -163,24 +184,21 @@ Once we have the variance of \(\Delta P\) it is easy to determine the appropriat
 
 \subsection{Monte Carlo Simulation}\label{monte-carlo-simulation}
 
-A very useful alternative to the previous approaches is using a Monte
-Carlo simulation to generate the probability distribution for the
-\(\Delta P\) distribution. 
+A very useful alternative to previous approaches is using a Monte Carlo simulation to generate the probability distribution for the $\Delta P$. 
 
 Imagine we need to compute the 1-day VaR for our example portfolio.
-The simulation can be done either generating random returns from a distribution with mean and standard deviation obtained from the historical data of each stock, or by simulating the evolution 
-of all the portfolio market variables in one day.
+The simulation can be done either generating random returns from a distribution with mean and standard deviation obtained from the historical data of each stock, or by simulating the evolution of all the portfolio market variables in one day.
 
-Let's start from the first case, computing mean and standard deviation of each historical dataset. We will then throw various simulated returns from a multivariate Gaussian with such means and variances. 
-One useful aspect of this method is that in principal other distribution could be used instead of a Gaussian.
-Once we have the distribution of returns the VaR can be computed as usual, the example distribution is shown in Fig.~\ref{fig:mc1_var}.
+Let's start from the first case, computing mean and standard deviation of each historical dataset. We will then compute various simulated returns from a multivariate Gaussian with such means and variances. 
+One useful aspect of this method is that in principle other distributions than Gaussian could be used.
+Once we have the distribution of returns the VaR can be computed as usual, the result is shown in Fig.~\ref{fig:mc1_var}.
 
 \begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{multivariate\PYZus{}normal}
 
-\PY{n}{mean} \PY{o}{=} \PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{aapl}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{nflx}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{p}{]}
-\PY{n}{cov} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{n}{aapl}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{nflx}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}		
+\PY{n}{mean} \PY{o}{=} \PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl_rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nflx_rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{p}{]}
+\PY{n}{cov} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl_rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rnflx_ets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}		
 \PY{n}{mvnorm} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{n}{mean}\PY{p}{,} \PY{n}{cov}\PY{o}{=}\PY{n}{cov}\PY{p}{)}
 		
 \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
@@ -238,14 +256,15 @@ Simulated VAR is -1.913
 In addition to calculating the value at risk of a portfolio, it could be useful to 
 check how it would behave under the most extreme moves seen in the last years.
 
-This kind of test is called \emph{stress test} and it is done by extracting from the historical series, particular days with exceptional large variation of our market variables, in order to check how the portfolio moves.
+This kind of test is called \emph{stress test} and it is done by extracting from the historical series, particular days with exceptional large variation of our market variables, in order to check how the portfolio value moves.
  
-The idea is to take into account extreme events that can happen more frequently in reality than in a simulation (where usually Gaussian tails are assumed hence are quite hard to simulate). For example a 5-standard deviation move should happen once every 7000 years but in practice can be observed twice over 10 years.
+The idea is to take into account extreme events that can happen more frequently in reality than in a simulation (where usually Gaussian tails are assumed hence are quite small). For example a 5-standard deviation move is expected to happen once every 7000 years but in practice can be observed twice over 10 years.
 
-How can we compute how likely is a $n\sigma$ event (assuming Gaussian distribution) ?
-The probability of such a daily event is given by 1 over $252\cdot\mathbb{P}(|x| \ge n\sigma$ (the 252 factor comes to the number of working days per year).
+\begin{attention}
+\subsubsection{$n\sigma$ Event Likelihood}
+Such event has a probability to occur equal to $n\sigma$ so the occurrence frequency 
+can computed as 1 over $252\cdot\mathbb{P}(|x| \ge n\sigma$ (the 252 factor comes to the number of working days per year).
 
-\begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
 
@@ -254,8 +273,10 @@ The probability of such a daily event is given by 1 over $252\cdot\mathbb{P}(|x|
 \PY{n+nb}{print} \PY{p}{(}\PY{n}{nyears}\PY{p}{)}
 
 6921.737673091067
-    \end{Verbatim}
-\end{codebox}
+\end{Verbatim}
+\noindent
+So about seven thousand years as stated before.
+\end{attention}
 
 Another important check that could be done is the so-called \emph{back testing}
 which consists of checking how well the VaR estimate would have
@@ -270,26 +291,25 @@ loss exceeded the N-days X\% VaR just computed. If it happens on about
 %positions with a counterparty that would be lost if the counterparty
 %were to default with zero recovery at that time.
 
-Credit VaR is defined in the usual way Value at Risk measures are (i.e. as percentile of a loss distribution).
+\emph{Credit VaR} is defined in the usual way Value at Risk measures are (i.e. as percentile of a loss distribution).
 In this case we are concerned with the default risk associated to one or
 multiple counter-parties in a specific portfolio instead of to the market risk.
 
-To derive the loss distribution we need to consider the exposure $\textrm{EE}(\tau)$ defined as the sum 
-of the discounted cash flows at the default date $\tau$; 
-the corresponding loss is then given by
+To derive the loss distribution we need to consider the exposure $\textrm{EE}(\tau)$ defined as the sum of the discounted cash flows at the default date $\tau$.
+The corresponding loss is then given by
 
-\begin{equation}L_{\tau, \hat{T}} = (1 - R) \cdot \textrm{EE}(\tau)\end{equation}
+\begin{equation}
+L_{\tau, \hat{T}} = (1 - R) \cdot \textrm{EE}(\tau)
+\end{equation}
 where \(\hat{T}\) is the risk horizon and $L$ is non-zero only in
-scenarios of early default of the counter-party. 
+scenarios of early counter-party default. 
 
 Given the above definitions we can express the Credit VaR as the 
 q-quantile of $L_{\tau, \hat{T}}$.
-
-With respect to the Value at Risk, the time horizon is usually set to one year  and the percentile to $99.9^{th}$, so it returns the loss that is 
+With respect to the Value at Risk, the time horizon is usually set to one year and the percentile to $99.9^{th}$, so it returns the loss that is 
 exceeded only in 1 case out of 1000. 
 
-Credit Var is actually either the difference of the percentile from the mean, or the percentile itself. There is more than one possible definition but we  will use the latter.
-
+Credit VaR is actually either the difference of the percentile from the mean, or the percentile itself. There is more than one possible definition, anyway we  will use the latter.
 
 %Consider your portfolio has a call option on equity with a final maturity of two years. To get the Credit-Var, roughly, you simulate the underlying equity up to one year, and obtain a number of scenarios for the underlying equity in one year. Also, you need to simulate the default scenarios up to one year, to know in each scenario whether the counter-parties have defaulted or not. 
 %
@@ -303,10 +323,10 @@ Credit Var is actually either the difference of the percentile from the mean, or
 %not P. This gives the Black Scholes formula if the underlying equity
 %follows a geometric brownian motion under Q.
 
-\subsection{Credit Var and MC Simulation}
+\subsection{Credit VaR and MC Simulation}
 
 Credit VaR can be calculated through a simulation of the basic financial
-variables underlying the portfolio up to the risk horizon; the simulation must also include possible defaults of the counter-parties. 
+variables underlying the portfolio up to the risk horizon; the simulation must of course include possible defaults of the counter-parties. 
 
 In each simulation of the basic financial variables the portfolio is priced obtaining a number of scenarios to draw the loss distribution. It is then straightforward to derive the Credit VaR from it.
 
@@ -349,6 +369,7 @@ Consider a portfolio of twenty zero coupon bonds each one with a default probabi
 [415.84158416]
 \end{Verbatim}
 \end{codebox}
+\noindent
 Figure~\ref{fig:credit_var} shows the loss distribution of our simple portfolio.
 
 \begin{figure}[htb]
@@ -365,9 +386,9 @@ Consider a portfolio made of similar assets. As an approximation assume that the
 Q^{\textrm{corr}}_M(T) = \Phi\Big(\cfrac{\Phi^{-1}[Q(T)]-M\sqrt{\rho}}{\sqrt{1-\rho}}\Big)
 \label{eq:conditional_default_prob}
 \end{equation}
-where $\Phi$ is the cumulative distribution function of the standard normal,
-gives us the percentage of defaults by time $T$ given $M$. 
-Indeed if you a have $n$ counter-parties with the same default probability $Q^{\textrm{corr}}_M(T)$ the percentage of defaults at time $T$ is $Q^{\textrm{corr}}_M$ itself ($\textrm{\% of defaults} = \textrm{n\_defaults}/n = n\cdot Q^{\textrm{corr}}_M/n$).
+where $\Phi$ is the cumulative distribution function of the standard normal.
+
+Eq~\ref{eq:conditional_default_prob} gives the percentage of defaults by time $T$ given $M$. Indeed if there are $n$ counter-parties with the same default probability $Q^{\textrm{corr}}_M(T)$ the percentage of defaults at time $T$ is $Q^{\textrm{corr}}_M$ itself ($\textrm{\% of defaults} = \textrm{n\_defaults}/n = n\cdot Q^{\textrm{corr}}_M/n$).
 
 Since $M$ is distributed according to a standard normal we can be $X\%$ certain that its value will be \emph{greater} than $\Phi^{-1}(1-X)=-\Phi^{-1}(X)$, where the last equality holds due to the symmetry of the Gaussian distribution (see Figure~\ref{fig:certain_for_X}).
 
@@ -406,13 +427,13 @@ Suppose that a bank has a total of \euro{100} million of retail exposures. The 1
 
 Cr-VaR: 5130000
 \end{Verbatim}
-\end{codebox}
+\noindent
 The 1-year 99.9\% Credit VaR is therefore \euro{5.13} million.
 
 \subsection{CreditMetrics}
-Another popular approach to compute Credti VaR is CreditMetrics. It involves estimating a probability distribution of credit losses by carrying out Monte Carlo simulations of the credit rating changes of the  counter-parties.
+Another popular approach to compute Credti VaR is \emph{CreditMetrics}. It involves estimating a probability distribution of credit losses by carrying out Monte Carlo simulations of the counter-party credit rating changes.
 
-Imagine we would like to determine the probability distribution of losses over 1-year period. On each simulation, we are going to determine the credit rating of each counter-party using the estimated probability of migration between one rate to another (or to default). Since the value of each asset of the portfolio will depend on its rating we can determine the eventual losses. 
+Imagine we would like to determine the probability distribution of losses over 1-year period. On each simulation, we are going to determine the credit rating of each counter-party using the estimated probability of migration between one rate to another (or to default). Since the portfolio value depends on its asset ratings we can determine the eventual losses. 
 
 As an example consider Table~\ref{tab:credit_ratings}, it shows the percentage probability of a bond moving from one category to another during a 1-year period.
 
@@ -442,7 +463,7 @@ As an example consider Table~\ref{tab:credit_ratings}, it shows the percentage p
 \label{tab:credit_ratings}
 \end{table}
 
-Clearly credit rate changes cannot be assumed independent, hence a copula approach could be implemented also here.
+For a correct implementation of this technique credit rate changes cannot be assumed independent, hence a copula approach could be implemented also in this case.
 %As an example suppose to simulate rating change of a portfolio of nine bonds with various ratings over 1-year period. The correlation between them is 0.2.
 %
 %\begin{codebox}
@@ -515,24 +536,19 @@ Clearly credit rate changes cannot be assumed independent, hence a copula approa
 %	\caption{Distribution of the losses estimated from simulation of credit rating changes within 1 year. The red line shows the 99.9\% Cr-VaR.}
 %\end{figure}
 
-\section{Credit Valuation
-Adjustment}\label{credit-valuation-adjustment}
+\section{Credit Valuation Adjustment}
+\label{credit-valuation-adjustment}
 
 Suppose you have a portfolio of derivatives with a counter-party. 
 If the counter-party defaults and the present value of the portfolio at
-default is positive to the surviving party, then the surviving party only
+default is positive to the surviving party, then it only
 gets a recovery fraction of the portfolio value from the defaulted entity. 
 If however the present value is negative to the surviving party,
 it has to pay it in full to the liquidators of the defaulted entity.
 
-This creates and asymmetry that, once one has done all
-calculations, says that the value of the deal under counter-party risk is
+This creates and asymmetry such that the deal value under counter-party risk is
 the value without counter-party risk minus a positive adjustment, called
-Credit Valuation Adjustment (CVA).
-
-%Therefore we charge the default risky one
-%a supplementary amount besides the default-free cost of the contract.
-%This is often called Credit Valuation Adjustment, or CVA. 
+\emph{Credit Valuation Adjustment} (CVA).
 
 It can be expressed in the following way:
 
@@ -540,20 +556,17 @@ It can be expressed in the following way:
 \text{CVA} = (1-R) \int_0^T D(t) \cdot \textrm{EE}(t) dQ(t)
 \label{eq:cva}
 \end{equation}
-where \(T\) is the latest maturity in the portfolio, \(D\) is the
-discount factor, EE is the expected exposure or
-\(\mathbb{E}[\text{max(0, NPV}_\text{portfolio})]\), and $dQ$ is the probability of default between $t$ and $t+dt$.
+where $T$ is the latest maturity in the portfolio, $D$ is the discount factor, EE is the expected exposure or \(\mathbb{E}[\text{max(0, NPV}_\text{portfolio})]\), and $dQ$ is the probability of default between $t$ and $t+dt$.
 
 For an easier computation it is natural to discretize the above integral
-and use a time grid going from 0 to the maturity of the portfolio:
+and use a time grid going from 0 to the portfolio maturity:
 
 \begin{equation}
 \text{CVA} = (1-R) \sum_i^n D(t_i) \cdot \mathrm{EE}(t_i) Q(t_{i-1}, t_i)
 \label{eq:cva_discrete}
 \end{equation}
 
-It is important to note that while Credit VaR measures the risk of losses faced due to the possible default of some counter-party, CVA measures the pricing component of this risk, i.e.
-the adjustment to the price of a product due to this risk.
+It is important to note that while Credit VaR measures the risk of losses faced due to the possible default of some counter-party, CVA measures the pricing component of this risk, i.e. the price adjustment of a product due to this risk.
 
 \subsection{Debit Valuation Adjustment}
 
@@ -594,7 +607,7 @@ First simulate the development of your portfolio (its NPV) at each time point fo
 Then calculate the CVA using Eq.~\ref{eq:cva} or its discrete form in Eq.~\ref{eq:cva_discrete}.
 Finally average the CVA of all the scenarios to get its estimate.
 
-In case of zero coupon bonds the computation of the CVA can be simplified. Indeed in this case the exposure of the investor is equal to the face value of the bond, so it is enough to loop through each days from the observation date to the maturity of the bond and compute the CVA using Eq.~\ref{eq:cva_discrete}.
+In case of zero coupon bonds the computation of the CVA can be simplified. Indeed in this case the exposure of the investor is equal to the face value of the bond, so it is enough to loop through each days from the observation date to the bond maturity and compute the CVA using Eq.~\ref{eq:cva_discrete}.
 
 Imagine a 3-years zero coupon bond with a face value of $FV=$~\euro{100}. 
 The bond issuer has the following default probabilities 10\%, 20\% and 30\% for 1, 2 and 3 years respectively and the recovery rate is 40\%. The risk free rate is instead 3\%. 
