@@ -1,7 +1,7 @@
 \chapter{Interpolation, Discount Factors and Forward Rates}\label{interpolation---practical-lesson-3}
 
-In this Chapter we will start to see the first applications of \texttt{python} to financial calculations.
-In particular we will consider discount curves and forward rates, implementing the first utilities that will fill our financial module.
+In this Chapter we will start to see applications of \texttt{python} to financial calculations.
+In particular discount curves and forward rates will be involved, implementing the first utilities that go into a financial module that will be developed throughout this course.
 In doing so we will review a widely used mathematical tool: \emph{interpolation}.
 
 \section{Linear Interpolation}\label{linear-interpolation}
@@ -37,12 +37,12 @@ The equation of a line for two points
 \frac{t - t_1}{t_2 - t_1} = \frac{s - s_1}{s_2 - s_1}
 \end{equation}
 
-Setting again \(w = \cfrac{t - t_1}{t_2 - t_1}\) and solving for \(s\) we find the desired solution:
+Setting \(w = \cfrac{t - t_1}{t_2 - t_1}\) and solving for \(s\) we find the desired solution:
 
 \begin{equation}(s_2 - s_1)\cdot w = s - s_1\quad\implies\quad s = (1 - w)\cdot s_1 + w \cdot s_2
 \end{equation}
 
-This formula can also be understood as a weighted average where the weights are inversely related to the distance from the end points to the unknown point ($w_1 = (1 - w) = \cfrac{t_2 - t}{t_2 -t_1}, w_2 = w$), the closer point has more influence than the farther point.
+This formula can also be understood as a weighted average where the weights are inversely related to the distance from the end points to the unknown point ($w_1 = (1 - w) = \cfrac{t_2 - t}{t_2 -t_1}, w_2 = w$), which means that the closer point has more influence than the farther point.
 \end{attention}
 
 Back to our example, if
@@ -67,8 +67,26 @@ Back to our example, if
 \end{Verbatim}
 \end{codebox}
 
-Always interpret critically your results to guess if they make sense or not. In the previous example we certainly expected something between 25.75 and 171.7~km (our range ends) furthermore since we are looking for the distance at a time which is almost halfway the interval, the result will be somehow in the middle or around 98.6~km. This is indeed more or less what we have got.
-This simple reasoning should be applied every time you have a result to quickly judge it.
+Always interpret critically your results to guess if they make sense or not and to avoid mistakes. In the previous example we certainly expected something between 25.75 and 171.7~km (our range ends) furthermore since we are looking for the distance at a time which is almost halfway the interval, the result will be somehow in the middle or around 98.6~km. This is indeed more or less what we have got.
+This simple kind of reasoning should be applied every time you have a result to quickly judge it.
+
+\begin{curiosity}
+\subsubsection{Epic Failure}
+The Mars Climate Orbiter \emph{was} a 638~kg (1,407~lb), 326.7~M\$ space probe launched by NASA on December 11, 1998 to study the Martian climate, atmosphere, and surface changes. 
+
+On September 15, 1999, the necessary corrections to speed and direction of the probe were computed in order to place the spacecraft at an optimal position for an orbital insertion maneuver that would bring it around Mars at the proper altitude. 
+But one week later communication with the spacecraft was permanently lost as it went into Martian orbital insertion. 
+
+A committee of experts was created to investigate the reasons of 
+such failure and they found out that the spacecraft encountered Mars at a lower than foreseen altitude causing either its destruction by atmospheric friction or making it bouncing against the atmosphere re-entering heliocentric orbit after leaving Mars.
+
+The primary cause of this discrepancy was found in one piece of software (supplied by Lockheed Martin) that produced results in "Imperial" units,  while a second system (supplied by NASA) expected those results to be in SI units. Specifically, the software calculated the total impulse produced by thruster in \emph{pound-force seconds}. The trajectory calculation software then used these results, expected to be in \emph{newton seconds}, thus incorrect by a factor of 4.45, to update the predicted position of the spacecraft.
+	
+NASA took the entire responsibility for having
+vaporized about 300~M\$ in the Martian atmosphere, mainly for failing to make the appropriate checks and tests that would have caught this discrepancy~\cite{bib:mars}.	
+\end{curiosity}
+
+\subsubsection{Extrapolation}
 
 If we believe the relation between our variable stays the same ($f(t)$ still linear), we can use the same formula to \emph{extrapolate} values \emph{outside} our initial sample. For example if we keep the same constant velocity in our trip we could check the distance traveled after 3 hours:
 
@@ -97,13 +115,12 @@ Assume the following is the relationship between $p$ and $h$, two generic variab
 \begin{equation}
 p = \mathrm{exp}(c \cdot h)
 \end{equation}
-
 Applying the logarithm to both sides of the equation gives:
 
 \begin{equation}
 s = \mathrm{log}(p) = \mathrm{log}(\mathrm{exp}(c \cdot h)) = c \cdot h
 \end{equation}
-so there is linear relation between the new variable $s$ and $h$. At this point we can use the results of the previous Section to interpolate for values of $s$, just remember to exponentiate the result to get the correct $p$. In formulas:
+so there is linear relation between the new variable $s$ and $h$. At this point we can use the results of the previous Section to interpolate for values of $s$, just remember to exponentiate the final result to get the correct $p$. In formulas:
 
 \begin{align}
 \label{eq:log_interp}
@@ -210,25 +227,39 @@ It can be easily demonstrated that the linear approximation between two points o
   \label{fig:sine_interp}
 \end{figure}
 
-To improve the approximation accuracy with complicated curves a polynomial of higher order can be used ($𝑝(𝑥)=𝑎_0 + 𝑎_1 𝑥+ 𝑎_2 𝑥^2+\cdots$), for example in the evaluation of the natural logarithm and trigonometric functions. It has to be clear however that going to higher degrees does not always help~\cite{bib:runge}.
+To improve the approximation accuracy with complicated curves a polynomial of higher order can be used ($𝑝(𝑥)=𝑎_0 + 𝑎_1 𝑥+ 𝑎_2 𝑥^2+\cdots$), for example in the evaluation of natural logarithm or trigonometric functions. It has to be clear however that going to higher degrees does not always help~\cite{bib:runge}.
 
-\section{Discount Curve Interpolation}\label{discount-curve-interpolation}
+\section{Discount Factors}
+\label{discount-factors}
+The discount factor, $D(T)$, is the factor by which a future cash flow must be multiplied in order to obtain its present value. For a zero-rate (also called spot rate) $r$, and a time to cash flow $T$ (in years), the discount factor is:
 
-Finally we can come back to finance. Since discount factors are derived from a 
-discrete set of dates we may need to find the factor at some different date and 
-clearly we can use interpolation to do it.
-Now we will see how to implement a \texttt{python} function which interpolates some 
-given discount factors.
-To complete such a task we need:
+\begin{equation}
+D(0, T)= \frac {1}{(1+rT)}
+\label{eq:discount_factor}
+\end{equation}
+
+When the continuously-compounded hypothesis is used the discount factor becomes
+
+\begin{equation}
+D(0, T)= e^{-rT}
+\label{eq:discount_factor_cc}
+\end{equation}
+
+\subsection{Discount Curve Interpolation}
+\label{discount-curve-interpolation}
+
+Since discount curves are made of a discrete set of discount factors derived at some dates, we may need to find the factor at some different time; this is a typical financial application of interpolation.
+
+To develop some \texttt{python} code which interpolates a discount curve are needed:
 
 \begin{itemize}
 \tightlist
 \item a list of pillars dates specifying the value dates of the given discount factors, \(t_0,...,t_{n-1}\);
 \item a list of given discount factors, \(D(t_0),...,D(t_{n-1})\);
-\item a pricing date (`today' date) which corresponds to \(t=0\).
+\item a pricing date (`today') which corresponds to \(t=0\).
 \end{itemize}
 
-The input argument to the function will be the value date at which we want to interpolate the discount factor. Since the discount factor can be expressed as \(D=e^{-r(T-t)}\) the function will use a log-linear interpolation to return the value at a date not included in the given pillars:
+The input argument to the function will be the value date at which we want to interpolate the discount factor. Since the discount factor can be expressed as an exponential the log-linear interpolation can be used:
 
 \begin{equation}
 \begin{gathered}
@@ -239,10 +270,8 @@ D(t) = \mathrm{exp}(d(t))
 \end{equation}
 where \(i\) is such that \(t_i \le t \le t_{i+1}\)
 
-Instead of reinventing the wheel and performing the interpolation with our own code, 
-we'll use the function \texttt{interp} provided by the module \texttt{numpy}. 
-This function linearly interpolates between the provided points to estimate the value 
-of $f$ at some "new" $x$.
+Instead of reinventing the wheel and performing the interpolation with homemade code, 
+the function \texttt{interp}, provided by the module \texttt{numpy}, is used. 
 Say we want to interpolate the points at $x = 2.5$ given the following values:
 
 \begin{codebox}
@@ -257,25 +286,19 @@ Say we want to interpolate the points at $x = 2.5$ given the following values:
 \end{Verbatim}
 \end{codebox}
 
-Since discount factors are an essential part for every financial calculation, using an object
-oriented approach, we are going to define \texttt{python} class which manages discount factors
-and curves.
+Since discount factors are an essential part for every financial calculation and we will keep using them everywhere,
+a \texttt{python} class which manages discount factors
+and curves is develop, using an object
+oriented approach.
+This class, that we name \texttt{DiscountCurve}, should have as attributes the pillar dates with the corresponding discount factors and at least a method to interpolate discount factors.
 
-This class, that we name \texttt{DiscountCurve}, should have as attributes the pillar dates 
-with the corresponding discount factors and initially only a method to interpolate discount 
-factors.
+When dealing with discount factors we need to be careful though. \texttt{numpy.interp} only 
+accepts numbers or a list of numbers as argument i.e. it doesn't automatically convert or interpret dates as numbers and doesn't know how to interpolate them. So we need to do 
+the conversion ourselves before passing any date to the interpolation function. This transformation will be implemented directly in the constructor of the class by replacing each date with
+the number of days from a reference date ($t_0$).
 
-Of course in order to perform the interpolation we are going to use \texttt{numpy.interp} but
-when dealing with discount factors we need to be careful. Indeed \texttt{numpy.interp} only 
-accepts numbers or a list of numbers as argument i.e. it doesn't automatically convert or 
-interpret dates as numbers and doesn't know how to interpolate them. So we need to do 
-the conversion ourselves before passing any dates to the interpolation function.
-That's why in the constructor there is \texttt{pillar\_days} i.e. each date is replaced 
-by the number of days from today ($t_0$).
-
-Furthermore we also attempted a simple optimization of the code, in the class constructor indeed
-we are going to apply the logarithm already to the input discount factors, so that we can save
-some computation time with respect to doing the log at every call of \texttt{df}. 
+Furthermore we also attempted a simple optimization of the code, in the constructor we are going to compute also the logarithm of the input discount factors, so that we can save
+some computation time with respect to doing the log at every call of the interpolation method. 
 
 \begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -306,8 +329,7 @@ so copy the code into a separate file called \texttt{finmarkets.py} so that you 
 its code.
 
 Assume we have three discount factors, we can now use our new class to create the corresponding
-discount curve. Then we can use the \texttt{df} method of this class to get discount factors 
-on value dates between the given pillar dates.
+discount curve. Then the \texttt{df} method provides discount factors on every date within the interval of the given pillar dates.
 
 \begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -385,13 +407,10 @@ Let's see what it looks like when plotted on a linear graph too, Fig.~\ref{fig:l
 Discrepancies in the linear plot are most likely due to rounding.
 
 \section{Forward Rates}\label{calculating-forward-rates}
-A forward rate is an interest rate applicable to a financial transaction that will 
-take place in the future. It can be considered to be the market's expectations for 
-future prices and can serve as an indicator of how the market expects the future to perform.
+A forward rate is an interest rate applicable to a financial transaction that will take place in the future. It can be considered as the market's expectations for future prices and can serve as an indicator of how it believes will perform.
 
-Instead the \emph{spot rate} is used by buyers and sellers looking 
-to make an immediate purchase or sale, and it cannot be an indicator of market 
-expectations.
+Contrary the \emph{spot rate} is used by buyers and sellers looking 
+to make an immediate purchase or sale, and it cannot be an indicator of market expectations.
 
 Forward rates are calculated from the spot rate by exploiting the no arbitrage condition which states that investing at rate \(r_1\) for the period \((0, T_1)\) and then \emph{re-investing} at rate \(r_{1,2}\) for the time period \((T_1, T_2)\) is equivalent to invest at rate \(r_2\) for the full time period \((0, T_2)\). Essentially two investors shouldn't be able to earn money from arbitraging between different interest periods. That said:
 
@@ -405,13 +424,12 @@ Solving for \(r_{1,2}\) leads to
 F(T_1, T_2) = r_{1,2} = \frac{1}{T_2 - T_1}\Big(\frac{1+r_2 T_2}{1+r_1 T_1} - 1 \Big)
 \label{eq:forward_rate_simple}
 \end{equation}
-\vspace{0.5cm}
-The same expression in terms of the discount factor $ D{(0, T_i)}=\cfrac{1}{1+r_iT_{i}}$ becomes
+\vspace{1cm}
+The same expression in terms of the discount factor of Eq.\ref{eq:discount_factor} becomes
 \begin{equation}
 F(T_1, T_2) = \frac{1}{T_2 - T_1}\Big(\frac{D(0, T_1)}{D(0, T_2)} - 1 \Big)
 \end{equation}
-Considering continuously compounded rates Eq.~\ref{eq:no_arbitrage_r} can be
-written as
+Considering continuously compounded rates instead Eq.~\ref{eq:no_arbitrage_r} can be written as
 \begin{equation*}
 e^{{(r}_{2}T_{2})}=e^{{(r}_{1}T_{1})}\ast \ e^{\left(r_{1,2} \left(T_{2}-T_{1}\right)\right)}
 \end{equation*}
@@ -428,12 +446,12 @@ of forward rates and can interpolates between them.
 Also this class goes into the \texttt{finmarkets} module and will be used to
 define the LIBOR curve needed throughout future Chapters.
 
-In this case it is enough to write a new class that has three attributes: 
+In this case it is enough to write a class that has three attributes: 
 a set of pillar dates and the corresponding forward rates. The reference date to convert 
 the pillars for the interpolation (i.e. today) is taken from the first item of the pillar list.
 There will be just a single method \texttt{forward\_rate} to return an interpolated rate.
 
-\begin{codebox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{import} \PY{n+nn}{numpy}
 	
@@ -641,17 +659,18 @@ new contracts referencing EONIA, in particular new contracts
 maturing after 31 December 2021, as EONIA will cease to exist after
 that date.
 
-The working group is also looking at identifying fallbacks for
-EURIBOR based on the STR. Both backward and forward-looking
-options are being considered. As part of its work on forward-looking
-options, in March 2019 the working group recommended a
-methodology based on (tradable) overnight index swap (OIS) quotes
-for calculating a STR-based forward-looking term structure and later
-invited benchmark administrators to express their interest in
-producing such a term structure.
+%The working group is also looking at identifying fallbacks for
+%EURIBOR based on the STR. Both backward and forward-looking
+%options are being considered. As part of its work on forward-looking
+%options, in March 2019 the working group recommended a
+%methodology based on (tradable) overnight index swap (OIS) quotes
+%for calculating a STR-based forward-looking term structure and later
+%invited benchmark administrators to express their interest in
+%producing such a term structure.
 
 \begin{thebibliography}{9}
 	%  %\bibitem{survey2019} StackOverflow \emph{The TEXbook}, Addison-Wesley, Reading,Massachusetts, second edition, 1984,
+	\bibitem{bib:mars}\href{https://en.wikipedia.org/wiki/Mars_Climate_Orbiter}{\emph{Mars Climate Orbiter}}, Wikipedia [Online]
 	\bibitem{bib:runge} \href{https://en.wikipedia.org/wiki/Runge\%27s_phenomenon}{\emph{Runge's phenomenon}}, Wikipedia [Online]
 	\bibitem{bib:forward_rate}\href{https://www.investopedia.com/ask/answers/042315/what-difference-between-forward-rate-and-spot-rate.asp}{\emph{Forward Rate vs. Spot Rate: What's the Difference?}}, Investopedia [Online]
 	\bibitem{bib:libor} \href{https://www.ig.com/it/glossario-trading/definizione-di-libor}{\emph{LIBOR}} [Online]

@@ -52,7 +52,7 @@ the price at the given node will be
 
 \begin{equation}
 	\begin{gathered}
-C = \textrm{max} (0, Sn − K)\quad \textrm{(for a call option)}
+C = \textrm{max} (0, Sn − K)\quad \textrm{(for a call option)}\\
 P = \textrm{max} (0, K − Sn)\quad \textrm{(for a put option)}
 	\end{gathered}
 \end{equation}
@@ -99,7 +99,6 @@ at some nodes, and only at those nodes do you choose the maximum of the potentia
 binomial value. This demonstrates the flexibility of the binomial options pricing model, and concludes
 the description of the separate pieces Binomial Options Pricing Model algorithm. 
 
-
 \tikzstyle{bag} = [text width=2em, text centered]
 \tikzstyle{end} = []
 \begin{tikzpicture}[sloped]
@@ -116,3 +115,43 @@ the description of the separate pieces Binomial Options Pricing Model algorithm.
 	\draw [->] (b) to node [below] {$(1-p)p$} (e);
 	\draw [->] (b) to node [above] {$(1-p)^2$} (d);
 \end{tikzpicture}
+
+\begin{codebox}
+\begin{Verbatim}[commandchars=\\\{\}]
+\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+\PY{k+kn}{import} \PY{n+nn}{math}
+		
+\PY{k}{def} \PY{n+nf}{european\PYZus{}call\PYZus{}binomial}\PY{p}{(}\PY{n}{S}\PY{p}{,} \PY{n}{K}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{sigma}\PY{p}{,} \PY{n}{ttm}\PY{p}{,} \PY{n}{steps}\PY{p}{)}\PY{p}{:}
+    \PY{n}{R} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{r}\PY{o}{*}\PY{p}{(}\PY{n}{ttm}\PY{o}{/}\PY{n}{steps}\PY{p}{)}\PY{p}{)}
+    \PY{n}{R\PYZus{}inv} \PY{o}{=} \PY{l+m+mi}{1}\PY{o}{/}\PY{n}{R}
+    \PY{n}{u} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{sigma}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{ttm}\PY{o}{/}\PY{n}{steps}\PY{p}{)}\PY{p}{)}
+    \PY{n}{uu} \PY{o}{=} \PY{n}{u}\PY{o}{*}\PY{n}{u}
+    \PY{n}{d} \PY{o}{=} \PY{l+m+mi}{1}\PY{o}{/}\PY{n}{u}
+    \PY{n}{p\PYZus{}up} \PY{o}{=} \PY{p}{(}\PY{n}{R}\PY{o}{\PYZhy{}}\PY{n}{d}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{n}{u}\PY{o}{\PYZhy{}}\PY{n}{d}\PY{p}{)}
+    \PY{n}{p\PYZus{}down} \PY{o}{=} \PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{p\PYZus{}up}
+    \PY{n}{prices} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{n}{shape}\PY{o}{=}\PY{p}{(}\PY{n}{steps}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{)}\PY{p}{)}
+    \PY{n}{prices}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{=} \PY{n}{S}\PY{o}{*}\PY{n}{math}\PY{o}{.}\PY{n}{pow}\PY{p}{(}\PY{n}{d}\PY{p}{,} \PY{n}{steps}\PY{p}{)}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{steps}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{:}
+        \PY{n}{prices}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{=} \PY{n}{uu}\PY{o}{*}\PY{n}{prices}\PY{p}{[}\PY{n}{i}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}   
+    \PY{n}{call\PYZus{}values} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{n}{shape}\PY{o}{=}\PY{p}{(}\PY{n}{steps}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{,}\PY{p}{)}                         \PY{p}{)}
+    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{steps}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{:}
+        \PY{n}{call\PYZus{}values}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{=} \PY{n+nb}{max}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{p}{(}\PY{n}{prices}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{n}{K}\PY{p}{)}\PY{p}{)} 
+    \PY{k}{for} \PY{n}{step} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{steps}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{:}
+        \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{step}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{:}
+            \PY{n}{call\PYZus{}values}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{=} \PY{p}{(}\PY{n}{p\PYZus{}up}\PY{o}{*}\PY{n}{call\PYZus{}values}\PY{p}{[}\PY{n}{i}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{+}\PY{n}{p\PYZus{}down}\PY{o}{*}\PY{n}{call\PYZus{}values}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{o}{*}\PY{n}{R\PYZus{}inv}
+            \PY{k}{return} \PY{n}{call\PYZus{}values}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
+		
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{european\PYZus{}call\PYZus{}binomial}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{,} \PY{l+m+mf}{0.1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{european\PYZus{}call\PYZus{}binomial}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{,} \PY{l+m+mf}{0.1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+\PY{n+nb}{print} \PY{p}{(}\PY{n}{european\PYZus{}call\PYZus{}binomial}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{,} \PY{l+m+mf}{0.1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1000}\PY{p}{)}\PY{p}{)}
+
+13.063772112135739
+13.248820796591163
+13.267588637031556
+
+\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k+kn}{import} \PY{n}{call}
+\PY{n}{call}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{,} \PY{l+m+mf}{0.1}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+
+13.269676584660893
+\end{Verbatim}
+\end{codebox}

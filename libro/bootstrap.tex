@@ -1,13 +1,12 @@
 \chapter{Swaps and Bootstrapping}\label{sec:swaps-and-bootstrapping}
 
-In this Chapter the Overnight Index Swap contract is reviewed and a new class to represent 
-will be added to our financial module. Beside financial arguments another very important mathematical technique is introduced: the \emph{bootstrapping}.
+In this Chapter the Overnight Index Swap contract is reviewed and a class to represent it will be added to our financial module. Beside financial arguments another very important mathematical technique is introduced: the \emph{bootstrapping}.
 
 \section{Payment Dates Generator}
 Before going to describe the Overnight Index Swap we need to develop a tool which helps us to generate list of dates (e.g. payment dates), a task that we need to do often from now on. 
 The function we are writing will go in \texttt{finmarkets} module and will be used by the classes describing various kind of contracts.
 
-\begin{codebox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+\begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
 \PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
@@ -66,11 +65,11 @@ follows:
 
 \begin{equation}
 f_{\mathrm{float},~i} = N \Bigg\{\prod_{d=d_{i-1}}^{d=d_i-1}\Big(1+r_{\mathrm{O/N}}(d)\cdot\frac{1}{360}\Big) -1 \Bigg\}
-\label{eq:floati_ois}
+\label{eq:floating_ois}
 \end{equation}
 
 Strictly speaking this formula is valid for an EONIA swaps
-(i.e.\textasciitilde{}for OIS swaps in EUR) other currencies might have
+(i.e. for OIS swaps in EUR) other currencies might have
 different conventions. The \(\frac{1}{360}\) fraction appears because
 EONIA rates are quoted using the ACT/360 day-count convention. In
 addition we are making the simplifying assumption of ignoring weekends
@@ -85,9 +84,9 @@ where \(D(d)\) is the discount factor with expiry \(d\). On the other
 hand we have seen from the forward rate definition (see Section~\ref{calculating-forward-rates}) that
 
 \begin{equation*}
-\underbrace{(1+r_{0,1}\Delta T)\underbrace{(1+r_{1,2}\Delta T)\ldots\underbrace{(1+r_{d-2,d-1}\Delta T)(1+r_{d-1,d}\Delta T)}_{=(1+r_{d-2,d}\Delta T)}}_{=(1+r_{1,d}\Delta T)}}_{=(1+r_{0,d}\Delta T)}
+\prod_{i=0}^{d} (1+r_i) = \underbrace{(1+r_{0,1}\Delta T)\underbrace{(1+r_{1,2}\Delta T)\ldots\underbrace{(1+r_{d-2,d-1}\Delta T)(1+r_{d-1,d}\Delta T)}_{=(1+r_{d-2,d}\Delta T)}}_{=(1+r_{1,d}\Delta T)}}_{=(1+r_{0,d}\Delta T)}
 \end{equation*}
-So the product in Eq.~\ref{eq:floating_ois} can be simplified into
+So Eq.~\ref{eq:floating_ois} can be simplified into
 
 \begin{equation}
 \mathbb{E}[f_{\mathrm{float},~i}] = N\cdot\Big(\frac{D_{\mathrm{OIS}}(d_{i-1})}{D_{\mathrm{OIS}}(d_{i})} - 1\Big)
@@ -168,6 +167,8 @@ factors can be determined from OIS market quotes.
             \PY{n}{df} \PY{o}{=} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{end\PYZus{}date}\PY{p}{)}
             \PY{n}{npv} \PY{o}{=} \PY{n}{npv} \PY{o}{+} \PY{n}{df} \PY{o}{*} \PY{n}{tau}
         \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{*} \PY{n}{npv}
+
+
     \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
         \PY{n}{float\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}floating\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
         \PY{n}{fixed\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}fixed\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
@@ -175,9 +176,7 @@ factors can be determined from OIS market quotes.
 \end{Verbatim}
 \end{codebox}
 
-To test the newly developed class we need a discount curve. In the
-following example a fake curve will be defined, and then used with an
-OIS product.
+To test it a discount curve is needed. In the following example a fake curve is defined and used with an OIS product.
 
 \begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -209,19 +208,16 @@ OIS product.
 \section{Bootstrap Technique}\label{bootstrapping-technique}
 
 As we said before we would like to determine a \emph{real} discount
-curve starting from the market quotes of a set of Overnight Index Swaps
-with different maturities, this will be done via a technique called
-bootstrapping. It is the ABC of financial mathematics, since you
-always need a discount curve to price a contract. We are
-going to concentrate on EONIA swaps in order to build an EUR discount
-curve.
+curve starting from the market quotes of a set of Overnight Index Swaps with different maturities. This will be done via a technique called bootstrapping which is the abc of financial mathematics, since you always need a discount curve to price a contract.
+
+We are going to concentrate on EONIA swaps in order to build an EUR discount curve.
 
 \subsection{Building OIS Instances}
 \label{building-ois-instances}
 
 The first step involves getting data, the swap market quotes, and this is not actually as simple as it sounds.
 
-The issue is that EONIA swap market is over the counter (OTC) and it's not straightforward to access it. Unlike (some) listed futures, where anyone with a retail brokerage account can view and apply real time prices, to trade in the EONIA swap market you have to be a financial institution or at least a large company and have an agreement with a broker which operates in the market. One of the main brokers in the OIS market is ICAP, see Fig.~\ref{fig:icap}.
+The issue is that EONIA swap market is over the counter (OTC) and it's not straightforward to access it. Unlike (some) listed futures, where anyone with a retail brokerage account can view and apply real time prices, to trade in the EONIA swap market you have to be a financial institution or at least a large company and have an agreement with a broker which operates in the market. One of the most important brokers in the OIS market is ICAP, see Fig.~\ref{fig:icap}.
 
 \begin{figure}[bth]
   \centering
@@ -231,9 +227,9 @@ The issue is that EONIA swap market is over the counter (OTC) and it's not strai
 \end{figure}
 
 Though there exist some electronic platform in which market participants post bids and offers and other participants can apply them, in practice a lot of trading is still done over "voice", i.e.~by phone or more
-commonly over chat. For convenience, however, Bloomberg provides a service which displays indicative real time rates as provided by a selection of relevant brokers (\emph{interest rate swap quotes vary from standard price quotes of commonly traded instruments, they can appear puzzling because the quotes are effectively interest rates}).
+commonly over chat. For convenience, however, Bloomberg provides a service which displays indicative real time rates as provided by a selection of relevant brokers. Note that interest rate swap quotes vary from standard price quotes of commonly traded instruments, they can appear puzzling because the quotes are effectively interest rates.
 
-In the following we use a similarly created data-set (\href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/ois_quotes.csv}{\texttt{ois\_data.csv}}) to derive our discount curve; with the help of \texttt{pandas} the data-set can be inspected:
+In the following we use a similarly created dataset (\href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/ois_quotes.csv}{\texttt{ois\_data.csv}}) to derive our discount curve; with the help of \texttt{pandas} the dataset can be inspected:
 
 \begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -253,18 +249,15 @@ In the following we use a similarly created data-set (\href{https://raw.githubus
 \end{Verbatim}
 \end{codebox}
 \noindent
-Next we could convert the data-set into a dictionary for later usage or
-use the \(\tt{DataFrame}\) directly, it is just matter of taste.
+Next the dataset could be converted into a dictionary or accessed directly from the \(\tt{DataFrame}\), it is just matter of taste.
 
 Let's say we want to build a 15 months swap instance using data
-contained in \(\tt{ois\_data}\) file. Be careful when doing this
-operation and double check the units of rates, quotes\ldots in
+contained in \(\tt{ois\_data}\). Be careful when doing this
+operation and double check the units of rates and quotes. In
 this case for example quotes are expressed in percent so you need to
-multiply them by 0.01 before using them. Another detail to check is that
-15 months quote is not the fifteenth entry in the \(\tt{DataFrame}\)
-(actually it is the twelfth).
+multiply by 0.01 to use them. Another misleading detail to check is that 15 months quote is not the fifteenth entry in the \(\tt{DataFrame}\) (actually it is the twelfth).
 
-\begin{codebox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm, colback=cellbackground, colframe=cellborder]
+\begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
 \PY{n}{ois} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,}
                          \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{,}
@@ -286,22 +279,17 @@ algorithm}. In finance, bootstrapping is a method for constructing a
 (zero-coupon) fixed-income yield curve from the prices of a set of
 coupon-bearing products, e.g. bonds and swaps. The term structure of
 spot returns is obtained from the bond yields by solving for them
-recursively, by forward substitution: this iterative process is what is
-called the bootstrap method. The usefulness of bootstrap is that using
-only a few carefully selected zero-coupon products, it becomes possible
-to derive swap forward and spot rates for all maturities given the
-solved curve.
+recursively, by forward substitution: this iterative process is what is called the bootstrap method. 
 
-The underlying assumption is that market quotes represent the \textbf{fair price} of 
-the contracts so they make the theis NPVs null (the fair price is an estimate of what 
-a willing buyer would pay a willing seller for a given asset, assuming both have 
-a reasonable knowledge of the asset's worth).
+The usefulness of bootstrap resides on that using only a few carefully selected zero-coupon products, it becomes possible to derive forward and spot rates for all maturities given the solved curve.
+
+The underlying assumption is that market quotes represent the \textbf{fair price} of the contracts so they make their NPVs null (the fair price is an estimate of what a willing buyer would pay a willing seller for a given asset, assuming both have a reasonable knowledge of the asset's worth).
 
 To illustrate bootstrapping let's consider the following example which can be partially solved analytically: we have some coupon paying bond (coupons of 4\%, 5\%, 6\%, 7\% and 8\% respectively) with maturities ranging from 1 to 5 years, each having a value of \euro{100} and traded at par. To determine the zero-coupon yield curve proceed as follows:
 \begin{enumerate}
-\item at the end of the first year the $1^{st}$ bond will pay a coupon of \euro{4} (= \euro{100} * 4\%) plus the principal amount (= \euro{100}) which sums up to \euro{104} while the bond is trading at \euro{100}. Therefore, the implied 1-year spot \emph{fair} rate $S_{1y}$ can be calculated as, $\mbox{\euro{100}} = \mbox{\euro{104}} / (1 + S_{1y})$;
+\item at the end of the first year the $1^{st}$ bond will pay a coupon of \euro{4} (= \euro{100} * 4\%) plus the principal amount (= \euro{100}) which sums up to \euro{104} while the bond is trading at \euro{100}. Therefore, the implied 1-year spot \emph{fair} rate $S_{1y}$ can be calculated from $\mbox{\euro{100}} = \mbox{\euro{104}} / (1 + S_{1y})$;
 
-\item at the end of second year the sum of the cash flows of the $2^{nd}$ bond can be compared to its trading price to compute the 2-year spot rate $S_{2y}$ as $\mbox{\euro{100}} = \mbox{\euro{5}} / (1 + S_{1y}) + \mbox{\euro{105}} / (1 + S_{2y})^{2}$ where the previously derived value of $S_{1y}$ is used;
+\item at the end of second year the sum of the cash flows of the $2^{nd}$ bond can be compared to its trading price to compute the 2-year spot rate $S_{2y}$ from $\mbox{\euro{100}} = \mbox{\euro{5}} / (1 + S_{1y}) + \mbox{\euro{105}} / (1 + S_{2y})^{2}$ where the previously derived value of $S_{1y}$ is used;
 
 \item at the end of third year the sum of the cash flows of the $3^{rd}$ bond can be compared to its trading price to calculate the 3-year spot rate $S_{3y}$ as $\mbox{\euro{100}} = \mbox{\euro{6}} / (1 + S_{1y}) + \mbox{\euro{6}} / (1 + S_{2y})^{2} + \mbox{\euro{106}} / (1 + S_{3y})^{3}$, using $S_{1y}$ and $S_{2y}$ computed before;
 
@@ -321,7 +309,7 @@ Putting all together we can construct a system of equations (now omitting the cu
 \label{eq:fifth_year_rate}
 \end{equation}
 
-This system can be solved quite easily: $S_{1y}$ can be derived from the first equation, $S_{2y}$ from the second, $S_{3y}$ from the third, \ldots. So
+This system can be solved quite easily: $S_{1y}$ can be derived from the first equation, $S_{2y}$ from the second, $S_{3y}$ from the third, \ldots So
 
 \begin{equation}
 100 = 104 / (1 + S_{1y})\quad\Rightarrow\quad S_{1y} = 104/100 - 1 = 4\%
@@ -335,8 +323,8 @@ Moving to the second equation:
 \end{equation}
 where the first solution has been discarded because negative.
 
-From the third on it is not as simple to solve them analytically since they involve third order (or more) equations, anyway it is possible to solve them numerically.
-Assume we have found all the rates up to the fourth year (they are reported in Table~\ref{tab:rates}) and let's try to determine the last one.
+From the third on it is not as simple to solve them analytically since they involve third (or more) order equations. However it is always possible to solve them numerically.
+Assume all rates up to the fourth year have been calculated (they are reported in Table~\ref{tab:rates}) and just the last one still needs to be determined.
 
 \begin{table}[htb]
 \begin{center}
@@ -359,9 +347,12 @@ Assume we have found all the rates up to the fourth year (they are reported in T
 \caption{Table reporting maturity, coupon, bond price and implied spot rate for the example outlined in the text.}
 \label{tab:rates}
 \end{table}
+
 The last column of Table~\ref{tab:rates} provides the terms to fill the zero-coupon yield curve.
-To solve the last equation numerically we can use \texttt{scipy.optimize.brentq} algorithm which finds zeros of a user-defined function given a validity interval.
-In Figure~\ref{fig:fifth_year_rate} the function to determine the 5 year rate expressed in the last of Eqs.~\ref{eq:fifth_year_rate} is shown. From the plot we expect the rate to be around 0.08.
+To solve the last equation numerically can be chosen one of the many \emph{root finding} algorithms implemented in \texttt{python}. 
+In this case \texttt{scipy.optimize.brentq} is used, like the others it finds zeros of a user-defined function within a validity interval.
+
+In Figure~\ref{fig:fifth_year_rate} the last equation of the system in~\ref{eq:fifth_year_rate} is plotted. It already gives an idea of the expected result, indeed the rate value which solves the equation is around 0.08.
 
 \begin{figure}[htb]
   \centering
@@ -385,7 +376,7 @@ In Figure~\ref{fig:fifth_year_rate} the function to determine the 5 year rate ex
 \end{Verbatim}
 \end{codebox}
 
-The very same mechanism can be generalized and extended to more maturities to get a more detailed yield curve. In general terms the previous system becomes
+The very same mechanism can be generalized and extended to other maturities to get a more detailed yield curve. In general terms the previous system becomes
 
 \begin{equation}
 \begin{cases}
@@ -396,14 +387,15 @@ f_4(S_1, S_2, S_3, S_4, p_4) = 0 \\
 \cdots
 \end{cases}
 \end{equation}
-where $S_i$ are the unknown spot rates and $p_i$ the market quotes of the considered products. The iterative procedure we have applied before exploits the first equation to find $S_1 = f_1^{-1}(p_1)$, the second to find $S_2 = f_2^{-1}(S_1, p_2)$ and so on and so forth; this algorithm works since each equation will determine exactly one \emph{free} spot rate which is not already determined by the others.
+where $S_i$ are the unknown spot rates and $p_i$ the market quotes of the considered products. The iterative procedure we have applied before exploits the first equation to find $S_1 = f_1^{-1}(p_1)$, the second to find $S_2 = f_2^{-1}(S_1, p_2)$ and so on and so forth. This algorithm relies on the fact that each equation determines exactly one spot rate which is not already determined by the others.
 
 \subsection{Bootstrapping as Minimization Problem}
-We can now describe the bootstrap algorithm in general terms as follows:
+\label{sec:bootstrap_as_minimization}
+The bootstrap algorithm can now be described in general terms as follows:
 \begin{enumerate}
 \item define a set of yielding products (e.g. coupon-bearing bonds, swaps);
 %\item derive discount factors for the corresponding terms;
-\item \emph{bootstrap} the zero-coupon curve, successively calibrating it such that it returns the market quotes of these inputs.
+\item \emph{bootstrap} the zero-coupon curve, successively calibrating it such that returns the market quotes of these inputs.
 \end{enumerate}
 
 Instead of iteratively finding the solution of each equation as before, we could define a vector of spot rates $\mathbf{S} = (S_1, S_2, S_3, \ldots)$ seeking for a particular $\mathbf{\hat{S}}$ which solves the following equation:
@@ -412,7 +404,7 @@ Instead of iteratively finding the solution of each equation as before, we could
 F = f_1^2(\hat{S}_1) + f_2^2(\hat{S}_1, \hat{S}_2) + f_3^2(\hat{S}_1, \hat{S}_2, \hat{S}_3) + f_4^2(\hat{S}_1, \hat{S}_2, \hat{S}_3, \hat{S}_4) + \ldots = 0
 \end{equation}
 
-Under this terms the bootstrap method can be considered as a minimization algorithm, indeed we need to find $\mathbf{\hat{S}}$ which \emph{minimize} $F$, or makes it as close as possible to 0.
+Under this terms the bootstrap method can be considered as a minimization algorithm, indeed we need to find $\mathbf{\hat{S}}$ which \emph{minimize} $F$, and makes it as close as possible to 0.
 Notice how each \(f_i\) is squared since we want all of them to be minimized at the same time and not only \(F\) globally (i.e. without the square there may be cancellation effects between the terms of the sum).
 
 \subsection{Minimization Algorithm}\label{minimization-algorithm}
@@ -422,21 +414,16 @@ A minimization algorithm follows these steps:
 \begin{itemize}
 \tightlist
 \item
-  define an \emph{objective function} i.e. the function that has to be
-  minimized to reach our goal;
+  define an \emph{objective function} i.e. the function that has to be minimized to reach our goal;
 \item
-  set the initial value of the unknown parameters (\(\mathbf{x_0}\)) and their range of
-  variability;
+  set the initial value of the unknown parameters (\(\mathbf{x_0}\)) and their range of variability;
 \item
-  the minimizer computes the objective function value;
+  the algorithm computes the objective function value;
 \item
   then it moves the parameter values in such a way to find a smaller
-  value of the objective function (e.g. following the direction derivative w.r.t.
-  each parameter);
-\item if constraints are defined, they will be considered in the previous step;
+  value of the objective function (e.g. following the derivative direction w.r.t. each parameter); in case constraints are defined, they will be considered when the parameter values are varied;
 \item
-  the last three steps will be repeated until further variations of the
-  \(\mathbf{x}\) values won't change significantly the objective
+  the last three steps will be repeated until further variations of the \(\mathbf{x}\) values won't change significantly the objective
   function (i.e. we have found a minimum of the function so the
   minimization process is completed !).
 \end{itemize}
@@ -446,8 +433,7 @@ Let's see with a couple of example how minimization can be implemented in \textt
 \subsubsection{A Simple Minimization Example}
 \label{example}
 
-Find the size of a circular cylindrical can of volume, \(330~\mathrm{cm}^3\),
-that minimizes the cost of manufacture, see Figure~\ref{fig:cylinder}.
+Find the size of a circular cylindrical can of volume, \(330~\mathrm{cm}^3\), that minimizes the cost of manufacture, see Figure~\ref{fig:cylinder}.
 
 \begin{figure}[h]
 \centering
@@ -456,25 +442,24 @@ that minimizes the cost of manufacture, see Figure~\ref{fig:cylinder}.
 \label{fig:cylinder}
 \end{figure}
 
-Clearly to minimize the costs, the company needs to reduce the can
-surface
+Clearly to minimize the costs, the company needs to reduce the amount of aluminum used in the production, consequently the can surface, which can be expressed as the sum of the lateral surface plus twice the base surface
 
 \begin{equation*} 
-S = 2\pi rh + 2\cdot(\pi r^2) 
+S = 2\pi rh + 2\pi r^2 
+\label{eq:can_surface}
 \end{equation*}
-On the other hand the volume is fixed to \(330~\mathrm{cm}^3\) so previous
-equation can be simplified by removing \(h\)
+On the other hand the volume is fixed to 33~cl or 330~\(\mathrm{cm}^3\) and this allows to simplify previous
+equation by removing \(h\)
 
 \begin{equation*} 
 V = \pi r^2 h = 330\quad\implies h = \cfrac{330}{\pi r^2}
 \end{equation*}
-In the end the function to be minimized is
+Replacing $h$ in Eq.~\ref{eq:can_surface} 
 
 \begin{equation}
 S = 2\pi rh + 2\cdot(\pi r^2) = \cfrac{2\cdot 330}{r} + 2\cdot(\pi r^2)
 \end{equation}
-This is the objective function, and the parameter set is represented 
-by \(\tt{x[0]}\) which is the can radius.
+This is the objective function, and the parameter set (just one parameter in this case) is represented by \(\tt{x[0]}\) which is the can radius in cm. It is convenient to use a \texttt{list} also in this simple case since it can be generalized to more complex problems with larger number of parameters to minimize. 
 
 \begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -515,8 +500,12 @@ Finally we run the minimization:
     \end{Verbatim}
 \end{codebox}
 
-So to minimize the cost the company should produce cans with a radius of
-about 3.745 cm (I suspect that Coke have done a similar calculation since the result is quite close to a real can).
+\begin{curiosity}
+So to minimize the cost the company should produce cans with a radius of about 3.745~cm (or about 74~mm diameter). I suspect that Coke or other similar companies have done a similar calculation since the result is surprisingly close to that of real can. 
+
+From \href{	https://www.ball.com/eu/solutions/markets-capabilities/capabilities/beverage-cans/standard-range
+}{here} it looks like a real can has a 66.3~mm diameter, a little smaller than our result but it was expected since the base is not flat.    
+\end{curiosity}
 
 \subsubsection{Another Example with Constraint}
 \label{example-with-constraint}
@@ -533,7 +522,7 @@ the dimensions of the field that will maximize the enclosed area, see Fig.~\ref{
 \label{fig:field}
 \end{figure}
 
-In this example there are two differences with respect to the previous one:
+In this example there are two differences with respect to the previous:
 
 \begin{itemize}
 \tightlist
@@ -544,11 +533,9 @@ In this example there are two differences with respect to the previous one:
 \end{itemize}
 
 So let's repeat the steps as before. The objective is to maximize the
-enclosed area \(A\) but our algorithm can only minimize; we can define the objective function 
-to return the quantity \(-A\), so that if we minimize it at the same time 
-we are maximizing our real objective, $A$. 
-Define length and width of the field respectively as \(\tt{x[0]}\) and
-\(\tt{x[1]}\) (items of the list \texttt{x}):
+enclosed area \(A\) and the algorithm can only minimize; nevertheless the objective function can be defined 
+to return the quantity \(-A\), so that minimizing its value, the real objective, $A$, is maximized. 
+Define length and width of the field respectively as \(\tt{x[0]}\) and \(\tt{x[1]}\) (items of the \texttt{list} \texttt{x}):
 
 \begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -573,20 +560,20 @@ Finally we have to impose the constraint on the budget. This is done by
 defining a function that computes the cost of the fence and
 compare it to the total budget. 
 The constraint is passed to the minimizer with a dictionary (or a list 
-of dictionaries if they are more than one) which has three keys: 
+of dictionaries if there are more) which has three keys: 
 \(\tt{type}\), in this case set to \texttt{'eq'}
 (like equality, since we want to spend all of our available money so the
-fence has to cost equal to \$700), \texttt{'fun'} which defines the constraint 
+fence has to cost exactly \$700), \texttt{'fun'} which defines the constraint 
 function and \texttt{'args'} which is optional and is set to a tuple 
-whose items are possible parameters for the constraint function.
+whose items are possible parameters for the constraint function (see Section~\ref{sec:kwargs_args}).
 
-The definition of our constraint is
+The constraint is then defined as
 
 \begin{equation*}
-\begin{gathered}
+\begin{cases}
 \mathrm{fence~cost} = l\cdot\mathrm{side\_cost} + l\cdot\mathrm{side\_cost} + w\cdot\mathrm{up\_cost} + w\cdot\mathrm{down\_cost}\\
-\mathrm{budget} - 2\cdot l\cdot\mathrm{side\_cost} - w\cdot(\mathrm{up\_cost} + \mathrm{down\_cost}) = 0
-\end{gathered}
+\mathrm{budget} - \mathrm{fence~cost} = \mathrm{budget} - 2\cdot l\cdot\mathrm{side\_cost} - w\cdot(\mathrm{up\_cost} + \mathrm{down\_cost}) = 0
+\end{cases}
 \end{equation*}
 
 \begin{codebox}
@@ -618,7 +605,7 @@ success: True
 \end{Verbatim}
 \end{codebox}
 
-So the field will come out \(17.5\)~m long and \(38.9\)~m wide.
+So the field will come out 17.5~m long and 38.9~m wide for a total field area of 680.5~$\textrm{m}^2$.
 
 \subsection{Local Minima}
 When the objective function has local minima the choice of the initial value of the parameters can be critical. 
@@ -627,7 +614,7 @@ Assume we would like to minimize an objective function like
 \[
 f(x) = \cfrac{\mathrm{cos}(3\pi x)}{x}
 \]
-This function is plotted in Fig.~\ref{fig:local_minima} in the range $[0, 2]$, and it is clear that it has many minima. 
+This function is plotted in Fig.~\ref{fig:local_minima} in the range $[0, 2]$, and clearly it has many minima. 
 
 \begin{figure}[htb]
 	\centering
@@ -635,7 +622,6 @@ This function is plotted in Fig.~\ref{fig:local_minima} in the range $[0, 2]$, a
 	\caption{Plot of an example function with many local minima. The red points highlights initial value and minimum found in a \emph{bad} minimization, green points for a good minimization.}
 	\label{fig:local_minima}
 \end{figure}
-
 Let's try to find a minimum and set the initial value to $x=1.1$.
 \begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -656,7 +642,7 @@ hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
        x: array([0.98865633])
 \end{Verbatim}
 \end{codebox}
-The minimization worked perfectly and we found $x=0.98865633$ (i.e. the red point in Fig.~\ref{fig:local_minima}) but still from the same Figure it is clear that this is not the absolute minimum we wanted to find. The problem arise since the algorithm has got stuck in a local minimum without any possibility to jump out from the well.
+The minimization worked perfectly and we found $x=0.98865633$ (i.e. the red point in Fig.~\ref{fig:local_minima}) but this is not the absolute minimum we were expecting to find. The problem arise since the algorithm has got stuck in a local minimum without any possibility to jump out from the well.
 
 If we repeat the minimization using as initial value $0.5$ instead
 \begin{codebox}
@@ -684,7 +670,7 @@ This is just an example of what could happen when minimizing a function.
 When dealing with complicated cases it is possible to make a \emph{scan} of the objective 
 function to try to approximately determine where the global minimum is and choose 
 suitable initial values of the guess parameters.
-There shouldn't be such an issue in the application of the bootstrap algorithm though since the function that we are going to minimize is a sum of squared terms which has no local minima, just a global minimum (i.e. it is a hyper-parabola).
+However there shouldn't be such an issue in the application of the bootstrap algorithm since the function that is minimized is a sum of squared terms which has no local minimum, just a global minimum (i.e. it is a hyper-parabola).
 
 \subsection{Back to OIS Example}\label{ois-example}
 The general idea here is to get the discount curve \(\mathcal{C}\) that prices correctly 
@@ -696,7 +682,7 @@ each OIS by minimizing the sum of their NPV squared (our \(f_i\)):
 
 A discount curve is characterized by pillar dates and discount factors. The description of the problem we have given above does not, specifies any constraint on the number of pillar dates of 
 the discount curve \(\mathcal{C}\). However, the pillar dates determine the number of unknown variables of the optimization problem. A curve with \(N\) pillar dates has \(N\) discount factors (note that the first discount factor, with value date equal to the today date, is constrained to 1). \textbf{In practice, therefore, it makes sense to choose the pillar dates in such a way that 
-	there are exactly the right number of degrees of freedom in the optimization to match data.} 
+	there is exactly the same number of degrees of freedom in the optimization to match data.} 
 The natural choice is to choose the pillar dates of the discount curve equal to the set of expiry dates of the swaps.
 
 Once we've fixed \(\mathbf{d}\) to be a vector of pillar dates equal to the expiry dates of the swaps, and we use \(\mathbf{x}\) to represent the vector of discount factors, then the problem becomes:
@@ -707,8 +693,7 @@ Once we've fixed \(\mathbf{d}\) to be a vector of pillar dates equal to the expi
 which is our optimization problem: (\textbf{to find the minimum of the above expression as a function of x}) that can be solved using one of the available numerical optimization routines 
 in \texttt{python}.
 
-So first let's create the swaps according to all the available market
-quotes and also the pillar dates of our final discount curve:
+First the swaps has to be created according to all the available market quotes (also the pillar dates of the unknown discount curve)
 
 \begin{codebox}
 \begin{Verbatim}[commandchars=\\\{\}]
@@ -730,7 +715,7 @@ quotes and also the pillar dates of our final discount curve:
 \end{Verbatim}
 \end{codebox}
 
-So let's review step by step the implementation of the bootstrapping just described.
+Then implement step by step the bootstrapping as described in Section~\ref{sec:bootstrap_as_minimization}
 
 \begin{itemize}
 \tightlist
@@ -824,7 +809,7 @@ Initial objective function value  26.27213544937082
 Final objective function value  5.664309920943246e-11
 \end{Verbatim}
 \end{codebox}
-The objective function at the end of the minimisation is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied, we started with $30$ and now it is $10^{-11}$ so 13 orders of magnitude smaller. This means that with the derived discount curve the NPV's of our OIS won't be identically 0 but so small that we can consider them as they were.
+The objective function at the end of the minimisation is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied, the initial value was around $26$ and now it is $10^{-11}$ so 13 orders of magnitude smaller. This means that with the derived discount curve the NPV's of our OIS won't be identically 0 but so small that can be regarded as they would.
 
 It can be very useful to also look at some diagnostic plots to check if the minimization was successful. Figure~\ref{fig:minimization_diagnostic} reports on the left the objective function value as a function of discount factor $(x_0)$; clearly we have found a minimum (the orange point represent $x_0$ value at the end of the minimization). On the right instead, the value of the objective function at each iteration is shown, its value is decreasing dramatically (notice that the $y$ axis is drawn in log scale).
 
