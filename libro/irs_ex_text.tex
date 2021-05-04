@@ -1,0 +1,72 @@
+%\begin{question}
+%  Add to \texttt{finmarkets} module a class to valuate swaptions, it should have as attributes the underlying IRS, the swap rate volatility and the question date.
+%  The class should have the capability of estimating the payoff of the swaptions both with the Black-Scholes formula and Monte Carlo Simulation.
+%\end{question}
+%
+%\begin{solution}
+%	class InterestRateSwaption:
+%	def __init__(self, exercise_date, irs):
+%	self.exercise_date = exercise_date
+%	self.irs = irs
+%	def npv_bs(self, discount_curve, libor_curve, sigma):
+%	A = self.irs.annuity(discount_curve)
+%	S = self.irs.swap_rate(discount_curve, libor_curve)
+%	T = (self.exercise_date - discount_curve.today).days / 365
+%	d1 = (math.log(S/self.irs.fixed_rate) + 0.5 * sigma**2 * T)
+%	/ (sigma * T**0.5)
+%	d2 = d1 - (sigma * T**0.5)
+%	npv = self.irs.notional * A * (S * scipy.stats.norm.cdf(d1) -
+%	self.irs.fixed_rate * scipy.stats.norm.cdf(d2))
+%	return npv
+%	
+%	def npv_mc(self, discount_curve, libor_curve, sigma, n_scenarios=10000):
+%	A = self.irs.annuity(discount_curve)
+%	S = self.irs.swap_rate(discount_curve, libor_curve)
+%	T = (self.exercise_date - discount_curve.today).days / 365
+%	discounted_payoffs = []
+%	for i_scenario in range(n_scenarios):
+%	S_simulated = S * math.exp(-0.5 * sigma * sigma * T +
+%	sigma * math.sqrt(T) * numpy.random.normal())
+%	
+%	swap_npv = self.irs.notional * (S_simulated - self.irs.fixed_rate) * A
+%	discounted_payoffs.append(max(0, swap_npv))
+%	npv_mc = numpy.mean(discounted_payoffs)
+%	npv_error = 3 * numpy.std(discounted_payoffs) / math.sqrt(n_scenarios)
+%	return npv_mc, npv_error
+%\end{ipython}
+
+\begin{question}
+Suppouse that the LIBOR Forward rates and the discount curve are those defined in \href{https://drive.google.com/file/d/1dm5oZnZKmJM6UrV0L32OcqD5Tzs9SI9A/view?usp=sharing}{libor.xlsx} and \href{https://drive.google.com/file/d/14R22r7m-6VpQ_P79D3qHdK0QN_mOQ_UB/view?usp=sharing}{discount\_curve.xlsx} respectively.
+Determine the value of an option to pay a fixed rate of 4\% and receives LIBOR on a 5 year swap starting in 1 year. Assume the notional is 100 EUR, the exercise date is on October, 30th 2020 and the swap rate volatility is 15\%.
+
+\noindent\textbf{Hint:} add \texttt{InterestRateSwap} class to \texttt{finmarkets.py}.
+\end{question}
+
+\begin{solution}
+\end{solution}
+
+\begin{ipython}
+from finmarkets import InterestRateSwap
+from datetime import date
+from dateutil.relativedelta import relativedelta
+from curve_data import discount_curve, libor_curve
+from scipy.stats import norm
+import math
+
+pricing_date = date.today()
+start_date = date.today() + relativedelta(years=1)
+exercise_date = date(2020, 10, 30)
+
+irs = InterestRateSwap(start_date, 100, 0.04, 12, 5)
+sigma = 0.15
+A = irs.annuity(discount_curve)
+S = irs.swap_rate(discount_curve, libor_curve)
+T = (exercise_date - pricing_date).days / 365
+d1 = (math.log(S/irs.fixed_rate) + 0.5 * sigma**2 * T) / (sigma * T**0.5)
+d2 = (math.log(S/irs.fixed_rate) - 0.5 * sigma**2 * T) / (sigma * T**0.5)
+npv = irs.notional * A * (S * norm.cdf(d1) - irs.fixed_rate * norm.cdf(d2))
+
+print("Swaption NPV: {:.3f} EUR".format(npv))
+
+Swaption NPV: 13.587 EUR
+\end{ipython}
