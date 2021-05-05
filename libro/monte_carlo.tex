@@ -4,26 +4,17 @@ The modern version of the Monte Carlo method dates back to the introduction of t
 
 The Monte Carlo approach was primarily promoted by physics researchers Stanislaw Ulam, Nicholas Metropolis and John von Neumann.
 
-They were well aware of the potential of such techniques but it was only with the first electronic computer, the ENIAC, which was able to solve differential equations at a tremendous, so far unconceivable speed, the Monte Carlo method was eventually triggered.
+They were well aware of the potential of such techniques but it was only with the first electronic computer, the ENIAC, which was able to solve differential equations at a tremendous, so far inconceivable speed, the Monte Carlo method was eventually triggered.
 
-The name Monte Carlo refers to a famous casino in Monaco where Ulam's
-uncle used to indulge his gambling passion. 
+The name Monte Carlo refers to a famous casino in Monaco where Ulam's uncle used to indulge his gambling passion. 
 The characteristics of randomness and the repetitive nature of many processes correspond with the games played in a casino. Note that the famous roulette wheel is one of the simplest mechanical devices to generate random variables.
 
-Simulation tools find their application mostly in cases where the
-inherent complexity of a problem makes the use of other techniques
-impossible or where no analytically tractable solution with a
-deterministic algorithm is existing. In short, \emph{the Monte Carlo method is
-a numerical approach which aims for solving mathematical problems by the
-simulation of random variables}.
+Simulation tools find their application mostly in cases where the inherent complexity of a problem makes the use of other techniques impossible or where no analytically tractable solution with a
+deterministic algorithm is existing. In short, \emph{the Monte Carlo method is a numerical approach which aims for solving mathematical problems by the simulation of random variables}.
 
-Monte Carlo simulations are widely used in many fields: Engineering,
-Physics, Computational biology, Computer graphics, Applied statistics and 
-Artificial intelligence for games.
+Monte Carlo simulations are widely used in many fields: Engineering, Physics, Computational biology, Computer graphics, Applied statistics and Artificial intelligence for games.
 
-It started to be en vogue in financial mathematics in the 1980s,
-particularly when the theories of the random walk of asset prices came
-up.
+It started to be en vogue in financial mathematics in the 1980s, particularly when the theories of the random walk of asset prices came up.
 
 %The modern version of the Monte Carlo method was invented in the late
 %1940s by Stanislaw Ulam, while he was working on nuclear weapon
@@ -36,22 +27,15 @@ up.
 %used in three problem classes: optimization, numerical integration, and
 %generating draws from a probability distribution.
 
-In this Chapter this very important technique is reviewed and presented
-beside some useful applications.
+In this Chapter this very important technique is reviewed and presented beside some useful applications.
 
-\section{The Algorithm}\label{whats-monte-carlo-simulation}
+\section{The Algorithm}
+\label{whats-monte-carlo-simulation}
 
-Monte Carlo (MC) methods are used when a closed-form solution for a
-property being studied cannot be developed.
+Monte Carlo (MC) methods are used when a closed-form solution for a property being studied cannot be developed.
 
-A MC simulation performs analysis by building a model and producing 
-results from it by substituting, for any factor that has inherent uncertainty,
-the PDF of the corresponding random variable. 
-Model results are calculated over and over, each time using a different set of
-random values from the aforementioned probability distributions. 
-Depending upon the number of uncertainties and the ranges specified for them,
-a Monte Carlo simulation could involve thousands or even millions of
-calculations before it is completed. Finally the simulation produces the
+A MC simulation performs analysis by building a model and producing results from it by substituting, for any factor that has inherent uncertainty,the PDF of the corresponding random variable. Model results are calculated over and over, each time using a different set of
+random values from the aforementioned probability distributions. Depending upon the number of uncertainties and the ranges specified for them, a Monte Carlo simulation could involve thousands or even millions of calculations before it is completed. Finally the simulation produces the
 distribution of possible outcome values.
 
 A MC method/algorithm then can be described as follows: 
@@ -62,22 +46,14 @@ A MC method/algorithm then can be described as follows:
 	\item aggregate the results.
 \end{itemize}
 
-In the next Sections we will see each step in the implementation of
-practical examples.
+In the next Sections we will see each step in the implementation of practical examples.
 
 \section{Pseudo-Random Numbers}
 \label{pseudo-random-numbers}
 
-The need of generating random inputs during a MC simulation requires 
-large amounts of \emph{random numbers} to be generated, and it was their use
-that spurred the development of pseudo-random number generators. 
+The need of generating random inputs during a MC simulation requires large amounts of \emph{random numbers} to be generated, and it was their use that spurred the development of pseudo-random number generators. 
 
-Nowadays every programming language has libraries that allows to produce 
-huge series of random numbers (with a periodicity of \(2^{19937}\)). These
-series are calculated by algorithms that take as input a \emph{seed} which
-determines them uniquely. This means that choosing the same seed you will
-produce the same set of numbers every time (which is great for debugging
-purposes).
+Nowadays every programming language has libraries that allows to produce huge series of random numbers (with a periodicity of \(2^{19937}\)). These series are calculated by algorithms that take as input a \emph{seed} which determines them uniquely. This means that choosing the same seed you will produce the same set of numbers every time (which is great for debugging purposes).
 
 In \texttt{python} one of the available modules to generate random numbers is \texttt{random} which has, among others, the following useful functions:
 \begin{itemize}
@@ -99,57 +75,64 @@ As usual for a more detailed description check \texttt{help(random)}.
 
 The following example shows an application of these functions beside the effect of  changing the random number generator seed.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{random} 
+\begin{ipython}
+import random
 
-\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{seed is 1}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-
-\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{seed is 2}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-
-\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{seed is 1 again}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{random}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{randint}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{)}
-\PY{n}{aList} \PY{o}{=} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{a}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{b}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{c}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{d}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{f}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{sample}\PY{p}{(}\PY{n}{aList}\PY{p}{,} \PY{n}{k}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}
-
+random.seed(1)
+print ("seed is 1")
+print(random.random())
+print(random.random())
+\end{ipython}
+\begin{ioutput}
 seed is 1
 0.13436424411240122
 0.8474337369372327
+\end{ioutput}
+\begin{ipython}
+random.seed(2)
+print ("seed is 2")
+print(random.random())
+print(random.random())
+\end{ipython}
+\begin{ioutput}
 seed is 2
 0.9560342718892494
 0.9478274870593494
+\end{ioutput}
+\begin{ipython}
+random.seed(1)
+print ("seed is 1 again")
+print(random.random())
+print(random.random())
+\end{ipython}
+\begin{ioutput}
 seed is 1 again
 0.13436424411240122
 0.8474337369372327
+\end{ioutput}
+\begin{ipython}
+print(random.randint(1, 10))
+aList = ['a', 'b', 'c', 'd', 'f']
+print (random.sample(aList, k=2))
+\end{ipython}
+\begin{ioutput}
 2
 ['c', 'a']
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 The next lines of code show instead how to draw a uniform distribution. Figure~\ref{fig:uniform_dist} shows the result.
 
- \begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{numbers} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{10000}\PY{p}{)}\PY{p}{:}
-  \PY{n}{numbers}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{random}\PY{o}{.}\PY{n}{randint}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+from matplotlib import pyplot as plt
 
-\PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
-\PY{n}{plt}\PY{o}{.}\PY{n}{hist}\PY{p}{(}\PY{n}{numbers}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{n+nb}{range}\PY{o}{=}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.5}\PY{p}{,} \PY{l+m+mf}{5.5}\PY{p}{]}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Uniform distribution from randint}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+numbers = []
+for _ in range(10000):
+    numbers.append(random.randint(0, 5))
+
+plt.hist(numbers, 6, range=[-0.5, 5.5])
+plt.title("Uniform distribution from randint")
+plt.show()
+\end{ipython}
 
 \begin{figure}[h]
 \centering
@@ -162,27 +145,25 @@ Another useful module that is used later to generate random numbers is \texttt{n
 Below an example with \texttt{numpy.random.normal} which allows to throw random numbers according to a normal distribution
 (\(\mathcal{N}(0, 1)\)), its plot is shown in Fig.~\ref{fig:gauss_dist}.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{numpy}\PY{n+nn}{.}\PY{n+nn}{random} \PY{k}{import} \PY{n}{normal}
-\PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
+\begin{ipython}
+from numpy.random import normal
+from matplotlib import pyplot as plt
 
-\PY{n}{gauss} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{50000}\PY{p}{)}\PY{p}{:}
-  \PY{n}{gauss}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{normal}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-  
-\PY{n}{plt}\PY{o}{.}\PY{n}{hist}\PY{p}{(}\PY{n}{gauss}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{,} \PY{n+nb}{range}\PY{o}{=}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{]}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{title}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Example of Gaussian distribution from numpy}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+gauss = []
+for _ in range(50000):
+    gauss.append(normal())
 
- \begin{figure}
+plt.hist(gauss, 100, range=[-4, 4])
+plt.title("Example of Gaussian distribution from numpy")
+plt.show()
+\end{ipython}
+
+\begin{figure}
    \centering
    \includegraphics[width=0.7\textwidth]{figures/standard_normal}
    \caption{Normal distribution generated with \texttt{numpy.random.normal} function.}
 \label{fig:gauss_dist}
- \end{figure}
+\end{figure}
 
 %\hypertarget{acceptance-rejection-method}{%
 %\subsubsection{Acceptance-Rejection
@@ -222,69 +203,58 @@ Below an example with \texttt{numpy.random.normal} which allows to throw random 
 %step 1.
 %\end{enumerate}
 
-\section{Practical Examples of Monte Carlo
-Simulation}\label{example-of-monte-carlo-simulation}
+\section{Practical Examples of Monte Carlo Simulation}
+\label{example-of-monte-carlo-simulation}
 
 In this Section we go through some applications of the Monte Carlo method.
 
 \subsection{Probability to draw two kings from a deck}
-Using a frequentist approach, we can calculate the
-probability of an event as the ratio of the number of favorable outcomes
-of an experiment (number of successes) and the number of all possible
+Using a frequentist approach, we can calculate the probability of an event as the ratio of the number of favorable outcomes of an experiment (number of successes) and the number of all possible
 outcomes. 
 
-Imagine we would like to determine the probability of drawing two kings from a standard deck of cards.
-At the beginning we have 40 cards (i.e. the entire deck) with 4 possible kings so the probability to get a king is $4/40$. Next, assuming we got a king the first time, we are left with 39 cards and 3 kings only so the probability to get the second king is $3/39$. Since we want both events to happen, the final probability is the product of the two contributions:
+Imagine we would like to determine the probability of drawing two kings from a standard deck of cards. At the beginning we have 40 cards (i.e. the entire deck) with 4 possible kings so the probability to get a king is $4/40$. Next, assuming we got a king the first time, we are left with 39 cards and 3 kings only so the probability to get the second king is $3/39$. Since we want both events to happen, the final probability is the product of the two contributions:
 
 \begin{equation*}
 P_\textrm{two kings} = \frac{4}{40} \cdot \frac{3}{39} = \frac{1}{130} \approx 0.0077
 \end{equation*}
 
-Let's now try to estimate the same probability with a MC simulation, following
-the steps outlined above, and check if we get the same number.
+Let's now try to estimate the same probability with a MC simulation, following the steps outlined above, and check if we get the same number.
 \begin{itemize}
-\item \emph{Define a domain of possible inputs}: in this case the domain is a deck of cards. So a list with all the possible cards is defined (with the multiplicative operator (\texttt{*}) a list can be repeated many times; in this case, four times once for each suit). The seed is also set to 1 to make the
-test reproducible.
+\item \emph{Define a domain of possible inputs}: in this case the domain is a deck of cards. So a list with all the possible cards is defined (with the multiplicative operator (\texttt{*}) a list can be repeated many times; in this case, four times once for each suit). The seed is also set to 1 to make the test reproducible.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{random} \PY{k}{import} \PY{n}{sample}\PY{p}{,} \PY{n}{choices}\PY{p}{,} \PY{n}{seed}
+\begin{ipython}
+from random import sample, choices, seed
 
-\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{deck} \PY{o}{=} \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{A}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{3}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{4}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{5}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{6}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{7}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{J}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Q}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{K}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]} \PY{o}{*} \PY{l+m+mi}{4}
- \end{Verbatim}
-\end{codebox}
+seed(1)
+deck = ["A", "2", "3", "4", "5", "6", "7", "J", "Q", "K"] * 4
+\end{ipython}
 
 \item \emph{Generate inputs randomly from a probability distribution over the defined domain}: which means we draw randomly cards with uniform probability since the deck is fair (all cards have the same probability to be drawn). 
 We plan to do 1 million simulations; each time with the \texttt{sample} function we pick up two cards from our virtual deck (for debugging purpose the first 10 trials are printed).
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{trials} \PY{o}{=} \PY{l+m+mi}{1000000}
-\PY{n}{successes} \PY{o}{=} \PY{l+m+mi}{0}
+\begin{ipython}
+trials = 1000000
+successes = 0
 
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{trials}\PY{p}{)}\PY{p}{:}
-  \PY{n}{cards} \PY{o}{=} \PY{n}{sample}\PY{p}{(}\PY{n}{deck}\PY{p}{,} \PY{n}{k}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}
-  \PY{k}{if} \PY{n}{i} \PY{o}{\PYZlt{}} \PY{l+m+mi}{10}\PY{p}{:}
-    \PY{n+nb}{print} \PY{p}{(}\PY{n}{cards}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+for i in range(trials):
+    cards = sample(deck, k=2)
+    if i < 10:
+        print (cards)
+\end{ipython}
 
 \item \emph{Perform a deterministic computation on the generated inputs}: this step is particularly simple in this case, we just need to check if the draw is \texttt{['K', 'K']} and in case increase the counter of successes.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-  \PY{k}{if} \PY{n}{cards} \PY{o}{==} \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{K}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{K}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}\PY{p}{:}
-    \PY{n}{successes} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
- \end{Verbatim}
-\end{codebox}
+\begin{ipython}
+    if cards == ["K", "K"]:
+        successes += 1
+\end{ipython}
 
 \item \emph{Aggregate the results}: finally we just print successes/trials which is the sought probability.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{The probability to draw two kings is }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{successes}\PY{o}{/}\PY{n}{trials}\PY{p}{)}\PY{p}{)}
-
+\begin{ipython}
+print ("The probability to draw two kings is {:.4f}".format(successes/trials))
+\end{ipython}
+\begin{ioutput}
 ['Q', '7']
 ['5', '7']
 ['J', '2']
@@ -295,25 +265,21 @@ We plan to do 1 million simulations; each time with the \texttt{sample} function
 ['J', 'Q']
 ['A', 'Q']
 ['J', '5']
+
 The probability to draw two kings is 0.0077
-    \end{Verbatim}
-\end{codebox}
+\end{ioutput}
 \end{itemize}
 The result is in agreement with our theoretical expectations.
 
-Since we relied on a frequentist approach naively we can say that to
-get a better accuracy we need to run a larger number of simulations.
-This becomes apparent playing with the number of trials in the above 
-simulation. 
+Since we relied on a frequentist approach naively we can say that to get a better accuracy we need to run a larger number of simulations. This becomes apparent playing with the number of trials in the above simulation. 
 
 This is also the main reason why, despite its undoubted power, Monte Carlo simulation is not always the best approach to follow.
 Many times indeed the simulation of an experiment requires a lot of computing resources (and time) and it may not be practical to embark into such a large simulation.
 
-\subsection{Determine \(\pi\)}\label{determine-pi}
+\subsection{Determine \(\pi\)}
+\label{determine-pi}
 
-Also in this example we know what result to expect:
-\(\pi\approx 3.141592653589793\ldots\) In order to get an estimate through MC
-simulation of this famous constant a straightforward geometric approach has to be considered. Imagine a circle of diameter \(D\) which is inscribed in a square with side length \(D\), see Fig.~\ref{fig:circle_inscribed}.
+Also in this example we know what result to expect: \(\pi\approx 3.141592653589793\ldots\) In order to get an estimate through MC simulation of this famous constant a straightforward geometric approach has to be considered. Imagine a circle of diameter \(D\) which is inscribed in a square with side length \(D\), see Fig.~\ref{fig:circle_inscribed}.
 
 \begin{figure}[htb]
 	\centering
@@ -341,76 +307,67 @@ the circle divided by the total number of tested points;
 \item multiply the approximated area by 4 to get \(\pi\).
 \end{itemize}
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{random} \PY{k}{import} \PY{n}{random}\PY{p}{,} \PY{n}{seed}
-\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{sqrt}
-	
-\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{in\PYZus{}circle} \PY{o}{=} \PY{l+m+mf}{0.0}
-\PY{n}{trials} \PY{o}{=} \PY{l+m+mi}{10000}
-	
-\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{trials}\PY{p}{)}\PY{p}{:}
-    \PY{n}{x1} \PY{o}{=} \PY{n}{random}\PY{p}{(}\PY{p}{)}
-    \PY{n}{x2} \PY{o}{=} \PY{n}{random}\PY{p}{(}\PY{p}{)}
-    \PY{n}{r} \PY{o}{=} \PY{n}{sqrt}\PY{p}{(}\PY{n+nb}{pow}\PY{p}{(}\PY{n}{x1}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{)} \PY{o}{+} \PY{n+nb}{pow}\PY{p}{(}\PY{n}{x2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{)}\PY{p}{)}
-    \PY{k}{if} \PY{n}{r} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{l+m+mi}{1}\PY{p}{:}
-        \PY{n}{in\PYZus{}circle} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
-	
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Approx. pi: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{in\PYZus{}circle}\PY{o}{/}\PY{n}{trials}\PY{o}{*}\PY{l+m+mi}{4}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+from random import random, seed
+from math import sqrt
 
+seed(1)
+in_circle = 0.0
+trials = 10000
+for _ in range(trials):
+    x1 = random()
+    x2 = random()
+    r = sqrt(pow(x1, 2) + pow(x2, 2))
+    if r <= 1:
+        in_circle += 1
+
+print ("Approx. pi: {}".format(in_circle/trials*4))
+\end{ipython}
+\begin{ioutput}
 Approx. pi: 3.1416
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \section{Accuracy of Monte Carlo Simulation}
 \label{sec:confidence_interval}
 
-The central limit theorem~\cite{bib:central_limit} states that if we have
-\(Y_1, Y_2,\dots, Y_n\) which are random samples from a distribution
-\(Y\) with true mean \(\mu\) and variance \(\sigma^{2}\), then if \(n\)
-is sufficiently large,
+The central limit theorem~\cite{bib:central_limit} states that if we have \(Y_1, Y_2,\dots, Y_n\) which are random samples from a distribution \(Y\) with true mean \(\mu\) and variance \(\sigma^{2}\), then if \(n\) is sufficiently large,
 
 \begin{equation*} 
 \mu_n = \cfrac{1}{n}\sum_i^n Y_i
 \end{equation*}
  has approximately a normal distribution \(\mathcal{N}(\mu, \sigma^2/n)\).
 
-This means that if one repeats the MC experiment many times 
-(e.g. changing the seed of the random number generator) would obtain results normally distributed around the \emph{true} value \(\mu\).
-We can check the central limit theorem by repeating many times the
-MC experiment with our virtual deck and check how the distribution of $\mu_n$ behaves.
+This means that if one repeats the MC experiment many times (e.g. changing the seed of the random number generator) would obtain results normally distributed around the \emph{true} value \(\mu\).
+We can check the central limit theorem by repeating many times the MC experiment with our virtual deck and check how the distribution of $\mu_n$ behaves.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} define the domain of inputs}
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{random} \PY{k}{import} \PY{n}{sample}\PY{p}{,} \PY{n}{seed}
-	
-\PY{n}{deck} \PY{o}{=} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{A}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{K}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}  \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Q}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{J}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{3}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{4}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{5}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{6}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{7}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{*} \PY{l+m+mi}{4}
-\PY{n}{experiments} \PY{o}{=} \PY{l+m+mi}{10000}
-\PY{n}{trials} \PY{o}{=} \PY{l+m+mi}{10000}
-\PY{n}{r} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{e} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{experiments}\PY{p}{)}\PY{p}{:}
-    \PY{n}{seed}\PY{p}{(}\PY{n}{e}\PY{p}{)}
-    \PY{n}{successes} \PY{o}{=} \PY{l+m+mf}{0.0}
-    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{trials}\PY{p}{)}\PY{p}{:}
-        \PY{n}{cards} \PY{o}{=} \PY{n}{sample}\PY{p}{(}\PY{n}{deck}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{)}
-        \PY{k}{if} \PY{n}{cards} \PY{o}{==} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{K}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{K}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{:}
-            \PY{n}{successes} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
-	
-    \PY{n}{r}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{successes}\PY{o}{/}\PY{n}{trials}\PY{p}{)}
-	
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Mean: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{r}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Std : }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{r}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+# define the domain of inputs
+import numpy as np
+from random import sample, seed
 
+deck = ['A', 'K', 'Q', 'J', '2', '3', '4', '5', '6', '7'] * 4
+experiments = 10000
+trials = 10000
+r = []
+
+seed(1)
+for e in range(experiments):
+    successes = 0.0
+    for i in range(trials):
+        cards = sample(deck, 2)
+        if cards == ['K', 'K']:
+            successes += 1
+    r.append(successes/trials)
+
+print ("Mean: ", np.mean(r))
+print ("Std : ", np.std(r))
+\end{ipython}
+\begin{ioutput}
 Mean:  0.00769388
 Std :  0.0008770499105524154
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
-Looking at Fig.~\ref{fig:repeated_MC} it is clear how increasing the number of
-experiments the distribution of the results becomes more and more Gaussian-like.
+Looking at Fig.~\ref{fig:repeated_MC} it is clear how increasing the number of experiments the distribution of the results becomes more and more Gaussian-like.
 
 \begin{figure}[htb]
 	\centering
@@ -440,15 +397,9 @@ probability which correspond to the shaded area.
 	\label{fig:confidence_interval}
 \end{figure}
 
-This interval is called \textbf{95\% confidence interval} because
-it covers 95\% of the total area under the Gaussian. It can be
-interpreted like the following: if you repeat many times a simulation, 
-the fraction of calculated confidence intervals that contains the true
-parameter $\mu$ would tend toward 95\%.
+This interval is called \textbf{95\% confidence interval} because it covers 95\% of the total area under the Gaussian. It can be interpreted like the following: if you repeat many times a simulation, the fraction of calculated confidence intervals that contains the true parameter $\mu$ would tend toward 95\%.
 
-The most commonly used intervals are 99\% and 95\% confidence level and are
-respectively defined as \(\pm \cfrac{2.57\sigma}{\sqrt{n}}\) and
-\(\pm \cfrac{1.96\sigma}{\sqrt{n}}\).
+The most commonly used intervals are 99\% and 95\% confidence level and are respectively defined as \(\pm \cfrac{2.57\sigma}{\sqrt{n}}\) and \(\pm \cfrac{1.96\sigma}{\sqrt{n}}\).
 
 To construct an interval with a custom confidence level $\alpha$, we have to find a number $A$ such that
 \begin{equation}
@@ -462,30 +413,25 @@ P(\mu - A\sigma \le X \le \mu+ A\sigma) = \alpha
 
 Below an example of how to compute a confidence level in \texttt{python} given a set of fake simulations. To note that the inverse of the Gaussian CDF ($\Phi^{-1}$), used in Equation~\ref{for:A}, is computed with the method \texttt{norm.ppf()} (more details on CDF in Chapter~\ref{quantile-function}).
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
-	
-\PY{n}{samples} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{p}{,}\PY{l+m+mf}{2.}\PY{p}{,}\PY{l+m+mf}{3.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{5.}\PY{p}{,}\PY{l+m+mf}{5.}\PY{p}{,}\PY{l+m+mf}{5.}\PY{p}{,}\PY{l+m+mf}{5.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{4.}\PY{p}{,}\PY{l+m+mf}{6.}\PY{p}{,}\PY{l+m+mf}{7.}\PY{p}{,}\PY{l+m+mf}{8.}\PY{p}{]}
-\PY{n}{alpha} \PY{o}{=} \PY{l+m+mf}{0.95}
-	
-\PY{n}{X} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{n}{samples}\PY{p}{)}
-\PY{n}{A} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{1} \PY{o}{+} \PY{n}{alpha}\PY{p}{)}\PY{o}{/}\PY{l+m+mi}{2}\PY{p}{)}
-\PY{n}{m}\PY{p}{,} \PY{n}{se} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{X}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{X}\PY{p}{)}
-\PY{n}{h} \PY{o}{=} \PY{n}{A}\PY{o}{*}\PY{n}{se}\PY{o}{/}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{samples}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.0f\PYZcb{}}\PY{l+s+si}{\PYZpc{} c}\PY{l+s+s2}{onfidence interval: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{ +\PYZhy{} }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{alpha}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{,} \PY{n}{m}\PY{p}{,} \PY{n}{h}\PY{p}{)}\PY{p}{)}
-	
-95\% confidence interval: 4.4375 +- 0.8119808363806419
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+import numpy as np
+from scipy.stats import norm
 
-The confidence interval can be used to assess the accuracy of the Monte
-Carlo simulation. From what has been said abovem the uncertainty on our best estimate of $\mu$ is $\sqrt{\cfrac{\sigma^2}{n}}=\cfrac{\sigma}{\sqrt{n}}$
-where \(\sigma^2 = \mathrm{Var}(Y)\).
+samples = [1.,2.,3.,4.,4.,4.,5.,5.,5.,5.,4.,4.,4.,6.,7.,8.]
+alpha = 0.95
+X = np.array(samples)
+A = norm.ppf((1 + alpha)/2)
+m, se = np.mean(X), np.std(X)
+h = A*se/np.sqrt(len(samples))
+print ("{:.0f}% confidence int.: {:.3f} +- {:.3f}".format(alpha*100, m, h))
+\end{ipython}
+\begin{ioutput}
+95% confidence int.: 4.437 +- 0.812
+\end{ioutput}
 
-While it is obvious that the estimate should get worse with increased variance and better with increased sample size, this equation  gives us the exact 
-scaling. Indeed the uncertainty formula tells us that to get one more decimal digit of accuracy (i.e. an error one tenth as large) requires a 100-fold increase in computation. To get three more digits of accuracy requires one million times as much computation. From that it is clear that Monte Carlo computation is poorly suited for problems that must be answered with high precision.
+The confidence interval can be used to assess the accuracy of the Monte Carlo simulation. From what has been said abovem the uncertainty on our best estimate of $\mu$ is $\sqrt{\cfrac{\sigma^2}{n}}=\cfrac{\sigma}{\sqrt{n}}$ where \(\sigma^2 = \mathrm{Var}(Y)\).
+
+While it is obvious that the estimate should get worse with increased variance and better with increased sample size, this equation  gives us the exact scaling. Indeed the uncertainty formula tells us that to get one more decimal digit of accuracy (i.e. an error one tenth as large) requires a 100-fold increase in computation. To get three more digits of accuracy requires one million times as much computation. From that it is clear that Monte Carlo computation is poorly suited for problems that must be answered with high precision.
 
 \section{Exercises}
 \input{monte_carlo_ex_text}

@@ -47,7 +47,7 @@ Some notations that will be used later are
 \section{The Markowitz Mean/Variance Portfolio Model}
 \label{the-markowitz-meanvariance-portfolio-model}
 
-Although investors may expect a particular return when they buy a particular stock, they may be disappointed or pleasantly surprised, because fluctuations in stock prices result in fluctuating returns. 
+Although investors may expect a particular return when they buy a stock, they may be disappointed or pleasantly surprised, because fluctuations in stock prices result in fluctuating returns. 
 
 This model, first introduced by Markowitz, defines risk as the possibility that actual returns will deviate from expected returns, and the degree of potential fluctuation determines the degree of risk.
 So it assumes that an investor has two considerations when constructing an investment portfolio: expected return and variance in return (i.e. measure of risk or of the variability in realized return around the expected return). 
@@ -66,28 +66,27 @@ Hence the Markowitz model requires two major kinds of information:
 
 In the following examples we are going to use real data
 of five companies:  AAPL, AMZN, FB, GOOG, NFLX. As for data used in the previous Chapter
-it can be downloaded with \texttt{ffn}  
+it can be downloaded with \texttt{ffn}:
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
-\PY{k+kn}{import} \PY{n+nn}{ffn}
-		
-\PY{n}{df} \PY{o}{=} \PY{n}{ffn}\PY{o}{.}\PY{n}{get}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl,AMZN,FB,GOOG,NFLX}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{start}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2014\PYZhy{}03\PYZhy{}27}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{end}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2018\PYZhy{}03\PYZhy{}27}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{c+c1}{\PYZsh{} uncomment the following line if reading from file}
-\PY{c+c1}{\PYZsh{} df = pd.read\PYZus{}csv(\PYZdq{}portfolio\PYZus{}data.csv\PYZdq{}, index\PYZus{}col=\PYZdq{}date\PYZdq{})}
-		
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+import pandas as pd
+import ffn
 
-                 aapl        amzn         fb        goog       nflx
+df = ffn.get('aapl,AMZN,FB,GOOG,NFLX', start='2014-03-27', end='2018-03-27')
+# uncomment the following line if reading from file
+# df = pd.read_csv("portfolio_data.csv", index_col="date")
+
+print (df.head())
+\end{ipython}
+\begin{ioutput}
+                aapl       amzn        fb       goog      nflx
 Date
-2014-03-27  17.202097  338.470001  60.970001  556.930969  52.025715
-2014-03-28  17.182892  338.290009  60.009998  558.456787  51.267143
-2014-03-31  17.179056  336.369995  60.240002  555.445007  50.290001
-2014-04-01  17.336205  342.989990  62.619999  565.607117  52.098572
-2014-04-02  17.365013  341.959991  62.720001  565.447571  51.840000
-\end{Verbatim}
-\end{codebox}
+2014-03-27 17.202097 338.470001 60.970001 556.930969 52.025715
+2014-03-28 17.182892 338.290009	60.009998 558.456787 51.267143
+2014-03-31 17.179056 336.369995	60.240002 555.445007 50.290001
+2014-04-01 17.336205 342.989990	62.619999 565.607117 52.098572
+2014-04-02 17.365013 341.959991	62.720001 565.447571 51.840000
+\end{ioutput}
 
 Otherwise it can be directly used from \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/portfolio_data.csv}{portfolio\_data.csv}. 
 Data, shown in Figure~\ref{fig:stocks}, is made of the historical 
@@ -96,34 +95,32 @@ series of the closing prices in the last 5 years.
 With \texttt{pandas} the main characteristics of these time series can
 be easily computed (e.g. daily returns, covariance matrix,\ldots):
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{daily\PYZus{}returns} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{pct\PYZus{}change}\PY{p}{(}\PY{p}{)}
-\PY{n}{returns} \PY{o}{=} \PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{252}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{returns}\PY{p}{)}
-
+\begin{ipython}
+daily_returns = df.pct_change()
+returns = daily_returns.mean()*252
+print (returns)
+\end{ipython}
+\begin{ioutput}
 aapl    0.240921
 amzn    0.414775
 fb      0.263708
 goog    0.173464
 nflx    0.527628
 dtype: float64
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{covariance} \PY{o}{=} \PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{252}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{covariance}\PY{p}{)}
-
+\begin{ipython}
+covariance = daily_returns.cov()*252
+print (covariance)
+\end{ipython}
+\begin{ioutput}
           aapl      amzn        fb      goog      nflx
 aapl  0.051967  0.025182  0.026075  0.022764  0.028064
 amzn  0.025182  0.085876  0.041196  0.039654  0.048576
 fb    0.026075  0.041196  0.069723  0.036337  0.044753
 goog  0.022764  0.039654  0.036337  0.052001  0.040630
 nflx  0.028064  0.048576  0.044753  0.040630  0.178332
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \begin{figure}[htb]
 \centering
@@ -133,8 +130,7 @@ first value in each series}
 \label{fig:stocks}
 \end{figure}
     
-In order to "simulate" a portfolio it is enough to throw five random weights 
-with the constraint that they had to sum up to 1. 
+In order to "simulate" a portfolio it is enough to throw five random weights with the constraint that they had to sum up to 1. 
 In Figure~\ref{fig:mc_portfolio} a large number of simulated portfolios are shown in the return vs volatility plane. 
 In this case no attempt of any optimization whatsoever has been made.
 
@@ -177,26 +173,26 @@ so it is enough to repeat the same steps:
   pass everything to \texttt{scipy.optimize.minimize}.
 \end{itemize}
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
-		
-\PY{k}{def} \PY{n+nf}{sum\PYZus{}weights}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{:} 
-    \PY{k}{return} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{w}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}
-		
-\PY{k}{def} \PY{n+nf}{markowitz}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{)}
-		
-\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{5}
-\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{,}\PY{p}{)} 
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-		
-\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
-                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
+\begin{ipython}
+import numpy as np
+from scipy.optimize import minimize
 
+def sum_weights(w):
+    return np.*@sum@*(w) - 1
+
+def markowitz(w, cov):
+    return w.T.dot(cov.dot(w))
+
+num_assets = 5
+constraints = ({'type': 'eq', 'fun': sum_weights},)
+bounds = tuple((0, 1) for asset in range(num_assets))
+weights = [1./num_assets for _ in range(num_assets)]
+opts = minimize(markowitz, weights, args=(covariance,),
+                bounds=bounds, constraints=constraints)
+print (opts)
+print ("Expected portfolio return: {:.3f}".format(np.dot(opts.x, returns))
+\end{ipython}
+\begin{ioutput}
     fun: 0.036290306589982405
     jac: array([0.07274766, 0.07278468, 0.07233336, 0.07242217, 0.0726624 ])
 message: 'Optimization terminated successfully.'
@@ -207,22 +203,12 @@ message: 'Optimization terminated successfully.'
 success: True
 x: array([0.44644822, 0.06472903, 0.12215803, 0.36453326, 0.00213147])
 
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Expected portfolio return: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{,} \PY{n}{returns}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-
 Expected portfolio return: 0.231
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
-The solution recommends to devote about 44\% of the portfolio to AAPL,
-about 6\% to AMZN, 12\% to FB and so on\ldots 
-The expected return is
-about 23\%, with a variance of about 0.036 or, equivalently, a standard deviation of 0.19.
+The solution recommends to devote about 44\% of the portfolio to AAPL, about 6\% to AMZN, 12\% to FB and so on\ldots The expected return is about 23\%, with a variance of about 0.036 or, equivalently, a standard deviation of 0.19.
 
-In this example we based the model simply on straightforward statistical
-data derived from daily returns. However it could be possible, rather
-than estimate the expected returns from historical data,
-to base this estimate on information about
-expected future performance of the asset.
+In this example we based the model simply on straightforward statistical data derived from daily returns. However it could be possible, rather than estimate the expected returns from historical data, to base this estimate on information about expected future performance of the asset.
 
 \section{Efficient Frontier}\label{efficient-frontier}
 There is no precise way for an investor to determine the “correct” trade off between risk and return. If she wants a higher expected return, she generally has to “pay for it” with higher risk. Thus, one is frequently interested in looking at the relative distribution of the two.
@@ -233,27 +219,23 @@ This time beside the constraint on the sum of weights, we have to add the one th
 
 The following example produce the efficient frontier plot shown in Fig.~\ref{fig:efficient_frontier}.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{def} \PY{n+nf}{efficient\PYZus{}frontier}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{asset\PYZus{}returns}\PY{p}{,} \PY{n}{target\PYZus{}return}\PY{p}{)}\PY{p}{:} 
-    \PY{n}{portfolio\PYZus{}return} \PY{o}{=} \PY{n}{asset\PYZus{}returns}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)} 
-    \PY{k}{return} \PY{p}{(}\PY{n}{portfolio\PYZus{}return} \PY{o}{\PYZhy{}} \PY{n}{target\PYZus{}return}\PY{p}{)}
-		
-\PY{n}{results} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-		
-\PY{k}{for} \PY{n}{eff} \PY{o+ow}{in} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.20}\PY{p}{,} \PY{l+m+mf}{0.45}\PY{p}{,} \PY{l+m+mf}{0.005}\PY{p}{)}\PY{p}{:}
-    \PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{efficient\PYZus{}frontier}\PY{p}{,} 
-                    \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{args}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{p}{(}\PY{n}{returns}\PY{p}{,} \PY{n}{eff}\PY{p}{,}\PY{p}{)}\PY{p}{\PYZcb{}}\PY{p}{,}
-                   \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}
-    \PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-    \PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
-                    \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)} 
-		
-    \PY{n}{results}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{p}{,}
-                    \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{returns}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+def efficient_frontier(w, asset_returns, target_return):
+    portfolio_return = asset_returns.dot(w)
+    return (portfolio_return - target_return)
+
+results = []
+bounds = tuple((0, 1) for asset in range(num_assets))
+for eff in np.arange(0.20, 0.45, 0.005):
+    constraints = ({'type': 'eq', 'fun': efficient_frontier,
+                    'args':(returns, eff,)},
+                   {'type': 'eq', 'fun': sum_weights})
+weights = [1./num_assets for _ in range(num_assets)]
+opts = minimize(markowitz, weights, args=(covariance,),
+                bounds=bounds, constraints=constraints)
+results.append((np.sqrt(opts.x.T.dot(covariance.dot(opts.x))),
+                np.*@sum@*(returns*opts.x)))
+\end{ipython}
 
 \begin{figure}[htb]
 \centering
@@ -295,16 +277,11 @@ although they are beyond the scope of these lectures.
 \section{Portfolios with a Risk-Free Asset}
 \label{portfolios-with-a-risk-free-asset}
 
-When one of the investments available is risk free, then the efficient
-frontier has a particularly simple form. The risk–return combinations of the risk-free investment and a risky portfolio lie on a straight line connecting the two investments: the capital allocation line (CAL). The slope of the CAL measures the trade off
-between risk and return. A higher slope means that investors receive a
-higher expected return in exchange for taking on more risk.
+When one of the investments available is risk free, then the efficient frontier has a particularly simple form. The risk–return combinations of the risk-free investment and a risky portfolio lie on a straight line connecting the two investments: the capital allocation line (CAL). The slope of the CAL measures the trade off between risk and return. A higher slope means that investors receive a higher expected return in exchange for taking on more risk.
 
-The capital allocation line aids investors in choosing how much to
-invest in a risk-free asset and one or more risky assets.
+The capital allocation line aids investors in choosing how much to invest in a risk-free asset and one or more risky assets.
 
-The simplest example of such kind of portfolios is the one containing only two assets: a risk-free Treasury bill and a stock. Assume that the expected return of the Treasury bill is \(\mathbb{E}(R_f)=3\%\) and its risk is 0\%. Further, assume that the expected return of the stock is \(\mathbb{E}(R_r)=10\%\) and its standard deviation is \(\sigma_r=20\%\). The question that needs to be answered
-for any individual investor is how much to invest in each of these
+The simplest example of such kind of portfolios is the one containing only two assets: a risk-free Treasury bill and a stock. Assume that the expected return of the Treasury bill is \(\mathbb{E}(R_f)=3\%\) and its risk is 0\%. Further, assume that the expected return of the stock is \(\mathbb{E}(R_r)=10\%\) and its standard deviation is \(\sigma_r=20\%\). The question that needs to be answered for any individual investor is how much to invest in each of these
 assets.
 
 The expected return (\(\mathbb{E}(R_p)\)) of this portfolio is calculated as follows:
@@ -314,56 +291,42 @@ The expected return (\(\mathbb{E}(R_p)\)) of this portfolio is calculated as fol
 \end{equation*}
 where \(w_f\) is the relative allocation to the risk-free asset.
 
-The calculation of risk for this portfolio is simple because the
-standard deviation of the Treasury bill is 0\%. Thus it is calculated
-as
+The calculation of risk for this portfolio is simple because the standard deviation of the Treasury bill is 0\%. Thus it is calculated as
 
 \begin{equation*} 
 	\sigma_p = (1-w_f)\cdot \sigma_r 
 \end{equation*}
-In this very simple example, if an investor invested 100\% into
-the risk-free asset (\(w_f=1\)), the expected return would be 3\% and
-the risk of the portfolio would be 0\%. Likewise, investing 100\% into
-the stock (\(w_f=0\)) would give an investor an expected return of 10\%
-and a portfolio risk of 20\%. If the investor allocated 25\% to the
-risk-free asset and 75\% to the risky asset, the portfolio expected
-return and risk calculations would be
+In this very simple example, if an investor invested 100\% into the risk-free asset (\(w_f=1\)), the expected return would be 3\% and the risk of the portfolio would be 0\%. Likewise, investing 100\% into the stock (\(w_f=0\)) would give an investor an expected return of 10\% and a portfolio risk of 20\%. If the investor allocated 25\% to the risk-free asset and 75\% to the risky asset, the portfolio expected return and risk calculations would be
 
 \[ \mathbb{E}(R_p) = (3\% \cdot 25\%) + (10\% \cdot 75\%) = 0.75\% + 7.5\% = 8.25\% \]
 
 \[ \sigma_p = 75\% \cdot 20\% = 15\% \]
 
-Applying the same reasoning to our example we can consider an additional
-risk-free asset with an expected return of 10\% and repeat the
-minimisation to determine the efficient frontier of the resulting
-portfolio. Notice how the objective function is almost the same as before, 
-while the target return constraint now includes the risk-free asset.
+Applying the same reasoning to our example we can consider an additional risk-free asset with an expected return of 10\% and repeat the minimisation to determine the efficient frontier of the resulting portfolio. Notice how the objective function is almost the same as before, while the target return constraint now includes the risk-free asset.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{6}
-		
-\PY{k}{def} \PY{n+nf}{markowitz\PYZus{}with\PYZus{}rf}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{n}{w}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
-		
-\PY{k}{def} \PY{n+nf}{efficient\PYZus{}frontier\PYZus{}with\PYZus{}rf}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{asset\PYZus{}returns}\PY{p}{,} \PY{n}{target\PYZus{}return}\PY{p}{,} \PY{n}{risk\PYZus{}free}\PY{p}{)}\PY{p}{:} 
-    \PY{n}{portfolio\PYZus{}return} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{asset\PYZus{}returns}\PY{o}{*}\PY{n}{w}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)} \PY{o}{+} \PY{n}{risk\PYZus{}free}\PY{o}{*}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{5}\PY{p}{]} 
-    \PY{k}{return} \PY{p}{(}\PY{n}{portfolio\PYZus{}return} \PY{o}{\PYZhy{}} \PY{n}{target\PYZus{}return}\PY{p}{)}
-	
-\PY{n}{rf\PYZus{}asset\PYZus{}return} \PY{o}{=} \PY{l+m+mf}{0.10}
-\PY{n}{results\PYZus{}rf} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-\PY{k}{for} \PY{n}{eff} \PY{o+ow}{in} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.10}\PY{p}{,} \PY{l+m+mf}{0.45}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{)}\PY{p}{:}
-    \PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{efficient\PYZus{}frontier\PYZus{}with\PYZus{}rf}\PY{p}{,} 
-                     \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{args}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{p}{(}\PY{n}{returns}\PY{p}{,} \PY{n}{eff}\PY{p}{,} \PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{)}\PY{p}{\PYZcb{}}\PY{p}{,}
-                    \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}
-    \PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-    \PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz\PYZus{}with\PYZus{}rf}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{)}\PY{p}{,}
-                    \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
-    \PY{n}{results\PYZus{}rf}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{p}{,} 
-                       \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{returns}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{o}{+}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{5}\PY{p}{]}\PY{o}{*}\PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{)}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+num_assets = 6
+
+def markowitz_with_rf(w, cov):
+    return w[:-1].T.dot(cov.dot(w[:-1]))
+
+def efficient_frontier_with_rf(w, asset_returns, target_return, risk_free):
+    portfolio_return = np.*@sum@*(asset_returns*w[:-1]) + risk_free*w[5]
+    return (portfolio_return - target_return)
+
+rf_asset_return = 0.10
+res_rf = []
+bounds = tuple((0, 1) for asset in range(num_assets))
+for eff in np.arange(0.10, 0.45, 0.01):
+    constraints = ({'type': 'eq', 'fun': efficient_frontier_with_rf,
+	                'args':(returns, eff, rf_asset_return)},
+                   {'type': 'eq', 'fun': sum_weights})
+    weights = [1./num_assets for _ in range(num_assets)]
+    opts = minimize(markowitz_with_rf, weights, args=(covariance),
+                    bounds=bounds, constraints=constraints)
+    res_rf.append((np.sqrt(opts.x[:-1].T.dot(covariance.dot(opts.x[:-1]))),
+                   np.*@sum@*(returns*opts.x[:-1])+opts.x[5]*rf_asset_return))
+\end{ipython}
 
 \begin{figure}[htb]
 \centering
@@ -372,23 +335,16 @@ while the target return constraint now includes the risk-free asset.
     \label{fig:cal}
 \end{figure}
     
-As it is clear from Fig.~\ref{fig:cal} the efficient frontier has become a
-straight line, tangent to the frontier of the risky assets only. When
-the target is 10\% the entire investment is allocated to the risk-free
-asset, as the target increases the fraction of the risky assets grows
+As it is clear from Fig.~\ref{fig:cal} the efficient frontier has become a straight line, tangent to the frontier of the risky assets only. When the target is 10\% the entire investment is allocated to the risk-free asset, as the target increases the fraction of the risky assets grows
 proportionally to the volatility. 
 
-It is important to notice that in general the relative proportions
-devoted to risky investments do not change. Only the allocation between
-the risk-free asset and the risky assets change.
+It is important to notice that in general the relative proportions devoted to risky investments do not change. Only the allocation between the risk-free asset and the risky assets change.
 
 \subsection{The Sharpe Ratio}
 \label{the-sharpe-ratio}
-The goal of an investor who is seeking to earn the highest possible expected return for any 
-level of volatility is to find the portfolio that generates the steepest possible line
-when combined with the risk-free investment. The slope of the line is called the \emph{Sharpe ratio} of the portfolio.
+The goal of an investor who is seeking to earn the highest possible expected return for any level of volatility is to find the portfolio that generates the steepest possible line when combined with the risk-free investment. The slope of the line is called the \emph{Sharpe ratio} of the portfolio.
 
-For some portfolio of risky assets let
+For some portfolio of risky assets let 
 
 \begin{itemize}
 \tightlist
@@ -400,14 +356,11 @@ For some portfolio of risky assets let
   \(r_f\) the return of a risk-free asset.
 \end{itemize}
 
-A plausible single measure (as opposed to the two measures, risk and
-return) of attractiveness of portfolio is the Sharpe ratio:
+A plausible single measure (as opposed to the two measures, risk and return) of attractiveness of portfolio is the Sharpe ratio:
 
 \begin{equation} \cfrac{R_r - r_f}{\sigma_r} \end{equation}
 
-In words, it measures how much additional return we achieved for the
-additional risk we took on, relative to putting all our money in the
-risk-free asset. The portfolio that maximizes this ratio has some interesting properties. Suppose
+In words, it measures how much additional return we achieved for the additional risk we took on, relative to putting all our money in the risk-free asset. The portfolio that maximizes this ratio has some interesting properties. Suppose 
 
 \begin{itemize}
 \tightlist
@@ -424,9 +377,7 @@ To meet our return target, we must have:
 	(1 - w_r) * r_f + w_r * R_r =R_\textrm{target} 
 \end{equation*}
 
-The standard deviation of our total investment is:
-\(w_r\cdot \sigma_r\). Solving for \(w_r\) in the equation above, we
-get:
+The standard deviation of our total investment is: \(w_r\cdot \sigma_r\). Solving for \(w_r\) in the equation above, we get:
 
 \begin{equation*} 
 	w_r = \cfrac{R_\textrm{target} - r_f}{R_r - r_f} 
@@ -442,32 +393,30 @@ Minimising the portfolio standard deviation means:
 	\textrm{min}\left[\cfrac{R_\textrm{target} - r_f}{R_r - r_f}\cdot \sigma_r\right]\implies\textrm{max}\left[\cfrac{R_r - r_f}{\sigma_r}\right]
 \end{equation}
 
-So, regardless of our risk/return preference, the money we invest in
-risky assets should be invested in the portfolio that maximises
-the Sharpe ratio, because it will be also the portfolio that minimize 
-the risk (i.e. standard deviation) at the same time.
+So, regardless of our risk/return preference, the money we invest in risky assets should be invested in the portfolio that maximises the Sharpe ratio, because it will be also the portfolio that minimize the risk (i.e. standard deviation) at the same time.
 
 Let's see the application of the Sharpe ratio on our sample.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{5}
-\PY{n}{rf\PYZus{}asset\PYZus{}return} \PY{o}{=} \PY{l+m+mf}{0.10}
-		
-\PY{k}{def} \PY{n+nf}{negativeSharpeRatio}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{asset\PYZus{}returns}\PY{p}{,} \PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:} 
-    \PY{n}{p\PYZus{}ret} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{asset\PYZus{}returns}\PY{o}{*}\PY{n}{w}\PY{p}{)}
-    \PY{n}{p\PYZus{}var} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-    \PY{n}{ratio} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{p}{(}\PY{n}{p\PYZus{}ret} \PY{o}{\PYZhy{}} \PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{)} \PY{o}{/} \PY{n}{p\PYZus{}var}
-    \PY{k}{return} \PY{n}{ratio}
-		
-\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{negativeSharpeRatio}\PY{p}{,} \PY{n}{weights}\PY{p}{,} 
-                \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{returns}\PY{p}{,} \PY{n}{rf\PYZus{}asset\PYZus{}return}\PY{p}{,} \PY{n}{covariance}\PY{p}{)}\PY{p}{,}
-                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
+\begin{ipython}
+num_assets = 5
+rf_asset_return = 0.10
 
+def negativeSharpeRatio(w, asset_returns, rf_asset_return, cov):
+    p_ret = np.*@sum@*(asset_returns*w)
+    p_var = np.sqrt(w.T.dot(cov.dot(w)))
+    ratio = -(p_ret - rf_asset_return) / p_var
+    return ratio
+
+constraints = ({'type': 'eq', 'fun': sum_weights})
+bounds = tuple((0, 1) for asset in range(num_assets))
+weights = [1./num_assets for _ in range(num_assets)]
+opts = minimize(negativeSharpeRatio, weights,
+                args=(returns, rf_asset_return, covariance),
+                bounds=bounds, constraints=constraints)
+print (opts)
+print ("Sharpe ratio: ", -opts.fun)
+\end{ipython}
+\begin{ioutput}
     fun: -1.2577787922793253
     jac: array([-0.37974137, -0.38030942, -0.26630181,  0.02906457, -0.38027261])
 message: 'Optimization terminated successfully.'
@@ -479,16 +428,10 @@ success: True
       x: array([1.24962448e-01, 5.40550205e-01, 0.00000000e+00, 
                 1.26201133e-16, 3.34487347e-01])
 
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Sharpe ratio: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{n}{opts}\PY{o}{.}\PY{n}{fun}\PY{p}{)}
-
 Sharpe ratio:  1.2577787922793253
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
-Figure~\ref{fig:sharpe_ratio} shows the result of the optimization for our example.    
-Notice that in general the relative proportions of the stocks are the
-same as in the previous case where we explicitly included a risk free
-asset (0.12, 0.54, 0., 0., 0.33).
+Figure~\ref{fig:sharpe_ratio} shows the result of the optimization for our example. Notice that in general the relative proportions of the stocks are the same as in the previous case where we explicitly included a risk free asset (0.12, 0.54, 0., 0., 0.33).
 
 \begin{figure}[htb]
 	\centering
@@ -497,10 +440,7 @@ asset (0.12, 0.54, 0., 0., 0.33).
 	\label{fig:sharpe_ratio}
 \end{figure}
 
-So the optimization using the Sharpe ratio gives us a portfolio that is
-on the minimum volatility efficient frontier, and gives the maximum
-return relative to putting all our money in the risk-free asset (so graphically it sits in the 
-tangent point between CAL and efficient frontier).
+So the optimization using the Sharpe ratio gives us a portfolio that is on the minimum volatility efficient frontier, and gives the maximum return relative to putting all our money in the risk-free asset (so graphically it sits in the tangent point between CAL and efficient frontier).
 
 Usually, any Sharpe ratio greater than 1.0 is considered acceptable to good by investors. A ratio higher than 2.0 is rated as very good. A ratio of 3.0 or higher is considered excellent. A ratio under 1.0 is sub-optimal.
 
@@ -571,26 +511,23 @@ In the freely competitive financial markets described by CAPM, no security can s
 
 In the following examples historical series of SP500 and some securities are used. They can be gathered with \texttt{ffn}
 
-
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{capm} \PY{o}{=} \PY{n}{ffn}\PY{o}{.}\PY{n}{get}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{AAPL,AMZN,BA,GOOG,IBM,MGM,T,TSLA,\PYZca{}GSPC}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
-               \PY{n}{start}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2014\PYZhy{}03\PYZhy{}27}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{end}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2018\PYZhy{}03\PYZhy{}27}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+capm = ffn.get('AAPL,AMZN,BA,GOOG,IBM,MGM,T,TSLA,^GSPC',
+               start='2014-03-27', end='2018-03-27')
+\end{ipython}
 \noindent
 or downloaded with \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/capm.csv}{capm.csv}.
 After an inspection of data, daily and annualized expected returns can be computed.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
+\begin{ipython}
+import pandas as pd
 
-\PY{c+c1}{\PYZsh{} uncomment this line if using the file}		
-\PY{c+c1}{\PYZsh{} \PY{n}{capm} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{capm.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{index\PYZus{}col}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{date}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{capm}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-\PY{n}{daily\PYZus{}returns} \PY{o}{=} \PY{n}{capm}\PY{o}{.}\PY{n}{pct\PYZus{}change}\PY{p}{(}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}
-
+# uncomment this line if using the file
+# capm = pd.read_csv("capm.csv", index_col='date')
+print (capm.head())
+daily_returns = capm.pct_change()*100
+\end{ipython}
+\begin{ioutput}
                  aapl        amzn          ba        goog         ibm
 Date                                                                    
 2014-03-27  17.202097  338.470001  105.897987  556.930969  143.243484   
@@ -606,8 +543,7 @@ Date
 2014-03-31  24.440292  23.616835  41.689999  1872.339966  
 2014-04-01  25.073507  23.630304  43.394001  1885.520020  
 2014-04-02  25.234173  23.818861  46.057999  1890.900024  
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 To recap $\beta$ is the slope of the regression line of the market return vs stock return plot (and $\alpha$ is the intercept of this line with the $y$ axis).
 
@@ -617,34 +553,33 @@ The resulting fits for the stocks in our sample are shown in Fig.~\ref{fig:capm_
 With the daily returns and $\beta$ of each stock, we can apply the capital asset pricing model. First, we can calculate the average daily return of the market and this return can be annualized by multiplying it by the number of trading days in a year.
 Assuming a risk-free rate of 1\%, we can then calculate CAPM using Eq.~\ref{eq:capm}.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{rm} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{daily\PYZus{}returns}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{gspc}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{252}
-\PY{n}{rf} \PY{o}{=} \PY{l+m+mf}{0.01} 
-	
-\PY{n}{betas} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
-\PY{n}{alphas} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
-\PY{n}{ERs} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
-\PY{k}{for} \PY{n}{i}\PY{p}{,} \PY{n}{k} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{columns}\PY{p}{)}\PY{p}{:}
-    \PY{k}{if} \PY{n}{k} \PY{o}{==} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{gspc}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}
-        \PY{k}{continue}
-    \PY{n}{betas}\PY{p}{[}\PY{n}{k}\PY{p}{]}\PY{p}{,} \PY{n}{alphas}\PY{p}{[}\PY{n}{k}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{polyfit}\PY{p}{(}\PY{n}{daily\PYZus{}returns}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{gspc}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{,} 
-    \PY{n}{daily\PYZus{}returns}\PY{p}{[}\PY{n}{k}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-    \PY{n}{ERs}\PY{p}{[}\PY{n}{k}\PY{p}{]} \PY{o}{=} \PY{n}{rf} \PY{o}{+} \PY{p}{(}\PY{n}{betas}\PY{p}{[}\PY{n}{k}\PY{p}{]} \PY{o}{*} \PY{p}{(}\PY{n}{rm}\PY{o}{\PYZhy{}}\PY{n}{rf}\PY{p}{)}\PY{p}{)} 
+\begin{ipython}
+rm = np.mean(daily_returns.iloc[1:]['gspc'])*252
+rf = 0.01
+betas = {}
+alphas = {}
+ERs = {}
 
-\PY{k}{for} \PY{n}{k}\PY{p}{,} \PY{n}{v} \PY{o+ow}{in} \PY{n}{ERs}\PY{o}{.}\PY{n}{items}\PY{p}{(}\PY{p}{)}\PY{p}{:} 
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:4\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:4.1f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{k}\PY{p}{,} \PY{n}{v}\PY{p}{)}\PY{p}{)}
+for i, k in enumerate(df.columns):
+    if k == "gspc":
+        continue
+    betas[k], alphas[k] = np.polyfit(daily_returns['gspc'][1:],
+    daily_returns[k][1:], 1)
+    ERs[k] = rf + (betas[k] * (rm-rf))
 
-AAPL: 10.3\%
-AMZN: 10.8\%
-BA  : 10.3\%
-GOOG: 10.7\%
-IBM :  8.7\%
-MGM : 13.8\%
-T   :  5.9\%
-TSLA: 11.9\%
-\end{Verbatim}
-\end{codebox}
+for k, v in ERs.items():
+    print ("{:4}: {:4.1f}%".format(k, v))
+\end{ipython}
+\begin{ioutput}
+AAPL: 10.3%
+AMZN: 10.8%
+BA  : 10.3%
+GOOG: 10.7%
+IBM :  8.7%
+MGM : 13.8%
+T   :  5.9%
+TSLA: 11.9%
+\end{ioutput}
 
 \begin{figure}[htb]
 	\centering
@@ -658,13 +593,12 @@ TSLA: 11.9\%
 Now that we have the $\beta$s of each individual stock we can calculate the CAPM for a portfolio made of the same stocks (we assume equal weights for simplicity).
 It is enough indeed to perform a weighted sum of of the expected return according to the model of each stock.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n+nb}{sum}\PY{p}{(}\PY{n}{ERs}\PY{o}{.}\PY{n}{values}\PY{p}{(}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{1}\PY{o}{/}\PY{n+nb}{len}\PY{p}{(}\PY{n}{ERs}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-
-10.3\%
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+print ("{:.1f}%".format(sum(ERs.values())*1/len(ERs)))
+\end{ipython}
+\begin{ioutput}
+10.3%
+\end{ioutput}
 
 The expected return of the portfolio is roughly 10\% and this is what an investor should expect according to CAPM.
 
@@ -684,61 +618,37 @@ Interesting extension of CAPM involves \emph{Bayesian regression}`\cite{bib:bays
 \section{Portfolio Optimization and PCA}
 \label{portfolio-optimization-and-pca}
 
-In Section~\ref{sec:pca} the Principal Component Analysis (PCA)
-has been introduced and here a simple application to portfolio
-optimization will be described.
+In Section~\ref{sec:pca} the Principal Component Analysis (PCA) has been introduced and here a simple application to portfolio optimization will be described.
 
-Essentially we are going to apply PCA on equity return covariance matrix
-to construct principal component portfolios because they have some
-interesting characteristics. This means that our portfolio weights will be
-based on the eigenvectors of the covariance matrix.
+Essentially we are going to apply PCA on equity return covariance matrix to construct principal component portfolios because they have some interesting characteristics. This means that our portfolio weights will be based on the eigenvectors of the covariance matrix.
 
-From the theory we know that the first principal component (PC1) is a
-factor that captures the maximal amount of variance (i.e. the linear
-combination of assets that has highest possible variance). The second
-principal component factor (PC2) is the second most variable portfolio
-that is orthogonal to the first and so on.
+From the theory we know that the first principal component (PC1) is a factor that captures the maximal amount of variance (i.e. the linear combination of assets that has highest possible variance). The second principal component factor (PC2) is the second most variable portfolio that is orthogonal to the first and so on.
 
-It is important to stress that the principal components are just
-statistical factors that contain no real meaning. However, we will see
-that the first principal component portfolio is related to the market
-portfolio (or at least very close to) or to the market risk premium 
-from the CAPM model.
+It is important to stress that the principal components are just statistical factors that contain no real meaning. However, we will see that the first principal component portfolio is related to the market portfolio (or at least very close to) or to the market risk premium from the CAPM model.
 
-In this analysis we are going to use the equities forming the
-\emph{Dow Jones 30} index, so the first step is to download their
-returns with \(\tt{ffn}\) package (the data availability is from March
-2019 to today).
+In this analysis we are going to use the equities forming the \emph{Dow Jones 30} index, so the first step is to download their returns with \(\tt{ffn}\) package (the data availability is from March 2019 to today).
 	
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{tickers} \PY{o}{=} \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{BA}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CAT}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CVX}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CSCO}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{KO}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
-           \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{DOW}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{XOM}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{GS}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{HD}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{INTC}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{IBM}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
-           \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{JNJ}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{JPM}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{MCD}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{MRK}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{MSFT}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{NKE}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
-           \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{PFE}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{PG}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{RTX}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{TRV}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{UNH}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{VZ}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}
-           \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{V}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{WBA}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{WMT}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{\PYZca{}DJI}\PY{l+s+s2}{\PYZdq{}}\PY{p}{]}
-		
-\PY{n}{df} \PY{o}{=} \PY{n}{ffn}\PY{o}{.}\PY{n}{get}\PY{p}{(}\PY{n}{tickers}\PY{p}{)}\PY{o}{.}\PY{n}{to\PYZus{}returns}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{dropna}\PY{p}{(}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+tickers = ["BA","CAT","CVX","CSCO","KO",
+           "DOW","XOM","GS","HD","INTC","IBM",
+           "JNJ","JPM","MCD","MRK","MSFT","NKE",
+           "PFE","PG","RTX","TRV","UNH","VZ",
+           "V","WBA", "WMT", "^DJI"]
+           
+df = ffn.get(tickers).to_returns().dropna()
+\end{ipython}
 	
-Since the package returns already daily returns we can directly compute
-the covariance matrix from them. Also we determine eigenvalues and
-eigenvectors of this matrix.
+Since the package returns already daily returns we can directly compute the covariance matrix from them. Also we determine eigenvalues and eigenvectors of this matrix.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-	
-\PY{n}{equities} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}
-	
-\PY{n}{cov} \PY{o}{=} \PY{n}{equities}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{p}{)}
-\PY{n}{eigVals}\PY{p}{,} \PY{n}{eigVecs} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{linalg}\PY{o}{.}\PY{n}{eig}\PY{p}{(}\PY{n}{cov}\PY{p}{)}
-	
-\PY{n}{indices} \PY{o}{=} \PY{p}{[}\PY{n}{i} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{reversed}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{argsort}\PY{p}{(}\PY{n}{eigVals}\PY{p}{)}\PY{p}{)}\PY{p}{]}
-\PY{n}{l} \PY{o}{=} \PY{p}{[}\PY{n}{eigVals}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{/}\PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{eigVals}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{reversed}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{argsort}\PY{p}{(}\PY{n}{eigVals}\PY{p}{)}\PY{p}{)}\PY{p}{]}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+import numpy as np
+
+equities = df.iloc[:, :-1]
+cov = equities.cov()
+eigVals, eigVecs = np.linalg.eig(cov)
+indices = [i for i in reversed(np.argsort(eigVals))]
+l = [eigVals[i]/np.*@sum@*(eigVals)*100 for i in reversed(np.argsort(eigVals))]
+\end{ipython}
 	
 Looking at the plot of the explained variance (see
 Fig.~\ref{fig:explained_variance}) we can notice how the first principal
@@ -754,11 +664,9 @@ component explains almost 60\% then the value falls quickly down, so we can conc
 Next we can re-scale the PC's eigenvectors to sum up to 1 so they can be
 used as portfolio weights.
 	
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{norm\PYZus{}eigVecs} \PY{o}{=} \PY{p}{[}\PY{n}{v}\PY{o}{/}\PY{n}{np}\PY{o}{.}\PY{n}{linalg}\PY{o}{.}\PY{n}{norm}\PY{p}{(}\PY{n}{v}\PY{p}{)} \PY{k}{for} \PY{n}{v} \PY{o+ow}{in} \PY{n}{eigVecs}\PY{o}{.}\PY{n}{T}\PY{p}{]}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+norm_eigVecs = [v/np.linalg.norm(v) for v in eigVecs.T]
+\end{ipython}
 	
 Finally we can construct a portfolio using the weights derived from PCs.
 In other words each asset takes a weight equal to its corresponding
@@ -774,24 +682,16 @@ the weights of each asset in PC1 (the first principal component).
 	\label{fig:pca_weights}
 \end{figure}
 	
-Then we calculate the cumulative return of the portfolio and compare the
-portfolio return to the market return. This process is repeated for the first three
-components.
+Then we calculate the cumulative return of the portfolio and compare the portfolio return to the market return. This process is repeated for the first three components.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{for} \PY{n}{i}\PY{p}{,} \PY{n}{index} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{indices}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{:}\PY{l+m+mi}{3}\PY{p}{]}\PY{p}{)}\PY{p}{:}
-    \PY{n}{pc\PYZus{}\PYZus{}daily\PYZus{}ret} \PY{o}{=} \PY{n}{equities}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{norm\PYZus{}eigVecs}\PY{p}{[}\PY{n}{index}\PY{p}{]}\PY{p}{)}
-    \PY{n}{pc\PYZus{}cum\PYZus{}ret} \PY{o}{=} \PY{n}{pc\PYZus{}daily\PYZus{}ret}\PY{o}{.}\PY{n}{cumsum}\PY{p}{(}\PY{p}{)}
-    \PY{n}{market\PYZus{}cum\PYZus{}ret} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{dji}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{cumsum}\PY{p}{(}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+for i, index in enumerate(indices[0:3]):
+    pc__daily_ret = equities.dot(norm_eigVecs[index])
+    pc_cum_ret = pc_daily_ret.cumsum()
+    market_cum_ret = df['dji'].cumsum()
+\end{ipython}
 	
-From Fig.~\ref{fig:ret_pc1} to~\ref{fig:ret_pc3} it is clear
-how the PC1 portfolio return looks identical to the market
-portfolio. The second and third PC portfolio returns look quite
-different instead. It is not easy to interpret them, maybe they are
-connected to higher order momenta. 
+From Fig.~\ref{fig:ret_pc1} to~\ref{fig:ret_pc3} it is clear how the PC1 portfolio return looks identical to the market portfolio. The second and third PC portfolio returns look quite different instead. It is not easy to interpret them, maybe they are connected to higher order momenta. 
 
 \begin{figure}[htb]
 	\centering
@@ -821,30 +721,15 @@ same steps using weekly or monthly data.
 \section{Risk Parity Portfolio}
 \label{risk-parity-portfolio}
 
-An alternative approach to Markowitz theory is given by the
-\emph{risk parity}. A risk parity portfolio is an investment allocation
-strategy which focuses on the allocation of risk, rather than on the
-allocation of capital. 
+An alternative approach to Markowitz theory is given by the \emph{risk parity}. A risk parity portfolio is an investment allocation strategy which focuses on the allocation of risk, rather than on the allocation of capital. 
 A risk parity (equal risk) portfolio is characterised by having equal risk contributions to the total risk from each individual asset. 
 
-Risk parity allocation is also referred to as equally-weighted risk
-contributions portfolio method. Equally-weighted risk contributions is
-not about \emph{having the same volatility}, it is about having each
-asset contributing in the same way to the portfolio overall volatility.
-For this we will have to define the contribution of each asset to the
-portfolio risk. 
+Risk parity allocation is also referred to as equally-weighted risk contributions portfolio method. Equally-weighted risk contributions is not about \emph{having the same volatility}, it is about having each asset contributing in the same way to the portfolio overall volatility. For this we will have to define the contribution of each asset to the portfolio risk. 
 
-This allocation strategy has gained popularity in the
-last decades since it is believed to provide better risk adjusted return
-than capital based allocation strategies.
+This allocation strategy has gained popularity in the last decades since it is believed to provide better risk adjusted return than capital based allocation strategies.
 
-Let's go over a very basic example to better illustrate how to construct
-a simple risk parity (equal risk) portfolio. 
-Consider a portfolio of \(N\) assets: \(x_{1}, \ldots, x_N\) where as
-usual the weight of the $i^{th}$ asset is denoted by \(w_{i}\). The
-\(w_{i}\) form the allocation vector \(\mathbf{w}\). Let us further
-denote the covariance matrix of the assets as \(\Sigma\). The volatility
-of the portfolio is then defined as:
+Let's go over a very basic example to better illustrate how to construct a simple risk parity (equal risk) portfolio. Consider a portfolio of \(N\) assets: \(x_{1}, \ldots, x_N\) where as
+usual the weight of the $i^{th}$ asset is denoted by \(w_{i}\). The \(w_{i}\) form the allocation vector \(\mathbf{w}\). Let us further denote the covariance matrix of the assets as \(\Sigma\). The volatility of the portfolio is then defined as:
 
 \begin{equation} 
 	\sigma_p={\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} = \sum_{i=1}^{N}\sigma _{i}\qquad\textrm{with}~\sigma _{i} = w_{i}\cdot \cfrac{\partial\sigma_p}{\partial w_{i}}={\cfrac {w_{i}(\Sigma \mathbf{w})_{i}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}}
@@ -890,36 +775,38 @@ Now performing for example the derivative with respect to $w_1$ we obtain
 Summing up $\sum w_i\cdot\cfrac{\partial\sigma_p}{\partial w_i}$ we get back $\sigma_p$
 \end{attention}
 
-Equal risk contribution then means \(\sigma _{i} =\sigma _{j}\) for all
-\(i,j\) or equivalently \(\sigma _{i}=\sigma_p/N\). So
+Equal risk contribution then means \(\sigma _{i} =\sigma _{j}\) for all \(i,j\) or equivalently \(\sigma _{i}=\sigma_p/N\). So
 
-\begin{equation}\sigma _{i} = \cfrac{\sigma_p}{N}={\cfrac {w_{i}(\Sigma \mathbf{w})_{i}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}}\implies w_{i} = \frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}\end{equation}
+\begin{equation}
+\sigma _{i} = \cfrac{\sigma_p}{N}={\cfrac {w_{i}(\Sigma \mathbf{w})_{i}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}}\implies w_{i} = \frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}
+\end{equation}
 Since we want the previous expression to be true for each $i$, the solution for the weights can be found by solving the minimisation problem
 
-\begin{equation} \underset{\mathbf{w}}{\min } \sum _{i=1}^{N}\left[w_{i}-{\frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}}\right]^{2} \end{equation}
+\begin{equation} 
+\underset{\mathbf{w}}{\min } \sum _{i=1}^{N}\left[w_{i}-{\frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}}\right]^{2} 
+\end{equation}
 
-Going back to our data sample let's find out the weights to give us a
-risk parity portfolio.
+Going back to our data sample let's find out the weights to give us a risk parity portfolio.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{num\PYZus{}assets} \PY{o}{=} \PY{l+m+mi}{5}
-\PY{k}{def} \PY{n+nf}{risk\PYZus{}parity}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
-    \PY{n}{variance} \PY{o}{=} \PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{)} 
-    \PY{n+nb}{sum} \PY{o}{=} \PY{l+m+mi}{0}
-    \PY{n}{N} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{w}\PY{p}{)}
-    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{N}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb}{sum} \PY{o}{+}\PY{o}{=} \PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{p}{(}\PY{n}{variance}\PY{o}{/}\PY{p}{(}\PY{n}{N}\PY{o}{*}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} 
-    \PY{k}{return} \PY{n+nb}{sum}
-		
-\PY{n}{args} \PY{o}{=} \PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}
-\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)} 
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{risk\PYZus{}parity}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
-                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
+\begin{ipython}
+num_assets = 5
+def risk_parity(w, cov):
+    variance = w.T.dot(cov.dot(w))
+    sum = 0
+    N = len(w)
+    for i in range(N):
+        sum += (w[i] - (variance/(N*cov.dot(w)[i])))**2
+    return sum
 
+args = (covariance,)
+constraints = ({'type': 'eq', 'fun': sum_weights})
+bounds = tuple((0, 1) for asset in range(num_assets))
+weights = [1./num_assets for _ in range(num_assets)]
+opts = minimize(risk_parity, weights, args=(covariance,),
+                bounds=bounds, constraints=constraints)
+print (opts)
+\end{ipython}
+\begin{ioutput}
     fun: 2.2881862766486147e-07
     jac: array([-6.98851511e-04,  1.92391042e-04, -4.08403758e-05, 
                 -2.54432521e-05,  1.13250609e-03])
@@ -931,24 +818,26 @@ message: 'Optimization terminated successfully.'
 success: True
       x: array([0.25863039, 0.18154282, 0.19666705, 0.22190633, 
                 0.14125342])
+\end{ioutput}
 
-\PY{n}{sigma\PYZus{}i} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{std} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
-    \PY{n}{a} \PY{o}{=} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]} 
-    \PY{n}{sigma\PYZus{}i}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{a}\PY{o}{/}\PY{n}{std}\PY{p}{)}
-		
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
-    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Risk contribution for asset }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}
-           \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{sigma\PYZus{}i}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{/}\PY{n+nb}{sum}\PY{p}{(}\PY{n}{sigma\PYZus{}i}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+sigma_i = []
+std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
+for i in range(num_assets):
+    a = opts.x[i]*covariance.dot(opts.x)[i]
+    sigma_i.append(a/std)
 
-Risk contribution for asset 0: 19.974\%
-Risk contribution for asset 1: 19.999\%
-Risk contribution for asset 2: 19.990\%
-Risk contribution for asset 3: 19.992\%
-Risk contribution for asset 4: 20.045\%
-\end{Verbatim}
-\end{codebox}
+for i in range(num_assets):
+    print ("Risk contribution for asset {}: {:.3f}%"
+           .format(i, sigma_i[i]/sum(sigma_i)*100))
+\end{ipython}
+\begin{ioutput}
+Risk contribution for asset 0: 19.974%
+Risk contribution for asset 1: 19.999%
+Risk contribution for asset 2: 19.990%
+Risk contribution for asset 3: 19.992%
+Risk contribution for asset 4: 20.045%
+\end{ioutput}
 
 %Figure~\ref{fig:risk_parity} shows the fraction of risk allocated to each asset and the corresponding weight within the portfolio.
 
@@ -958,36 +847,42 @@ Risk contribution for asset 4: 20.045\%
 The same technique can be used if we would like to calculate a portfolio
 with risk budget allocation. In this case we want to associate to each asset a particular level of risk. If we consider the previous equation
 
-\begin{equation} \sigma _{i}=\cfrac{\sigma_p}{N} \end{equation}
+\begin{equation} 
+\sigma _{i}=\cfrac{\sigma_p}{N} 
+\end{equation}
 where we set the risk contribution fraction to every asset to \(1/N\);
 now we can simply replace \(1/N\) with the desired fraction of risk (\(f_i\)) for each asset
 
-\begin{equation} \sigma _{i}=f_i \cdot \sigma_p \end{equation}
+\begin{equation} 
+\sigma _{i}=f_i \cdot \sigma_p 
+\end{equation}
 so that the relation to minimise becomes
 
-\begin{equation} \underset{\mathbf{w}}{\min} \sum _{i=1}^{N}\left[w_{i}-{\frac {f_i \cdot \sigma_p^{2}}{(\Sigma \mathbf{w})_{i}}}\right]^{2} \end{equation}
+\begin{equation} 
+\underset{\mathbf{w}}{\min} \sum _{i=1}^{N}\left[w_{i}-{\frac {f_i \cdot \sigma_p^{2}}{(\Sigma \mathbf{w})_{i}}}\right]^{2} 
+\end{equation}
 
 Translating it into \texttt{python} we get:
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{def} \PY{n+nf}{risk\PYZus{}budget}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{target\PYZus{}risk}\PY{p}{,} \PY{n}{cov}\PY{p}{)}\PY{p}{:}
-    \PY{n}{variance} \PY{o}{=} \PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{)} 
-    \PY{n+nb}{sum} \PY{o}{=} \PY{l+m+mi}{0}
-    \PY{n}{N} \PY{o}{=} \PY{n+nb}{len}\PY{p}{(}\PY{n}{w}\PY{p}{)}
-    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{N}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb}{sum} \PY{o}{+}\PY{o}{=} \PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{p}{(}\PY{n}{target\PYZus{}risk}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{variance}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{n}{cov}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} 
-    \PY{k}{return} \PY{n+nb}{sum}
-		
-\PY{n}{f\PYZus{}i} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.3}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.2}\PY{p}{,} \PY{l+m+mf}{0.15}\PY{p}{,} \PY{l+m+mf}{0.15}\PY{p}{]} 
-\PY{n}{args} \PY{o}{=} \PY{p}{(}\PY{n}{f\PYZus{}i}\PY{p}{,} \PY{n}{covariance}\PY{p}{)}
-\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}          
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{risk\PYZus{}budget}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{f\PYZus{}i}\PY{p}{,} \PY{n}{covariance}\PY{p}{)}\PY{p}{,} 
-ersi                \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
-		
+\begin{ipython}
+def risk_budget(w, target_risk, cov):
+    variance = w.T.dot(cov.dot(w))
+    sum = 0
+    N = len(w)
+    for i in range(N):
+        sum += (w[i] - (target_risk[i]*variance)/(cov.dot(w)[i]))**2
+    return sum
+
+f_i = [0.3, 0.2, 0.2, 0.15, 0.15]
+args = (f_i, covariance)
+constraints = ({'type': 'eq', 'fun': sum_weights})
+bounds = tuple((0, 1) for asset in range(num_assets))
+weights = [1./num_assets for _ in range(num_assets)]
+opts = minimize(risk_budget, weights, args=(f_i, covariance),
+                bounds=bounds, constraints=constraints)
+print (opts)
+\end{ipython}
+\begin{ioutput}
     fun: 4.058673684147486e-08
     jac: array([-2.64817707e-04,  3.30937403e-04,  2.14530647e-05, 
                 -7.65372775e-05,  3.67853561e-04])
@@ -999,24 +894,25 @@ message: 'Optimization terminated successfully.'
 success: True
       x: array([0.3459366 , 0.1800917 , 0.19394454, 0.16890483, 
                 0.11112233])
-      
-\PY{n}{sigma\PYZus{}i} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{std} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
-    \PY{n}{a} \PY{o}{=} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{covariance}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]} 
-    \PY{n}{sigma\PYZus{}i}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{a}\PY{o}{/}\PY{n}{std}\PY{p}{)}
-		
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{:}
-    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Risk contribution for asset }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}
-            \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{sigma\PYZus{}i}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{/}\PY{n+nb}{sum}\PY{p}{(}\PY{n}{sigma\PYZus{}i}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
-		
+\end{ioutput}
+\begin{ipython}  
+sigma_i = []
+std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
+for i in range(num_assets):
+    a = opts.x[i]*covariance.dot(opts.x)[i]
+    sigma_i.append(a/std)
+
+for i in range(num_assets):
+    print ("Risk contribution for asset {}: {:.3f}%"
+           .format(i, sigma_i[i]/sum(sigma_i)*100))    
+\end{ipython}
+\begin{ioutput}
 Risk contribution for asset 0: 29.988%
 Risk contribution for asset 1: 20.010%
 Risk contribution for asset 2: 19.996%
 Risk contribution for asset 3: 14.993%
 Risk contribution for asset 4: 15.012%
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 %Figure~\ref{risk_allocation} shows the amount of risk associated to each asset and their weights within the portfolio. 
 Indeed for each stock we have allocated the desired amount of risk.
@@ -1051,24 +947,22 @@ D=\cfrac{\mathbf{w^T}\boldsymbol{\sigma}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}
 where $\boldsymbol{\sigma}$ is the vector of volatilities and $\Sigma$ is the covariance matrix. The denominator represents the volatility of the portfolio and the numerator the weighted average volatility of the assets. More diversification within a portfolio decreases the denominator and leads to a higher diversification ratio.
 Let's construct a portfolio that maximize this ratio.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{def} \PY{n+nf}{diversification\PYZus{}ratio}\PY{p}{(}\PY{n}{w}\PY{p}{)}\PY{p}{:}
-    \PY{n}{w\PYZus{}vol} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{diag}\PY{p}{(}\PY{n}{covariance}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{p}{)}
-    \PY{n}{port\PYZus{}vol} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{w}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{p}{,} \PY{n}{w}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-    \PY{n}{diversification\PYZus{}ratio} \PY{o}{=} \PY{n}{w\PYZus{}vol}\PY{o}{/}\PY{n}{port\PYZus{}vol}
-    \PY{k}{return} \PY{o}{\PYZhy{}}\PY{n}{diversification\PYZus{}ratio}
-	
-\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
-\PY{n}{cons} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{,}\PY{p}{)}
-\PY{c+c1}{\PYZsh{}cons = cons + (\PYZob{}\PYZsq{}type\PYZsq{}: \PYZsq{}ineq\PYZsq{}, \PYZsq{}fun\PYZsq{}:  long\PYZus{}only\PYZus{}constraint\PYZcb{},)}
-\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
-	
-\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{diversification\PYZus{}ratio}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} 
-                \PY{n}{constraints}\PY{o}{=}\PY{n}{cons}\PY{p}{)}
-	
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{opts}\PY{p}{)}
+\begin{ipython}
+def diversification_ratio(w):
+    w_vol = np.dot(np.sqrt(np.diag(covariance)), w.T)
+    port_vol = np.sqrt(np.dot(w.T, np.dot(covariance, w)))
+    diversification_ratio = w_vol/port_vol
+    return -diversification_ratio
 
+bounds = tuple((0, 1) for asset in range(num_assets))
+cons = ({'type': 'eq', 'fun': sum_weights},)
+#cons = cons + ({'type': 'ineq', 'fun': long_only_constraint},)
+weights = [1./num_assets for _ in range(num_assets)]
+opts = minimize(diversification_ratio, weights, bounds=bounds,
+                constraints=cons)
+print (opts)
+\end{ipython}
+\begin{ioutput}
     fun: -1.3580745811820554
     jac: array([-0.00035974,  0.00029349, -0.00035594,  0.00077944,  
                  0.00016446])
@@ -1080,14 +974,15 @@ message: 'Optimization terminated successfully.'
 success: True
       x: array([0.34867985, 0.18062199, 0.15557008, 0.1235694, 
                 0.19155868])
-
-\PY{n}{ret} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{returns}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}
-\PY{n}{vol} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}\PY{p}{)} 
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Diversification: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{n}{opts}\PY{o}{.}\PY{n}{fun}\PY{p}{)}
-
+\end{ioutput}
+\begin{ipython}
+ret = np.*@sum@*(returns*opts.x)
+vol = np.sqrt(np.dot(opts.x.T, np.dot(covariance, opts.x)))
+print ("Diversification: ", -opts.fun)
+\end{ipython}
+\begin{ioutput}
 Diversification: 1.3580745811820554
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 Figure~\ref{fig:max_div} shows how the maximum diversified portfolio compares to the efficient frontier.
 

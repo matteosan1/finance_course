@@ -34,7 +34,8 @@ default probability of the pool) and $\rho_D$ (the assets’ default correlation
 simplest case, that is, when all the pair-wise correlations are the same, all the
 off-diagonals elements are identical. 
 
-\section{Distribution Transformation}\label{distribution-transformation}
+\section{Distribution Transformation}
+\label{distribution-transformation}
 
 Distribution transformation is a very useful tool which will be
 extensively used with the copula concept that we discuss in the next
@@ -76,15 +77,13 @@ The transformation takes uniform samples of a variable \(u\) between 0 and
 Table~\ref{tab:transformation} shows the samples of $U$ and their representation on the standard normal
 distribution determined using the algorithm explained above.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{uniform}\PY{p}{,} \PY{n}{norm}
-		
-\PY{n}{uniform\PYZus{}samples} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.5}\PY{p}{,} \PY{o}{.}\PY{l+m+mi}{975}\PY{p}{,} \PY{l+m+mf}{0.995}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{]}
-\PY{k}{for} \PY{n}{u} \PY{o+ow}{in} \PY{n}{uniform\PYZus{}samples}\PY{p}{:}
-    \PY{n+nb}{print} \PY{p}{(}\PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{u}\PY{p}{)}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+from scipy.stats import uniform, norm
+
+uniform_samples = [0.5, .975, 0.995, 0.999999]
+for u in uniform_samples:
+    print (norm.ppf(u))
+\end{ipython}
 
 \begin{table}[h]
   \centering
@@ -117,11 +116,9 @@ lot of for-loop cycles.
 
 In any case in the left plot of Fig.~\ref{fig:uniform_and_gauss} the resulting distribution is shown.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x} \PY{o}{=} \PY{n}{uniform}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{l+m+mi}{10000}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+x = uniform(0, 1).rvs(10000)
+\end{ipython}
 
 Next we want to transform these samples so that instead of uniform they
 are normally distributed. As we have just seen the transform that does this
@@ -131,11 +128,9 @@ distribution, or \((\tt{ppf(x))}\) in \texttt{python}.
 In the right plot of Fig.~\ref{fig:uniform_and_gauss} the Gaussian obtained 
 with the code below is shown
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x\PYZus{}trans} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+x_trans = norm.ppf(x)
+\end{ipython}
 
 \begin{figure}[htb]
 	\centering
@@ -144,10 +139,7 @@ with the code below is shown
 	\label{fig:uniform_and_gauss}
 \end{figure}
 
-If we plot them together in a 2D plot we can get a sense of what is
-going on using the inverse CDF transformation.
-Indeed it stretches the outer regions of the uniform to yield a
-normal distribution. This is shown in Fig.~\ref{fig:uniform_to_gauss}. 
+If we plot them together in a 2D plot we can get a sense of what is going on using the inverse CDF transformation. Indeed it stretches the outer regions of the uniform to yield a normal distribution. This is shown in Fig.~\ref{fig:uniform_to_gauss}. 
     
 \begin{figure}[htbp]
   \centering
@@ -156,18 +148,14 @@ normal distribution. This is shown in Fig.~\ref{fig:uniform_to_gauss}.
   \label{fig:uniform_to_gauss}
 \end{figure}
     
-The nice thing of this technique is that it can be used
-for any arbitrary (univariate) probability distribution, like for
-example t-Student~\cite{bib:t_student} or Gumbel~\cite{bib:gumbel}.
+The nice thing of this technique is that it can be used for any arbitrary (univariate) probability distribution, like for example t-Student~\cite{bib:t_student} or Gumbel~\cite{bib:gumbel}.
 A similar transformation from uniform to t-Student is shown in Fig.~\ref{fig:uniform_to_tstudent}.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{t}
+\begin{ipython}
+from scipy.stats import t
 
-\PY{n}{x\PYZus{}trans} \PY{o}{=} \PY{n}{t}\PY{p}{(4}\PY{p}{)}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+x_trans = t(4).ppf(x)
+\end{ipython}
 
 \begin{figure}[htb]
   \centering
@@ -190,62 +178,35 @@ a uniform distribution rather quickly. An example is shown in Fig.~\ref{fig:a_to
 	\label{fig:a_to_b_to_a}
 \end{figure}
 
-\section{Copula}\label{copula}
+\section{Copula}
+\label{copula}
 
-In probability theory a \emph{copula} $\mathcal{C}(F_1, F_2, \ldots, F_n, \rho)$
-is a multivariate (multidimensional) cumulative distribution function
-whose marginal probability distributions (i.e. the probability
-distribution of each dimension) are uniform on the
-interval $[0, 1]$ ($F_i = U_i =\mathrm{uniform}(0,1)$),
-\(\rho\) represents the correlation between each variable.
+In probability theory a \emph{copula} $\mathcal{C}(F_1, F_2, \ldots, F_n, \rho)$ is a multivariate (multidimensional) cumulative distribution function whose marginal probability distributions (i.e. the probability distribution of each dimension) are uniform on the interval $[0, 1]$ ($F_i = U_i =\mathrm{uniform}(0,1)$), \(\rho\) represents the correlation between each variable.
 
-Copulas are used to describe the dependencies between random variables and
-have been widely used in quantitative finance to model risk. Copulas are popular since
-they allow to easily model and estimate the distribution of random
-vectors by representing marginals and their correlation separately.
+Copulas are used to describe the dependencies between random variables and have been widely used in quantitative finance to model risk. Copulas are popular since they allow to easily model and estimate the distribution of random vectors by representing marginals and their correlation separately.
 
-Essentially we can split a complicated problem into simpler components so that 
-copula results to be very handy.
+Essentially we can split a complicated problem into simpler components so that copula results to be very handy.
 
-Despite the obscure and daunting definition given above the concept of copula is
-quite simple so let's try to clarify it a bit with a practical example.
+Despite the obscure and daunting definition given above the concept of copula is quite simple so let's try to clarify it a bit with a practical example.
 
 \subsection{Example Case}
 \label{example-problem-case}
 
-Imagine to have to measure two correlated variables. 
-For example, we look at various rivers and for every river
-at the maximum water level of that river over a certain
-time-period. In addition, we also count how many months each river
-caused floods.
+Imagine to have to measure two correlated variables. For example, we look at various rivers and for every river at the maximum water level of that river over a certain time-period. In addition, we also count how many months each river caused floods.
 
-For the probability distribution of the maximum level of the river we
-know that maximums are Gumbel~\cite{bib:gumbel} distributed, 
-while the number of floods
-can be modeled according to a Beta~\cite{bib:eta}.
+For the probability distribution of the maximum level of the river we know that maximums are Gumbel~\cite{bib:gumbel} distributed, while the number of floods can be modeled according to a Beta~\cite{bib:eta}.
 
-Clearly it is pretty reasonable to assume that maximum water level and
-number of floods are going to be correlated, however we don't know how
-we could model the correlated probability distribution.
-Indeed above we only specified the distributions for individual variables, irrespective of the other one (i.e. the marginals), but in reality 
-we are dealing with a \emph{joint distribution} of both of these together.
-And here is where copulas come to our rescue.
+Clearly it is pretty reasonable to assume that maximum water level and number of floods are going to be correlated, however we don't know how we could model the correlated probability distribution.
+Indeed above we only specified the distributions for individual variables, irrespective of the other one (i.e. the marginals), but in reality we are dealing with a \emph{joint distribution} of both of these together. And here is where copulas come to our rescue.
 
-Copulas essentially allow to decompose a joint probability distribution
-into its marginals (which by definition have no correlation) and a
-function which \textbf{couples} them together 
-specifying the correlation separately. The copula is just that coupling
-function.
+Copulas essentially allow to decompose a joint probability distribution into its marginals (which by definition have no correlation) and a function which \textbf{couples} them together specifying the correlation separately. The copula is just that coupling function.
 
 \subsection{Adding Correlation with Gaussian Copulas}
 \label{adding-correlation-with-gaussian-copulas}
 
-How does this help us with our problem of creating a custom joint
-probability distribution for maximum water level and floods ?
+How does this help us with our problem of creating a custom joint probability distribution for maximum water level and floods ?
 
-At the beginning of this Chapter we have seen how to convert anything
-uniformly distributed to an arbitrary probability distribution, so we
-could
+At the beginning of this Chapter we have seen how to convert anything uniformly distributed to an arbitrary probability distribution, so we could
 \begin{itemize}
 \tightlist
 \item
@@ -261,14 +222,12 @@ see Fig.~ \ref{fig:multivariate_with_correlation}. This is not mandatory
 though, since
 we could have modeled correlations with different distribution either.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{multivariate_normal}
+\begin{ipython}
+from scipy.stats import multivariate_normal
 
-\PY{n}{mvnorm} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]} \PY{p}{,} \PY{n}{cov}\PY{o}{=}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.5}\PY{p}{]}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{0.5}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}
-\PY{n}{x} \PY{o}{=} \PY{n}{mvnorm}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{l+m+mi}{100000}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+mvnorm = multivariate_normal(mean=[0, 0] , cov=[[1, 0.5], [0.5, 1]])
+x = mvnorm.rvs(100000)
+\end{ipython}
 
 \begin{figure}[hb]
   \centering
@@ -277,17 +236,13 @@ we could have modeled correlations with different distribution either.
   \label{fig:multivariate_with_correlation}
 \end{figure}
     
-Now use what we have just learned to make the marginals uniform using
-the \(\tt{cdf}\) function of the normal distribution:
+Now use what we have just learned to make the marginals uniform using the \(\tt{cdf}\) function of the normal distribution:
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x\PYZus{}unif} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+x_unif = norm.cdf(x)
+\end{ipython}
 
-Plots like the one shown in Fig.~\ref{fig:copula} are how copulas are usually visualized. Since we have used a multivariate standard normal 
-to model the correlation this is an example of \textbf{Gaussian Copula}.
+Plots like the one shown in Fig.~\ref{fig:copula} are how copulas are usually visualized. Since we have used a multivariate standard normal to model the correlation this is an example of \textbf{Gaussian Copula}.
 
 \begin{figure}[htb]
 \centering
@@ -298,35 +253,27 @@ to model the correlation this is an example of \textbf{Gaussian Copula}.
 \label{fig:copula}
 \end{figure}
 
-Finally we can just transform the obtained marginals, again through uniform, 
-to what we want (i.e. Gumbel and Beta in our river example):
+Finally we can just transform the obtained marginals, again through uniform, to what we want (i.e. Gumbel and Beta in our river example):
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{gumbel_l, beta}
+\begin{ipython}
+from scipy.stats import gumbel_l, beta
 
-\PY{n}{m1} \PY{o}{=} \PY{n}{gumbel\PYZus{}l}\PY{p}{(}\PY{p}{)}
-\PY{n}{x1} \PY{o}{=} \PY{n}{m1}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{x_unif[\PY{l+m+mi}{:}][\PY{l+m+mi}{0}]}\PY{p}{)}
-
-\PY{n}{m2} \PY{o}{=} \PY{n}{beta}\PY{p}{(}\PY{n}{a}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{,} \PY{n}{b}\PY{o}{=}\PY{l+m+mi}{3}\PY{p}{)}
-\PY{n}{x2} \PY{o}{=} \PY{n}{m2}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{x_unif[\PY{l+m+mi}{:}][\PY{l+m+mi}{1}]}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+m1 = gumbel_l()
+x1 = m1.ppf(x_unif[:][0])
+m2 = beta(a=10, b=3)
+x2 = m2.ppf(x_unif[:][1])
+\end{ipython}
 
 Left plot of Figure~\ref{fig:gumbel_beta_with_corr} shows the two marginals and the joint distribution.
     
-To see that it is actually working as expected we should now compare the joint
-distributions with and without correlation. 
-Looking at Figure~\ref{fig:gumbel_beta_with_corr} the difference is quite clear.
+To see that it is actually working as expected we should now compare the joint distributions with and without correlation. Looking at Figure~\ref{fig:gumbel_beta_with_corr} the difference is quite clear.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} sample from Gumbel}
-\PY{n}{x1} \PY{o}{=} \PY{n}{m1}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{l+m+mi}{10000}\PY{p}{)}
-\PY{c+c1}{\PYZsh{} sample from Beta}
-\PY{n}{x2} \PY{o}{=} \PY{n}{m2}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{l+m+mi}{10000}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+# sample from Gumbel
+x1 = m1.rvs(10000)
+# sample from Beta
+x2 = m2.rvs(10000)
+\end{ipython}
 
 \begin{figure}[htbp]
   \centering
@@ -337,13 +284,9 @@ Looking at Figure~\ref{fig:gumbel_beta_with_corr} the difference is quite clear.
   \label{fig:gumbel_beta_with_corr}
 \end{figure}
     
-Using the uniform distribution as a common base for our transformations
-we can easily introduce correlations and flexibly construct complex
-probability distributions. 
+Using the uniform distribution as a common base for our transformations we can easily introduce correlations and flexibly construct complex probability distributions. 
 
-As a final note, let's state \emph{Sklar's theorem} which assesses that any multivariate joint distribution can be written in terms of univariate marginal functions
-and a copula which describes the dependence structure between the
-variables.
+As a final note, let's state \emph{Sklar's theorem} which assesses that any multivariate joint distribution can be written in terms of univariate marginal functions and a copula which describes the dependence structure between the variables.
 
 Everything discussed in this Section can be easily generalized to higher dimensions.
 
@@ -358,8 +301,7 @@ Everything discussed in this Section can be easily generalized to higher dimensi
 \subsection{Generate Correlated Distributions}
 \label{generate-correlated-distributions}
 
-If we need to generate numbers from correlated distributions we can
-follow similar steps to those described before:
+In order to generate numbers from correlated distributions it is enough to follow similar steps to those described before:
 
 \begin{itemize}
 \tightlist
@@ -367,82 +309,69 @@ follow similar steps to those described before:
   generate a random vector \(\mathbf{x}=(x_1, x_2,\ldots)\) from the
   original multivariate distribution with the desired correlation;
 \item
-  determine the single \(U_i(x_i)\) by applying \(\tt{cdf}\) to each
+  determine the single \(U_i(x_i)\) by applying \texttt{cdf} to each
   \(x_i\);
 \item
   transform again each \(U_i(x_i)\) to the desired marginal
-  distributions using \(\tt{ppf}\);
+  distributions using \texttt{ppf};
 \item
   each component of the vector \(\mathbf{x}\) is now converted to a set
   of random numbers drawn from the desired distributions, with the
   appropriate correlation.
 \end{itemize}
 
-A practical application concerns probability of default. 
-Imagine three companies ($A$, $B$ and $C$) which have a
-cumulative probability of defaulting within the next two years of 10\%.
-Let's try to compute the probabilities to have the three of them all
-defaulting within the next two years in two cases: independent default probabilities and perfectly correlated probabilities.
+A practical application concerns probability of default. Imagine three companies ($A$, $B$ and $C$) which have a cumulative probability of defaulting within the next two years of 10\%.
+Let's try to compute the probabilities to have the three of them all defaulting within the next two years in two cases: independent default probabilities and perfectly correlated probabilities.
 
-In the first case (independent probabilities), the
-odds to get three defaults within two years will be the product
-of the single probabilities, hence:
+In the first case (independent probabilities), the odds to get three defaults within two years will be the product of the single probabilities, hence:
 
 \[P_{\mathrm{uncorr}} = 10\% \cdot 10\% \cdot 10\% = 0.1 \%\]
 
-We can verify this in \(\tt{python}\) by applying the method outlined above: first generate a random sample from an uncorrelated multivariate normal distribution, then transform each sampled vector into uniform with the \(\tt{norm.cdf}\) function (i.e. we
-convert the sample into cumulative probabilities) and then count how many times the
-three of them are lower than 10\% to check whether a default occurred in next two year (in this case, since we are interested in cumulative probabilities we can neglect the last transformation and work directly with the 
-uniform marginals).
+We can verify this in \texttt{python} by applying the method outlined above: first generate a random sample from an uncorrelated multivariate normal distribution, then transform each sampled vector into uniform with the \texttt{norm.cdf} function (i.e. we convert the sample into cumulative probabilities) and then count how many times the three of them are lower than 10\% to check whether a default occurred in next two year (in this case, since we are interested in cumulative probabilities we can neglect the last transformation and work directly with the uniform marginals).
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{multivariate\PYZus{}normal}\PY{p}{,} \PY{n}{uniform}\PY{p}{,} \PY{n}{norm}
-\PY{k+kn}{import} \PY{n+nn}{numpy}
-	
-\PY{n}{numpy}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{)}
-\PY{n}{trials} \PY{o}{=}\PY{l+m+mi}{10000}
-\PY{n}{mvnorm\PYZus{}no\PYZus{}corr} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{cov}\PY{o}{=}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}
-                                                          \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}
-                                                          \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}
-\PY{n}{defaults} \PY{o}{=} \PY{l+m+mi}{0}
-\PY{n}{x} \PY{o}{=} \PY{n}{mvnorm\PYZus{}no\PYZus{}corr}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{trials}\PY{p}{)}
-\PY{n}{x\PYZus{}trans} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{x\PYZus{}trans}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{k}{if} \PY{n}{x\PYZus{}trans}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1} \PY{o+ow}{and} \PY{n}{x\PYZus{}trans}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1} \PY{o+ow}{and} \PY{n}{x\PYZus{}trans}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1}\PY{p}{:}
-	\PY{n}{defaults} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
-	
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Defaults w/o correlation: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{defaults}\PY{o}{/}\PY{n}{trials}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+from scipy.stats import multivariate_normal, uniform, norm
+import numpy
 
-Defaults w/o correlation: 0.10\%
-\end{Verbatim}
-\end{codebox}
+numpy.random.seed(10)
+trials =10000
+mvnorm_no_corr = multivariate_normal(mean=[0, 0, 0], cov=[[1, 0, 0],
+                                                          [0, 1, 0],
+                                                          [0, 0, 1]])
+defaults = 0
+x = mvnorm_no_corr.rvs(trials)
+x_trans = norm.cdf(x)
+for i in range(len(x_trans)):
+    if x_trans[i][0] < 0.1 and x_trans[i][1] < 0.1 and x_trans[i][2] < 0.1:
+        defaults += 1
+print ("Defaults w/o correlation: {:.2f}%".format(defaults/trials*100))
+\end{ipython}
+\begin{ioutput}
+Defaults w/o correlation: 0.10%
+\end{ioutput}
 \noindent
 The result is 0.1\% as expected.
 
-If we repeat the same Monte Carlo experiment with perfectly correlated
-default probabilities we have
+If we repeat the same Monte Carlo experiment with perfectly correlated default probabilities we have
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{mvnorm\PYZus{}corr} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{cov}\PY{o}{=}\PY{p}{[}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{]}\PY{p}{,}
-                                                     \PY{p}{[}\PY{l+m+mf}{0.999999}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{]}\PY{p}{,}
-                                                     \PY{p}{[}\PY{l+m+mf}{0.999999}\PY{p}{,} \PY{l+m+mf}{0.999999}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}
-\PY{n}{defaults} \PY{o}{=} \PY{l+m+mi}{0}
-\PY{n}{x} \PY{o}{=} \PY{n}{mvnorm\PYZus{}corr}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{trials}\PY{p}{)}
-\PY{n}{x\PYZus{}trans} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{x}\PY{p}{)}
+\begin{ipython}
+mvnorm_corr = multivariate_normal(mean=[0,0,0], 
+                                  cov=[[1, 0.999999, 0.999999],
+                                       [0.999999, 1, 0.999999],
+                                       [0.999999, 0.999999, 1]])
 
-\PY{k}{for} \PY{n}{v} \PY{o+ow}{in} \PY{n}{x\PYZus{}trans}\PY{p}{:}
-    \PY{k}{if} \PY{n+nb}{max}\PY{p}{(}\PY{n}{v}\PY{p}{)} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.1}\PY{p}{:}
-        \PY{n}{defaults} \PY{o}{+}\PY{o}{=} \PY{l+m+mi}{1}
-
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Defaults w/ correlation: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{defaults}\PY{o}{/}\PY{n}{trials}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
-
-Defaults w/ correlation: 9.89\%
-\end{Verbatim}
-\end{codebox}
-In this case the result is close to 10\%, like we had only one single company
-defaulting. 
+defaults = 0
+x = mvnorm_corr.rvs(trials)
+x_trans = norm.cdf(x)
+for v in x_trans:
+    if max(v) < 0.1:
+        defaults += 1
+print ("Defaults w/ correlation: {:.2f}%".format(defaults/trials*100))
+\end{ipython}
+\begin{ioutput}
+Defaults w/ correlation: 9.89%
+\end{ioutput}
+In this case the result is close to 10\%, like we had only one single company defaulting. 
 Indeed given the perfect correlation between the probabilities either there is no default or three "simultaneous" defaults with 10\% probability.
 
 %\subsubsection{Independent Defaults}\label{independent-defaults}
