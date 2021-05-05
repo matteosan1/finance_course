@@ -1,15 +1,16 @@
-\chapter{Interpolation, Discount Factors and Forward Rates}\label{interpolation---practical-lesson-3}
+\chapter{Interpolation, Discount Factors and Forward Rates}
+\label{interpolation---practical-lesson-3}
 
 In this Chapter we will start to see applications of \texttt{python} to financial calculations.
 In particular discount curves and forward rates will be involved, implementing the first utilities that go into a financial module that will be developed throughout this course.
 In doing so we will review a widely used mathematical tool: \emph{interpolation}.
 
-\section{Linear Interpolation}\label{linear-interpolation}
+\section{Linear Interpolation}
+\label{linear-interpolation}
 
 Consider to have few data points, obtained by sampling or experimenting. These points represent the values of a not well known function \(f(x)\), where \(x\) is an independent variable (e.g.~in recording a trip: distances at certain times, \(d = f(t)\)).
 
-It may be necessary to estimate values of the function $f$ at values for which we don't have samples.
-Interpolation is a method of "constructing" new points within the range of the known data.
+It may be necessary to estimate values of the function $f$ at values for which we don't have samples. Interpolation is a method of "constructing" new points within the range of the known data.
 
 Let's clarify the technique with an example.
 Assume you are going on holidays by car and that luckily there isn't much traffic so that you can drive at constant speed (which gives a linear relation between traveled space and time i.e.~\(s = v \cdot t\), which means that if you plot the distances \(s\) as a function of the time \(t\) you get a line with slope \(v\)), see Fig.~\ref{fig:samples_for_interpolation}.
@@ -30,8 +31,7 @@ where $t$ is a generic time at which we want to know the distance $s$ and \(w = 
 
 \begin{attention}
 \subsubsection{Derivation}
-The equation of a line for two points
-\((t_1, s_1)\) and \((t_2, s_2)\) can be written as:
+The equation of a line for two points \((t_1, s_1)\) and \((t_2, s_2)\) can be written as:
 
 \begin{equation}
 \frac{t - t_1}{t_2 - t_1} = \frac{s - s_1}{s_2 - s_1}
@@ -39,7 +39,8 @@ The equation of a line for two points
 
 Setting \(w = \cfrac{t - t_1}{t_2 - t_1}\) and solving for \(s\) we find the desired solution:
 
-\begin{equation}(s_2 - s_1)\cdot w = s - s_1\quad\implies\quad s = (1 - w)\cdot s_1 + w \cdot s_2
+\begin{equation}
+(s_2 - s_1)\cdot w = s - s_1\quad\implies\quad s = (1 - w)\cdot s_1 + w \cdot s_2
 \end{equation}
 
 This formula can also be understood as a weighted average where the weights are inversely related to the distance from the end points to the unknown point ($w_1 = (1 - w) = \cfrac{t_2 - t}{t_2 -t_1}, w_2 = w$), which means that the closer point has more influence than the farther point.
@@ -49,23 +50,20 @@ Back to our example, if
 \(s_1 = 25.75~\mathrm{km}\;(@t_1 = 15~\mathrm{min})\) and
 \(s_2 = 171.7~\mathrm{km}\;(@t_2 = 100~\mathrm{min})\) let's find distance traveled in 1 hour (interpolation):
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{s\PYZus{}1} \PY{o}{=} \PY{l+m+mf}{25.75} \PY{c+c1}{\PYZsh{} distance in km}
-\PY{n}{t\PYZus{}1} \PY{o}{=} \PY{l+m+mi}{15}    \PY{c+c1}{\PYZsh{} elapsed time in minutes}
-\PY{n}{s\PYZus{}2} \PY{o}{=} \PY{l+m+mf}{171.7}
-\PY{n}{t\PYZus{}2} \PY{o}{=} \PY{l+m+mi}{100}
+\begin{ipython}
+s_1 = 25.75 # distance in km
+t_1 = 15 	# elapsed time in minutes
+s_2 = 171.7
+t_2 = 100
 
-\PY{n}{t} \PY{o}{=} \PY{l+m+mi}{60}
-
-\PY{n}{w} \PY{o}{=} \PY{p}{(}\PY{n}{t} \PY{o}{\PYZhy{}} \PY{n}{t\PYZus{}1}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{n}{t\PYZus{}2} \PY{o}{\PYZhy{}} \PY{n}{t\PYZus{}1}\PY{p}{)}
-\PY{n}{s} \PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{w}\PY{p}{)}\PY{o}{*}\PY{n}{s\PYZus{}1} \PY{o}{+} \PY{n}{w}\PY{o}{*}\PY{n}{s\PYZus{}2}
-
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{ km}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{s}\PY{p}{)}\PY{p}{)}
-
+t = 60
+w = (t - t_1)/(t_2 - t_1)
+s = (1 - w)*s_1 + w*s_2
+print ("{:.1f} km".format(s))
+\end{ipython}
+\begin{ioutput}
 103.0 km
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 Always interpret critically your results to guess if they make sense or not and to avoid mistakes. In the previous example we certainly expected something between 25.75 and 171.7~km (our range ends) furthermore since we are looking for the distance at a time which is almost halfway the interval, the result will be somehow in the middle or around 98.6~km. This is indeed more or less what we have got.
 This simple kind of reasoning should be applied every time you have a result to quickly judge it.
@@ -82,33 +80,25 @@ such failure and they found out that the spacecraft encountered Mars at a lower 
 
 The primary cause of this discrepancy was found in one piece of software (supplied by Lockheed Martin) that produced results in "Imperial" units,  while a second system (supplied by NASA) expected those results to be in SI units. Specifically, the software calculated the total impulse produced by thruster in \emph{pound-force seconds}. The trajectory calculation software then used these results, expected to be in \emph{newton seconds}, thus incorrect by a factor of 4.45, to update the predicted position of the spacecraft.
 	
-NASA took the entire responsibility for having
-vaporized about 300~M\$ in the Martian atmosphere, mainly for failing to make the appropriate checks and tests that would have caught this discrepancy~\cite{bib:mars}.	
+NASA took the entire responsibility for having vaporized about 300~M\$ in the Martian atmosphere, mainly for failing to make the appropriate checks and tests that would have caught this unit discrepancy~\cite{bib:mars}.	
 \end{curiosity}
 
 \subsubsection{Extrapolation}
 
 If we believe the relation between our variable stays the same ($f(t)$ still linear), we can use the same formula to \emph{extrapolate} values \emph{outside} our initial sample. For example if we keep the same constant velocity in our trip we could check the distance traveled after 3 hours:
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{s\PYZus{}1} \PY{o}{=} \PY{l+m+mf}{25.75} \PY{c+c1}{\PYZsh{} distance in km}
-\PY{n}{t\PYZus{}1} \PY{o}{=} \PY{l+m+mi}{15}    \PY{c+c1}{\PYZsh{} elapsed time in minutes}
-\PY{n}{s\PYZus{}2} \PY{o}{=} \PY{l+m+mf}{171.7}
-\PY{n}{t\PYZus{}2} \PY{o}{=} \PY{l+m+mi}{100}
-
-\PY{n}{t} \PY{o}{=} \PY{l+m+mi}{180}
-
-\PY{n}{w} \PY{o}{=} \PY{p}{(}\PY{n}{t} \PY{o}{\PYZhy{}} \PY{n}{t\PYZus{}1}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{n}{t\PYZus{}2} \PY{o}{\PYZhy{}} \PY{n}{t\PYZus{}1}\PY{p}{)}
-\PY{n}{s} \PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{w}\PY{p}{)}\PY{o}{*}\PY{n}{s\PYZus{}1} \PY{o}{+} \PY{n}{w}\PY{o}{*}\PY{n}{s\PYZus{}2}
-
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{ km}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{s}\PY{p}{)}\PY{p}{)}
-
+\begin{ipython}
+t = 180
+w = (t - t_1)/(t_2 - t_1)
+s = (1 - w)*s_1 + w*s_2
+print ("{:.1f} km".format(s))
+\end{ipython}
+\begin{ioutput}
 309.1 km
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
-\subsection{Log-linear Interpolation}\label{log-linear-interpolation}
+\subsection{Log-linear Interpolation}
+\label{log-linear-interpolation}
 When the function $f$ that we want to interpolate is an exponential we can fall back to the previous case by a simple variable transformation. 
 Assume the following is the relationship between $p$ and $h$, two generic variables:
 
@@ -159,50 +149,36 @@ Now assume that we have measured
 \(p_2 = 40~\mathrm{kPa}\;(h_1 = 7000~\mathrm{m})\) what will be the
 atmospheric pressure on top of Mont Blanc (\(4812~\mathrm{m}\)) ? and on top of Mount Everest (\(8848~\mathrm{m}\)) ?
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} pressure on top of the Mont Blanc (interpolation)}
-\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{log}\PY{p}{,} \PY{n}{exp}
+\begin{ipython}
+# pressure on top of the Mont Blanc (interpolation)
+from math import log, exp
 
-\PY{c+c1}{\PYZsh{} first we take the logarithm of our measurements to use the linear }
-\PY{c+c1}{\PYZsh{} relation to interpolate}
-\PY{n}{h\PYZus{}1} \PY{o}{=} \PY{l+m+mi}{1000} \PY{c+c1}{\PYZsh{} height in meters}
-\PY{n}{s\PYZus{}1} \PY{o}{=} \PY{n}{log}\PY{p}{(}\PY{l+m+mi}{90}\PY{p}{)} \PY{c+c1}{\PYZsh{} logarithm of the pressure at heigth h1}
-\PY{n}{h\PYZus{}2} \PY{o}{=} \PY{l+m+mi}{7000} \PY{c+c1}{\PYZsh{} height in meters}
-\PY{n}{s\PYZus{}2} \PY{o}{=} \PY{n}{log}\PY{p}{(}\PY{l+m+mi}{40}\PY{p}{)} \PY{c+c1}{\PYZsh{} logarithm of the pressure at heigth h2}
+# first we take the logarithm of our measurements to use the linear
+# relation to interpolate
+h_1 = 1000 # height in meters
+s_1 = log(90) # logarithm of the pressure at heigth h1
+h_2 = 7000 # height in meters
+s_2 = log(40) # logarithm of the pressure at heigth h2
 
-\PY{n}{h} \PY{o}{=} \PY{l+m+mi}{4812}
-
-\PY{n}{w} \PY{o}{=} \PY{p}{(}\PY{n}{h} \PY{o}{\PYZhy{}} \PY{n}{h\PYZus{}1}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{n}{h\PYZus{}2} \PY{o}{\PYZhy{}} \PY{n}{h\PYZus{}1}\PY{p}{)}
-\PY{n}{s} \PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{w}\PY{p}{)}\PY{o}{*}\PY{n}{s\PYZus{}1} \PY{o}{+} \PY{n}{w}\PY{o}{*}\PY{n}{s\PYZus{}2}
-
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{ kPa}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{exp}\PY{p}{(}\PY{n}{s}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-
+h = 4812
+w = (h - h_1)/(h_2 - h_1)
+s = (1 - w)*s_1 + w*s_2
+print ("{:.1f} kPa".format(exp(s)))
+\end{ipython}
+\begin{ioutput}
 53.8 kPa
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} pressure on top of the Mount Everest (extrapolation)}
-\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{log}\PY{p}{,} \PY{n}{exp}
+\begin{ipython}
+h = 8848
+w = (h - h_1)/(h_2 - h_1)
+s = (1 - w)*s_1 + w*s_2
 
-\PY{c+c1}{\PYZsh{} first we take the logarithm of our measurements to use the linear }
-\PY{c+c1}{\PYZsh{} relation to interpolate}
-\PY{n}{h\PYZus{}1} \PY{o}{=} \PY{l+m+mi}{1000} \PY{c+c1}{\PYZsh{} height in meters}
-\PY{n}{s\PYZus{}1} \PY{o}{=} \PY{n}{log}\PY{p}{(}\PY{l+m+mi}{90}\PY{p}{)} \PY{c+c1}{\PYZsh{} logarithm of the pressure at heigth h1}
-\PY{n}{h\PYZus{}2} \PY{o}{=} \PY{l+m+mi}{7000} \PY{c+c1}{\PYZsh{} height in meters}
-\PY{n}{s\PYZus{}2} \PY{o}{=} \PY{n}{log}\PY{p}{(}\PY{l+m+mi}{40}\PY{p}{)} \PY{c+c1}{\PYZsh{} logarithm of the pressure at heigth h2}
-\PY{n}{h} \PY{o}{=} \PY{l+m+mi}{8848}
-
-\PY{n}{w} \PY{o}{=} \PY{p}{(}\PY{n}{h} \PY{o}{\PYZhy{}} \PY{n}{h\PYZus{}1}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{n}{h\PYZus{}2} \PY{o}{\PYZhy{}} \PY{n}{h\PYZus{}1}\PY{p}{)}
-\PY{n}{s} \PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{w}\PY{p}{)}\PY{o}{*}\PY{n}{s\PYZus{}1} \PY{o}{+} \PY{n}{w}\PY{o}{*}\PY{n}{s\PYZus{}2}
-
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{ kPa}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{exp}\PY{p}{(}\PY{n}{s}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-
+print ("{:.1f} kPa".format(exp(s)))
+\end{ipython}
+\begin{ioutput}
 31.2 kPa
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 In this case we check our results by plotting the found pressures on top of the $P$ vs $h$ plot shown on Wikipedia, see Fig~\ref{fig:Pvsh}.
 
@@ -274,56 +250,45 @@ Instead of reinventing the wheel and performing the interpolation with homemade 
 the function \texttt{interp}, provided by the module \texttt{numpy}, is used. 
 Say we want to interpolate the points at $x = 2.5$ given the following values:
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+\begin{ipython}
+import numpy as np
 
-\PY{n}{xp} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{]}
-\PY{n}{fp} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{]}
-\PY{n}{np}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{l+m+mf}{2.5}\PY{p}{,} \PY{n}{xp}\PY{p}{,} \PY{n}{fp}\PY{p}{)}
-
+xp = [0, 1, 5]
+fp = [0, 2, 4]
+np.interp(2.5, xp, fp)
+\end{ipython}
+\begin{ioutput}
 2.75
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
-Since discount factors are an essential part for every financial calculation and we will keep using them everywhere,
-a \texttt{python} class which manages discount factors
-and curves is develop, using an object
-oriented approach.
+Since discount factors are an essential part for every financial calculation and we will keep using them everywhere, a \texttt{python} class which manages discount factors and curves is develop, using an object oriented approach.
 This class, that we name \texttt{DiscountCurve}, should have as attributes the pillar dates with the corresponding discount factors and at least a method to interpolate discount factors.
 
-When dealing with discount factors we need to be careful though. \texttt{numpy.interp} only 
-accepts numbers or a list of numbers as argument i.e. it doesn't automatically convert or interpret dates as numbers and doesn't know how to interpolate them. So we need to do 
-the conversion ourselves before passing any date to the interpolation function. This transformation will be implemented directly in the constructor of the class by replacing each date with
-the number of days from a reference date ($t_0$).
+When dealing with discount factors we need to be careful though. \texttt{numpy.interp} only accepts numbers or a list of numbers as argument i.e. it doesn't automatically convert or interpret dates as numbers and doesn't know how to interpolate them. So we need to do the conversion ourselves before passing any date to the interpolation function. This transformation will be implemented directly in the constructor of the class by replacing each date with the number of days from a reference date ($t_0$).
 
-Furthermore we also attempted a simple optimization of the code, in the constructor we are going to compute also the logarithm of the input discount factors, so that we can save
-some computation time with respect to doing the log at every call of the interpolation method. 
+Furthermore we also attempted a simple optimization of the code, in the constructor we are going to compute also the logarithm of the input discount factors, so that we can save some computation time with respect to doing the log at every call of the interpolation method. 
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{math}
-\PY{k+kn}{import} \PY{n+nn}{numpy}
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-	
-\PY{k}{class} \PY{n+nc}{DiscountCurve}\PY{p}{:}	
-    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{today}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{discount\PYZus{}factors}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today} \PY{o}{=} \PY{n}{today}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{n}{pillar\PYZus{}dates}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{discount\PYZus{}factors} \PY{o}{=} \PY{n}{discount\PYZus{}factors}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{log\PYZus{}discount\PYZus{}factors} \PY{o}{=} \PY{p}{[}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{discount\PYZus{}factor}\PY{p}{)} \PYZbs{}
-            \PY{k}{for} \PY{n}{discount\PYZus{}factor} \PY{o+ow}{in} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{discount\PYZus{}factors}\PY{p}{]}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{n}{pillar\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PYZbs{}
-            \PY{k}{for} \PY{n}{pillar\PYZus{}date} \PY{o+ow}{in} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates}\PY{p}{]}
+\begin{ipython}
+import math
+import numpy
+from datetime import date
 
-    \PY{k}{def} \PY{n+nf}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{d}\PY{p}{)}\PY{p}{:}
-        \PY{n}{d\PYZus{}days} \PY{o}{=} \PY{p}{(}\PY{n}{d} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days}
-        \PY{n}{interp\PYZus{}log\PYZus{}df} \PY{o}{=} \PYZbs{}
-            \PY{n}{numpy}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{d\PYZus{}days}\PY{p}{,} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days}\PY{p}{,} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{log\PYZus{}discount\PYZus{}factors}\PY{p}{)}
-        \PY{k}{return} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{interp\PYZus{}log\PYZus{}df}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+class DiscountCurve:
+    def __init__(self, today, pillar_dates, discount_factors):
+        self.today = today
+        self.pillar_dates = pillar_dates
+        self.discount_factors = discount_factors
+        self.log_dfs = [math.log(discount_factor) \
+            for discount_factor in self.discount_factors]
+        self.pillar_days = [(pillar_date - self.today).days \
+            for pillar_date in self.pillar_dates]
 
+    def df(self, d):
+        d_days = (d - self.today).days
+        interp_log_df = \
+            numpy.interp(d_days, self.pillar_days, self.log_dfs)
+        return math.exp(interp_log_df)
+\end{ipython}
 This class is going to be the first step in the creation of a \texttt{python} financial library,
 so copy the code into a separate file called \texttt{finmarkets.py} so that you can later reuse 
 its code.
@@ -331,48 +296,44 @@ its code.
 Assume we have three discount factors, we can now use our new class to create the corresponding
 discount curve. Then the \texttt{df} method provides discount factors on every date within the interval of the given pillar dates.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}
-	
-\PY{n}{today\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-	
-\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
-\PY{n}{discount\PYZus{}factors} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.97}\PY{p}{,} \PY{l+m+mf}{0.72}\PY{p}{]}
+\begin{ipython}
+from datetime import date
+from finmarkets import DiscountCurve
 
-\PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{today\PYZus{}date}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{discount\PYZus{}factors}\PY{p}{)}
-\PY{n}{d0} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{df0} \PY{o}{=} \PY{n}{curve.df}\PY{p}{(}\PY{n}{d0, today_date, pillar_dates, discount_factors}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{df0}\PY{p}{)}
-
+today_date = date(2019, 10, 1)
+pillar_dates = [date(2019, 10, 1), date(2020, 10, 1), date(2021, 10, 1)]
+discount_factors = [1.0, 0.97, 0.72]
+curve = DiscountCurve(today_date, pillar_dates, discount_factors)
+d0 = date(2020, 1, 1)
+df0 = curve.df(d0, today_date, pillar_dates, discount_factors)
+print (df0)
+\end{ipython}
+\begin{ioutput}
 0.9923728228571693
-
-\PY{n}{d1} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{df1} \PY{o}{=} \PY{n}{curve.df}\PY{p}{(}\PY{n}{d1, today_date, pillar_dates, discount_factors}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{df1}\PY{p}{)}
-
+\end{ioutput}
+\begin{ipython}
+d1 = date(2021, 1, 1)
+df1 = curve.df(d1, today_date, pillar_dates, discount_factors)
+print (df1)
+\end{ipython}
+\begin{ioutput}
 0.8997999273630835
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 A very useful way to check the correctness of a result is by plotting it. So let's see what this looks like when plotted on a semi-log graph and if it makes sense, Fig.~\ref{fig:log_discount_curve}.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
-\PY{k+kn}{import} \PY{n+nn}{matplotlib}\PY{n+nn}{.}\PY{n+nn}{dates} \PY{k}{as} \PY{n+nn}{mdates}
-	
-\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{discount\PYZus{}factors}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{o}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{d0}\PY{p}{,} \PY{n}{df0}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{X}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{d1}\PY{p}{,} \PY{n}{df1}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{X}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{gca}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{xaxis}\PY{o}{.}\PY{n}{set\PYZus{}major\PYZus{}formatter}\PY{p}{(}\PY{n}{mdates}\PY{o}{.}\PY{n}{DateFormatter}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{m/}\PY{l+s+si}{\PYZpc{}d}\PY{l+s+s1}{/}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{Y}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{gca}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{xaxis}\PY{o}{.}\PY{n}{set\PYZus{}major\PYZus{}locator}\PY{p}{(}\PY{n}{mdates}\PY{o}{.}\PY{n}{YearLocator}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{grid}\PY{p}{(}\PY{k+kc}{True}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{yscale}\PY{p}{("log"}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+from matplotlib import pyplot as plt
+import matplotlib.dates as mdates
+plt.plot(pillar_dates, discount_factors, marker='o')
+plt.plot(d0, df0, marker='X')
+plt.plot(d1, df1, marker='X')
+plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d/%Y'))
+plt.gca().xaxis.set_major_locator(mdates.YearLocator())
+plt.grid(True)
+plt.yscale("log")
+plt.show()
+\end{ipython}
 
 \begin{figure}[htb]
 	\centering
@@ -381,20 +342,17 @@ A very useful way to check the correctness of a result is by plotting it. So let
 		discount factors with semi-log scale.}
 	\label{fig:log_discount_curve}
 \end{figure}
-
+\noindent
 Let's see what it looks like when plotted on a linear graph too, Fig.~\ref{fig:linear_discount_curve}.
-
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{discount\PYZus{}factors}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{o}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{d0}\PY{p}{,} \PY{n}{df0}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{X}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{d1}\PY{p}{,} \PY{n}{df1}\PY{p}{,} \PY{n}{marker}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{X}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{gca}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{xaxis}\PY{o}{.}\PY{n}{set\PYZus{}major\PYZus{}formatter}\PY{p}{(}\PY{n}{mdates}\PY{o}{.}\PY{n}{DateFormatter}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{m/}\PY{l+s+si}{\PYZpc{}d}\PY{l+s+s1}{/}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{Y}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{gca}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{xaxis}\PY{o}{.}\PY{n}{set\PYZus{}major\PYZus{}locator}\PY{p}{(}\PY{n}{mdates}\PY{o}{.}\PY{n}{YearLocator}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{grid}\PY{p}{(}\PY{k+kc}{True}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+plt.plot(pillar_dates, discount_factors, marker='o')
+plt.plot(d0, df0, marker='X')
+plt.plot(d1, df1, marker='X')
+plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d/%Y'))
+plt.gca().xaxis.set_major_locator(mdates.YearLocator())
+plt.grid(True)
+plt.show()
+\end{ipython}
 
 \begin{figure}[htb]
 	\centering
@@ -409,8 +367,7 @@ Discrepancies in the linear plot are most likely due to rounding.
 \section{Forward Rates}\label{calculating-forward-rates}
 A forward rate is an interest rate applicable to a financial transaction that will take place in the future. It can be considered as the market's expectations for future prices and can serve as an indicator of how it believes will perform.
 
-Contrary the \emph{spot rate} is used by buyers and sellers looking 
-to make an immediate purchase or sale, and it cannot be an indicator of market expectations.
+Contrary the \emph{spot rate} is used by buyers and sellers looking to make an immediate purchase or sale, and it cannot be an indicator of market expectations.
 
 Forward rates are calculated from the spot rate by exploiting the no arbitrage condition which states that investing at rate \(r_1\) for the period \((0, T_1)\) and then \emph{re-investing} at rate \(r_{1,2}\) for the time period \((T_1, T_2)\) is equivalent to invest at rate \(r_2\) for the full time period \((0, T_2)\). Essentially two investors shouldn't be able to earn money from arbitraging between different interest periods. That said:
 
@@ -440,33 +397,25 @@ F(T_1, T_2) = r_{1,2} = \frac {1}{T_{2}-T_{1}}(\ln D(0,T_{1})-\ln D(0,T_{2}))
 \label{eq:forward_rate_continous}
 \end{equation}
 
-We now write a very simple \texttt{ForwardRateCurve} class which doesn't compute 
-discount factors or other fancy values but it is just a container for a list 
-of forward rates and can interpolates between them.
-Also this class goes into the \texttt{finmarkets} module and will be used to
-define the LIBOR curve needed throughout future Chapters.
+We now write a very simple \texttt{ForwardRateCurve} class which doesn't compute discount factors or other fancy values but it is just a container for a list of forward rates and can interpolates between them.
+Also this class goes into the \texttt{finmarkets} module and will be used to define the LIBOR curve needed throughout future Chapters.
 
-In this case it is enough to write a class that has three attributes: 
-a set of pillar dates and the corresponding forward rates. The reference date to convert 
-the pillars for the interpolation (i.e. today) is taken from the first item of the pillar list.
-There will be just a single method \texttt{forward\_rate} to return an interpolated rate.
+In this case it is enough to write a class that has three attributes: a set of pillar dates and the corresponding forward rates. The reference date to convert the pillars for the interpolation (i.e. today) is taken from the first item of the pillar list. There will be just a single method \texttt{forward\_rate} to return an interpolated rate.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy}
-	
-\PY{k}{class} \PY{n+nc}{ForwardRateCurve}\PY{p}{(}\PY{n+nb}{object}\PY{p}{)}\PY{p}{:}	
-    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{rates}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today} \PY{o}{=} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rates} \PY{o}{=} \PY{n}{rates}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{n}{pillar\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PYZbs{}
-            \PY{k}{for} \PY{n}{pillar\PYZus{}date} \PY{o+ow}{in} \PY{n}{pillar\PYZus{}dates}\PY{p}{]}
-	
-    \PY{k}{def} \PY{n+nf}{forward\PYZus{}rate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{d}\PY{p}{)}\PY{p}{:}
-        \PY{n}{d\PYZus{}days} \PY{o}{=} \PY{p}{(}\PY{n}{d} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days}
-        \PY{k}{return} \PY{n}{numpy}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{d\PYZus{}days}\PY{p}{,} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days}\PY{p}{,} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rates}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+import numpy
+
+class ForwardRateCurve(object):
+    def __init__(self, pillar_dates, rates):
+        self.today = pillar_dates[0]
+        self.rates = rates
+        self.pillar_days = [(pillar_date - self.today).days \
+        for pillar_date in pillar_dates]
+
+    def forward_rate(self, d):
+        d_days = (d - self.today).days
+        return numpy.interp(d_days, self.pillar_days, self.rates)
+\end{ipython}
 
 \section{Multi-curve Framework}
 \label{sec:financial-crisis}
@@ -488,54 +437,25 @@ apparent how before August 2007 the two rates display strictly overlapping trend
 	\label{fig:credit_crunch}
 \end{figure}
 
-A single yield curve constructed out of selected deposit rates, FRA/EDF rates 
-and swap rates served both the cash flow projection and discounting purposes.
+A single yield curve constructed out of selected deposit rates, FRA/EDF rates and swap rates served both the cash flow projection and discounting purposes.
 
-During the 2008 financial crisis, the failure of some banks however proved that interbank lending rates (e.g. LIBOR, EURIBOR\ldots) were not risk-free. Meanwhile
-there was also significant counterparty credit risk arising from derivative
-transactions that were not subject to collateral or margin calls. 
-Basis swap spreads greatly widened, and persist to this day. 
+During the 2008 financial crisis, the failure of some banks however proved that interbank lending rates (e.g. LIBOR, EURIBOR\ldots) were not risk-free. Meanwhile there was also significant counterparty credit risk arising from derivative transactions that were not subject to collateral or margin calls. Basis swap spreads greatly widened, and persist to this day. 
 
-Still looking at Fig.~\ref{fig:credit_crunch} it is clear how in August 2007
-a sudden increase of the EURIBOR rate and a simultaneous decrease of the OIS rate
-leads to the explosion of the corresponding basis spread, touching the peak of 222
-bps in October 2008, when Lehman Brothers filed for bankruptcy. Successively the
-basis has sensibly reduced and stabilized between 40 bps and 60 bps (notice that the precrisis 
-level has never been recovered). 
-The same effect is observed for other similar couples of series, e.g. EURIBOR 3M 
-vs OIS 3M.
+Still looking at Fig.~\ref{fig:credit_crunch} it is clear how in August 2007 a sudden increase of the EURIBOR rate and a simultaneous decrease of the OIS rate leads to the explosion of the corresponding basis spread, touching the peak of 222 bps in October 2008, when Lehman Brothers filed for bankruptcy. Successively the basis has sensibly reduced and stabilized between 40 bps and 60 bps (notice that the precrisis level has never been recovered). 
+The same effect is observed for other similar couples of series, e.g. EURIBOR 3M vs OIS 3M.
 
-The existence of such significant basis swap spreads reflects the fact that after
-the crisis the interest rate market has been segmented into subareas corresponding
-to instruments with different underlying rate tenors, characterized by different 
-rate dynamics. 
+The existence of such significant basis swap spreads reflects the fact that after the crisis the interest rate market has been segmented into subareas corresponding to instruments with different underlying rate tenors, characterized by different rate dynamics. 
 
-Traditional single curve based pricing approach ignores these differences. 
-It mixes different underlying rate tenors and incorporates different rate dynamics,
-eventually leads to inconsistency.
-After the crisis, the market practice has thus evolved to take into account the new
-market information (e.g. the basis swap spreads, collateralization, etc.), that
-translate into the additional requirement of homogeneity and funding. 
-The homogeneity requirement means that interest rate derivatives with a given
-underlying rate tenor must be priced and hedged using vanilla interest rate
-market instruments with the same underlying. The funding requirement means that 
-the discount rate of any cash flow generated by the derivative must be consistent, 
-by no-arbitrage, with the funding rate associated with that cash flow. 
+Traditional single curve based pricing approach ignores these differences. It mixes different underlying rate tenors and incorporates different rate dynamics, eventually leads to inconsistency.
+After the crisis, the market practice has thus evolved to take into account the new market information (e.g. the basis swap spreads, collateralization, etc.), that translate into the additional requirement of homogeneity and funding. The homogeneity requirement means that interest rate derivatives with a given underlying rate tenor must be priced and hedged using vanilla interest rate market instruments with the same underlying. The funding requirement means that 
+the discount rate of any cash flow generated by the derivative must be consistent, by no-arbitrage, with the funding rate associated with that cash flow. 
 
 Driven by the crisis, many derivative contracts have been updated to include permissible credit mitigants for a transaction, such as netting and collateralization in cash.
-Since standard agreements stipulate daily margination on collateral and the cash
-collateral earns a return at overnight rate,
-overnight rate becomes a natural choice for the risk-free discount rate or
-the funding rate. This is referred to as \emph{OIS discounting}.
+Since standard agreements stipulate daily margination on collateral and the cash collateral earns a return at overnight rate, overnight rate becomes a natural choice for the risk-free discount rate or the funding rate. This is referred to as \emph{OIS discounting}.
 
-The large spread between risk free rate and interbank lending rate during and after
-2008 financial crisis it is not possible anymore to use a single curve for
-discounting and derivative valuation. The traditional single curve used for both 
-cash flow projection and discounting turned out to be obsolete. The markets
-have since nearly switched to multi-curve framework. 
+The large spread between risk free rate and interbank lending rate during and after 2008 financial crisis it is not possible anymore to use a single curve for discounting and derivative valuation. The traditional single curve used for both  cash flow projection and discounting turned out to be obsolete. The markets have since nearly switched to multi-curve framework. 
 
-For example, if we want to calculate the net present value (NPV) of a forward 6-month 
-LIBOR coupon, we need to simultaneously use two different discount curves:
+For example, if we want to calculate the net present value (NPV) of a forward 6-month LIBOR coupon, we need to simultaneously use two different discount curves: 
 
 \begin{itemize}
 \tightlist
@@ -592,72 +512,48 @@ Our financial library has to implement the following calculation
 In order to do so we can extend the \texttt{DiscountCurve} class with a \texttt{forward\_rate}
 method
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{class} \PY{n+nc}{DiscountCurve}\PY{p}{:}	
+\begin{ipython}
+class DiscountCurve:
     ...
-    \PY{k}{def} \PY{n+nf}{forward\PYZus{}rate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{d1}\PY{p}{,} \PY{n}{d2}\PY{p}{)}\PY{p}{:}
-        \PY{k}{return} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d1}\PY{p}{)} \PY{o}{/} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d2}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mf}{1.0}\PY{p}{)} \PY{o}{*} \PYZbs{}
-	        \PY{p}{(}\PY{l+m+mf}{365.0} \PY{o}{/} \PY{p}{(}\PY{p}{(}\PY{n}{d2} \PY{o}{\PYZhy{}} \PY{n}{d1}\PY{p}{)}\PY{o}{.}\PY{n}{days}\PY{p}{)}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+    def forward_rate(self, d1, d2):
+        return (self.df(d1) / self.df(d2) - 1.0) * \
+            (365.0 / ((d2 - d1).days))
+\end{ipython}
 
-As an example let's define EONIA and LIBOR curves and compute the net present value 
-of the forward 6-month LIBOR coupon mentioned before.
+As an example let's define EONIA and LIBOR curves and compute the net present value of the forward 6-month LIBOR coupon mentioned before.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}
-	
-\PY{n}{today\PYZus{}date} \PY{o}{=} \PY{n}{date} \PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{t1} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{t2} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
+\begin{ipython}
+from finmarkets import DiscountCurve
 
-\PY{n}{pillar\PYZus{}dates\PYZus{}eonia} \PY{o}{=} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2022}\PY{p}{,} \PY{l+m+mi}{10} \PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
-\PY{n}{df\PYZus{}eonia} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.97}\PY{p}{,} \PY{l+m+mf}{0.72}\PY{p}{]}
-	
-\PY{n}{pillar\PYZus{}dates\PYZus{}libor} \PY{o}{=} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{12} \PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
-\PY{n}{df\PYZus{}libor} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.95}\PY{p}{,} \PY{l+m+mf}{0.90}\PY{p}{]}
-		
-\PY{n}{eonia\PYZus{}curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{today\PYZus{}date}\PY{p}{,} \PY{n}{pillar\PYZus{}dates\PYZus{}eonia}\PY{p}{,} \PY{n}{df\PYZus{}eonia}\PY{p}{)}
-\PY{n}{libor\PYZus{}curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{today\PYZus{}date}\PY{p}{,} \PY{n}{pillar\PYZus{}dates\PYZus{}libor}\PY{p}{,} \PY{n}{df\PYZus{}libor}\PY{p}{)}
-	
-\PY{n}{npv} \PY{o}{=} \PY{n}{eonia\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{t1}\PY{p}{)} \PY{o}{*} \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{t1}\PY{p}{,} \PY{n}{t2}\PY{p}{)}
-\PY{n}{npv\PYZus{}pre2008} \PY{o}{=} \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{t1}\PY{p}{)} \PY{o}{*} \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{t1}\PY{p}{,} \PY{n}{t2}\PY{p}{)}
-	
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{NPV post 2008:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{npv}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{NPV pre 2008:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{npv\PYZus{}pre2008}\PY{p}{)}
-	
+today_date = date (2020, 1, 1)
+t1 = date(2020, 4, 1)
+t2 = date(2020, 10, 1)
+pillar_dates_eonia = [date(2020, 1, 1), date(2021, 1, 1), date(2022, 10 ,1)]
+df_eonia = [1.0, 0.97, 0.72]
+pillar_dates_libor = [date(2020, 1, 1), date(2020, 6, 1), date(2020, 12 ,1)]
+df_libor = [1.0, 0.95, 0.90]
+eonia_curve = DiscountCurve(today_date, pillar_dates_eonia, df_eonia)
+libor_curve = DiscountCurve(today_date, pillar_dates_libor, df_libor)
+npv = eonia_curve.df(t1) * libor_curve.forward_rate(t1, t2)
+npv_pre2008 = libor_curve.df(t1) * libor_curve.forward_rate(t1, t2)
+
+print ("NPV post 2008:", npv)
+print ("NPV pre 2008:", npv_pre2008)
+\end{ipython}
+\begin{ioutput}
 NPV post 2008: 0.11533243116069992
 NPV pre 2008: 0.11269481011359303
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \subsection{Transitioning away from LIBOR~\cite{bib:str}}
-A working group on euro risk-free rates was established to identify
-and recommend risk-free rates that could serve as a basis for an
-alternative to current benchmarks used in a variety of financial
-instruments and contracts in the euro area, such as the euro
-overnight index average (EONIA) and the euro interbank offered rate
-(EURIBOR). 
+A working group on euro risk-free rates was established to identify and recommend risk-free rates that could serve as a basis for an alternative to current benchmarks used in a variety of financial
+instruments and contracts in the euro area, such as the euro overnight index average (EONIA) and the euro interbank offered rate (EURIBOR). 
 
-The group recommended on September 2018 that the euro
-short-term rate (STR) be used as the risk-free rate for the euro area
-and is now focused on supporting the market with transitioning.
-The ECB published the STR for the first time on 2nd October 2019,
-reflecting trading activity on 1st October 2019.
+The group recommended on September 2018 that the euro short-term rate (STR) be used as the risk-free rate for the euro area and is now focused on supporting the market with transitioning.
+The ECB published the STR for the first time on 2nd October 2019, reflecting trading activity on 1st October 2019.
 
-The working group recommends that market participants should gradually replace
-EONIA with the STR as a reference rate for all products and
-contracts and make all necessary adjustments for using the STR as
-their standard benchmark
-The working group recommends the STR plus a fixed spread of 8.5
-basis points as the EONIA fallback rate for all products and purposes.
-The working group recommends that market participants should:
-consider, whenever feasible and appropriate, no longer entering into
-new contracts referencing EONIA, in particular new contracts
-maturing after 31 December 2021, as EONIA will cease to exist after
-that date.
+The working group recommends that market participants should gradually replace EONIA with the STR as a reference rate for all products and contracts and make all necessary adjustments for using the STR as their standard benchmark The working group recommends the STR plus a fixed spread of 8.5
+basis points as the EONIA fallback rate for all products and purposes. The working group recommends that market participants should: consider, whenever feasible and appropriate, no longer entering into new contracts referencing EONIA, in particular new contracts maturing after 31 December 2021, as EONIA will cease to exist after that date.
 
 %The working group is also looking at identifying fallbacks for
 %EURIBOR based on the STR. Both backward and forward-looking
