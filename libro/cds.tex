@@ -61,9 +61,7 @@ and credit curve.
 
 \subsection{Hazard Rate}\label{hazard-rate}
 
-Hazard rate is often called a \emph{conditional failure rate} since its
-expression is a direct application of the conditional probability
-concept.
+Hazard rate is often called a \emph{conditional failure rate} since its expression is a direct application of the conditional probability concept.
 
 Conditional probability answers to the question ``how should you update
 the probability of an event when there is additional information available
@@ -127,49 +125,48 @@ N(t_0, t) = \mathrm{exp}\left(-\int_{t_0}^{t}\lambda(s) ds\right)
 
 In this Section we develop a \texttt{CreditCurve} class which will be characterized by a list of pillar dates and a corresponding list of non-default probabilities. It has also methods to compute survival probabilities at arbitrary date by interpolation and the hazard rate.
   
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{math}
-\PY{k+kn}{import} \PY{n+nn}{numpy}
+\begin{ipython}
+import math
+import numpy
 
-\PY{k}{class} \PY{n+nc}{CreditCurve}\PY{p}{:}
-    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{ndps}\PY{p}{)}\PY{p}{:}    
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{n}{pillar\PYZus{}dates}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{n}{pd} \PY{o}{\PYZhy{}} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{k}{for} \PY{n}{pd} \PY{o+ow}{in} \PY{n}{pillar\PYZus{}dates}\PY{p}{]}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{ndps} \PY{o}{=} \PY{n}{ndps}
-        
-    \PY{k}{def} \PY{n+nf}{ndp}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{value\PYZus{}date}\PY{p}{)}\PY{p}{:}
-        \PY{n}{value\PYZus{}days} \PY{o}{=} \PY{p}{(}\PY{n}{value\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{days}
-        \PY{k}{return} \PY{n}{interp}\PY{p}{(}\PY{n}{value\PYZus{}days}\PY{p}{,} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days}\PY{p}{,} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{ndps}\PY{p}{)}
-    
-    \PY{k}{def} \PY{n+nf}{hazard}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{value\PYZus{}date}\PY{p}{)}\PY{p}{:}
-        \PY{n}{ndp\PYZus{}1} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{value\PYZus{}date}\PY{p}{)}
-        \PY{n}{ndp\PYZus{}2} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{value\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-        \PY{n}{delta\PYZus{}t} \PY{o}{=} \PY{l+m+mf}{1.0} \PY{o}{/} \PY{l+m+mf}{365.0}
-        \PY{n}{h} \PY{o}{=} \PY{o}{\PYZhy{}}\PY{l+m+mf}{1.0} \PY{o}{/} \PY{n}{ndp\PYZus{}1} \PY{o}{*} \PY{p}{(}\PY{n}{ndp\PYZus{}2} \PY{o}{\PYZhy{}} \PY{n}{ndp\PYZus{}1}\PY{p}{)} \PY{o}{/} \PY{n}{delta\PYZus{}t}
-        \PY{k}{return} \PY{n}{h}
-\end{Verbatim}
-\end{codebox}    
+class CreditCurve:
+    def __init__(self, pillar_dates, ndps):
+        self.pillar_dates = pillar_dates
+        self.pillar_days = [(pd - pillar_dates[0]).days for pd in pillar_dates]
+        self.ndps = ndps
+
+    def ndp(self, value_date):
+        value_days = (value_date - self.pillar_dates[0]).days
+        return interp(value_days, self.pillar_days, self.ndps)
+
+    def hazard(self, value_date):
+        ndp_1 = self.ndp(value_date)
+        ndp_2 = self.ndp(value_date + relativedelta(days=1))
+        delta_t = 1.0 / 365.0
+        h = -1.0 / ndp_1 * (ndp_2 - ndp_1) / delta_t
+        return h
+\end{ipython}
 \noindent
 Let's test the newly created class with some inputs.
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
+\begin{ipython}
+from datetime import date
+from dateutil.relativedelta import relativedelta
 
-\PY{n}{start\PYZus{}date = date(2020, 11, 4)}        
-\PY{n}{cc} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}
-      \PY{p}{[}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{]}\PY{p}{,}
-      \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.8}\PY{p}{]}\PY{p}{)}
-
-\PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-
+start_date = date(2020, 11, 4)
+cc = CreditCurve(
+    [start_date, start_date + relativedelta(years=2)],
+    [1.0, 0.8])
+cc.ndp(start_date + relativedelta(years=1))
+\end{ipython}
+\begin{ioutput}
 0.9
-\PY{n}{cc}\PY{o}{.}\PY{n}{hazard}\PY{p}{(}\PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-
+\end{ioutput}
+\begin{ipython}
+cc.hazard(start_date + relativedelta(years=1))
+\end{ipython}
+\begin{ioutput}
 0.1111111114199
-\end{Verbatim}
-\end{codebox}    
+\end{ioutput}
             
 \section{Credit Default Swaps}\label{credit-deafult-swaps}
 
@@ -268,87 +265,77 @@ Figure~\ref{fig:default_p} illustrates the steps to convert the daily default pr
 
 As for the other kind of contracts we develop also a \texttt{CreditDefaultSwap} class. In this case the class has methods to compute NPVs for the premium and default legs.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
-        
-\PY{k}{class} \PY{n+nc}{CreditDefaultSwap}\PY{p}{:}
-    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{notional}\PY{p}{,} \PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{fixed\PYZus{}spread}\PY{p}{,} 
-                 \PY{n}{maturity_y}\PY{p}{,} \PY{n}{tenor}\PY{o}{=}\PY{l+m+mf}{3}\PY{p}{,} \PY{n}{recovery}\PY{o}{=}\PY{l+m+mf}{0.4}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{=} \PY{n}{notional}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates} \PY{o}{=} \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} 
-                                                 \PY{n}{maturity_y}\PY{o}{*}\PY{l+m+mi}{12}\PY{p}{,} \PY{n}{tenor}\PY{p}{)}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}spread} \PY{o}{=} \PY{n}{fixed\PYZus{}spread}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{recovery} \PY{o}{=} \PY{n}{recovery}
-    
-    \PY{k}{def} \PY{n+nf}{npv\PYZus{}premium\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{n}{npv} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-            \PY{n}{npv} \PY{o}{+}\PY{o}{=} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}spread} \PY{o}{*}
-                    \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)} \PY{o}{*}
-                    \PY{n}{credit\PYZus{}curve}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{)}
-        \PY{k}{return} \PY{n}{npv} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional}
-    
-    \PY{k}{def} \PY{n+nf}{npv\PYZus{}default\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{n}{npv} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{n}{d} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
-        
-        \PY{k}{while} \PY{n}{d} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{:}
-            \PY{n}{npv} \PY{o}{+}\PY{o}{=} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d}\PY{p}{)} \PY{o}{*} \PY{p}{(}
-                \PY{n}{credit\PYZus{}curve}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{d}\PY{p}{)} \PY{o}{\PYZhy{}}
-                \PY{n}{credit\PYZus{}curve}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{d} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-            \PY{n}{d} \PY{o}{+}\PY{o}{=} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-        \PY{k}{return} \PY{n}{npv} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{recovery}\PY{p}{)}
-    
-    \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}default\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)} \PY{o}{\PYZhy{}} \PYZbs{}
-               \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}premium\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}    
+\begin{ipython}
+from finmarkets import generate_swap_dates
+
+class CreditDefaultSwap:
+    def __init__(self, notional, start_date, fixed_spread,
+                 maturity_y, tenor=3, recovery=0.4):
+        self.notional = notional
+        self.payment_dates = generate_swap_dates(start_date,
+            maturity_y*12, tenor)
+        self.fixed_spread = fixed_spread
+        self.recovery = recovery
+
+    def npv_premium_leg(self, discount_curve, credit_curve):
+        npv = 0
+        for i in range(1, len(self.payment_dates)):
+            npv += (self.fixed_spread *
+                discount_curve.df(self.payment_dates[i]) *
+                credit_curve.ndp(self.payment_dates[i]))
+        return npv * self.notional
+
+    def npv_default_leg(self, discount_curve, credit_curve):
+        npv = 0
+        d = self.payment_dates[0]
+        while d <= self.payment_dates[-1]:
+            npv += discount_curve.df(d) * (
+                credit_curve.ndp(d) -
+                credit_curve.ndp(d + relativedelta(days=1)))
+            d += relativedelta(days=1)
+        return npv * self.notional * (1 - self.recovery)
+
+    def npv(self, discount_curve, credit_curve):
+        return self.npv_default_leg(discount_curve, credit_curve) - \
+               self.npv_premium_leg(discount_curve, credit_curve)
+\end{ipython}
 
 To test the class data contained in \href{https://drive.google.com/file/d/1mugHyet3H9tcSAvYvt8G4_kpfaEbVY7b/view?usp=sharing}{discount\_curve\_ch10.xlsx} is used.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
-	
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}
-	
-\PY{n}{dc\PYZus{}data} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{discount\PYZus{}curve\PYZus{}ch10.xlsx}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+\begin{ipython}
+import pandas as pd
+from datetime import date
+from dateutil.relativedelta import relativedelta
+from finmarkets import DiscountCurve
 
-\PY{n}{observation\PYZus{}date = date(2020, 11, 1)}        
-\PY{n}{dc} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,} 
-\PY{n}{dc\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{pillars}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{dt}\PY{o}{.}\PY{n}{date}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,}
-\PY{n}{dc\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{discount\PYZus{}factors}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-
-\PY{n}{credit\PYZus{}curve} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{p}{[}\PY{n}{start\PYZus{}date}\PY{p}{,} 
-                           \PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{months}\PY{o}{=}\PY{l+m+mi}{36}\PY{p}{)}\PY{p}{]}\PY{p}{,} 
-                           \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.7}\PY{p}{]}\PY{p}{)}
-
-\PY{n}{cds} \PY{o}{=} \PY{n}{CreditDefaultSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,} \PY{n}{start\PYZus{}date}\PY{p}{,} \PY{l+m+mf}{0.03}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{)}
-\PY{n}{cds}\PY{o}{.}\PY{n}{premium\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n}{dc}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-
+dc_data = pd.read_excel("discount_curve_ch10.xlsx")
+observation_date = date(2020, 11, 1)
+dc = DiscountCurve(observation_date,
+dc_data['pillars'].dt.date.tolist(),
+dc_data['discount_factors'].tolist())
+credit_curve = CreditCurve([start_date,
+                   start_date + relativedelta(months=36)],
+                   [1.0, 0.7])
+cds = CreditDefaultSwap(1e6, start_date, 0.03, 3)
+cds.premium_leg_npv(dc, credit_curve)
+\end{ipython}
+\begin{ioutput}
 303058.4667954984
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{cds}\PY{o}{.}\PY{n}{default\PYZus{}leg\PYZus{}npv}\PY{p}{(}\PY{n}{dc}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-
+\begin{ipython}
+cds.default_leg_npv(dc, credit_curve)
+\end{ipython}
+\begin{ioutput}
 180888.9540606495
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{cds}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{dc}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-
+\begin{ipython}
+cds.npv(dc, credit_curve)
+\end{ipython}
+\begin{ioutput}
 -122169.51273484889
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 	
 \subsection{Break-even Spread}
 The break-even spread of a credit default swap is the value of the fixed rate paid in the premium leg that makes the CDS net present value 0.
@@ -369,14 +356,12 @@ S_{\mathrm{breakeven}} = \cfrac{(1-R) \sum_{d'=d_0}^{d_n} D(d') \left( N(d, d') 
 
 The implementation is relatively easy:
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-  \PY{k}{def} \PY{n+nf}{breakevenRate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-    \PY{n}{num} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}default\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}
-    \PY{n}{den} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}premium\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{o}{/}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}spread}
-    \PY{k}{return} \PY{n}{num}\PY{o}{/}\PY{n}{den}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+def breakevenRate(self, discount_curve, credit_curve):
+    num = self.npv_default_leg(discount_curve, credit_curve)
+    den = self.npv_premium_leg(discount_curve, credit_curve)/self.fixed_spread
+    return num/den
+\end{ipython}
 
 \section{Credit Ratings}\label{credit-ratings}
 
@@ -466,7 +451,8 @@ where \(D\) is the proper discount factor. Since we don't
 know if the issuer will default or not we can estimate the bond price as
 
 \begin{equation}
-V_{bond} = D \cdot R \cdot F \cdot DP ( \tau ) + D \cdot F \cdot ( 1 − DP ( \tau)) = D\cdot F \cdot ( 1 − ( 1 − R ) DP ( \tau ))\end{equation}
+V_{bond} = D \cdot R \cdot F \cdot DP ( \tau ) + D \cdot F \cdot ( 1 − DP ( \tau)) = D\cdot F \cdot ( 1 − ( 1 − R ) DP ( \tau ))
+\end{equation}
 
 From the this equation is clear that the higher the default probability
 the lower the bond price. Conversely, given the market price of the
@@ -551,38 +537,43 @@ There are several ways to test the formula for logical consistency. First look
 at the case where the survival probability is zero so that with $S = 0$ the
 formula reduces to:
 
-\begin{equation}\mathbb{E}(X) = RF\end{equation}
+\begin{equation}
+\mathbb{E}(X) = RF
+\end{equation}
 this is logical since when default is immanent the price should just equal the
 recovery amount.
 In the case where survival is certain and the risk free rate is zero you have
 $S = 1$ and $D=1$:
 
-\begin{equation}\mathbb{E}(X) = NC + F \end{equation}
+\begin{equation}
+\mathbb{E}(X) = NC + F 
+\end{equation}
 The price here is equal to the total of the coupon payments plus the face
 value, as you would expect.
 
 Next an example with a \texttt{python} implementation which uses \texttt{brentq}.
 
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{brentq}
-	
-\PY{n}{C} \PY{o}{=} \PY{l+m+mf}{0.05} \PY{c+c1}{\PYZsh{} coupon}
-\PY{n}{r} \PY{o}{=} \PY{l+m+mf}{0.03} \PY{c+c1}{\PYZsh{} risk\PYZhy{}free rate}
-\PY{n}{D} \PY{o}{=} \PY{l+m+mi}{1}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{n}{r}\PY{p}{)} \PY{c+c1}{\PYZsh{} discount factor}
-\PY{n}{F}\PY{o}{=}\PY{l+m+mi}{100} \PY{c+c1}{\PYZsh{} bond face value}
-\PY{n}{R}\PY{o}{=}\PY{l+m+mf}{0.4} \PY{c+c1}{\PYZsh{} recovery}
-\PY{n}{N}\PY{o}{=}\PY{l+m+mi}{4} \PY{c+c1}{\PYZsh{} maturity}
-\PY{n}{trading\PYZus{}price} \PY{o}{=} \PY{l+m+mi}{80}
-	
-\PY{k}{def} \PY{n+nf}{func}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{n}{C}\PY{o}{*}\PY{n}{x}\PY{o}{*}\PY{n}{D} \PY{o}{+} \PY{n}{R}\PY{o}{*}\PY{n}{F}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{x}\PY{p}{)}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{p}{(}\PY{n}{x}\PY{o}{*}\PY{n}{D}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{n}{N}\PY{p}{)}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{x}\PY{o}{*}\PY{n}{D}\PY{p}{)}\PY{o}{+}\PY{n}{F}\PY{o}{*}\PY{p}{(}\PY{n}{x}\PY{o}{*}\PY{n}{D}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{n}{N}
-           \PY{o}{\PYZhy{}}\PY{n}{trading\PYZus{}price}
-	
-\PY{n}{res} \PY{o}{=} \PY{n}{brentq}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{P\PYZhy{}default before next coupon: }\PY{l+s+si}{\PYZob{}:.1f\PYZcb{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{res}\PY{p}{)}\PY{o}{*}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{)}
+\begin{attpython}
+from scipy.optimize import brentq
 
+C = 0.05 # coupon
+r = 0.03 # risk-free rate
+D = 1/(1+r) # discount factor
+F=100 # bond face value
+R=0.4 # recovery
+N=4 # maturity
+trading_price = 80
+
+def func(x):
+    return C*x*D + R*F*(1-x)*(1-(x*D)**N)/(1-x*D)+F*(x*D)**N
+        -trading_price
+res = brentq(func, 0, 1)
+
+print ("P-default before next coupon: {:.1f}%".format((1-res)*100))
+\end{attpython}
+\begin{ioutput}
 P-default before next coupon: 4.7\%
-\end{Verbatim}
+\end{ioutput}
 \end{attention}
 
 \subsection{Implied Probability of Default from CDS}\label{default-probabilities-and-cds}
@@ -596,7 +587,7 @@ Let's summarize the procedure:
 \item create a CDS contracts for each available market quote;
 \item implement an objective function to minimize the squared sum of the CDS
 	NPVs, the function has to implement also a \texttt{CreditCurve} with
-	the unknown (to be determined survival probabilities) and a list of pillars corresponding to the CDS expiry dates;
+ 	the unknown (to be determined survival probabilities) and a list of pillars corresponding to the CDS expiry dates;
 \item set initial guesses and boundary conditions for the
 	unknown parameters (the first survival probability has to be set to 1
 	since no default happened !, the others free to move between $[0.01, 1]$ because they are probabilities);
@@ -607,62 +598,54 @@ As it is clear those are almost exactly the same steps already seen for the disc
 We will now implement again the bootstrapping from the market quotes saved in \href{https://drive.google.com/file/d/1BOtwCFYk0CUwYkMhnowWTj0HNOpBefd_/view?usp=sharing}{cds\_quotes.xlsx} and for the discount curve \href{https://drive.google.com/file/d/1mugHyet3H9tcSAvYvt8G4_kpfaEbVY7b/view?usp=sharing}{discount\_curve\_ch10.xlsx}.
 So first load the market data and create a discount curve and the swaps with it.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{CreditDefaultSwap}\PY{p}{,} \PY{n}{CreditCurve}\PY{p}{,} \PY{n}{DiscountCurve}
-	
-\PY{n}{dc} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{discount\PYZus{}curve\PYZus{}ch10.xlsx}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{mq} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{cds\PYZus{}quotes.xlsx}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-	
-\PY{n}{discount\PYZus{}curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,}
-                               \PY{n}{dc}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{pillars}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{dt}\PY{o}{.}\PY{n}{date}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,}
-                               \PY{n}{dc}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{discount\PYZus{}factors}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-	
-\PY{n}{cdswaps} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{start\PYZus{}date}\PY{p}{]}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{mq}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{n}{cds} \PY{o}{=} \PY{n}{CreditDefaultSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,}
-                            \PY{n}{start\PYZus{}date}\PY{p}{,}
-                            \PY{n}{mq}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{quote}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{,}
-                            \PY{n}{mq}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{months}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{/}\PY{o}{/}\PY{l+m+mi}{12}\PY{p}{)}
-    \PY{n}{cdswaps}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{cds}\PY{p}{)}
-    \PY{n}{pillar\PYZus{}dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{cds}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+import pandas as pd
+from datetime import date
+from finmarkets import CreditDefaultSwap, CreditCurve, DiscountCurve
+
+dc = pd.read_excel("discount_curve_ch10.xlsx")
+mq = pd.read_excel("cds_quotes.xlsx")
+discount_curve = DiscountCurve(observation_date,
+                 dc['pillars'].dt.date.tolist(),
+                 dc['discount_factors'].tolist())
+cdswaps = []
+pillar_dates = [start_date]
+for i in range(len(mq)):
+    cds = CreditDefaultSwap(1e6,
+          start_date,
+          mq['quote'].tolist()[i],
+          mq['months'].tolist()[i]//12)
+cdswaps.append(cds)
+pillar_dates.append(cds.payment_dates[-1])
+\end{ipython}
 
 Then the objective function:
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
+\begin{ipython}
+import numpy as np
 
-\PY{k}{def} \PY{n+nf}{objective\PYZus{}function}\PY{p}{(}\PY{n}{unknown\PYZus{}ndps}\PY{p}{)}\PY{p}{:}
-    \PY{n}{unknown\PYZus{}ndps} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{insert}\PY{p}{(}\PY{n}{unknown\PYZus{}ndps}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-    \PY{n}{credit\PYZus{}curve} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{unknown\PYZus{}ndps}\PY{p}{)}
-    
-    \PY{n}{sum\PYZus{}sq} \PY{o}{=} \PY{l+m+mi}{0}
-    \PY{k}{for} \PY{n}{cds} \PY{o+ow}{in} \PY{n}{cdswaps}\PY{p}{:}    
-        \PY{n}{sum\PYZus{}sq} \PY{o}{+}\PY{o}{=} \PY{n}{cds}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{credit\PYZus{}curve}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}
-    \PY{k}{return} \PY{n}{sum\PYZus{}sq}
-\end{Verbatim}
-\end{codebox}
+def objective_function(unknown_ndps):
+    unknown_ndps = np.insert(unknown_ndps, 0, 1)
+    credit_curve = CreditCurve(pillar_dates, unknown_ndps)
+    sum_sq = 0
+    for cds in cdswaps:
+        sum_sq += cds.npv(discount_curve, credit_curve)**2
+    return sum_sq
+\end{ipython}
 
 The guess values and the boundaries
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{ndp\PYZus{}guess} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.01} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
-\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+ndp_guess = [0.01 for _ in range(len(pillar_dates)-1)]
+bounds = [(0.01, 1) for _ in range(len(pillar_dates)-1)]
+\end{ipython}
 
 And finally we can run the minimizer
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
-\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{objective\PYZus{}function}\PY{p}{,} \PY{n}{ndp\PYZus{}guess}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{r}\PY{p}{)}
+\begin{ipython}
+from scipy.optimize import minimize
 
+r = minimize(objective_function, ndp_guess, bounds=bounds)
+print (r)
+\end{ipython}
+\begin{ioutput}
      fun: 4.733604375827937e-05
 hess_inv: <6x6 LbfgsInvHessProduct with dtype=float64>
      jac: array([ -8.11922299, -15.78174405,  -1.75544551,  
@@ -675,19 +658,17 @@ hess_inv: <6x6 LbfgsInvHessProduct with dtype=float64>
  success: True
        x: array([0.9080181 , 0.80399122, 0.70870263, 
                  0.48273696, 0.29640056, 0.08653027])
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 After the minimization we get the list of non-default probabilities corresponding to the expiry dates of our CDSs.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{insert}\PY{p}{(}\PY{n}{r.x}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{cc} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{n}{pillars}\PY{p}{,} \PY{n}{x}\PY{p}{)}
-	
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillars}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{S(t\PYZlt{}}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{): }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{pillars}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{,} \PY{n}{x}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{)}
-
+\begin{ipython}
+x = np.insert(r.x, 0, 1)
+cc = CreditCurve(pillars, x)
+for i in range(len(pillars)):
+    print ("S(t<{}): {:.2f}".format(pillars[i], x[i]))
+\end{ipython}
+\begin{ioutput}
 S(t<2020-11-04): 1.00
 S(t<2021-11-04): 0.91
 S(t<2022-11-04): 0.80
@@ -695,8 +676,7 @@ S(t<2023-11-04): 0.71
 S(t<2026-11-04): 0.48
 S(t<2030-11-04): 0.29
 S(t<2040-11-04): 0.09
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \section{Exercises}
 \input{cds_ex_text}

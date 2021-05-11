@@ -37,20 +37,20 @@ fixed and floating legs.
 The modification consists of the addition of a new input
 parameter, the tenor, which was previously fixed to 12 months.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
+\begin{ipython}
+from datetime import date
+from dateutil.relativedelta import relativedelta
+
+def generate_swap_dates(start_date, n_months, tenor_months=12):
+    dates = []
+    for n in range(0, n_months, tenor_months):
+        dates.append(start_date + relativedelta(months=n))
+        dates.append(start_date + relativedelta(months=n_months))
+    return dates
     
-\PY{k}{def} \PY{n+nf}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{n\PYZus{}months}\PY{p}{,} \PY{n}{tenor\PYZus{}months}\PY{o}{=}\PY{l+m+mi}{12}\PY{p}{)}\PY{p}{:}
-    \PY{n}{dates} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-    \PY{k}{for} \PY{n}{n} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{n\PYZus{}months}\PY{p}{,} \PY{n}{tenor\PYZus{}months}\PY{p}{)}\PY{p}{:}
-        \PY{n}{dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{months}\PY{o}{=}\PY{n}{n}\PY{p}{)}\PY{p}{)}
-    \PY{n}{dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{months}\PY{o}{=}\PY{n}{n\PYZus{}months}\PY{p}{)}\PY{p}{)}
-    \PY{k}{return} \PY{n}{dates}
-
-\PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{16}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{)}
-
+generate_swap_dates(date.today(), 16, 3)
+\end{ipython}
+\begin{ioutput}
 [datetime.date(2020, 10, 15),
  datetime.date(2021, 1, 15),
  datetime.date(2021, 4, 15),
@@ -58,20 +58,15 @@ parameter, the tenor, which was previously fixed to 12 months.
  datetime.date(2021, 10, 15),
  datetime.date(2022, 1, 15),
  datetime.date(2022, 2, 15)]
-\end{Verbatim}
-\end{codebox}
-Having set the default value of \texttt{tenor\_months} to 12 allows the new function to be \emph{backward-compatible}, meaning that old code based on its previous version will keep working, being written on the assumption of a 
-fixed tenor of twelve months. 
+\end{ioutput}
+Having set the default value of \texttt{tenor\_months} to 12 allows the new function to be \emph{backward-compatible}, meaning that old code based on its previous version will keep working, being written on the assumption of a fixed tenor of twelve months. 
        
-Using this function and the contract parameters we will be able to
-determine a sequence of payment dates for each leg of the IRS.
+Using this function and the contract parameters we will be able to determine a sequence of payment dates for each leg of the IRS.
 
 \subsection{IRS Valuation}\label{irs-valuation}
 
-Let \(d_0=d_0^{\mathrm{fixed}},...,d_p^{\mathrm{fixed}}\) be the fixed
-leg payment dates and
-\(d_0=d_0^{\mathrm{float}},...,d_p^{\mathrm{float}}\) be the floating
-leg payment dates, and let's use the following notation:
+Let \(d_0=d_0^{\mathrm{fixed}},...,d_p^{\mathrm{fixed}}\) be the fixed leg payment dates and
+\(d_0=d_0^{\mathrm{float}},...,d_p^{\mathrm{float}}\) be the floating leg payment dates, and let's use the following notation:
 
 \begin{itemize}
 \tightlist
@@ -94,17 +89,11 @@ while the NPV of the floating leg is:
 \begin{equation}\mathrm{NPV}_{\mathrm{float}}(d) = N\cdot\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360}
 \cdot D(d, d_{i}^{\mathrm{float}})\end{equation}
 
-Therefore the NPV of the swap (seen from the point of view of the
-counter-party which receives the floating leg) is
+Therefore the NPV of the swap (seen from the point of view of the counter-party which receives the floating leg) is
 
 \begin{equation}\mathrm{NPV}(d, K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, K)\end{equation}
 
-For reasons which will become apparent later, it's actually more
-convenient to express the NPV of an IRS as a function of the fair value
-fixed rate \(S\) of the IRS, also known as the \textbf{swap rate}, which
-is the value of K which makes \(\mathrm{NPV}(d)=0\).
-On the basis of the previous expressions, we can easily calculate \(S\)
-as
+For reasons which will become apparent later, it's actually more convenient to express the NPV of an IRS as a function of the fair value fixed rate \(S\) of the IRS, also known as the \textbf{swap rate}, which is the value of K which makes \(\mathrm{NPV}(d)=0\). On the basis of the previous expressions, we can easily calculate \(S\) as
 
 \begin{equation}
 \begin{gathered}
@@ -115,8 +104,7 @@ S=\frac{\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cd
 \end{gathered}
 \end{equation}
 
-Once we have calculated \(S\), we can express the \(\mathrm{NPV}\) of an
-IRS as follows:
+Once we have calculated \(S\), we can express the \(\mathrm{NPV}\) of an IRS as follows:
 
 \begin{equation}
 \begin{split}&\mathrm{NPV}(d, K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) = \\ 
@@ -125,196 +113,178 @@ IRS as follows:
 \end{split}
 \end{equation}
 
-For convenience the relevant inputs that will be used later (LIBOR and discount curve definitions) have been saved in the files \href{https://drive.google.com/file/d/1dm5oZnZKmJM6UrV0L32OcqD5Tzs9SI9A/view?usp=sharing}{libor\_curve.xlsx} and \href{https://drive.google.com/file/d/14R22r7m-6VpQ_P79D3qHdK0QN_mOQ_UB/view?usp=sharing}{discount\_curve.xlsx} respectively.
+For convenience the relevant inputs that will be used later (LIBOR and discount curve definitions) have been saved in the files  \href{https://drive.google.com/file/d/1dm5oZnZKmJM6UrV0L32OcqD5Tzs9SI9A/view?usp=sharing}{libor\_curve.xlsx} and \href{https://drive.google.com/file/d/14R22r7m-6VpQ_P79D3qHdK0QN_mOQ_UB/view?usp=sharing}{discount\_curve.xlsx} respectively.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}\PY{p}{,} \PY{n}{ForwardRateCurve}
+\begin{ipython}
+import pandas as pd
+from datetime import date
+from finmarkets import DiscountCurve, ForwardRateCurve
 
-\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{date.today()}
-\PY{n}{discount\PYZus{}data} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{discount\PYZus{}curve.xlsx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{libor\PYZus{}data} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}excel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{libor.xlsx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+observation_date = date.today()
+discount_data = pd.read_excel('discount_curve.xlsx')
+libor_data = pd.read_excel('libor.xlsx')
+dc = DiscountCurve(pricing_date,
+discount_data['pillar'].dt.date.tolist(),
+discount_data['discount_factor'].tolist())
+fr = ForwardRateCurve(libor_data['date'].dt.date.tolist(),
+libor_data['rate'].tolist())
 
-\PY{n}{dc} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{pricing\PYZus{}date}\PY{p}{,} 
-                   \PY{n}{discount\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{pillar}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{dt}\PY{o}{.}\PY{n}{date}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,}
-                   \PY{n}{discount\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{discount\PYZus{}factor}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-
-\PY{n}{fr} \PY{o}{=} \PY{n}{ForwardRateCurve}\PY{p}{(}\PY{n}{libor\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{date}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{dt}\PY{o}{.}\PY{n}{date}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,}
-                      \PY{n}{libor\PYZus{}data}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rate}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{dc}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{fr}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-
+print(dc.df(date(2021, 1, 1)))
+print (fr.forward_rate(date(2021, 1, 1)))
+\end{ipython}
+\begin{ioutput}
 1.0041959227522805
 0.060712328767123284
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 Now we can implement the \texttt{InterestRateSwap} class to valuate IRS
 contracts.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{class} \PY{n+nc}{InterestRateSwap}\PY{p}{:}    
-    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{notional}\PY{p}{,} 
-                 \PY{n}{fixed\PYZus{}rate}\PY{p}{,} \PY{n}{tenor\PYZus{}months}\PY{p}{,} 
-                 \PY{n}{maturity\PYZus{}years}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{start_date} \PY{o}{=} \PY{n}{start_date}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{=} \PY{n}{notional}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{=} \PY{n}{fixed\PYZus{}rate}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}leg\PYZus{}dates} \PY{o}{=} \PYZbs{}
-            \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{l+m+mi}{12} \PY{o}{*} \PY{n}{maturity\PYZus{}years}\PY{p}{)}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates} \PY{o}{=} \PYZbs{}
-            \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{l+m+mi}{12} \PY{o}{*} \PY{n}{maturity\PYZus{}years}\PY{p}{,}
-                                \PY{n}{tenor\PYZus{}months}\PY{p}{)}
-        
-    \PY{k}{def} \PY{n+nf}{annuity}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{obs_date}\PY{o}{=}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{start_date}\PY{p}{)}\PY{p}{:}
-        \PY{n}{a} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}leg\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-            \PY{k}{if} \PY{n}{obs\PYZus{}date} \PY{o}{\PYZgt{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{:}
-                \PY{k}{continue}
-            \PY{n}{a} \PY{o}{+}\PY{o}{=} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}
-        \PY{k}{return} \PY{n}{a}
+\begin{ipython}
+class InterestRateSwap:
+    def __init__(self, start_date, notional,
+        fixed_rate, tenor_months, maturity_years):
+        self.start_date = start_date
+        self.notional = notional
+        self.fixed_rate = fixed_rate
+        self.fixed_leg_dates = \
+            generate_swap_dates(start_date, 12 * maturity_years)
+        self.floating_leg_dates = \
+            generate_swap_dates(start_date, 12 * maturity_years, tenor_months)
+    
+    def annuity(self, discount_curve, obs_date=self.start_date):
+        a = 0
+        for i in range(1, len(self.fixed_leg_dates)):
+            if obs_date > self.fixed_leg_dates[i]:
+                continue
+            a += discount_curve.df(self.fixed_leg_dates[i])
+        return a
 
-    \PY{k}{def} \PY{n+nf}{swap\PYZus{}rate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{n}{s} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-            \PY{n}{F} \PY{o}{=} \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{j}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
-            \PY{n}{tau} \PY{o}{=} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{j}\PY{p}{]} \PY{o}{\PYZhy{}} \PYZbs{}
-                   \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{j}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{360}
-            \PY{n}{P} \PY{o}{=} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{)}
-            \PY{n}{s} \PY{o}{+}\PY{o}{=} \PY{n}{F} \PY{o}{*} \PY{n}{tau} \PY{o}{*} \PY{n}{P}
-        \PY{k}{return} \PY{n}{s} \PY{o}{/} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{annuity}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
-        
-    \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve\PY{p}{,} \PY{n}{obs_date}\PY{o}{=}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{start_date}}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{n}{S} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{swap\PYZus{}rate}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}
-        \PY{n}{A} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{annuity}\PY{p}{(}\PY{n}{discount\PYZus{}curve, obs_date}\PY{p}{)}
-        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{p}{(}\PY{n}{S} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate}\PY{p}{)} \PY{o}{*} \PY{n}{A}
-\end{Verbatim}
-\end{codebox}
+    def swap_rate(self, discount_curve, libor_curve):
+        s = 0
+        for j in range(1, len(self.floating_leg_dates)):
+            F = libor_curve.forward_rate(self.floating_leg_dates[j-1])
+            tau = (self.floating_leg_dates[j] - \
+                self.floating_leg_dates[j-1]).days / 360 
+            P = discount_curve.df(self.floating_leg_dates[j])
+            s += F * tau * P
+        return s / self.annuity(discount_curve)
+
+    def npv(self, discount_curve, obs_date=self.start_date, libor_curve):
+        S = self.swap_rate(discount_curve, libor_curve)
+        A = self.annuity(discount_curve, obs_date)
+        return self.notional * (S - self.fixed_rate) * A
+\end{ipython}
 
 Let's test our class instantiating an IRS with 1~M notional, fixed rate
 of 5\%, 6 month tenor and a maturity of 4 years; discount and LIBOR
 curves are the same as before.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{start\PYZus{}date} \PY{o}{=} \PY{n}{date.today() + relativedelta(months=1)}
-\PY{n}{irs} \PY{o}{=} \PY{n}{InterestRateSwap}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{l+m+mf}{1e6}\PY{p}{,} \PY{l+m+mf}{0.05}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{irs}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{dc}\PY{p}{,} \PY{n}{fr}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-
+\begin{ipython}
+start_date = date.today() + relativedelta(months=1)
+irs = InterestRateSwap(start_date, 1e6, 0.05, 6, 4)
+print ("{:.2f} EUR".format(irs.npv(dc, fr)))
+\end{ipython}
+\begin{ioutput}
 22453.12 EUR
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \textbf{Can you guess what could be the \textbf{swap rate} given that the NPV obtained above ?}
 Since we are looking at this contracts from the point of view
 of the receiver of the floating leg and that the swap rate is the rate that makes the total NPV equal to 0, the NPV of the fixed leg has to be increased to balance the value of the floating leg so the swap rate will be higher than the fixed rate of the IRS.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{irs}\PY{o}{.}\PY{n}{swap\PYZus{}rate}\PY{p}{(}\PY{n}{dc}\PY{p}{,} \PY{n}{fr}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-
+\begin{ipython}
+print ("{}".format(irs.swap_rate(dc, fr)))
+\end{ipython}
+\begin{ioutput}
 0.054458656972619764
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
     
 To check if we have computed correctly the swap rate we can
 instantiate a new IRS with fixed rate equal to the just calculated swap
 rate and print its NPV, it should come very close to 0.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{irs2} \PY{o}{=} \PY{n}{InterestRateSwap}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{l+m+mf}{1e6}\PY{p}{,} \PY{l+m+mf}{0.054458656972619764}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{irs2}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{dc}\PY{p}{,} \PY{n}{fr}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-
+\begin{ipython}
+irs2 = InterestRateSwap(start_date, 1e6, 0.054458656972619764, 6, 4)
+print ("{:.2f} EUR".format(irs2.npv(dc, fr)))
+\end{ipython}
+\begin{ioutput}
 0.0 EUR
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
     
 \section{Inheritance Again}
 Now that we have introduced two kinds of swap we can try to make an alternative implementation of their classes, this time using inheritance.
 
 The base (or parent) class will be \texttt{GenericSwap} and it will implement just the constructor taking in input the basic data characterizing a swap: notional, maturity, tenor and rate of the fixed leg. We will slightly modify the implementation of the \texttt{OvernightIndexSwap} class since now the payment dates are computed directly in the constructor of \texttt{GenericSwap}.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{class} \PY{n+nc}{GenericSwap}\PY{p}{:}
-    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{notional}\PY{p}{,} 
-                 \PY{n}{fixed\PYZus{}rate}\PY{p}{,} \PY{n}{maturity\PYZus{}years}\PY{p}{,} \PY{n}{tenor\PYZus{}months}\PY{o}{=}\PY{l+m+mi}{12}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{=} \PY{n}{notional}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{=} \PY{n}{fixed\PYZus{}rate}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}leg\PYZus{}dates} \PY{o}{=} \PYZbs{}
-            \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{l+m+mi}{12} \PY{o}{*} \PY{n}{maturity\PYZus{}years}\PY{p}{)}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates} \PY{o}{=} \PYZbs{}
-            \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{l+m+mi}{12} \PY{o}{*} \PY{n}{maturity\PYZus{}years}\PY{p}{,} \PY{n}{tenor\PYZus{}months}\PY{p}{)}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{maturity} \PY{o}{=} \PY{n}{maturity\PYZus{}years}
-	
-    \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{ doesn}\PY{l+s+s2}{\PYZsq{}}\PY{l+s+s2}{t implement npv method.}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n+nv+vm}{\PYZus{}\PYZus{}name\PYZus{}\PYZus{}}\PY{p}{)}\PY{p}{)}
-	
-\PY{k}{class} \PY{n+nc}{OvernightIndexSwap}\PY{p}{(}\PY{n}{GenericSwap}\PY{p}{)}\PY{p}{:}
-    \PY{k}{def} \PY{n+nf}{npv\PYZus{}floating\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)} \PY{o}{\PYZhy{}}
-                                \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
-	
-    \PY{k}{def} \PY{n+nf}{npv\PYZus{}fixed\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{n}{npv} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}leg\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-            \PY{n}{start\PYZus{}date} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}
-            \PY{n}{end\PYZus{}date} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}
-            \PY{n}{tau} \PY{o}{=} \PY{p}{(}\PY{n}{end\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{start\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{360}
-            \PY{n}{df} \PY{o}{=} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{end\PYZus{}date}\PY{p}{)}
-            \PY{n}{npv} \PY{o}{+=} \PY{n}{df} \PY{o}{*} \PY{n}{tau}
-        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{*} \PY{n}{npv}
-	
-    \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{n}{float\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}floating\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
-        \PY{n}{fixed\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}fixed\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
-        \PY{k}{return} \PY{n}{float\PYZus{}npv} \PY{o}{\PYZhy{}} \PY{n}{fixed\PYZus{}npv}
-	
-\PY{k}{class} \PY{n+nc}{InterestRateSwap}\PY{p}{(}\PY{n}{GenericSwap}\PY{p}{)}\PY{p}{:}        
-    \PY{k}{def} \PY{n+nf}{annuity}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{obs_date}\PY{o}{=}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{start_date}\PY{p}{)}\PY{p}{:}
-        \PY{n}{a} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}leg\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-            \PY{k}{if} \PY{n}{obs\PYZus{}date} \PY{o}{\PYZgt{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{:}
-                \PY{k}{continue}
-            \PY{n}{a} \PY{o}{+}\PY{o}{=} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}
-        \PY{k}{return} \PY{n}{a}
-	
-    \PY{k}{def} \PY{n+nf}{swap\PYZus{}rate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{n}{s} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-            \PY{n}{F} \PY{o}{=} \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{j}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
-            \PY{n}{tau} \PY{o}{=} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{j}\PY{p}{]} \PY{o}{\PYZhy{}} \PYZbs{}
-                \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{j}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{360}
-            \PY{n}{P} \PY{o}{=} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{floating\PYZus{}leg\PYZus{}dates}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{)}
-            \PY{n}{s} \PY{o}{+}\PY{o}{=} \PY{n}{F} \PY{o}{*} \PY{n}{tau} \PY{o}{*} \PY{n}{P}
-        \PY{k}{return} \PY{n}{s} \PY{o}{/} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{annuity}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
-	
-    \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{,} \PY{n}{obs_date}\PY{o}{=}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{start_date}\PY{p}{)}\PY{p}{:}
-        \PY{n}{S} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{swap\PYZus{}rate}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}
-        \PY{n}{A} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{annuity}\PY{p}{(}\PY{n}{discount\PYZus{}curve, obs_date}\PY{p}{)}
-        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{p}{(}\PY{n}{S} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate}\PY{p}{)} \PY{o}{*} \PY{n}{A}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+class GenericSwap:
+    def __init__(self, start_date, notional,
+        fixed_rate, maturity_years, tenor_months=12):
+        self.notional = notional
+        self.fixed_rate = fixed_rate
+        self.fixed_leg_dates = \
+            generate_swap_dates(start_date, 12 * maturity_years)
+        self.floating_leg_dates = \
+            generate_swap_dates(start_date, 12 * maturity_years, tenor_months)
+        self.maturity = maturity_years
+
+    def npv(self):
+        print ("{} doesn't implement npv method.".format(self.__name__))
+
+class OvernightIndexSwap(GenericSwap):
+    def npv_floating_leg(self, discount_curve):
+        return self.notional * (discount_curve.df(self.floating_leg_dates[0]) -
+            discount_curve.df(self.floating_leg_dates[-1]))
+
+    def npv_fixed_leg(self, discount_curve):
+        npv = 0
+        for i in range(1, len(self.fixed_leg_dates)):
+            start_date = self.fixed_leg_dates[i-1]
+            end_date = self.fixed_leg_dates[i]
+            tau = (end_date - start_date).days / 360
+            df = discount_curve.df(end_date)
+            npv += df * tau 
+        return self.notional * self.fixed_rate * npv
+
+    def npv(self, discount_curve):
+        float_npv = self.npv_floating_leg(discount_curve)
+        fixed_npv = self.npv_fixed_leg(discount_curve)
+        return float_npv - fixed_npv
+
+class InterestRateSwap(GenericSwap):
+    def annuity(self, discount_curve, obs_date=self.start_date):
+        a = 0
+        for i in range(1, len(self.fixed_leg_dates)):
+            if obs_date > self.fixed_leg_dates[i]:
+                continue
+            a += discount_curve.df(self.fixed_leg_dates[i])
+        return a
+
+    def swap_rate(self, discount_curve, libor_curve):
+        s = 0
+        for j in range(1, len(self.floating_leg_dates)):
+            F = libor_curve.forward_rate(self.floating_leg_dates[j-1])
+            tau = (self.floating_leg_dates[j] - \
+                self.floating_leg_dates[j-1]).days / 360
+            P = discount_curve.df(self.floating_leg_dates[j])
+            s += F * tau * P
+        return s / self.annuity(discount_curve)
+
+    def npv(self, discount_curve, libor_curve, obs_date=self.start_date):
+        S = self.swap_rate(discount_curve, libor_curve)
+        A = self.annuity(discount_curve, obs_date)
+        return self.notional * (S - self.fixed_rate) * A
+\end{ipython}
 
 This is just an example. Actually may be an overkill to use inheritance here, since there is not much of code to share between the classes (the implementation of the NPV calculation is different in each of them).
 Anyway this is a practical application to show how it works.
 
 \section{Swaptions}\label{interest-rate-swaptions}
 
-Swaptions are the equivalent of European options for the interest rate
-markets. They give the option holder the right but not the obligation
-to enter into an Interest Rate Swap at a predetermined fixed rate
-at the exercise date \(d_{ex}\).
+Swaptions are the equivalent of European options for the interest rate markets. They give the option holder the right but not the obligation to enter into an Interest Rate Swap at a predetermined fixed rate at the exercise date \(d_{ex}\).
 
-Clearly the option holder will only choose to do this if the NPV of the
-underlying swap at \(d_{ex}\) is positive. Looking at the expression
-of the IRS NPV in terms of the swap rate \(S\) therefore, we can
-see that the payoff of the swaption is
+Clearly the option holder will only choose to do this if the NPV of the underlying swap at \(d_{ex}\) is positive. Looking at the expression of the IRS NPV in terms of the swap rate \(S\) therefore, we can see that the payoff of the swaption is
 
 \begin{equation}
 \mathrm{payoff} = N\cdot \mathrm{max}(0, S(d_{\mathrm{ex}}) - K)\cdot\sum D(d, d_i^{\mathrm{fixed}})
@@ -326,8 +296,7 @@ In order to evaluate this payoff the key issue is to estimate $S(d_{\mathrm{ex}}
 \subsection{Evaluation through Black-Scholes Formula}
 \label{evaluation-through-black-scholes-formula}
 
-In this case, to evaluate the swaption NPV, we are going to use (but not 
-to derive) a generalization of the Black-Scholes formula
+In this case, to evaluate the swaption NPV, we are going to use (but not to derive) a generalization of the Black-Scholes formula
 
 \begin{equation}
 \mathrm{payoff} = N\cdot A\cdot [S \Phi(d_+) - K\Phi(d_-)]
@@ -340,38 +309,33 @@ A =\sum_{i=1}^{p}D(d, d_{i}^{\mathrm{fixed}})\qquad\mathrm{(annuity})
 \end{gathered}
 \end{equation}
 
-As an example let's consider a swaption whose underlying 6M-IRS has a
-notional of 1~M, fixed rate of 1\%, and a maturity of 4 years. In
-addition we assume a volatility associated to the swap rate of 7\%.
+As an example let's consider a swaption whose underlying 6M-IRS has a notional of 1~M, fixed rate of 1\%, and a maturity of 4 years. In addition we assume a volatility associated to the swap rate of 7\%.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{log}
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm} 
-\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
+\begin{ipython}
+from math import log
+from scipy.stats import norm
+from dateutil.relativedelta import relativedelta
 
-\PY{k}{def} \PY{n+nf}{npvSwaptionBS}\PY{p}{(}\PY{n}{irs}\PY{p}{,} \PY{n}{sigma}\PY{p}{, } 
-                  \PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve, T}\PY{p}{)}\PY{p}{:}
-    \PY{n}{A} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{annuity}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
-    \PY{n}{S} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{swap\PYZus{}rate}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{,} \PY{n}{libor\PYZus{}curve}\PY{p}{)}
-    \PY{n}{K} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{fixed\PYZus{}rate}
-    \PY{n}{N} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{notional}
-    
-    \PY{n}{d\PYZus{}plus} \PY{o}{=} \PY{p}{(}\PY{n}{log}\PY{p}{(}\PY{n}{S}\PY{o}{/}\PY{n}{K}\PY{p}{)} \PY{o}{+} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{sigma}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{*} \PY{n}{T}\PY{p}{)} \PY{o}{/} \PY{p}{(}\PY{n}{sigma} \PY{o}{*} \PY{n}{T}\PY{o}{*}\PY{o}{*}\PY{l+m+mf}{0.5}\PY{p}{)}
-    \PY{n}{d\PYZus{}minus} \PY{o}{=} \PY{p}{(}\PY{n}{log}\PY{p}{(}\PY{n}{S}\PY{o}{/}\PY{n}{K}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{sigma}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{*} \PY{n}{T}\PY{p}{)} \PY{o}{/} \PY{p}{(}\PY{n}{sigma} \PY{o}{*} \PY{n}{T}\PY{o}{*}\PY{o}{*}\PY{l+m+mf}{0.5}\PY{p}{)}
-    \PY{k}{return} \PY{n}{irs}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{n}{A} \PY{o}{*} \PY{p}{(}\PY{n}{S} \PY{o}{*} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{d\PYZus{}plus}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{K} \PY{o}{*} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{d\PYZus{}minus}\PY{p}{)}\PY{p}{)}
+def npvSwaptionBS(irs, sigma,
+    discount_curve, libor_curve, T):
+    A = irs.annuity(discount_curve)
+    S = irs.swap_rate(discount_curve, libor_curve)
+    K = irs.fixed_rate
+    N = irs.notional
+    d_plus = (log(S/K) + 0.5 * sigma**2 * T) / (sigma * T**0.5)
+    d_minus = (log(S/K) - 0.5 * sigma**2 * T) / (sigma * T**0.5)
+    return irs.notional * A * (S * norm.cdf(d_plus) - K * norm.cdf(d_minus))
 
-\PY{n}{sigma} \PY{o}{=} \PY{l+m+mf}{0.07}
-\PY{n}{irs} \PY{o}{=} \PY{n}{InterestRateSwap}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{l+m+mf}{1e6}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{)}
-\PY{n}{exercise\PYZus{}date} \PY{o}{=} \PY{n}{start\PYZus{}date} 
-\PY{n}{T} \PY{o}{=} \PY{p}{(}\PY{n}{exercise\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{observation\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{365}
-\PY{n}{npv} \PY{o}{=} \PY{n}{npvSwaptionBS}\PY{p}{(}\PY{n}{irs}\PY{p}{,} \PY{n}{sigma}\PY{p}{,} \PY{n}{dc}\PY{p}{,} \PY{n}{fr, T}\PY{p}{)}
-
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Swaption NPV with BS: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{npv}\PY{p}{)}\PY{p}{)}
-
+sigma = 0.07
+irs = InterestRateSwap(start_date, 1e6, 0.01, 6, 4)
+exercise_date = start_date
+T = (exercise_date - observation_date).days / 365
+npv = npvSwaptionBS(irs, sigma, dc, fr, T)
+print("Swaption NPV with BS: {:.3f} EUR".format(npv))
+\end{ipython}
+\begin{ioutput}
 Swaption NPV with BS: 223887.09 EUR
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \subsection{Evaluation through Monte Carlo Simulation}
 \label{evaluation-through-monte-carlo-simulation}
@@ -399,34 +363,29 @@ To perform the simulation we can explot Eq.~\ref{eq:swaption_payoff}:
   take the average of these values to get the final estimate.
 \end{itemize}
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{exp}\PY{p}{,} \PY{n}{sqrt}
-\PY{k+kn}{from} \PY{n+nn}{numpy}\PY{n+nn}{.}\PY{n+nn}{random} \PY{k}{import} \PY{n}{normal}\PY{p}{,} \PY{n}{seed}
+\begin{ipython}
+import numpy as np
+from math import exp, sqrt
+from numpy.random import normal, seed
 
-\PY{n}{n\PYZus{}scenarios} \PY{o}{=} \PY{l+m+mi}{100000}
-\PY{n}{discounted\PYZus{}payoffs} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
+n_scenarios = 100000
+discounted_payoffs = []
+seed(1)
+T = (exercise_date - observation_date).days / 365
+A = irs.annuity(dc)
+S0 = irs.swap_rate(dc, fr)
+for i_scenario in range(n_scenarios):
+    S = S0 * exp(-0.5 * sigma * sigma * T +
+        sigma * sqrt(T) * normal())
+    swap_npv = irs.notional * max(0,S - irs.fixed_rate) * A
+    discounted_payoffs.append(max(0, swap_npv))
 
-\PY{n}{T} \PY{o}{=} \PY{p}{(}\PY{n}{exercise\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{observation\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{365}
-\PY{n}{A} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{annuity}\PY{p}{(}\PY{n}{dc}\PY{p}{)}
-\PY{n}{S0} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{swap\PYZus{}rate}\PY{p}{(}\PY{n}{dc}\PY{p}{,} \PY{n}{fr}\PY{p}{)}
-    
-\PY{k}{for} \PY{n}{i\PYZus{}scenario} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{n\PYZus{}scenarios}\PY{p}{)}\PY{p}{:}
-    \PY{n}{S} \PY{o}{=} \PY{n}{S0} \PY{o}{*} \PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{sigma} \PY{o}{*} \PY{n}{sigma} \PY{o}{*} \PY{n}{T} \PY{o}{+}
-                          \PY{n}{sigma} \PY{o}{*} \PY{n}{sqrt}\PY{p}{(}\PY{n}{T}\PY{p}{)} \PY{o}{*} \PY{n}{normal}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-    
-    \PY{n}{swap\PYZus{}npv} \PY{o}{=} \PY{n}{irs}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{n+nb}{max}\PY{p}{(}\PY{n+nb}{0}\PY{n}{,S} \PY{o}{\PYZhy{}} \PY{n}{irs}\PY{o}{.}\PY{n}{fixed\PYZus{}rate}\PY{p}{)} \PY{o}{*} \PY{n}{A}
-    
-    \PY{n}{discounted\PYZus{}payoffs}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n+nb}{max}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{swap\PYZus{}npv}\PY{p}{)}\PY{p}{)}
-    
-\PY{n}{npv\PYZus{}mc} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{discounted\PYZus{}payoffs}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Swaption NPV: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{npv\PYZus{}mc}\PY{p}{)}\PY{p}{)}
-
+npv_mc = np.mean(discounted_payoffs)
+print("Swaption NPV: {:.2f} EUR".format(npv_mc))
+\end{ipython}
+\begin{ioutput}
 Swaption NPV: 223915.50 EUR
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 %Note that this is not \emph{strictly speaking} the correct way of
 %calculating the swaption NPV, the reason being that one should calculate
@@ -443,20 +402,16 @@ Swaption NPV: 223915.50 EUR
 Using the confidence interval~\ref{sec:confidence_interval} we can check whether the Monte Carlo estimate of the swaption payoff is in agreement with what computed using the Black-Scholes formula.
 Let's then calculate the 95\% confidence level for the swaption simulation:
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{npv\PYZus{}error} \PY{o}{=} \PY{l+m+mf}{1.96} \PY{o}{*} \PY{n}{np}\PY{o}{.}\PY{n}{std}\PY{p}{(}\PY{n}{discounted\PYZus{}payoffs}\PY{p}{)}\PY{o}{/}\PY{n}{sqrt}\PY{p}{(}\PY{n}{n\PYZus{}scenarios}\PY{p}{)}
-				
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Swaption NPV: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR (+/- }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{ EUR with 95}\PY{l+s+si}{\PYZpc{} c}\PY{l+s+s2}{onfidence)}\PY{l+s+s2}{\PYZdq{}}\PYZbs{}
-      \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{npv\PYZus{}mc}\PY{p}{,} \PY{n}{npv\PYZus{}error}\PY{p}{)}\PY{p}{)}
-
+\begin{ipython}
+npv_error = 1.96 * np.std(discounted_payoffs)/sqrt(n_scenarios)
+print("Swaption NPV: {:.2f} EUR (+/- {:.2f} EUR with 95% confidence)"\
+    .format(npv_mc, npv_error))
+\end{ipython}
+\begin{ioutput}
 Swaption NPV: 223915.50 EUR (+/- 34.62 EUR with 95\% confidence)
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
-The NPV calculated via the Black-Scholes formula
-falls well within the confidence interval produced by the Monte Carlo
-simulation:
+The NPV calculated via the Black-Scholes formula falls well within the confidence interval produced by the Monte Carlo simulation:
 
 \begin{itemize}
 \tightlist

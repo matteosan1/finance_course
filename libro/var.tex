@@ -1,6 +1,8 @@
-\chapter{VaR and Credit Risk}\label{var-and-credit-risk}
+\chapter{VaR and Credit Risk}
+\label{var-and-credit-risk}
 
-\section{Value at Risk}\label{value-at-risk}
+\section{Value at Risk}
+\label{value-at-risk}
 
 The \emph{Value at Risk} (VaR) of a portfolio is usually used when it
 is important to know to a certain confidence level how
@@ -53,13 +55,13 @@ are used also we will assume to have a portfolio made of
 You can download the dateset with \texttt{ffn} as in the following code or to
 check out \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/historical_data.csv}{historical\_data.csv}.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{ffn}
+\begin{ipython}
+import ffn
 	
-\PY{n}{df} \PY{o}{=} \PY{n}{ffn}\PY{o}{.}\PY{n}{get}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl,nflx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{start}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2014\PYZhy{}01\PYZhy{}02}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{end}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{2018\PYZhy{}03\PYZhy{}27}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-
+df = ffn.get("aapl,nflx, start='2014-01-02', end='2018-03-27')
+print (df.head())
+\end{ipython}
+\begin{ioutput}
                  aapl       nflx
 Date
 2014-01-02  17.598297  51.831429
@@ -67,24 +69,24 @@ Date
 2014-01-06  17.305593  51.367142
 2014-01-07  17.181829  48.500000
 2014-01-08  17.290642  48.712856
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 \noindent
 In the following we are going to add a new column with the daily return to the dataframe.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-	
-\PY{n}{w} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{l+m+mf}{0.6}\PY{p}{,} \PY{l+m+mf}{0.4}\PY{p}{]}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} uncomment if the file has been checked out}
-\PY{c+c1}{\PYZsh{}df = pd.read\PYZus{}csv(\PYZdq{}historical\PYZus{}data.csv\PYZdq{}, index\PYZus{}col=\PYZsq{}Date\PYZsq{})}
-	
-\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl\PYZus{}rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{/}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{shift}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}
-\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nflx\PYZus{}rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nflx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{/}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nflx}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{shift}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{1}
+\begin{ipython}
+import pandas as pd
+import numpy as np
 
+w = np.array([0.6, 0.4])
+df = pd.read_csv("historical_date.csv")
+aapl = df[df['ticker']=="AAPL"].copy()
+nlfx = df[df['ticker']=="NFLX"].copy()
+aapl['rets'] = aapl['adj_close']/aapl['adj_close'].shift(1) - 1
+nflx['rets'] = nflx['adj_close']/nflx['adj_close'].shift(1) - 1
+
+print (aapl.head())
+\end{ipython}
+\begin{ioutput}
                  aapl       nflx  aapl_rets  nflx_rets
 Date
 2014-01-02  17.598297  51.831429        NaN        NaN
@@ -92,10 +94,10 @@ Date
 2014-01-06  17.305593  51.367142   0.005453  -0.009722
 2014-01-07  17.181829  48.500000  -0.007152  -0.055817
 2014-01-08  17.290642  48.712856   0.006333   0.004389
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
-\subsection{Historical Simulation}\label{historical-simulation}
+\subsection{Historical Simulation}
+\label{historical-simulation}
 
 In order to estimate the VaR from a historical series, we need to
 collect the market variables "affecting" the portfolio over the last $N$ days 
@@ -127,20 +129,22 @@ It is indicated with \texttt{.dot} function and defined as $\sum_{i} w_i \cdot p
 For more information about scalar product, vector and matrices Chapter~\ref{sec:matrices}. 
 Figure~\ref{fig:hist_var} shows the resulting VaR. 
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{rets} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n}{df}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{n}{aapl_rets}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{w}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{n}{df}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl_rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{+} \PY{n}{w}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{*}\PY{n}{df}\PY{o}{.}\PY{n}{loc}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nflx_rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}
-		
-\PY{n}{price} \PY{o}{=} \PY{p}{[}\PY{n}{df}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{n}{df}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adj\PYZus{}close}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{]}
-\PY{n}{portfolio\PYZus{}price} \PY{o}{=} \PY{n}{w}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{price}\PY{p}{)}
-\PY{n}{hist\PYZus{}var} \PY{o}{=} \PY{n}{portfolio\PYZus{}price}\PY{o}{*}\PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{rets}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Historical VAR is }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{hist\PYZus{}var}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+import numpy as np
 
+rets = []
+for i in range(1, len(aapl)):
+    rets.append(w[0]*aapl.iloc[i]['rets'] + w[1]*nflx.loc[i]['rets'])
+
+price = [aapl.iloc[-1]['adj_close'], nflx.iloc[-1]['adj_close']]
+portfolio_price = w.dot(price)
+hist_var = portfolio_price*np.percentile(rets, 1)
+
+print ('Historical VAR is {:.3f}'.format(hist_var))
+\end{ipython}
+\begin{ioutput}
 Historical VAR is -2.412
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \begin{figure}[htb]
 	\centering
@@ -150,7 +154,8 @@ Historical VAR is -2.412
 	\label{fig:hist_var}
 \end{figure}
 
-\subsection{Model Approach}\label{model-approach}
+\subsection{Model Approach}
+\label{model-approach}
 
 Our portfolio $P$ consists of different amounts $w_i$ invested on two assets. If with $\Delta x_i$ we denote the daily return of the $i^{th}$ asset the portfolio change in the value can be expressed as
 
@@ -182,7 +187,8 @@ can use Eq.~\ref{eq:var_horizon}.
 
 Once we have the variance of \(\Delta P\) it is easy to determine the appropriate percentile using the equations described in Appendix~\ref{transformation-to-standard-normal}.
 
-\subsection{Monte Carlo Simulation}\label{monte-carlo-simulation}
+\subsection{Monte Carlo Simulation}
+\label{monte-carlo-simulation}
 
 A very useful alternative to previous approaches is using a Monte Carlo simulation to generate the probability distribution for the $\Delta P$. 
 
@@ -193,24 +199,23 @@ Let's start from the first case, computing mean and standard deviation of each h
 One useful aspect of this method is that in principle other distributions than Gaussian could be used.
 Once we have the distribution of returns the VaR can be computed as usual, the result is shown in Fig.~\ref{fig:mc1_var}.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{multivariate\PYZus{}normal}
+\begin{ipython}
+from scipy.stats import multivariate_normal
 
-\PY{n}{mean} \PY{o}{=} \PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl_rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{mean}\PY{p}{(}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nflx_rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{)}\PY{p}{]}
-\PY{n}{cov} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{aapl_rets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{,} \PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rnflx_ets}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}		
-\PY{n}{mvnorm} \PY{o}{=} \PY{n}{multivariate\PYZus{}normal}\PY{p}{(}\PY{n}{mean}\PY{o}{=}\PY{n}{mean}\PY{p}{,} \PY{n}{cov}\PY{o}{=}\PY{n}{cov}\PY{p}{)}
-		
-\PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{seed}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{n\PYZus{}sims} \PY{o}{=} \PY{l+m+mi}{100000}
-\PY{n}{sim\PYZus{}returns} \PY{o}{=} \PY{n}{mvnorm}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{n\PYZus{}sims}\PY{p}{)}
-\PY{n}{p\PYZus{}returns} \PY{o}{=} \PY{p}{[}\PY{n}{w}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{s}\PY{p}{)} \PY{k}{for} \PY{n}{s} \PY{o+ow}{in} \PY{n}{sim\PYZus{}returns}\PY{p}{]}
-\PY{n}{mc\PYZus{}var} \PY{o}{=} \PY{n}{portfolio\PYZus{}price} \PY{o}{*} \PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{p\PYZus{}returns}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Simulated VAR is }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{mc\PYZus{}var}\PY{p}{)}\PY{p}{)}
+mean = [np.mean(aapl['rets']), np.mean(nflx['rets'])]
+cov = np.cov(aapl['rets'][1:], nflx['rets'][1:-1])
+mvnorm = multivariate_normal(mean=mean, cov=cov)
+np.random.seed(1)
+n_sims = 100000
+sim_returns = mvnorm.rvs(n_sims)
+p_returns = [w.dot(s) for s in sim_returns]
+mc_var = portfolio_price * np.percentile(p_returns, 1)
 
+print('Simulated VAR is {:.3f}'.format(mc_var))
+\end{ipython}
+\begin{ioutput}
 Simulated VAR is -2.197
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \begin{figure}[htb]
 	\centering
@@ -221,28 +226,26 @@ Simulated VAR is -2.197
 
 This result can be compared with the VaR estimated with a simulation of the daily evolution of the stock price. We will use the log-normal evolution described in Section~\ref{derivation-of-log-normal-stochastic-differential-equation} where $\mu$ and $\sigma$ are the mean and variance estimated from the historical series. Figure~\ref{fig:mc2_var} shows the resulting distribution of the returns.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{numpy}\PY{n+nn}{.}\PY{n+nn}{random} \PY{k}{import} \PY{n}{normal}
-\PY{k+kn}{from} \PY{n+nn}{numpy} \PY{k}{import} \PY{n}{exp}\PY{p}{,} \PY{n}{sqrt}
-		
-\PY{n}{T} \PY{o}{=} \PY{l+m+mi}{1}
-\PY{n}{trials} \PY{o}{=} \PY{l+m+mi}{100000}
-\PY{n}{dP} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-		
-\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{trials}\PY{p}{)}\PY{p}{:}
-    \PY{n}{s} \PY{o}{=} \PY{l+m+mi}{0}
-    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{:}
-        \PY{n}{s} \PY{o}{+}\PY{o}{=} \PY{n}{w}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{*} \PY{n}{price}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{*} \PY{n}{exp}\PY{p}{(}\PY{p}{(}\PY{n}{mean}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{l+m+mf}{0.5} \PY{o}{*} \PY{n}{cov}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)} \PY{o}{*} \PY{n}{T} \PY{o}{+} 
-             \PY{n}{sqrt}\PY{p}{(}\PY{n}{cov}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)} \PY{o}{*} \PY{n}{sqrt}\PY{p}{(}\PY{n}{T}\PY{p}{)} \PY{o}{*} \PY{n}{normal}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-        \PY{n}{dP}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{portfolio\PYZus{}price} \PY{o}{\PYZhy{}} \PY{n}{s}\PY{p}{)}
-		
-\PY{n}{mc\PYZus{}var2} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{dP}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Simulated VAR is }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{mc\PYZus{}var2}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+from numpy.random import normal
+from numpy import exp, sqrt
 
+T = 1
+trials = 100000
+dP = []
+for _ in range(trials):
+    s = 0
+    for i in range(2):
+        s += w[i] * price[i] * exp((mean[i] - 0.5 * cov[i][i]) * T +
+             sqrt(cov[i][i]) * sqrt(T) * normal())
+        dP.append(portfolio_price - s)
+
+mc_var2 = np.percentile(dP, 1)
+print('Simulated VAR is {:.3f}'.format(mc_var2))
+\end{ipython}
+\begin{ioutput}
 Simulated VAR is -1.913
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \begin{figure}[htb]
 	\centering
@@ -251,7 +254,8 @@ Simulated VAR is -1.913
 	\label{fig:mc2_var}
 \end{figure}
 
-\subsection{Stress and Back Testing}\label{stress-testing-and-back-testing}
+\subsection{Stress and Back Testing}
+\label{stress-testing-and-back-testing}
 
 In addition to calculating the value at risk of a portfolio, it could be useful to 
 check how it would behave under the most extreme moves seen in the last years.
@@ -265,15 +269,16 @@ The idea is to take into account extreme events that can happen more frequently 
 Such event has a probability to occur equal to $n\sigma$ so the occurrence frequency 
 can computed as 1 over $252\cdot\mathbb{P}(|x| \ge n\sigma$ (the 252 factor comes to the number of working days per year).
 
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
+\begin{attpython}
+from scipy.stats import norm
 
-\PY{n}{prob} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{5}\PY{p}{)} \PY{o}{*} \PY{l+m+mi}{2} \PY{c+c1}{\PYZsh{} e.g. consider +\PYZhy{} 5sigma movements}
-\PY{n}{nyears} \PY{o}{=} \PY{l+m+mi}{1}\PY{o}{/}\PY{n}{prob}\PY{o}{/}\PY{l+m+mi}{252}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{nyears}\PY{p}{)}
-
+prob = norm.cdf(-5) * 2 # e.g. consider +- 5sigma movements
+nyears = 1/prob/252
+print (nyears)
+\end{attpython}
+\begin{ioutput}
 6921.737673091067
-\end{Verbatim}
+\end{ioutput}
 \noindent
 So about seven thousand years as stated before.
 \end{attention}
@@ -284,7 +289,8 @@ performed in the past. Basically it has to be tested how often the daily
 loss exceeded the N-days X\% VaR just computed. If it happens on about
 (100-X)\% of the times we can be confident that our estimate is correct.
 
-\section{Credit VaR}\label{credit-var-cr-var}
+\section{Credit VaR}
+\label{credit-var-cr-var}
 
 %exposure at any given future time is the
 %larger between zero and the market value of the portfolio of derivative
@@ -332,43 +338,40 @@ In each simulation of the basic financial variables the portfolio is priced obta
 
 Consider a portfolio of twenty zero coupon bonds each one with a default probability of 8\% and the same face value (\euro{100}). The recovery rate in case of default is $R=40\%$ and the risk free rate is 1\%.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}\PY{p}{,} \PY{n}{CreditCurve}
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{uniform}
-		
-\PY{n}{bonds} \PY{o}{=} \PY{l+m+mi}{20}
-\PY{n}{S} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.08} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{bonds}\PY{p}{)}\PY{p}{]}
-\PY{n}{FV} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{100} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{20}\PY{p}{)}\PY{p}{]}
-\PY{n}{R} \PY{o}{=} \PY{l+m+mf}{0.4}
-\PY{n}{r} \PY{o}{=} \PY{l+m+mf}{0.01}
-\PY{n}{obs\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
-		
-\PY{n}{pillars} \PY{o}{=} \PY{p}{[}\PY{n}{obs\PYZus{}date}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{]}
-\PY{n}{dfs} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{n}{r}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{n}{i} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}\PY{p}{]}
-\PY{n}{dc} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{obs\PYZus{}date}\PY{p}{,} \PY{n}{pillars}\PY{p}{,} \PY{n}{dfs}\PY{p}{)}
-\PY{n}{ccs} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{bonds}\PY{p}{)}\PY{p}{:}
-    \PY{n}{ccs}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{CreditCurve}\PY{p}{(}\PY{n}{pillars}\PY{p}{,} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{S}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{p}{)}
-		
-\PY{n}{scenarios} \PY{o}{=} \PY{l+m+mi}{100000}
-\PY{n}{losses} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{scenarios}\PY{p}{)}\PY{p}{:}
-    \PY{n}{loss} \PY{o}{=} \PY{l+m+mi}{0}
-    \PY{n}{unif} \PY{o}{=} \PY{n}{uniform}\PY{o}{.}\PY{n}{rvs}\PY{p}{(}\PY{n}{size}\PY{o}{=}\PY{n}{bonds}\PY{p}{)}
-    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{bonds}\PY{p}{)}\PY{p}{:}
-        \PY{k}{if} \PY{n}{unif}\PY{p}{[}\PY{n}{i}\PY{p}{]} \PY{o}{\PYZgt{}} \PY{n}{ccs}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{pillars}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{:}
-            \PY{n}{loss} \PY{o}{+}\PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{R}\PY{p}{)}\PY{o}{*}\PY{n}{FV}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{o}{*}\PY{n}{dc}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{pillars}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)} 
-        \PY{n}{losses}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{loss}\PY{p}{)}
-        
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{percentile}\PY{p}{(}\PY{n}{losses}\PY{p}{,} \PY{p}{[}\PY{l+m+mf}{99.9}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+import numpy as np
+from datetime import date
+from dateutil.relativedelta import relativedelta
+from finmarkets import DiscountCurve, CreditCurve
+from scipy.stats import uniform
 
+bonds = 20
+S = [1-0.08 for _ in range(bonds)]
+FV = [100 for _ in range(20)]
+R = 0.4
+r = 0.01
+obs_date = date.today()
+pillars = [obs_date+relativedelta(years=i) for i in range(2)]
+dfs = [1/(1+r)**i for i in range(2)]
+dc = DiscountCurve(obs_date, pillars, dfs)
+ccs = []
+for i in range(bonds):
+    ccs.append(CreditCurve(pillars, [1, S[i]]))
+scenarios = 100000
+losses = []
+for _ in range(scenarios):
+    loss = 0
+    unif = uniform.rvs(size=bonds)
+    for i in range(bonds):
+        if unif[i] > ccs[i].ndp(pillars[-1]):
+            loss += (1 - R)*FV[i]*dc.df(pillars[-1])
+        losses.append(loss)
+
+print (np.percentile(losses, [99.9]))
+\end{ipython}
+\begin{ioutput}
 [415.84158416]
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 \noindent
 Figure~\ref{fig:credit_var} shows the loss distribution of our simple portfolio.
 
@@ -407,27 +410,25 @@ When the confidence level is $X\%$ and the time horizon is $T$, a rough estimate
 
 Suppose that a bank has a total of \euro{100} million of retail exposures. The 1-year probability of default averages to 2\% and the recovery rate averages to 60\%. The copula correlation parameter is estimated as 0.1.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{stats} \PY{k}{import} \PY{n}{norm}
-\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{sqrt}
-		
-\PY{n}{X} \PY{o}{=} \PY{l+m+mf}{0.999}
-\PY{n}{rho} \PY{o}{=} \PY{l+m+mf}{0.1}
-\PY{n}{R} \PY{o}{=} \PY{l+m+mf}{0.6}
-\PY{n}{Q} \PY{o}{=} \PY{l+m+mf}{0.02}
-\PY{n}{exposure} \PY{o}{=} \PY{l+m+mf}{100e6}
-		
-\PY{n}{num} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{Q}\PY{p}{)} \PY{o}{+} \PY{n}{sqrt}\PY{p}{(}\PY{n}{rho}\PY{p}{)}\PY{o}{*}\PY{n}{norm}\PY{o}{.}\PY{n}{ppf}\PY{p}{(}\PY{n}{X}\PY{p}{)}
-\PY{n}{den} \PY{o}{=} \PY{n}{sqrt}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{rho}\PY{p}{)}
-\PY{n}{V} \PY{o}{=} \PY{n}{norm}\PY{o}{.}\PY{n}{cdf}\PY{p}{(}\PY{n}{num}\PY{o}{/}\PY{n}{den}\PY{p}{)}
-		
-\PY{n}{cr\PYZus{}var} \PY{o}{=} \PY{n}{exposure}\PY{o}{*}\PY{n}{V}\PY{o}{*}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{R}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Cr\PYZhy{}VaR: }\PY{l+s+si}{\PYZob{}:.0f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n+nb}{round}\PY{p}{(}\PY{n}{cr\PYZus{}var}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mi}{4}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+from scipy.stats import norm
+from math import sqrt
 
+X = 0.999
+rho = 0.1
+R = 0.6
+Q = 0.02
+exposure = 100e6
+num = norm.ppf(Q) + sqrt(rho)*norm.ppf(X)
+den = sqrt(1-rho)
+V = norm.cdf(num/den)
+cr_var = exposure*V*(1-R)
+
+print ("Cr-VaR: {:.0f}".format(round(cr_var, -4)))
+\end{ipython}
+\begin{ioutput}
 Cr-VaR: 5130000
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 \noindent
 The 1-year 99.9\% Credit VaR is therefore \euro{5.13} million.
 
@@ -615,39 +616,36 @@ The bond issuer has the following default probabilities 10\%, 20\% and 30\% for 
 
 To compute the CVA we need to first define a discount curve and the credit curve corresponding to the issuer. Then we perform a daily loop to sum up all the contributions to the CVA and finally we set the price of the bond to the default-risk-free price minus the CVA.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}\PY{p}{,} \PY{n}{CreditCurve}
-\PY{k+kn}{import} \PY{n+nn}{math}
-		
-\PY{n}{T} \PY{o}{=} \PY{l+m+mi}{3} 
-\PY{n}{r} \PY{o}{=} \PY{l+m+mf}{0.03}
-\PY{n}{R} \PY{o}{=} \PY{l+m+mf}{0.4}
-\PY{n}{FV} \PY{o}{=} \PY{l+m+mi}{100}
-		
-\PY{n}{obs\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
-\PY{n}{pillars} \PY{o}{=} \PY{p}{[}\PY{n}{obs\PYZus{}date}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{years}\PY{o}{=}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{T}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
-\PY{n}{dfs} \PY{o}{=} \PY{p}{[}\PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{r}\PY{o}{*}\PY{n}{i}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{T}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
-\PY{n}{dc} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{obs\PYZus{}date}\PY{p}{,} \PY{n}{pillars}\PY{p}{,} \PY{n}{dfs}\PY{p}{)}
-\PY{n}{S} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.9}\PY{p}{,} \PY{l+m+mf}{0.8}\PY{p}{,} \PY{l+m+mf}{0.7}\PY{p}{]}
-\PY{n}{cc} \PY{o}{=} \PY{n}{CreditCurve}\PY{p}{(}\PY{n}{pillars}\PY{p}{,} \PY{n}{S}\PY{p}{)}
-\PY{n}{PV} \PY{o}{=} \PY{n}{FV} \PY{o}{*} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{r}\PY{o}{*}\PY{n}{i}\PY{p}{)}
-		
-\PY{n}{cva} \PY{o}{=} \PY{l+m+mi}{0}
-\PY{n}{d} \PY{o}{=} \PY{n}{obs\PYZus{}date}
-\PY{k}{while} \PY{n}{d} \PY{o}{\PYZlt{}}\PY{o}{=} \PY{n}{pillars}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{:}
-    \PY{n}{cva} \PY{o}{+}\PY{o}{=} \PY{n}{dc}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d}\PY{p}{)}\PY{o}{*}\PY{p}{(}\PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{d}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{n}{cc}\PY{o}{.}\PY{n}{ndp}\PY{p}{(}\PY{n}{d}\PY{o}{+}\PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-    \PY{n}{d} \PY{o}{+}\PY{o}{=} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{days}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-		
-\PY{n}{cva} \PY{o}{*}\PY{o}{=} \PY{p}{(}\PY{l+m+mi}{1}\PY{o}{\PYZhy{}}\PY{n}{R}\PY{p}{)} \PY{o}{*} \PY{n}{FV}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CVA: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{cva}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Bond Price: }\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{PV} \PY{o}{\PYZhy{}} \PY{n}{cva}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+from dateutil.relativedelta import relativedelta
+from finmarkets import DiscountCurve, CreditCurve
+import math
 
+T = 3
+r = 0.03
+R = 0.4
+FV = 100
+obs_date = date.today()
+pillars = [obs_date+relativedelta(years=i) for i in range(T+1)]
+dfs = [math.exp(-r*i) for i in range(T+1)]
+dc = DiscountCurve(obs_date, pillars, dfs)
+S = [1, 0.9, 0.8, 0.7]
+cc = CreditCurve(pillars, S)
+PV = FV * math.exp(-r*i)
+cva = 0
+d = obs_date
+while d <= pillars[-1]:
+    cva += dc.df(d)*(cc.ndp(d) - cc.ndp(d+relativedelta(days=1)))
+    d += relativedelta(days=1)
+cva *= (1-R) * FV
+
+print ("CVA: {:.2f}".format(cva))
+print ("Bond Price: {:.2f}".format(PV - cva))
+\end{ipython}
+\begin{ioutput}
 CVA: 17.21
 Bond Price: 74.18
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \section{Exercises}
 \input{var_ex_text}

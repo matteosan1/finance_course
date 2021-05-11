@@ -1,4 +1,5 @@
-\chapter{Machine Learning}\label{neural-network---practical-lesson-8}
+\chapter{Machine Learning}
+\label{ch:neural-network}
 
 In this Chapter we will see how machine learning techniques can be
 successfully applied to solve financial problems. We will first do a
@@ -221,7 +222,7 @@ speech recognition, car plates identification, \ldots
 
 Regression is the process of finding hidden correlations between dependent
 variables. It helps in predicting continuous
-variables such as market trends, house prices, \dots
+variables such as market trends, house prices, \ldots
 
 The task of the regression algorithm is to find the mapping function to
 map the input variable (\(x\)) to the \textbf{continuous} output
@@ -235,17 +236,17 @@ weather for future days. In general whenever we are dealing with
 function approximations this kind of algorithms can be applied.
 
 \begin{attention}
-	\subsubsection{Technical Note}\label{technical-note}
-	
-	Neural network training and testing is performed using two modules:
-	\(\tt{keras}\)~\cite{bib:keras} (which in turn is based on a Google open source library
-	called \(\tt{tensorflow}\)~\cite{bib:tensorflow}) and \(\tt{scikit-learn}\)~\cite{bib:scikit} 
-	which provide many useful utilities.
-	
-	In order to hide as much as possible the many little details that have to
-	be set when dealing with NN it has been developed a simple class
-	(\(\tt{FinNN}\): Financial NN) which relies on \(\tt{keras}\) anyway 
-	but should make the whole process easier.
+\subsubsection{Technical Note}\label{technical-note}
+
+Neural network training and testing is performed using two modules:
+\texttt{keras}~\cite{bib:keras} (which in turn is based on a Google open source library
+called \texttt{tensorflow}~\cite{bib:tensorflow}) and \texttt{scikit-learn}~\cite{bib:scikit} 
+which provide many useful utilities.
+
+In order to hide as much as possible the many little details that have to
+be set when dealing with NN it has been developed a simple class
+(\texttt{FinNN}: Financial NN) which relies on \texttt{keras} anyway 
+but should make the whole process easier.
 \end{attention}
 
 \section{Function approximation}\label{function-approximation}
@@ -254,12 +255,10 @@ As a first practical example let's try to design an ANN which is capable
 of learning the functional form underlying a set of data.
 The implementation of the neural network starts by importing the necessary modules.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{finnn} \PY{k}{import} \PY{n}{FinNN}
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+from finnn import FinNN
+import numpy as np
+\end{ipython}
 
 Then we generate the training sample (i.e. \(x\) input, \(f(x)\) target output
 pairs where \(f(x) = x^3 +2\).)
@@ -268,44 +267,39 @@ inputs and outputs in the \([0, 1]\) range. This is usually done to
 provide the NN with \emph{normalized} data, in fact it could be fooled
 by very large or very small numbers giving unstable results.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{n}{i} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{,} \PY{l+m+mf}{0.001}\PY{p}{)}\PY{p}{]}\PY{p}{)}	
-\PY{n}{y} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{n}{i}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{3}\PY{o}{+}\PY{l+m+mi}{2} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n}{x}\PY{p}{]}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Distribution of original data }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{x}\PY{o}{.}\PY{n}{min}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{n}{x}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{n}{y}\PY{o}{.}\PY{n}{min}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{n}{y}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-	
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ANN}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{test\PYZus{}size}\PY{o}{=}\PY{l+m+mf}{0.2}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{normalize}\PY{p}{(}\PY{p}{)}
-	
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{The same data after the normalization }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{trainer}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{min}\PY{p}{(}\PY{p}{)}\PY{p}{,} 
-\PY{n}{trainer}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{n}{trainer}\PY{o}{.}\PY{n}{y}\PY{o}{.}\PY{n}{min}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{n}{trainer}\PY{o}{.}\PY{n}{y}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{p}{)}\PY{p}{)}
-
+\begin{ipython}
+x = np.array([i for i in np.arange(-2, 2, 0.001)])
+y = np.array([i**3+2 for i in x])
+print("Distribution of original data ", x.min(), x.max(), y.min(), y.max())
+trainer = FinNN("ANN")
+trainer.setData(x, y, test_size=0.2)
+trainer.normalize()
+print("The same data after the normalization ", trainer.x.min(),
+       trainer.x.max(), trainer.y.min(), trainer.y.max())
+\end{ipython}
+\begin{ioutput}
 Distribution of original data  -2.0 1.9989999999995596 -6.0 9.98800599899472
 The same data after the normalization  0.0 1.0 0.0 0.9999999999999999
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 Next we can define the structure of the neural network itself. 
 Here the problem is quite simple so there is no need to use a complicated architecture,
 two layers with 15 and 5 neurons respectively and a \texttt{tanh} activation function, 
-see Fig,~\ref{fig:ann_1}. The \(\tt{inputs}\) parameter has to be
-set to 1 since we have just one single input, the \(x\) value.
+see Fig,~\ref{fig:ann_1}. The \texttt{inputs} parameter has to be
+set to 1 since we have just one single input, the \texttt{x} value.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} design the neural network model}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addInputLayer}\PY{p}{(}\PY{n}{inputs}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{15}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{tanh}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addHiddenLayer}\PY{p}{(}\PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{tanh}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} define the loss function (mean squared error) }
-\PY{c+c1}{\PYZsh{} and optimization algorithm (Adam)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{mse}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} fit the model on the training dataset}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{2000}\PY{p}{,} \PY{n}{verbose}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-	
+\begin{ipython}
+# design the neural network model
+trainer.addInputLayer(inputs=1, neurons=15, activation='tanh')
+trainer.addHiddenLayer(neurons=5, activation='tanh')
+trainer.addOutputLayer(outputs=1)
+# define the loss function (mean squared error)
+# and optimization algorithm (Adam)
+trainer.compileModel(loss='mse', opt='adam')
+# fit the model on the training dataset
+trainer.fit(epochs=2000, verbose=1)
+\end{ipython}
+\begin{ioutput}
 Epoch 1/2000
 3200/3200 [==============================] - 0s 31us/step - loss: 0.2362
 Epoch 2/2000
@@ -315,8 +309,7 @@ Epoch 1999/2000
 3200/3200 [==============================] - 0s 18us/step - loss: 8.7152e-06
 Epoch 2000/2000
 3200/3200 [==============================] - 0s 17us/step - loss: 5.9604e-06
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \begin{figure}[htb]
 	\centering
@@ -331,16 +324,15 @@ which is evaluated using the loss function chosen in the code.
 After the training is completed we can evaluate how good it is by computing the loss with the 
 latest update of the network weights. This can be done with the \texttt{evaluate()} method
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{trainer}\PY{o}{.}\PY{n}{evaluate}\PY{p}{(}\PY{p}{)}
-		
+\begin{ipython}
+trainer.evaluate()
+\end{ipython}
+\begin{ioutput}
 3200/3200 [==============================] - 0s 83us/step
 Training: 6.1983578859781115e-06
 800/800 [==============================] - 0s 52us/step
 Test: 6.47684617433697e-06
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 \noindent
 which provides the loss values on training and testing samples.
 A \emph{perfect} prediction would have led to \(\textrm{loss}=0\) so the
@@ -390,43 +382,41 @@ approximate the famous Black-Scholes pricing formula
 Like before the first step consists of generating the training sample this time made
 of a grid of volatility ($\sigma$)-rate ($r$) pairs (for simplicity we
 are going to set moneyness ($K$) and time to maturity (ttm) to 1). The target values
-are the price of a call, computed with the corresponding inputs, using the BS function in \(\tt{finmarkets.py}\).
+are the price of a call, computed with the corresponding inputs, using the BS function in \texttt{finmarkets.py}.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{call}
-	
-\PY{n}{data} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{rates} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.11}\PY{p}{,} \PY{l+m+mf}{0.001}\PY{p}{)}
-\PY{n}{sigmas} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.1}\PY{p}{,} \PY{l+m+mf}{0.6}\PY{p}{,} \PY{l+m+mf}{0.005}\PY{p}{)}
-	
-\PY{k}{for} \PY{n}{r} \PY{o+ow}{in} \PY{n}{rates}\PY{p}{:}
-    \PY{k}{for} \PY{n}{sigma} \PY{o+ow}{in} \PY{n}{sigmas}\PY{p}{:}
-        \PY{n}{call\PYZus{}price} \PY{o}{=} \PY{n}{call}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{sigma}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-        \PY{n}{data}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{p}{[}\PY{n}{r}\PY{p}{,} \PY{n}{sigma}\PY{p}{,} \PY{n}{call\PYZus{}price}\PY{p}{]}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} we transform the list to a numpy array just because }
-\PY{c+c1}{\PYZsh{} an array is more convenient to use later}
-\PY{n}{data} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{n}{data}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+from finmarkets import call
+
+data = []
+rates = np.arange(0.01, 0.11, 0.001)
+sigmas = np.arange(0.1, 0.6, 0.005)
+
+for r in rates:
+for sigma in sigmas:
+call_price = call(1, r, sigma, 1)
+data.append([r, sigma, call_price])
+
+# we transform the list to a numpy array just because
+# an array is more convenient to use later
+data = np.array(data)
+\end{ipython}
 
 Since it takes some time to generate data samples, it is always
 advisable to save them in a file since we may need to load it many times
-during the NN development. This can be done with \(\tt{pandas}\)
+during the NN development. This can be done with \texttt{pandas}
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
-	
-\PY{n}{df} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{DataFrame}\PY{p}{(}\PY{p}{)}
-\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rate}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{data}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}
-\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{vol}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{data}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}
-\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{price}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{n}{data}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{l+m+mi}{2}\PY{p}{]}
-	
-\PY{n}{df}\PY{o}{.}\PY{n}{to\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{bs\PYZus{}training\PYZus{}sample.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{describe}\PY{p}{(}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+import pandas as pd
 
+df = pd.DataFrame()
+df['rate'] = data[:, 0]
+df['vol'] = data[:, 1]
+df['price'] = data[:, 2]
+df.to_csv("bs_training_sample.csv")
+
+print (df.describe())
+\end{ipython}
+\begin{ioutput}
                rate           vol         price
 count  10000.000000  10000.000000  10000.000000
 mean       0.059500      0.347500      0.165274
@@ -436,10 +426,9 @@ min        0.010000      0.100000      0.044852
 50%        0.059500      0.347500      0.165476
 75%        0.084250      0.471250      0.212097
 max        0.109000      0.595000      0.277071
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
-Following the previous example we will use the \(\tt{FinNN}\)
+Following the previous example we will use the \texttt{FinNN}
 class to develop the NN and also we will \emph{normalize} data to get
 better results. \textbf{Beware that this time we have TWO input
 parameters (rate and volatility)}. See Figure~\ref{fig:ann_2} for
@@ -452,22 +441,22 @@ a graphical representation of the designed ANN.
 	\label{fig:ann_2}
 \end{figure}
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{data} \PY{o}{=}  \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{bs\PYZus{}training\PYZus{}sample.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{x} \PY{o}{=} \PY{n}{data}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{:}\PY{l+m+mi}{3}\PY{p}{]}\PY{o}{.}\PY{n}{values}
-\PY{n}{y} \PY{o}{=} \PY{n}{data}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{l+m+mi}{3}\PY{p}{]}\PY{o}{.}\PY{n}{values}
+\begin{ipython}
+data = pd.read_csv("bs_training_sample.csv")
+x = data.iloc[:, 1:3].values
+y = data.iloc[:, 3].values
 
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ANN}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{test\PYZus{}size}\PY{o}{=}\PY{l+m+mf}{0.20}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{normalize}\PY{p}{(}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addInputLayer}\PY{p}{(}\PY{n}{inputs}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{20}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addHiddenLayer}\PY{p}{(}\PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{8}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{mse}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{3000}\PY{p}{,} \PY{n}{batch\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{500}\PY{p}{,} \PY{n}{verbose}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
+trainer = FinNN("ANN")
+trainer.setData(x, y, test_size=0.20)
+trainer.normalize()
+trainer.addInputLayer(inputs=2, neurons=20, activation='relu')
+trainer.addHiddenLayer(neurons=8, activation='relu')
+trainer.addOutputLayer(outputs=1)
 
+trainer.compileModel(loss='mse', opt='adam')
+trainer.fit(epochs=3000, batch_size=500, verbose=1)
+\end{ipython}
+\begin{ioutput}
 Epoch 1/3000
 8000/8000 [==============================] - 0s 16us/step - loss: 0.3216
 Epoch 2/3000
@@ -477,25 +466,23 @@ Epoch 2999/3000
 8000/8000 [==============================] - 0s 4us/step - loss: 3.7983e-07
 Epoch 3000/3000
 8000/8000 [==============================] - 0s 3us/step - loss: 3.6476e-07
+\end{ioutput}
+\begin{ipython}
+trainer.evaluate()
 
-\PY{n}{trainer}\PY{o}{.}\PY{n}{evaluate}\PY{p}{(}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} when the training takes some time it is useful}
-\PY{c+c1}{\PYZsh{} to save the model weights in a file to use it later on}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{saveModel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{black\PYZus{}scholes}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-
+# when the training takes some time it is useful
+# to save the model weights in a file to use it later on
+trainer.saveModel('black_scholes')
+\end{ipython}
+\begin{ioutput}
 8000/8000 [==============================] - 0s 52us/step
 Training: 5.567638540924235e-07
 2000/2000 [==============================] - 0s 44us/step
 Test: 5.582978365055169e-07
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
-As you can see the training and testing samples give roughly the same MSE
-value so we are reasonably sure that there hasn't been
-\emph{overfitting}.
-After the training is completed we can
-evaluate graphically how good it is, see Fig.~\ref{fig:vol_rate}. 
+As you can see the training and testing samples give roughly the same MSE value so we are reasonably sure that there hasn't been \emph{overfitting}.
+After the training is completed we can evaluate graphically how good it is, see Fig.~\ref{fig:vol_rate}. 
 
 \begin{figure}[htb]
 	\centering
@@ -518,24 +505,24 @@ Let's compare the prediction in a practical case; say we
 want to know the price of a call (with moneyness 1 and time to maturity
 1 year) when the risk-free rate is 0.015 and the volatility 0.234:
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{call}
-	
-\PY{c+c1}{\PYZsh{} here we load the trained model}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{loadModel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{black\PYZus{}scholes}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} this is our input vector}
-\PY{n}{rv} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mf}{0.015}\PY{p}{,} \PY{l+m+mf}{0.234}\PY{p}{]}\PY{p}{]}\PY{p}{)}
-\PY{c+c1}{\PYZsh{} here we compare the predection with the BS call price}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s1}{ =\PYZgt{} }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s1}{ (expected }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s1}{)}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{rv}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,} 
-                                               \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{rv}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} 
-                                               \PY{n}{call}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{rv}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{rv}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+import numpy as np
+from finmarkets import call
 
+# here we load the trained model
+trainer.loadModel('black_scholes')
+
+# this is our input vector
+rv = np.array([[0.015, 0.234]])
+# here we compare the predection with the BS call price
+
+print ('{} => {:.4f} (expected {:.4f})'.format(rv.tolist(),
+trainer.predict(rv)[0][0],
+call(1, rv[0][0], rv[0][1], 1)))
+\end{ipython}
+\begin{ioutput}
 [[0.015, 0.234]] => 0.1001 (expected 0.1001)
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 It is very import to remember that a \textbf{NN cannot extrapolate}.
 Indeed if you try to predict the price of a call from rate and
@@ -543,19 +530,19 @@ volatility outside the training \emph{phase space} (i.e. with values that
 aren't in the intervals used in the training), say \(r = 0.22\) and
 \(\sigma = 0.01\)\ldots{}
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} this is our input vector}
-\PY{n}{rv} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mf}{0.22}\PY{p}{,} \PY{l+m+mf}{0.01}\PY{p}{]}\PY{p}{]}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} here we compare the predection with the BS call price}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s1}{ =\PYZgt{} }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s1}{ (expected }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s1}{)}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{rv}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,} 
-                                               \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{rv}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} 
-                                               \PY{n}{call}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{rv}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{rv}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+# this is our input vector
+rv = np.array([[0.22, 0.01]])
 
+# here we compare the predection with the BS call price
+
+print ('{} => {:.4f} (expected {:.4f})'.format(rv.tolist(),
+trainer.predict(rv)[0][0],
+call(1, rv[0][0], rv[0][1], 1)))
+\end{ipython}
+\begin{ioutput}
 [[0.22, 0.01]] => 0.1628 (expected 0.1975)
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \subsection{Model Calibration}\label{model-calibration}
 
@@ -604,26 +591,27 @@ To reuse the training sample created before (again we
 are going to set \(\mathrm{ttm}=1\) and \(K=1\)) now we need to set the input as pairs of rate-price and the
 output is the target volatility.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{data} \PY{o}{=}  \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{bs\PYZus{}training\PYZus{}sample.csv}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{df} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{concat([data.iloc[:, 1:2], data.iloc[:, 3:4]], 1)}\PY{p}{)}
-\PY{n}{x} \PY{o}{=} \PY{n}{df}\PY{o}{.}\PY{n}{values}
-\PY{n}{y} \PY{o}{=} \PY{n}{data}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{p}{:}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}\PY{o}{.}\PY{n}{values}
+\begin{ipython}
+data = pd.read_csv("bs_training_sample.csv")
+df = pd.concat([data.iloc[:, 1:2], data.iloc[:, 3:4]], 1))
 
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{ANN}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{y}\PY{p}{,} \PY{n}{test\PYZus{}size}\PY{o}{=}\PY{l+m+mf}{0.20}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{normalize}\PY{p}{(}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addInputLayer}\PY{p}{(}\PY{n}{inputs}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{20}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addHiddenLayer}\PY{p}{(}\PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{8}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{mse}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{2000}\PY{p}{,}  \PY{n}{verbose}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{evaluate}\PY{p}{(}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{saveModel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{calibration}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
+x = df.values
+y = data.iloc[:, 1].values
 
+trainer = FinNN("ANN")
+trainer.setData(x, y, test_size=0.20)
+trainer.normalize()
+trainer.addInputLayer(inputs=2, neurons=20, activation='relu')
+trainer.addHiddenLayer(neurons=8, activation='relu')
+trainer.addOutputLayer(outputs=1)
+
+trainer.compileModel(loss='mse', opt='adam')
+trainer.fit(epochs=2000, verbose=1)
+
+trainer.evaluate()
+trainer.saveModel("calibration")
+\end{ipython}
+\begin{ioutput}
 Epoch 1/2000
 8000/8000 [==============================] - 0s 14us/step - loss: 0.1339
 Epoch 2/2000
@@ -638,27 +626,25 @@ Epoch 2000/2000
 Training: 2.0318084630162047e-06
 2000/2000 [==============================] - 0s 48us/step
 Test: 1.8580968553578714e-06
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 Provided our training includes the correct range of market prices of our
 call we can quickly and easily estimate the implied volatility. For
 example if the risk-free rate is 2\% and the current price is 0.15
 (remember that we are using the BS formula in terms of moneyness)
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{trainer}\PY{o}{.}\PY{n}{loadModel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{calibration}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{rv} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{p}{[}\PY{p}{[}\PY{l+m+mf}{0.02}\PY{p}{,} \PY{l+m+mf}{0.15}\PY{p}{]}\PY{p}{]}\PY{p}{)}
-	
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s1}{ =\PYZgt{} }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s1}{ (expected call price }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s1}{)}\PY{l+s+s1}{\PYZsq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{rv}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,} 
-                                               \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{rv}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} 
-                                               \PY{n}{call}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mf}{0.02}\PY{p}{,} 
-                                                    \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{rv}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}\PY{p}{)}
+\begin{ipython}
+trainer.loadModel('calibration')
+rv = np.array([[0.02, 0.15]])
 
+print ('{} => {:.4f} (expected call price {:.4f})'.format(rv.tolist(),
+trainer.predict(rv)[0][0],
+call(1, 0.02, 
+trainer.predict(rv)[0][0], 1
+\end{ipython}
+\begin{ioutput}
 [[0.02, 0.15]] => 0.3565 (expected call price 0.1502)
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 \noindent
 The expected call price (0.1502) derived using the implied volatility is in excellent agreement we the "market price" (0.15).
 
@@ -696,7 +682,7 @@ neural nets are not capable of extrapolating results, hence in general it won't
 recognize a digit written in some strange way not included in the
 training sample !!!}).
 
-In this example we will use the sample provided with the \(\tt{mnist}\) module.
+In this example we will use the sample provided with the \texttt{mnist} module.
 Our program will be based on a slightly different kind of neural network
 than before, one type specifically designed for image/pattern
 recognition, the Convolutional Neural Network (CNN). We won't go into
@@ -723,41 +709,40 @@ that in this case we are going to solve a classification problem
 NN output won't be a single number but rather a list containing the
 probabilities that an image belong to each class.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}\PY{o}{,} \PY{n+nn}{mnist}
-\PY{k+kn}{from} \PY{n+nn}{finnn} \PY{k}{import} \PY{n}{FinNN}
-	
-\PY{c+c1}{\PYZsh{} the actual images}
-\PY{n}{train\PYZus{}images} \PY{o}{=} \PY{n}{mnist}\PY{o}{.}\PY{n}{train\PYZus{}images}\PY{p}{(}\PY{p}{)} 
-\PY{c+c1}{\PYZsh{} the target (it is a 0, 1, 2...)}
-\PY{n}{train\PYZus{}labels} \PY{o}{=} \PY{n}{mnist}\PY{o}{.}\PY{n}{train\PYZus{}labels}\PY{p}{(}\PY{p}{)} 
-	
-\PY{c+c1}{\PYZsh{} no test\PYZus{}size option means not split the sample}
-\PY{c+c1}{\PYZsh{} in training and testing sets}
-\PY{c+c1}{\PYZsh{} (MNIST has already dont it for us)}
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CNN2D}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{train\PYZus{}images}\PY{p}{,} \PY{n}{train\PYZus{}labels}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+import numpy as np, mnist
+from finnn import FinNN
+
+# the actual
+train_images = mnist.train_images()
+# the target
+train_labels = mnist.train_labels() # (it is a 0, 1, 2...)
+
+# no test_size option means not split the sample
+# in training and testing sets
+# (MNIST has already dont it for us)
+
+trainer = FinNN("CNN2D")
+trainer.setData(train_images, train_labels)
+\end{ipython}
 \noindent
 Next we define the CNN architecture, see Fig.~\ref{fig:cnn2d}.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{c+c1}{\PYZsh{} define our convolutional NN}
-\PY{c+c1}{\PYZsh{} we decide to apply 8 filters to the images }
-\PY{c+c1}{\PYZsh{} each with 3x3 pixels size}
-\PY{c+c1}{\PYZsh{} the input images have 28x28 pixels size instead}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addConv2DLayer}\PY{p}{(}\PY{n}{filters}\PY{o}{=}\PY{l+m+mi}{8}\PY{p}{,} \PY{n}{filter\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{3}\PY{p}{,} \PY{n}{input\PYZus{}shape}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{28}\PY{p}{,} \PY{l+m+mi}{28}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addMaxPooling2D}\PY{p}{(}\PY{l+m+mi}{2}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addFlatten}\PY{p}{(}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addCNNOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{categorical\PYZus{}crossentropy}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{,} \PY{n}{verbose}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{saveModel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{digit\PYZus{}training}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\begin{ipython}
+# define our convolutional NN
+# we decide to apply 8 filters to the images
+# each with 3x3 pixels size
+# the input images have 28x28 pixels size instead
+trainer.addConv2DLayer(filters=8, filter_size=3, input_shape=(28, 28, 1))
+trainer.addMaxPooling2D(2)
+trainer.addFlatten()
+trainer.addCNNOutputLayer(outputs=10)
 
+trainer.compileModel(loss='categorical_crossentropy', opt='adam')
+trainer.fit(epochs=5, verbose=1)
+trainer.saveModel('digit_training')
+\end{ipython}
+\begin{ioutput}
 Epoch 1/5
 59999/59999 [==============================] - 13s 210us/step - loss: 2.1711
 Epoch 2/5
@@ -768,8 +753,7 @@ Epoch 4/5
 59999/59999 [==============================] - 12s 198us/step - loss: 0.2244
 Epoch 5/5
 59999/59999 [==============================] - 12s 196us/step - loss: 0.1910
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \begin{figure}[htb]
 	\centering
@@ -782,7 +766,7 @@ Epoch 5/5
 \subsubsection{Pooling}
 
 Looking closely to the convolutional neural network implementation we can notice new kind of 
-layers never used before, in particular the \(\tt{MaxPooling2}\) layer.
+layers never used before, in particular the \texttt{MaxPooling2} layer.
 
 Convolutional layers in a CNN systematically
 apply filters to input images in order to create feature maps
@@ -825,46 +809,42 @@ The most common pooling operation are:
 \end{itemize}
 \end{attention}
 
-Now let's try to see how well our NN predicts \(\tt{mnist}\) testing
+Now let's try to see how well our NN predicts \texttt{mnist} testing
 digits.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{trainer}\PY{o}{.}\PY{n}{loadModel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{digit\PYZus{}training}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} testing with mnist test sample}
-\PY{n}{test\PYZus{}images} \PY{o}{=} \PY{n}{mnist}\PY{o}{.}\PY{n}{test\PYZus{}images}\PY{p}{(}\PY{p}{)}
-\PY{n}{test\PYZus{}labels} \PY{o}{=} \PY{n}{mnist}\PY{o}{.}\PY{n}{test\PYZus{}labels}\PY{p}{(}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setTestData}\PY{p}{(}\PY{n}{test\PYZus{}images}\PY{p}{,} \PY{n}{test\PYZus{}labels}\PY{p}{)}
-\PY{n}{predictions} \PY{o}{=} \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{trainer}\PY{o}{.}\PY{n}{x\PYZus{}test}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{10}\PY{p}{]}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Tesing on MNIST digits...}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Predicted: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{argmax}\PY{p}{(}\PY{n}{predictions}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)} 
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Truth:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{test\PYZus{}labels}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{10}\PY{p}{]}\PY{p}{)}
-	
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{highest prob.:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.6f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{p}\PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{argmax}\PY{p}{(}\PY{n}{p}\PY{p}{)}\PY{p}{]}\PY{p}{)} \PY{k}{for} \PY{n}{p} \PY{o+ow}{in} \PY{n}{predictions}\PY{p}{]}\PY{p}{)}
+\begin{ipython}
+trainer.loadModel('digit_training')
+# testing with mnist test sample
+test_images = mnist.test_images()
+test_labels = mnist.test_labels()
+trainer.setTestData(test_images, test_labels)
+predictions = trainer.predict(trainer.x_test[:10])
 
-Tesing on MNIST digits{\ldots}
+print ("Tesing on MNIST digits...")
+print("Predicted: ", np.argmax(predictions, axis=1))
+print("Truth:", test_labels[:10])
+print("highest prob.:", ["{:.6f}".format(p[np.argmax(p)]) for p in predictions])
+\end{ipython}
+\begin{ioutput}
+Tesing on MNIST digits...
 Predicted:  [7 2 1 0 4 1 4 4 5 9]
 Truth: [7 2 1 0 4 1 4 9 5 9]
 highest prob.: ['0.999900', '1.000000', '0.999977', '1.000000', '0.999993',
 '0.999596', '0.970003', '0.900420', '0.840930', '0.999472']
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 Since the last but one digit has lower probability let's check the
 returned list to see which other number have non-zero probability.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{9th digit:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{dig }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:.6f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{i}\PY{p}{,} \PY{n}{p}\PY{p}{)} 
-                                      \PY{k}{for} \PY{n}{i}\PY{p}{,} \PY{n}{p} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{predictions}\PY{p}{[}\PY{l+m+mi}{8}\PY{p}{]}\PY{p}{)}\PY{p}{]}\PY{p}{)}
-
+\begin{ipython}
+for i, p in enumerate(predictions[8])])
+    print("9th digit:", ["dig {}: {:.6f}".format(i, p)
+\end{ipython}
+\begin{ioutput}
 9th digit: ['dig 0: 0.000080', 'dig 1: 0.000000', 'dig 2: 0.000091', 'dig 3:
 0.000000', 'dig 4: 0.000000', 'dig 5: 0.840930', 'dig 6: 0.158898', 'dig 7:
 0.000000', 'dig 8: 0.000001', 'dig 9: 0.000000']
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 So the second ranked digit is a 6 (which can be confused with a five if
 the lower loop is almost closed).
@@ -872,38 +852,34 @@ the lower loop is almost closed).
 To see how well our NN behaves with different kind of digits we will try
 to check how it works with my calligraphy.
 Before passing the image to the NN it has to be resized and this is done
-with an ad-hoc function, \(\tt{transform\_image}\), which is in the
-\href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/digit_converter.py}{\(\tt{digit\_converter.py}\)} module.
+with an ad-hoc function, \texttt{transform\_image}, which is in the
+\href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/digit_converter.py}{\texttt{digit\_converter.py}} module.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{digit\PYZus{}converter} \PY{k}{import} \PY{n}{transform\PYZus{}image}
-	
-\PY{n}{filenames} \PY{o}{=} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{four.png}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{five.png}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
-	
-\PY{k}{for} \PY{n}{f} \PY{o+ow}{in} \PY{n}{filenames}\PY{p}{:}
-    \PY{n}{test\PYZus{}images} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{array}\PY{p}{(}\PY{n}{transform\PYZus{}image}\PY{p}{(}\PY{n}{f}\PY{p}{)}\PY{p}{)}
-    \PY{n}{test\PYZus{}images} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{expand\PYZus{}dims}\PY{p}{(}\PY{n}{test\PYZus{}images}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{3}\PY{p}{)}
-	
-    \PY{n}{predict} \PY{o}{=} \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{test\PYZus{}images}\PY{p}{)}
-    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Tesing on custom digits...}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-    \PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Predicted: }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{argmax}\PY{p}{(}\PY{n}{predict}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-    \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{\PYZpc{}}\PY{l+s+s2}{:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{p}\PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{argmax}\PY{p}{(}\PY{n}{p}\PY{p}{)}\PY{p}{]}\PY{p}{)} \PY{k}{for} \PY{n}{p} \PY{o+ow}{in} \PY{n}{predict}\PY{p}{]}\PY{p}{)}
-    \PY{n+nb}{print}\PY{p}{(}\PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.2f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{p}\PY{p}{)} \PY{k}{for} \PY{n}{p} \PY{o+ow}{in} \PY{n}{predict}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+\begin{ipython}
+from digit_converter import transform_image
 
+filenames = ['four.png', 'five.png']
+for f in filenames:
+    test_images = np.array(transform_image(f))
+test_images = np.expand_dims(test_images, axis=3)
+predict = trainer.predict(test_images)
+
+print ("Tesing on custom digits...")
+print ("Predicted: ", np.argmax(predict, axis=1))
+print("%:", ["{:.3f}".format(p[np.argmax(p)]) for p in predict])
+print(["{:.2f}".format(p) for p in predict[0]])
+\end{ipython}
+\begin{ioutput}
 Tesing on custom digits...
 Predicted:  [4]
 %: ['0.802']
 ['0.00', '0.00', '0.00', '0.00', '0.80', '0.00', '0.00', '0.20', '0.00', '0.00']
 
-
 Tesing on custom digits...
 Predicted:  [5]
 %: ['0.981']
 ['0.00', '0.00', '0.00', '0.01', '0.00', '0.98', '0.00', '0.01', '0.00', '0.00']
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 These are the images that have been checked
 
@@ -933,63 +909,55 @@ pairs.
 
 The creation of the training sample is a little more complicated now.
 For convenience we will use also a new format to save data image,
-\(\tt{numpy}\). This will be done through the corresponding module
-simply using the functions \(\tt{save}\) and \(\tt{load}\) to store and
-retrieve data. The module \(\tt{PIL}\) (pillow) is instead used to
+\texttt{numpy}. This will be done through the corresponding module
+simply using the functions \texttt{save} and \texttt{load} to store and
+retrieve data. The module \texttt{PIL} (pillow) is instead used to
 visualize the images.
 
 First we make the targets.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{call}
-	
-\PY{n}{labels} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{n}{rates} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{0.11}\PY{p}{,} \PY{l+m+mf}{0.001}\PY{p}{)}
-\PY{n}{vols} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.1}\PY{p}{,} \PY{l+m+mf}{0.6}\PY{p}{,} \PY{l+m+mf}{0.005}\PY{p}{)}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{vols}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{k}{for} \PY{n}{j} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{rates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-        \PY{n}{labels}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{p}{(}\PY{n}{vols}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{,} \PY{n}{rates}\PY{p}{[}\PY{n}{j}\PY{p}{]}\PY{p}{)}\PY{p}{)} 
-	
-\PY{n}{np}\PY{o}{.}\PY{n}{save}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2d.np}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{labels}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+import numpy as np
+from finmarkets import call
+
+labels = []
+rates = np.arange(0.01, 0.11, 0.001)
+vols = np.arange(0.1, 0.6, 0.005)
+for i in range(len(vols)):
+    for j in range(len(rates)):
+        labels.append((vols[i], rates[j]))
+\end{ipython}
 \noindent
 Then we can create the images.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{k} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mf}{0.8}\PY{p}{,} \PY{l+m+mf}{1.2}\PY{p}{,} \PY{p}{(}\PY{l+m+mf}{1.2}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.8}\PY{p}{)}\PY{o}{/}\PY{l+m+mi}{20}\PY{p}{)}
-\PY{n}{ttm} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{,} \PY{l+m+mi}{4}\PY{o}{/}\PY{l+m+mi}{20}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} for each r, sigma pair}
-\PY{c+c1}{\PYZsh{} generate a matrix of prices}
-\PY{n}{maximum} \PY{o}{=} \PY{l+m+mi}{0}
-\PY{n}{minimum} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{inf}
-\PY{n}{prices} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-\PY{k}{for} \PY{n}{v} \PY{o+ow}{in} \PY{n}{vols}\PY{p}{:}
-    \PY{k}{for} \PY{n}{r} \PY{o+ow}{in} \PY{n}{rates}\PY{p}{:}
-        \PY{n}{price} \PY{o}{=}  \PY{n}{np}\PY{o}{.}\PY{n}{zeros}\PY{p}{(}\PY{n}{shape}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{20}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{)}
-        \PY{k}{for} \PY{n}{ik}\PY{p}{,} \PY{n}{kv} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{k}\PY{p}{)}\PY{p}{:}
-        \PY{k}{for} \PY{n}{it}\PY{p}{,} \PY{n}{t} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{ttm}\PY{p}{)}\PY{p}{:}
-            \PY{n}{price}\PY{p}{[}\PY{n}{ik}\PY{p}{,} \PY{n}{it}\PY{p}{]} \PY{o}{=} \PY{n}{call}\PY{p}{(}\PY{n}{kv}\PY{p}{,} \PY{n}{r}\PY{p}{,} \PY{n}{v}\PY{p}{,} \PY{n}{t}\PY{p}{)}
-            \PY{n}{prices}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{price}\PY{p}{)}
-            \PY{c+c1}{\PYZsh{} max and min are saved to }
-            \PY{c+c1}{\PYZsh{} normalize our matrices}
-            \PY{n}{new\PYZus{}max} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{n}{price}\PY{p}{)}
-            \PY{n}{new\PYZus{}min} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{min}\PY{p}{(}\PY{n}{price}\PY{p}{)}
-            \PY{k}{if} \PY{n}{new\PYZus{}max} \PY{o}{\PYZgt{}} \PY{n}{maximum}\PY{p}{:}
-                \PY{n}{maximum} \PY{o}{=} \PY{n}{new\PYZus{}max}
-            \PY{k}{if} \PY{n}{new\PYZus{}min} \PY{o}{\PYZlt{}} \PY{n}{minimum}\PY{p}{:}
-                \PY{n}{minimum} \PY{o}{=} \PY{n}{new\PYZus{}min}
-	
-\PY{k}{for} \PY{n}{ip}\PY{p}{,} \PY{n}{p} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{prices}\PY{p}{)}\PY{p}{:}
-    \PY{n}{prices}\PY{p}{[}\PY{n}{ip}\PY{p}{]} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{p}\PY{p}{,} \PY{p}{(}\PY{n}{minimum}\PY{p}{,} \PY{n}{maximum}\PY{p}{)}\PY{p}{,} \PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-	
-\PY{n}{np}\PY{o}{.}\PY{n}{save}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2d}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{prices}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+k = np.arange(0.8, 1.2, (1.2-0.8)/20)
+ttm = np.arange(1, 5, 4/20)
+
+# for each r, sigma pair
+# generate a matrix of prices
+maximum = 0
+minimum = np.inf
+prices = []
+for v in vols:
+    for r in rates:
+        price = np.zeros(shape=(20, 20))
+        for ik, kv in enumerate(k):
+            for it, t in enumerate(ttm):
+                price[ik, it] = call(kv, r, v, t)
+                prices.append(price)
+                # max and min are saved to
+                # normalize our matrices
+                new_max = np.max(price)
+                new_min = np.min(price)
+                if new_max > maximum:
+                    maximum = new_max
+                if new_min < minimum:
+                    minimum = new_min
+for ip, p in enumerate(prices):
+    prices[ip] = np.interp(p, (minimum, maximum), (0, 1))
+np.save("2d", prices)
+\end{ipython}
 \noindent
 Below an example of the 20x20 images that have been created
 \begin{figure}[htb]
@@ -1000,28 +968,27 @@ Below an example of the 20x20 images that have been created
 Then the training is similar to what has been done for the handwritten
 digits.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{finnn} \PY{k}{import} \PY{n}{FinNN}
-	
-\PY{n}{labels} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{load}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2d\PYZus{}labels.npy}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{images} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{load}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2d.npy}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-	
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CNN2D}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{images}\PY{p}{,} \PY{n}{labels}\PY{p}{,} \PY{n}{test\PYZus{}size}\PY{o}{=}\PY{l+m+mf}{0.2}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addConv2DLayer}\PY{p}{(}\PY{n}{filters}\PY{o}{=}\PY{l+m+mi}{8}\PY{p}{,} \PY{n}{filter\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{,} 
-                       \PY{n}{input\PYZus{}shape}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{20}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addFlatten}\PY{p}{(}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addHiddenLayer}\PY{p}{(}\PY{n}{neurons}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{,} \PY{n}{activation}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{relu}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{mse}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{500}\PY{p}{,}  \PY{n}{verbose}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{saveModel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{2d}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{evaluate}\PY{p}{(}\PY{p}{)}
+\begin{ipython}
+import numpy as np
+from finnn import FinNN
 
+labels = np.load("2d_labels.npy")
+images = np.load("2d.npy")
 
+trainer = FinNN("CNN2D")
+trainer.setData(images, labels, test_size=0.2)
+trainer.addConv2DLayer(filters=8, filter_size=10,
+input_shape=(20, 20, 1), activation='relu')
+trainer.addFlatten()
+trainer.addHiddenLayer(neurons=10, activation='relu')
+trainer.addOutputLayer(outputs=2, activation='relu')
+
+trainer.compileModel(loss='mse', opt='adam')
+trainer.fit(epochs=500, verbose=1)
+trainer.saveModel("2d")
+trainer.evaluate()
+\end{ipython}
+\begin{ioutput}
 Epoch 1/500
 8000/8000 [==============================] - 1s 156us/step - loss: 0.0018
 Epoch 2/500
@@ -1036,25 +1003,23 @@ Epoch 500/500
 Training: 1.1013161047230825e-05
 2000/2000 [==============================] - 0s 70us/step
 Test: 1.116331470257137e-05
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 At this point the test of the trained CNN consists of presenting the prices of call
 referring to the same underlying in the pictorial form shown before and
 in response it will give the risk-free rate and the underlying volatility.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{5}\PY{p}{)}\PY{p}{:}
-    \PY{n+nb}{print} \PY{p}{(}\PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{trainer}\PY{o}{.}\PY{n}{x\PYZus{}test}\PY{p}{[}\PY{n}{i}\PY{p}{:}\PY{n}{i}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
-
+\begin{ipython}
+for i in range(5):
+    print (trainer.predict(trainer.x_test[i:i+1]))
+\end{ipython}
+\begin{ioutput}
 [[0.3825101  0.09229672]]
 [[0.4056808  0.02232919]]
 [[0.47402808 0.05630913]]
 [[0.2851617  0.05214534]]
 [[0.17245176 0.08815573]]
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \section{Technical Analysis}\label{technical-analysis}
 
@@ -1097,33 +1062,30 @@ with no pattern), see Fig~\ref{fig:patterns}.
 	\label{fig:patterns}
 \end{figure}
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{k+kn}{from} \PY{n+nn}{finnn} \PY{k}{import} \PY{n}{FinNN}
-	
-\PY{n}{train\PYZus{}labels} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{load}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{training\PYZus{}techana\PYZus{}labels.npy}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{train\PYZus{}images} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{load}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{training\PYZus{}techana\PYZus{}images.npy}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-	
-\PY{n}{trainer} \PY{o}{=} \PY{n}{FinNN}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{CNN1D}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{setData}\PY{p}{(}\PY{n}{train\PYZus{}images}\PY{p}{,} \PY{n}{train\PYZus{}labels}\PY{p}{)}
-	
-\PY{c+c1}{\PYZsh{} define the CNN }
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addConv1DInputLayer}\PY{p}{(}\PY{n}{filters}\PY{o}{=}\PY{l+m+mi}{80}\PY{p}{,} \PY{n}{filter\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{20}\PY{p}{,} 
-                            \PY{n}{input\PYZus{}size}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{101}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addConv1DLayer}\PY{p}{(}\PY{n}{filters}\PY{o}{=}\PY{l+m+mi}{80}\PY{p}{,} \PY{n}{filter\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{15}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addMaxPooling1D}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addConv1DLayer}\PY{p}{(}\PY{n}{filters}\PY{o}{=}\PY{l+m+mi}{100}\PY{p}{,} \PY{n}{filter\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addConv1DLayer}\PY{p}{(}\PY{n}{filters}\PY{o}{=}\PY{l+m+mi}{100}\PY{p}{,} \PY{n}{filter\PYZus{}size}\PY{o}{=}\PY{l+m+mi}{5}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addGlobalAveragePooling1D}\PY{p}{(}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addDropout}\PY{p}{(}\PY{l+m+mf}{0.5}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{addCNNOutputLayer}\PY{p}{(}\PY{n}{outputs}\PY{o}{=}\PY{l+m+mi}{3}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{compileModel}\PY{p}{(}\PY{n}{loss}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{categorical\PYZus{}crossentropy}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{opt}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{adam}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{fit}\PY{p}{(}\PY{n}{epochs}\PY{o}{=}\PY{l+m+mi}{80}\PY{p}{)}
-	
-\PY{n}{trainer}\PY{o}{.}\PY{n}{saveModel}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{techana}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+\begin{ipython}
+import numpy as np
+from finnn import FinNN
 
+train_labels = np.load("training_techana_labels.npy")
+train_images = np.load("training_techana_images.npy")
+trainer = FinNN("CNN1D")
+trainer.setData(train_images, train_labels)
+# define the CNN
+trainer.addConv1DInputLayer(filters=80, filter_size=20,
+input_size=(101, 1))
+trainer.addConv1DLayer(filters=80, filter_size=15)
+trainer.addMaxPooling1D(3)
+trainer.addConv1DLayer(filters=100, filter_size=10)
+trainer.addConv1DLayer(filters=100, filter_size=5)
+trainer.addGlobalAveragePooling1D()
+trainer.addDropout(0.5)
+trainer.addCNNOutputLayer(outputs=3)
+
+trainer.compileModel(loss='categorical_crossentropy', opt='adam')
+trainer.fit(epochs=80)
+trainer.saveModel('techana')
+\end{ipython}
+\begin{ioutput}
 Epoch 1/80
 - 23s 1ms/step - loss: 0.6773
 Epoch 2/80
@@ -1133,8 +1095,7 @@ Epoch 79/80
 - 23s - loss: 0.0737
 Epoch 80/80
 - 23s - loss: 0.0692
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \begin{attention}
 \subsubsection{Dropout}
@@ -1194,15 +1155,15 @@ shows the "temporal frames" that have been presented to the CNN.
 \end{figure}
 
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{test\PYZus{}images} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{load}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{testing\PYZus{}techana\PYZus{}frames.npy}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-\PY{n}{trainer}\PY{o}{.}\PY{n}{loadModel}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{techana}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}
-	
-\PY{n}{predictions} \PY{o}{=} \PY{n}{trainer}\PY{o}{.}\PY{n}{predict}\PY{p}{(}\PY{n}{test\PYZus{}images}\PY{p}{)}
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{predictions}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{n+nb}{print} \PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{argmax}\PY{p}{(}\PY{n}{predictions}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{,} \PY{p}{[}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{p}\PY{p}{)} \PY{k}{for} \PY{n}{p} \PY{o+ow}{in} \PY{n}{predictions}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{]}\PY{p}{)}
+\begin{ipython}
+test_images = np.load("testing_techana_frames.npy")
+trainer.loadModel("techana")
+predictions = trainer.predict(test_images)
 
+for i in range(len(predictions)):
+    print (np.argmax(predictions[i]), ["{:.3f}".format(p) for p in predictions[i]])
+\end{ipython}
+\begin{ioutput}
 0 ['0.942', '0.000', '0.058']
 0 ['0.970', '0.000', '0.030']
 0 ['1.000', '0.000', '0.000']
@@ -1213,8 +1174,7 @@ shows the "temporal frames" that have been presented to the CNN.
 1 ['0.000', '1.000', '0.000']
 1 ['0.000', '1.000', '0.000']
 1 ['0.000', '1.000', '0.000']
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 \noindent
 The arrays in the output represent the likelihood assigned by the CNN to the series for each category
 at each time interval. So up to $t=4$ the CNN is more than 95\% sure there is no pattern. 

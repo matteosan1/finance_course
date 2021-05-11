@@ -6,25 +6,23 @@ In this Chapter the Overnight Index Swap contract is reviewed and a class to rep
 Before going to describe the Overnight Index Swap we need to develop a tool which helps us to generate list of dates (e.g. payment dates), a task that we need to do often from now on. 
 The function we are writing will go in \texttt{finmarkets} module and will be used by the classes describing various kind of contracts.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{dateutil}\PY{n+nn}{.}\PY{n+nn}{relativedelta} \PY{k}{import} \PY{n}{relativedelta}
+\begin{ipython}
+from datetime import date
+from dateutil.relativedelta import relativedelta
 
-\PY{k}{def} \PY{n+nf}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{start\PYZus{}date}\PY{p}{,} \PY{n}{n\PYZus{}months}\PY{p}{)}\PY{p}{:}
-    \PY{n}{dates} \PY{o}{=} \PY{p}{[}\PY{p}{]}
-    \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{n}{n\PYZus{}months}\PY{p}{,} \PY{l+m+mi}{12}\PY{p}{)}\PY{p}{:}
-        \PY{n}{dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{months}\PY{o}{=}\PY{n}{i}\PY{p}{)}\PY{p}{)}
-    \PY{n}{dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{start\PYZus{}date} \PY{o}{+} \PY{n}{relativedelta}\PY{p}{(}\PY{n}{months}\PY{o}{=}\PY{n}{n\PYZus{}months}\PY{p}{)}\PY{p}{)}
-    
-    \PY{k}{return} \PY{n}{dates}
+def generate_swap_dates(start_date, n_months):
+    dates = []
+    for i in range(0, n_months, 12):
+        dates.append(start_date + relativedelta(months=i))
+    dates.append(start_date + relativedelta(months=n_months))
+    return dates
 
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{l+m+mi}{25}\PY{p}{)}\PY{p}{)}
-
+print (generate_swap_dates(date.today(), 25))
+\end{ipython}
+\begin{ioutput}
 [datetime.date(2020, 10, 20), datetime.date(2021, 10, 20), datetime.date(2022,
 10, 20), datetime.date(2022, 11, 20)]
-    \end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \section{Overnight Index Swap}\label{overnight-index-swap}
 
@@ -146,64 +144,59 @@ a numerical optimizer, to \emph{invert} the relationship that connects
 NPV and discount curve so that the \emph{implied} discount
 factors can be determined from OIS market quotes.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{class} \PY{n+nc}{OvernightIndexSwap}\PY{p}{:}
-    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{notional}\PY{p}{,} \PY{n}{payment\PYZus{}dates}\PY{p}{,} \PY{n}{fixed\PYZus{}rate}\PY{p}{)}\PY{p}{:}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{=} \PY{n}{notional}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates} \PY{o}{=} \PY{n}{payment\PYZus{}dates}
-        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{=} \PY{n}{fixed\PYZus{}rate}
+\begin{ipython}
+class OvernightIndexSwap:
+    def __init__(self, notional, payment_dates, fixed_rate):
+        self.notional = notional 
+        self.payment_dates = payment_dates
+        self.fixed_rate = fixed_rate
 
-    \PY{k}{def} \PY{n+nf}{npv\PYZus{}floating\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{)} \PY{o}{\PYZhy{}}
-               \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+    def npv_floating_leg(self, discount_curve):
+        return self.notional * (discount_curve.df(self.payment_dates[0]) -
+                                discount_curve.df(self.payment_dates[-1]))
 
-    \PY{k}{def} \PY{n+nf}{npv\PYZus{}fixed\PYZus{}leg}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{n}{npv} \PY{o}{=} \PY{l+m+mi}{0}
-        \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{n+nb}{len}\PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-            \PY{n}{start\PYZus{}date} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}
-            \PY{n}{end\PYZus{}date} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{n}{i}\PY{p}{]}
-            \PY{n}{tau} \PY{o}{=} \PY{p}{(}\PY{n}{end\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n}{start\PYZus{}date}\PY{p}{)}\PY{o}{.}\PY{n}{days} \PY{o}{/} \PY{l+m+mi}{360}
-            \PY{n}{df} \PY{o}{=} \PY{n}{discount\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{end\PYZus{}date}\PY{p}{)}
-            \PY{n}{npv} \PY{o}{=} \PY{n}{npv} \PY{o}{+} \PY{n}{df} \PY{o}{*} \PY{n}{tau}
-        \PY{k}{return} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{notional} \PY{o}{*} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{fixed\PYZus{}rate} \PY{o}{*} \PY{n}{npv}
+    def npv_fixed_leg(self, discount_curve):
+        npv = 0
+        for i in range(1, len(self.payment_dates)):
+            start_date = self.payment_dates[i-1]
+            end_date = self.payment_dates[i]
+            tau = (end_date - start_date).days / 360
+            df = discount_curve.df(end_date)
+            npv = npv + df * tau
+        return self.notional * self.fixed_rate * npv
 
-
-    \PY{k}{def} \PY{n+nf}{npv}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{discount\PYZus{}curve}\PY{p}{)}\PY{p}{:}
-        \PY{n}{float\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}floating\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
-        \PY{n}{fixed\PYZus{}npv} \PY{o}{=} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{npv\PYZus{}fixed\PYZus{}leg}\PY{p}{(}\PY{n}{discount\PYZus{}curve}\PY{p}{)}
-        \PY{k}{return} \PY{n}{float\PYZus{}npv} \PY{o}{\PYZhy{}} \PY{n}{fixed\PYZus{}npv}
-\end{Verbatim}
-\end{codebox}
+    def npv(self, discount_curve):
+        float_npv = self.npv_floating_leg(discount_curve)
+        fixed_npv = self.npv_fixed_leg(discount_curve)
+        return float_npv - fixed_npv
+\end{ipython}
 
 To test it a discount curve is needed. In the following example a fake curve is defined and used with an OIS product.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}
+\begin{ipython}
+from datetime import date
+from finmarkets import DiscountCurve
 
-\PY{n}{ois} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}
-            \PY{c+c1}{\PYZsh{} the notional, one million}
-            \PY{l+m+mf}{1e6}\PY{p}{,}
-            \PY{c+c1}{\PYZsh{} the list of product dates,}
-            \PY{c+c1}{\PYZsh{} i.e. the start date then the payment dates}
-            \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
-             \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{7}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
-             \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}\PY{p}{,}
-            \PY{c+c1}{\PYZsh{} the fixed rate, 2.5\PYZpc{}}
-            \PY{l+m+mf}{0.025}\PY{p}{)}
+ois = OvernightIndexSwap(# the notional, one million
+                         1e6,
+                         # the list of product dates,
+                         # i.e. the start date then the payment dates
+                         [date(2020, 1, 1), date(2020, 4, 1),
+                          date(2020, 7, 1), date(2020, 10, 1),
+                          date(2021, 1, 1)],
+                         # the fixed rate, 2.5%
+                         0.025)
 
-\PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
-                      \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,}
-                       \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2022}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}\PY{p}{,}
-                      \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.98}\PY{p}{,} \PY{l+m+mf}{0.82}\PY{p}{]}\PY{p}{)}
+curve = DiscountCurve(date(2020, 1, 1),
+                      [date(2020, 1, 1), date(2021, 6, 1),
+                       date(2022, 1, 1)],
+                      [1.0, 0.98, 0.82])
 
-\PY{n}{ois}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{curve}\PY{p}{)}
-
+ois.npv(curve)
+\end{ipython}
+\begin{ioutput}
 105332.192377
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \section{Bootstrap Technique}\label{bootstrapping-technique}
 
@@ -231,23 +224,21 @@ commonly over chat. For convenience, however, Bloomberg provides a service which
 
 In the following we use a similarly created dataset (\href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/ois_quotes.csv}{\texttt{ois\_data.csv}}) to derive our discount curve; with the help of \texttt{pandas} the dataset can be inspected:
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{pandas}\PY{o}{,} \PY{n+nn}{datetime}
+\begin{ipython}
+import pandas, datetime
 
-\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{datetime}\PY{o}{.}\PY{n}{date}\PY{o}{.}\PY{n}{today}\PY{p}{(}\PY{p}{)}
-
-\PY{n}{mq} \PY{o}{=} \PY{n}{pandas}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ois\PYZus{}data.csv}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{mq}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}
-
+observation_date = datetime.date.today()
+mq = pandas.read_csv('ois_data.csv')
+mq.head()
+\end{ipython}
+\begin{ioutput}
  maturity   rate
 0       1 -0.350
 1       2 -0.347
 2       3 -0.348
 3       4 -0.350
 4       5 -0.350
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 \noindent
 Next the dataset could be converted into a dictionary or accessed directly from the \(\tt{DataFrame}\), it is just matter of taste.
 
@@ -257,18 +248,17 @@ operation and double check the units of rates and quotes. In
 this case for example quotes are expressed in percent so you need to
 multiply by 0.01 to use them. Another misleading detail to check is that 15 months quote is not the fifteenth entry in the \(\tt{DataFrame}\) (actually it is the twelfth).
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{ois} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,}
-                         \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{,} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{,}
-                          \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}\PY{p}{]}\PY{p}{,}
-                         \PY{n}{mq}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rate}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{12}\PY{p}{]}\PY{o}{*}\PY{l+m+mf}{0.01}\PY{p}{)}
+\begin{ipython}
+ois = OvernightIndexSwap(1e6,
+                         [date(2019, 10, 23), date(2020, 10, 23),
+                          date(2020, 1, 23)],
+                         mq['rate'].tolist()[12]*0.01)
 
-\PY{n}{ois}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}
-
+ois.payment_dates[-1]
+\end{ipython}
+\begin{ioutput}
 datetime.date(2020, 1, 23)
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 Clearly to use the \texttt{npv} method to calculate the OIS's NPV we need a discount curve with which to evaluate it and here comes to hand the bootstrapping technique !
 
@@ -361,20 +351,19 @@ In Figure~\ref{fig:fifth_year_rate} the last equation of the system in~\ref{eq:f
   \label{fig:fifth_year_rate}
 \end{figure}
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{brentq}
+\begin{ipython}
+from scipy.optimize import brentq
 
-\PY{k}{def} \PY{n+nf}{func}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{l+m+mi}{100} \PY{o}{\PYZhy{}} \PY{l+m+mi}{8}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{l+m+mf}{0.04}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mi}{8}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{l+m+mf}{0.0503}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2} \PY{o}{\PYZhy{}} \PY{l+m+mi}{8}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{l+m+mf}{0.0608}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{3} 
-               \PY{o}{\PYZhy{}} \PY{l+m+mi}{8}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{l+m+mf}{0.0719}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{4} \PY{o}{\PYZhy{}} \PY{l+m+mi}{108}\PY{o}{/}\PY{p}{(}\PY{l+m+mi}{1}\PY{o}{+}\PY{n}{x}\PY{p}{)}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{5}
-
-\PY{n}{a} \PY{o}{=} \PY{n}{brentq}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{0.10}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{5y rate: }\PY{l+s+si}{\PYZob{}:.4f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{a}\PY{p}{)}\PY{p}{)}
-
+def func(x):
+    return 100 - 8/(1+0.04) - 8/(1+0.0503)**2 - 8/(1+0.0608)**3
+               - 8/(1+0.0719)**4 - 108/(1+x)**5
+               
+a = brentq(func, 0, 0.10)
+print ("5y rate: {:.4f}".format(a))
+\end{ipython}
+\begin{ioutput}
 5y rate: 0.0836
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 The very same mechanism can be generalized and extended to other maturities to get a more detailed yield curve. In general terms the previous system becomes
 
@@ -461,33 +450,29 @@ S = 2\pi rh + 2\cdot(\pi r^2) = \cfrac{2\cdot 330}{r} + 2\cdot(\pi r^2)
 \end{equation}
 This is the objective function, and the parameter set (just one parameter in this case) is represented by \(\tt{x[0]}\) which is the can radius in cm. It is convenient to use a \texttt{list} also in this simple case since it can be generalized to more complex problems with larger number of parameters to minimize. 
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{pi}
+\begin{ipython}
+from math import pi
 
-\PY{k}{def} \PY{n+nf}{obj_func}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{l+m+mi}{2}\PY{o}{*}\PY{l+m+mi}{330}\PY{o}{/}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{+} \PY{l+m+mi}{2}\PY{o}{*}\PY{n}{pi}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{o}{*}\PY{l+m+mi}{2}
-\end{Verbatim}
-\end{codebox}
+def obj_func(x):
+    return 2*330/x[0] + 2*pi*x[0]**2
+\end{ipython}
 \noindent
 Set the limits to our unknown variable and its initial value:
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}
-\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{)}\PY{p}{]}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+x0 = [1]
+bounds = [(0.01, 100)]
+\end{ipython}
 \noindent
 Finally we run the minimization:
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{optimize} \PY{k}{import} \PY{n}{minimize}
+\begin{ipython}
+from scipy.optimize import minimize
 
-\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{obj_func}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{r}\PY{p}{)}
-
+r = minimize(obj_func, x0, bounds=bounds)
+print (r)
+\end{ipython}
+\begin{ioutput}
       fun: 264.356810914805
  hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
       jac: array([5.68434189e-06])
@@ -497,11 +482,10 @@ Finally we run the minimization:
    status: 0
   success: True
         x: array([3.7449385])
-    \end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \begin{curiosity}
-So to minimize the cost the company should produce cans with a radius of about 3.745~cm (or about 74~mm diameter). I suspect that Coke or other similar companies have done a similar calculation since the result is surprisingly close to that of real can. 
+So to minimize the cost the company should produce cans with a radius of about 3.745~cm (or about 74~mm diameter). It looks like Coke or other similar companies have done a similar calculation since the result is surprisingly close to that of a real can. 
 
 From \href{	https://www.ball.com/eu/solutions/markets-capabilities/capabilities/beverage-cans/standard-range
 }{here} it looks like a real can has a 66.3~mm diameter, a little smaller than our result but it was expected since the base is not flat.    
@@ -537,24 +521,21 @@ enclosed area \(A\) and the algorithm can only minimize; nevertheless the object
 to return the quantity \(-A\), so that minimizing its value, the real objective, $A$, is maximized. 
 Define length and width of the field respectively as \(\tt{x[0]}\) and \(\tt{x[1]}\) (items of the \texttt{list} \texttt{x}):
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{def} \PY{n+nf}{obj\PYZus{}func}\PY{p}{(}\PY{n}{x}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{o}{\PYZhy{}}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+def obj_func(x):
+    return -x[0]*x[1]
+\end{ipython}
 Then we can set the boundaries for length and width, their initial values (1~m each) and the other needed parameters:
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{]}
-\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{100}\PY{p}{)} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{x0}\PY{p}{)}\PY{p}{)}\PY{p}{]}
-\PY{n}{budget} \PY{o}{=} \PY{l+m+mi}{700}
-\PY{n}{side\PYZus{}cost} \PY{o}{=} \PY{l+m+mi}{10}
-\PY{n}{up\PYZus{}cost} \PY{o}{=} \PY{l+m+mi}{2}
-\PY{n}{down\PYZus{}cost} \PY{o}{=} \PY{l+m+mi}{7}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+x0 = [1, 1]
+bounds = [(0.01, 100) for _ in range(len(x0))]
+budget = 700
+side_cost = 10
+up_cost = 2
+down_cost = 7
+
+\end{ipython}
 
 Finally we have to impose the constraint on the budget. This is done by
 defining a function that computes the cost of the fence and
@@ -576,23 +557,21 @@ The constraint is then defined as
 \end{cases}
 \end{equation*}
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{def} \PY{n+nf}{cons}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{budget}\PY{p}{,} \PY{n}{up\PYZus{}cost}\PY{p}{,} \PY{n}{down\PYZus{}cost}\PY{p}{,} \PY{n}{side\PYZus{}cost}\PY{p}{)}\PY{p}{:}
-    \PY{k}{return} \PY{n}{budget} \PY{o}{\PYZhy{}} \PY{l+m+mi}{2}\PY{o}{*}\PY{n}{x}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{*}\PY{n}{side\PYZus{}cost} \PY{o}{\PYZhy{}} \PY{n}{x}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{o}{*}\PY{p}{(}\PY{n}{up\PYZus{}cost} \PY{o}{+} \PY{n}{down\PYZus{}cost}\PY{p}{)}
+\begin{ipython}
+def cons(x, budget, up_cost, down_cost, side_cost):
+    return budget - 2*x[0]*side_cost - x[1]*(up_cost + down_cost)
 
-\PY{n}{constraints} \PY{o}{=} \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{n}{cons}\PY{p}{,} 
-               \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{args}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{p}{(}\PY{n}{budget}\PY{p}{,} \PY{n}{up\PYZus{}cost}\PY{p}{,} \PY{n}{down\PYZus{}cost}\PY{p}{,} \PY{n}{side\PYZus{}cost}\PY{p}{)}\PY{p}{\PYZcb{}}
-\end{Verbatim}
-\end{codebox}
+constraints = {'type':'eq', 'fun':cons,
+               'args':(budget, up_cost, down_cost, side_cost)}
+\end{ipython}
 
 Now we can call the minimizer.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{obj\PYZus{}func}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{r}\PY{p}{)}
-
+\begin{ipython}
+r = minimize(obj_func, x0, bounds=bounds, constraints=constraints)
+print (r)
+\end{ipython}
+\begin{ioutput}
     fun: -680.5555555555482
     jac: array([-38.88889313, -17.5       ])
 message: 'Optimization terminated successfully'
@@ -602,8 +581,7 @@ message: 'Optimization terminated successfully'
  status: 0
 success: True
       x: array([17.49999818, 38.88889293])
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 So the field will come out 17.5~m long and 38.9~m wide for a total field area of 680.5~$\textrm{m}^2$.
 
@@ -623,14 +601,14 @@ This function is plotted in Fig.~\ref{fig:local_minima} in the range $[0, 2]$, a
 	\label{fig:local_minima}
 \end{figure}
 Let's try to find a minimum and set the initial value to $x=1.1$.
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.1}\PY{p}{]}
-\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{]}
-		
-\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{r}\PY{p}{)}
+\begin{ipython}
+x0 = [1.1]
+bounds = [(0.01, 20)]
+r = minimize(func, x0, bounds=bounds)
 
+print (r)
+\end{ipython}
+\begin{ioutput}
      fun: array([-1.00569871])
 hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
      jac: array([-4.4408921e-07])
@@ -640,19 +618,18 @@ hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
   status: 0
  success: True
        x: array([0.98865633])
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 The minimization worked perfectly and we found $x=0.98865633$ (i.e. the red point in Fig.~\ref{fig:local_minima}) but this is not the absolute minimum we were expecting to find. The problem arise since the algorithm has got stuck in a local minimum without any possibility to jump out from the well.
 
 If we repeat the minimization using as initial value $0.5$ instead
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{0.5}\PY{p}{]}
-\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mi}{20}\PY{p}{)}\PY{p}{]}
-		
-\PY{n}{r} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{r}\PY{p}{)}
+\begin{ipython}
+x0 = [0.5]
+bounds = [(0.01, 20)]
+r = minimize(func, x0, bounds=bounds)
 
+print (r)
+\end{ipython}
+\begin{ioutput}
      fun: array([-3.17151711])
 hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
      jac: array([9.76996262e-07])
@@ -662,8 +639,7 @@ hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
   status: 0
  success: True
        x: array([0.29691798])
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 Now clearly the algorithm found the absolute minimum in $x=0.29691798$ (i.e. the green point in Fig.~\ref{fig:local_minima}) because there was no chance to find a local minimum during the iterations.
 
 This is just an example of what could happen when minimizing a function.
@@ -695,25 +671,23 @@ in \texttt{python}.
 
 First the swaps has to be created according to all the available market quotes (also the pillar dates of the unknown discount curve)
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{generate\PYZus{}swap\PYZus{}dates}
+\begin{ipython}
+from finmarkets import generate_swap_dates
 
-\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2019}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}
-\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{p}{[}\PY{n}{observation\PYZus{}date}\PY{p}{]}
-\PY{n}{swaps} \PY{o}{=} \PY{p}{[}\PY{p}{]} 
+observation_date = date(2019, 10, 23)
+pillar_dates = [observation_date]
+swaps = []
 
-\PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{df}\PY{p}{)}\PY{p}{)}\PY{p}{:}
-    \PY{n}{swap} \PY{o}{=} \PY{n}{OvernightIndexSwap}\PY{p}{(}\PY{l+m+mf}{1e6}\PY{p}{,}
-                    \PY{n}{generate\PYZus{}swap\PYZus{}dates}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,}  
-                                        \PY{n}{mq}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{maturity}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}\PY{p}{,}
-                    \PY{l+m+mf}{0.01} \PY{o}{*} \PY{n}{mq}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{rate}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{n}{i}\PY{p}{]}\PY{p}{)}
-    \PY{n}{swaps}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{swap}\PY{p}{)}
-    \PY{n}{pillar\PYZus{}dates}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{swap}\PY{o}{.}\PY{n}{payment\PYZus{}dates}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}
+for i in range(len(df)):
+    swap = OvernightIndexSwap(1e6,
+             generate_swap_dates(observation_date,
+             mq['maturity'].tolist()[i]),
+             0.01 * mq['rate'].tolist()[i])
+    swaps.append(swap)
 
-\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{n+nb}{sorted}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+pillar_dates.append(swap.payment_dates[-1])
+pillar_dates = sorted(pillar_dates)
+\end{ipython}
 
 Then implement step by step the bootstrapping as described in Section~\ref{sec:bootstrap_as_minimization}
 
@@ -722,20 +696,17 @@ Then implement step by step the bootstrapping as described in Section~\ref{sec:b
 \item
   define the objective function: the sum of the squared NPVs of the OIS
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n}{np}
+\begin{ipython}
+import numpy as np
 
-\PY{k}{def} \PY{n+nf}{objective\PYZus{}function}\PY{p}{(}\PY{n}{x, obs\PYZus{}date, pillars}\PY{p}{)}\PY{p}{:}
-    \PY{n}{x = np.insert(x, 0, 1)}
-    \PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{obs\PYZus{}date}\PY{p}{,} \PY{n}{pillars}\PY{p}{,} \PY{n}{x}\PY{p}{)}
-    
-    \PY{n}{sum\PYZus{}sq} \PY{o}{=} \PY{l+m+mf}{0.0}
-    \PY{k}{for} \PY{n}{swap} \PY{o+ow}{in} \PY{n}{swaps}\PY{p}{:}
-        \PY{n}{sum\PYZus{}sq} \PY{o}{+}\PY{o}{=} \PY{n}{swap}\PY{o}{.}\PY{n}{npv}\PY{p}{(}\PY{n}{curve}\PY{p}{)} \PY{o}{*}\PY{o}{*} \PY{l+m+mi}{2}
-    \PY{k}{return} \PY{n}{sum\PYZus{}sq}
-\end{Verbatim}
-\end{codebox}
+def objective_function(x, obs_date, pillars):
+    x = np.insert(x, 0, 1)
+    curve = DiscountCurve(obs_date, pillars, x)
+    sum_sq = 0.0
+    for swap in swaps:
+        sum_sq += swap.npv(curve) ** 2
+    return sum_sq
+\end{ipython}
 
 \item
   set the initial value of the discount factors (\(x_i^0\)) to 1 with a
@@ -743,28 +714,24 @@ Then implement step by step the bootstrapping as described in Section~\ref{sec:b
   in the list since it is fixed to 1 but is added explicitly in the objective function
   for the calculation of the NPV's (see \texttt{insert} command)
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{x0} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)-1}\PY{p}{)}\PY{p}{]}
-\PY{n}{bounds} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{l+m+mf}{0.01}\PY{p}{,} \PY{l+m+mf}{10.0}\PY{p}{)} \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{pillar\PYZus{}dates}\PY{p}{)-1}\PY{p}{)}\PY{p}{]}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+x0 = [1.0 for i in range(len(pillar_dates)-1)]
+bounds = [(0.01, 10.0) for i in range(len(pillar_dates)-1)]
+\end{ipython}
 
 \item
   finally we can launch the minimizer to find the discount factors
   (\(\mathbf{x}\))
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n}{result} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{objective\PYZus{}function}\PY{p}{,} \PY{n}{x0}\PY{p}{,} \PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,}
-                  \PY{n}{args}\PY{o}{=}\PY{n}{(observation_date, pillar_dates)}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{result}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+\begin{ipython}
+result = minimize(objective_function, x0, bounds=bounds,
+                  args=(observation_date, pillar_dates))
 
-\begin{Verbatim}[commandchars=\\\{\}]
+print (result)
+\end{ipython}
+\begin{ioutput}
       fun: 0.000819919032900304
- hess\_inv: <34x34 LbfgsInvHessProduct with dtype=float64>
+ hess_inv: <34x34 LbfgsInvHessProduct with dtype=float64>
       jac: array([ 6.58948735e+05, -1.58720803e+01, -6.53143264e+01,
 -1.03323232e+02,
        -1.26050260e+02, -1.31748898e+02, -1.20374599e+02, -9.15399651e+01,
@@ -787,7 +754,7 @@ Then implement step by step the bootstrapping as described in Section~\ref{sec:b
                   1.00031629, 0.99911234, 0.99790839, 0.99675545, 0.99567393,
                   0.99470465, 0.9938476 , 0.99189884, 0.99021534, 0.98959296,
                   0.98930728, 0.98917464, 0.98957256, 0.98982763])
-\end{Verbatim}
+\end{ioutput}
 \end{itemize}
 
 Printing the result gives us the a lot of information about the minimisation just performed, the most useful are:
@@ -800,15 +767,14 @@ Printing the result gives us the a lot of information about the minimisation jus
 
 Another useful check to perform in order to understand if everything went fine, is the comparison of the objective function with the initial guessed parameters and at the end of the minimisation.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Initial objective function value }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{objective\PYZus{}function}\PY{p}{(}\PY{n}{x0}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Final objective function value }\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{objective\PYZus{}function}\PY{p}{(}\PY{n}{result}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}
-	
+\begin{ipython}
+print ("Initial objective function value ", objective_function(x0))
+print ("Final objective function value ", objective_function(result.x))
+\end{ipython}
+\begin{ioutput}
 Initial objective function value  26.27213544937082
 Final objective function value  5.664309920943246e-11
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 The objective function at the end of the minimisation is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied, the initial value was around $26$ and now it is $10^{-11}$ so 13 orders of magnitude smaller. This means that with the derived discount curve the NPV's of our OIS won't be identically 0 but so small that can be regarded as they would.
 
 It can be very useful to also look at some diagnostic plots to check if the minimization was successful. Figure~\ref{fig:minimization_diagnostic} reports on the left the objective function value as a function of discount factor $(x_0)$; clearly we have found a minimum (the orange point represent $x_0$ value at the end of the minimization). On the right instead, the value of the objective function at each iteration is shown, its value is decreasing dramatically (notice that the $y$ axis is drawn in log scale).
@@ -824,21 +790,20 @@ It can be very useful to also look at some diagnostic plots to check if the mini
 Finally we can create the discount curve implied by the market quotes of
 our swaps (see Fig.~\ref{fig:discount_curve}) and try to compute some implied rates.
 
-\begin{codebox}
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{math} \PY{k}{import} \PY{n}{log}
-	
-\PY{n}{dfs} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{insert}\PY{p}{(}\PY{n}{result}\PY{o}{.}\PY{n}{x}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{dfs}\PY{p}{)}
-	
-\PY{n}{d} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2059}\PY{p}{,} \PY{l+m+mi}{11}\PY{p}{,} \PY{l+m+mi}{23}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{40y df: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d}\PY{p}{)}\PY{p}{)}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{40y rate: }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{n}{log}\PY{p}{(}\PY{n}{curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d}\PY{p}{)}\PY{p}{)} \PY{o}{/} \PY{l+m+mi}{40}\PY{p}{)}\PY{p}{)}             
-	
+\begin{ipython}
+from math import log
+
+dfs = np.insert(result.x, 0, 1)
+curve = DiscountCurve(observation_date, pillar_dates, dfs)
+d = date(2059, 11, 23)
+
+print ("40y df: {}".format(curve.df(d)))
+print ("40y rate: {}".format(-log(curve.df(d)) / 40))
+\end{ipython}
+\begin{ioutput}
 40y df: 0.6454865298509954
 40y rate: 0.01094377341721375
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \begin{figure}[htb]
 	\centering
