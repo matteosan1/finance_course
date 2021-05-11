@@ -1,40 +1,22 @@
 \chapter{Time Series}\label{time-series}
 
-A time series is a sequence where a stochastic process is recorded over
-regular time intervals.
-Depending on the frequency, a time series can be of yearly (annual
-budget), quarterly (expenses), monthly (air traffic), weekly (sales
-qty), daily (weather), hourly (stocks price), minutes (inbound calls in
-a call canter) or even seconds wise (web traffic).
+A time series is a sequence where a stochastic process is recorded over regular time intervals. Depending on the frequency, a time series can be of yearly (annual budget), quarterly (expenses), monthly (air traffic), weekly (sales qty), daily (weather), hourly (stocks price), minutes (inbound calls in a call canter) or even seconds wise (web traffic).
 
-It is very important to learn how to analyze a time series because it is
-the preparatory step before you develop a forecast of the series.
-Besides, time series forecasting has enormous commercial significance
-because stuff that is important to a business like demand and sales,
-number of visitors to a website, stock price etc are essentially time
-series data. Time series analysis involves understanding various aspects
-about the inherent nature of the series so that you are better informed
-to create meaningful and accurate forecasts.
+It is very important to learn how to analyze a time series because it is the preparatory step before you develop a forecast of the series. Besides, time series forecasting has enormous commercial significance because stuff that is important to a business like demand and sales, number of visitors to a website, stock price etc are essentially time series data. Time series analysis involves understanding various aspects about the inherent nature of the series so that you are better informed to create meaningful and accurate forecasts.
 
 \section{Visualizing Time Series}\label{visualizing-time-series}
 
-The data for a time series typically is stored in \texttt{.csv} files or other
-spreadsheet formats and contains two columns: the date and the measured
-value. Sometimes it may contains one or more related variables that are
-measured for the same time periods.
+The data for a time series typically is stored in \texttt{.csv} files or other spreadsheet formats and contains two columns: the date and the measured value. Sometimes it may contains one or more related variables that are measured for the same time periods.
 
-Clearly the best instrument to deal with time series is the
-\(\tt{pandas}\) package. In the following we are going to use an example
-data-set counting the total monthly scripts for pharmaceutical products
-fighting diabet, \href{here}{a10.csv}.
+Clearly the best instrument to deal with time series is the \(\tt{pandas}\) package. In the following we are going to use an example data-set counting the total monthly scripts for pharmaceutical products fighting diabet, \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/a10.csv}{a10.csv}.
 
-\begin{codebox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{pandas} \PY{k}{as} \PY{n+nn}{pd}
+\begin{ipython}
+import pandas as pd
 
-\PY{n}{df} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}csv}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{a10.csv}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}  \PY{n}{parse\PYZus{}dates}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{date}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{n}{index\PYZus{}col}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{date}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n}{df}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}
-
+df = pd.read_csv('a10.csv', parse_dates=['date'], index_col='date')
+print (df.head())
+\end{ipython}
+\begin{ioutput}
                value
 date
 1991-07-01  3.526591
@@ -42,8 +24,7 @@ date
 1991-09-01  3.252221
 1991-10-01  3.611003
 1991-11-01  3.565869
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
         
 %\begin{codebox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 %\begin{Verbatim}[commandchars=\\\{\}]
@@ -72,16 +53,14 @@ Since its a monthly time series and follows a certain repetitive pattern
 every year, you can plot each year as a separate line in the same plot.
 This lets you compare the year wise patterns side-by-side.
 
-\begin{codebox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k}{as} \PY{n+nn}{np}
-\PY{n}{df}\PY{o}{.}\PY{n}{reset\PYZus{}index}\PY{p}{(}\PY{n}{inplace}\PY{o}{=}\PY{k+kc}{True}\PY{p}{)}
+\begin{ipython}
+import numpy as np
 
-\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{year}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{p}{[}\PY{n}{d}\PY{o}{.}\PY{n}{year} \PY{k}{for} \PY{n}{d} \PY{o+ow}{in} \PY{n}{df}\PY{o}{.}\PY{n}{date}\PY{p}{]}
-\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{month}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]} \PY{o}{=} \PY{p}{[}\PY{n}{d}\PY{o}{.}\PY{n}{strftime}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{\PYZpc{}}\PY{l+s+s1}{b}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)} \PY{k}{for} \PY{n}{d} \PY{o+ow}{in} \PY{n}{df}\PY{o}{.}\PY{n}{date}\PY{p}{]}
-\PY{n}{years} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{year}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{unique}\PY{p}{(}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+df.reset_index(inplace=True)
+df['year'] = [d.year for d in df.date]
+df['month'] = [d.strftime('%b') for d in df.date]
+years = df['year'].unique()
+\end{ipython}
 
 \begin{figure}[htb]
 	\centering
@@ -192,20 +171,18 @@ AR(1) is a first-order autoregression model.
 
 This kind of model can be easily coded in \(\tt{python}\). Figure~\ref{fig:ar2_example} shows an example of AR(2) time series.
 
-\begin{codebox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k}{def} \PY{n+nf}{AR}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{phi}\PY{p}{)}\PY{p}{:}
-    \PY{n}{val} \PY{o}{=} \PY{n}{phi}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
-    \PY{k}{for} \PY{n}{i}\PY{p}{,} \PY{n}{b} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{phi}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{:}\PY{p}{]}\PY{p}{)}\PY{p}{:}
-        \PY{n}{val} \PY{o}{+}\PY{o}{=} \PY{n}{b} \PY{o}{*} \PY{n}{x}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{p}{(}\PY{n}{i}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
-    \PY{k}{return} \PY{n}{val} \PY{o}{+} \PY{n}{np}\PY{o}{.}\PY{n}{random}\PY{o}{.}\PY{n}{normal}\PY{p}{(}\PY{p}{)}
+\begin{ipython}
+def AR(x, phi):
+    val = phi[0]
+    for i, b in enumerate(phi[1:]):
+        val += b * x[-(i+1)]
+    return val + np.random.normal()
 
-\PY{n}{phi} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{0.5}\PY{p}{,} \PY{o}{\PYZhy{}}\PY{l+m+mf}{0.7}\PY{p}{]}
-\PY{n}{x} \PY{o}{=} \PY{p}{[}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{]}
-\PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{100}\PY{p}{)}\PY{p}{:}
-    \PY{n}{x}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{AR}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{phi}\PY{p}{)}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+phi = [0, 0.5, -0.7]
+x = [0, 0]
+for _ in range(100):
+    x.append(AR(x, phi))
+\end{ipython}
 
 \begin{figure}[htb]
 	\centering
@@ -216,29 +193,16 @@ This kind of model can be easily coded in \(\tt{python}\). Figure~\ref{fig:ar2_e
    
 \subsection{Moving Average (MA)}\label{moving-average-ma}
 
-The moving average (MA) is another common approach for modeling
-univariate time series. It models the next step in the sequence as a
-linear function of the residual errors from a mean process at prior time
-steps
+The moving average (MA) is another common approach for modeling univariate time series. It models the next step in the sequence as a linear function of the residual errors from a mean process at prior time steps
 
 \begin{equation}
 Y_t = \mu + \theta_1 \epsilon_{t-1} + \theta_2 \epsilon_{t-2} + \ldots + \theta_q \epsilon_{t-q} + \epsilon_t
 \end{equation}
-where \(\mu\) is the mean of the series, the
-\(\theta_1, \ldots, \theta_q\) are the parameters of the model and the
-\(\epsilon_t, \epsilon_{t−1},..., \epsilon_{t−q}\) are the error terms.
+where \(\mu\) is the mean of the series, the \(\theta_1, \ldots, \theta_q\) are the parameters of the model and the \(\epsilon_t, \epsilon_{t−1},..., \epsilon_{t−q}\) are the error terms.
 
-Thus, a moving-average model is conceptually a linear regression of the
-current value of the series against current and previous (observed)
-error terms. Those terms at each point are assumed to be mutually
-independent and to come from the same distribution, typically a normal
-distribution, with zero mean and constant variance.
-Beware that a moving average model is different from calculating
-the moving average of the time series.
+Thus, a moving-average model is conceptually a linear regression of the current value of the series against current and previous (observed) error terms. Those terms at each point are assumed to be mutually independent and to come from the same distribution, typically a normal distribution, with zero mean and constant variance. Beware that a moving average model is different from calculating the moving average of the time series.
 
-The error terms refer to the errors of the autoregressive models of
-the respective lags. The errors \(\epsilon_t\) and \(\epsilon_{t-1}\) are
-determined from the following equations:
+The error terms refer to the errors of the autoregressive models of the respective lags. The errors \(\epsilon_t\) and \(\epsilon_{t-1}\) are determined from the following equations:
 
 \begin{equation}
 \begin{gathered}
@@ -247,17 +211,13 @@ Y_{t-1} = \phi_2 Y_{t-2} + \phi_3 Y_{t-3} + \ldots + \phi_0 Y_{0} + \epsilon_{t-
 \end{gathered}
 \end{equation}
 
-The notation for the model involves specifying the order of the model $q$
-as a parameter as in MA($q$). For example, MA(1) is a
-first-order moving average model.
+The notation for the model involves specifying the order of the model $q$ as a parameter as in MA($q$). For example, MA(1) is a
+first-order moving average model. 
 
 \section{Stationary and Non-Stationary Time Series}
 \label{stationary-and-non-stationary-time-series}
 
-A stationary series is one where the values of the series is not a
-function of time. That is, the statistical properties of the series like
-mean, variance and autocorrelation are constant over time. A stationary
-time series is lacking of seasonal effects too.
+A stationary series is one where the values of the series is not a function of time. That is, the statistical properties of the series like mean, variance and autocorrelation are constant over time. A stationary time series is lacking of seasonal effects too.
 
 %\begin{codebox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 %\begin{Verbatim}[commandchars=\\\{\}]
@@ -293,8 +253,7 @@ time series is lacking of seasonal effects too.
 	\label{fig:stationary_non_stationary}
 \end{figure}
         
-MA series are always stationary since both mean and variance are costant
-in time. Indeed for the mean we have that
+MA series are always stationary since both mean and variance are constant in time. Indeed for the mean we have that
 
 \begin{equation}
 \mathbb{E}(\textrm{MA}(q)) = \mu + \sum_{q}\theta_{t-q}\mathbb{E}(\epsilon_{t-q}) = \mu
@@ -305,15 +264,13 @@ all independent identical distributed variable with constant variance so (the va
 \textrm{var(MA(}q)) = \sigma^2 \sum_{q}\theta_{t-q}
 \end{equation}
 
-Contrary AR series are not always stationary. Consider for example an
-AR(1) process which is given by:
+Contrary AR series are not always stationary. Consider for example an AR(1) process which is given by:
 
 \begin{equation} 
 Y_t = c + \phi_1 Y_{t−1} + \epsilon_t
 \end{equation}
 where \(\epsilon_{t}\) is a
-white noise process with zero mean and constant variance
-\(\sigma_{\epsilon}^2\). If we recurse back in time a couple of time we
+white noise process with zero mean and constant variance \(\sigma_{\epsilon}^2\). If we recurse back in time a couple of time we
 have
 
 \begin{equation}
@@ -328,15 +285,13 @@ Now imagine to repeat the process \(j\) times we have
 Y_t = c[\sum_{s=0}^j \phi_1^s Y_{t−1}] + \phi_1^{j+1} Y_{t-j-1} + \sum_{s=0}^j \phi_1^s \epsilon_{t-s}
 \end{equation}
 
-In the limit $j\rightarrow\infty$ (infinite series), the first sum becomes a
-\emph{geometric progressions} which converge to
+In the limit $j\rightarrow\infty$ (infinite series), the first sum becomes a \emph{geometric progressions} which converge to
 
 \begin{equation}
 c[\sum_{s=0}^j \phi_1^s Y_{t−1}] \underset{j\rightarrow\infty}{=} \cfrac{c}{1-\phi_1}
 \end{equation}
 
-The second term tends to 0 if \(|\phi_1| < 1\) otherwise it is
-infinite. So the expectation becomes:
+The second term tends to 0 if \(|\phi_1| < 1\) otherwise it is infinite. So the expectation becomes:
 
 \begin{equation}
 \mathbb{E}(Y_t) =
@@ -345,27 +300,19 @@ infinite. So the expectation becomes:
 \infty + \mathbb{E}(\sum_{s=0}^{\infty} \phi_1^s \epsilon_{t-s})\quad (\textrm{with } |\phi_1| >= 1)
 \end{cases}
 \end{equation}
-the last term is zero in the first case since \(\epsilon_t\) is a
-zero mean distributed random variable. With similar calculation we can
-find that the variance is given by
+the last term is zero in the first case since \(\epsilon_t\) is a zero mean distributed random variable. With similar calculation we can find that the variance is given by
 
 \begin{equation}
 \textrm{var}(Y_t) = \mathbb{E}(Y_t^2) − \frac{c^2}{(1-\phi_1)^2} = \frac{\sigma_{\epsilon}^2}{1-\phi_1^2}
 \end{equation}
-where \(\sigma_{\epsilon}\) is the standard deviation of the white noise
-process. Hence we can conclude that the series is stationary if
-\(|\phi_1| < 1\).
+where \(\sigma_{\epsilon}\) is the standard deviation of the white noise process. Hence we can conclude that the series is stationary if \(|\phi_1| < 1\).
 
 \subsection{White Noise}\label{white-noise}
 
-White noise is particular example of stationary series. Its mean and
-variance does not change over time, the peculiarity is that the mean is
-constant at 0.
+White noise is particular example of stationary series. Its mean and variance does not change over time, the peculiarity is that the mean is constant at 0.
 
-If you consider the sound signals in an FM radio as a time series, the
-blank sound you hear between the channels is white noise.
-Mathematically, a sequence of completely random numbers with mean zero
-is a white noise.
+If you consider the sound signals in an FM radio as a time series, the blank sound you hear between the channels is white noise.
+Mathematically, a sequence of completely random numbers with mean zero is a white noise.
 
 \begin{figure}[htb]
 	\centering
@@ -377,9 +324,7 @@ is a white noise.
 \subsection{Making a Non Stationary Series Stationary}
 \label{making-a-non-stationary-series-stationary}
 
-It is possible to make nearly any time series stationary by applying a
-suitable transformation. This is useful since most statistical
-forecasting methods are designed to work on a stationary time series.
+It is possible to make nearly any time series stationary by applying a suitable transformation. This is useful since most statistical forecasting methods are designed to work on a stationary time series.
 
 You can make series stationary by:
 
@@ -395,15 +340,10 @@ You can make series stationary by:
   combination of the above.
 \end{itemize}
 
-The most common and convenient method to stationarize the series (and
-the only one we are going to look at) is by differencing it 
-until becomes approximately stationary.
+The most common and convenient method to stationarize the series (and the only one we are going to look at) is by differencing it until becomes approximately stationary.
 
-If \(Y_t\) is the value at time \(t\), then the first difference is
-\(Y = Y_t - Y_{t-1}\). In simpler terms, it means
-nothing but subtracting the next value by the current value. If the
-first difference doesn't make a series stationary, you can go for the
-second differencing. And so on.
+If \(Y_t\) is the value at time \(t\), then the first difference is \(Y = Y_t - Y_{t-1}\). In simpler terms, it means
+nothing but subtracting the next value by the current value. If the first difference doesn't make a series stationary, you can go for the second differencing. And so on.
 
 For example, consider the following series: $\{1, 5, 2, 12, 20\}$.
 First differencing gives: $\{5-1, 2-5, 12-2, 20-12\} = \{4, -3, 10, 8\}$,
@@ -461,16 +401,9 @@ second differencing gives: $\{-3-4, -10-3, 8-10\} = \{-7, -13, -2\}$.
     
 \subsection{Testing Stationarity}\label{testing-stationarity}
 
-The stationarity of a series sometimes can be established by simply
-looking at its plot. Another method could be to split the series into 2
-or more contiguous parts and computing the summary statistics like the
-mean and variance. If they are quite different then the series is not
-likely to be stationary.
+The stationarity of a series sometimes can be established by simply looking at its plot. Another method could be to split the series into 2 or more contiguous parts and computing the summary statistics like the mean and variance. If they are quite different then the series is not likely to be stationary.
 
-Both these two techniques are not rigorous anyway, so a quantitative
-method to determine if a given series is stationary or not is needed.
-This can be done using statistical tests called \emph{unit root tests}.
-There are multiple implementations of such tests like:
+Both these two techniques are not rigorous anyway, so a quantitative method to determine if a given series is stationary or not is needed. This can be done using statistical tests called \emph{unit root tests}. There are multiple implementations of such tests like:
 
 \begin{itemize}
 \tightlist
@@ -482,70 +415,37 @@ There are multiple implementations of such tests like:
   Philips Perron test (PP Test)
 \end{itemize}
 
-In the next Section we will focus on the ADF test, but before we discuss
-briefly hypothesis testing in general.
+In the next Section we will focus on the ADF test, but before we discuss briefly hypothesis testing in general.
 
 \subsection{Hypothesis Testing}\label{hypothesis-testing}
 
-All the tests mentioned above are statistical
-significance test. That means, there is a hypothesis testing involved
-with a null and an alternate hypothesis and as a result a test statistic
-is computed and the corresponding p-values get reported.
-It is from those (test statistic and the p-value) that an inference as to whether a given series is stationary or not can be made.
+All the tests mentioned above are statistical significance test. That means, there is a hypothesis testing involved with a null and an alternate hypothesis and as a result a test statistic is computed and the corresponding p-values get reported. It is from those (test statistic and the p-value) that an inference as to whether a given series is stationary or not can be made.
 
-Let's first describe hypothesis testing in general starting
-with a simple example: imagine that you and a friend of yours play
+Let's first describe hypothesis testing in general starting with a simple example: imagine that you and a friend of yours play
 a game. If a coin lands on heads, you win, if it lands on tails he wins.
 
-Let's say the first two coin tosses landed on tails, meaning your friend
-won twice. Should you be worried that he's using a rigged coin ? Well,
-the probability of the coin landing on tails two times in a row is 25\%
-($0.5\cdot 0.5$) which is not unlikely. 
+Let's say the first two coin tosses landed on tails, meaning your friend won twice. Should you be worried that he's using a rigged coin ? Well, the probability of the coin landing on tails two times in a row is 25\% ($0.5\cdot 0.5$) which is not unlikely. 
 
-What if the coin landed on tails six times in a row ? 
-The probability of that occurring is approximately
-1.56\% (\(0.5^6\)), which is highly unlikely. At this point, it would be
-fair to assume that the coin is rigged. Typically, one would set a
-threshold to determine if an event occurred by chance or
-not (this threshold is usually referred to as \(\alpha\))
+What if the coin landed on tails six times in a row ? The probability of that occurring is approximately 1.56\% (\(0.5^6\)), which is highly unlikely. At this point, it would be fair to assume that the coin is rigged. Typically, one would set a threshold to determine if an event occurred by chance or not (this threshold is usually referred to as \(\alpha\))
 
 To better understand hypothesis testing, let's describe some terminology:
 
 \begin{itemize}
 \tightlist
 \item
-  null hypothesis: the hypothesis that there is no significant
-  difference between specified samples, any observed difference being
-  due to sampling or experimental error. In our example is that the coin
-  is a fair coin and that the observations are purely from chance;
+  null hypothesis: the hypothesis that there is no significant difference between specified samples, any observed difference being   due to sampling or experimental error. In our example is that the coin is a fair coin and that the observations are purely from chance; 
 \item
-  alternative hypothesis: the hypothesis that sample observations are
-  influenced by some non-random cause. The alternative hypothesis would
-  then be that the coin is not fair, and thus, the observations did not
-  happen by chance;
+  alternative hypothesis: the hypothesis that sample observations are influenced by some non-random cause. The alternative hypothesis would then be that the coin is not fair, and thus, the observations did not happen by chance;
 \item
-  p-value: the probability of obtaining the observed results of a test,
-  assuming that the null hypothesis is correct (i.e. a smaller p-value
-  means that there is stronger evidence in favor of the alternative
-  hypothesis). The p-value in the scenario of flipping tails 2 times in
-  a row is 25\% and 6 times in a row is 1.56\%;
+  p-value: the probability of obtaining the observed results of a test, assuming that the null hypothesis is correct (i.e. a smaller p-value means that there is stronger evidence in favor of the alternative hypothesis). The p-value in the scenario of flipping tails 2 times in a row is 25\% and 6 times in a row is 1.56\%;
 \item
-  \(\alpha\): the significance level; the probability of rejecting the
-  null hypothesis when it is true (also known as type 1 error). The
-  \(\alpha\) or level of significance usually is set to 5\%.
+  \(\alpha\): the significance level; the probability of rejecting the null hypothesis when it is true (also known as type 1 error). The \(\alpha\) or level of significance usually is set to 5\%.
 \end{itemize}
 
-The main rule in determining whether you reject the null hypothesis is
-quite simple: \textbf{if the p-value is greater than \(\alpha\), do not
-reject the null}. In the case of flipping tails 2 times in a row, we
-would not reject the null since \(25\% > 5\%\). However, in the case of
-flipping tails 6 times in a row, we would reject the null since
-\(1.56\% < 5\%\).
+The main rule in determining whether you reject the null hypothesis is quite simple: \textbf{if the p-value is greater than \(\alpha\), do not reject the null}. In the case of flipping tails 2 times in a row, we would not reject the null since \(25\% > 5\%\). However, in the case of flipping tails 6 times in a row, we would reject the null since \(1.56\% < 5\%\).
 
-These kind of tests is used to determine how likely or unlikely a
-hypothesis is for a given sample of data. The last part of the
-statement, \emph{for a given sample of data}, is key because very often
-you won't be able to get data that represents the entire population.
+These kind of tests is used to determine how likely or unlikely a hypothesis is for a given sample of data. The last part of the
+statement, \emph{for a given sample of data}, is key because very often you won't be able to get data that represents the entire population.
 
 Here are the general steps to perform a hypothesis test:
 
@@ -554,31 +454,24 @@ Here are the general steps to perform a hypothesis test:
 \item
   state your null and alternative hypotheses (they have to be complementary);
 \item
-  set your significance level, \(\alpha\). Its value depends
-  on the situation and how severe it is to committing a type 1 and/or 2 error (wrongly reject the null or wrongly accept the null respectively);
+  set your significance level, \(\alpha\). Its value depends on the situation and how severe it is to committing a type 1 and/or 2 error (wrongly reject the null or wrongly accept the null respectively);
 \item
   collect data and calculate sample statistics;
 \item
-  calculate the p-value given the sample statistics. Most likely this
-  will be done through a t-score or z-score;
+  calculate the p-value given the sample statistics. Most likely this will be done through a t-score or z-score;
 \item
   reject or do not reject the null hypothesis.
 \end{itemize}
 
 \subsubsection{t-Score, z-Score}\label{t-score-z-score}
 
-Z-score and t-score are both used in hypothesis testing. The first one
-is calculated using the formula 
+Z-score and t-score are both used in hypothesis testing. The first one is calculated using the formula 
 \begin{equation}
 z = \frac{X-\mu}{\sigma}
 \end{equation} 
-where \(\sigma\) is the population standard deviation and \(\mu\) is the
-population mean. From the definition it is clear that this score can be
-used when the standard deviation of the population is known. Furthermore
-it is recommended to have a sample size of at least 30.
+where \(\sigma\) is the population standard deviation and \(\mu\) is the population mean. From the definition it is clear that this score can be used when the standard deviation of the population is known. Furthermore it is recommended to have a sample size of at least 30.
 
-Conversely t-scores are used when you don't know the population standard
-deviation; and you can only make an estimate by using your sample:
+Conversely t-scores are used when you don't know the population standard deviation; and you can only make an estimate by using your sample:
 \begin{equation}
 t = \frac{X - \mu}{s/\sqrt{n}}
 \end{equation} 
@@ -586,19 +479,14 @@ where \(s\) is the standard deviation of the sample and \(n\) the sample size.
 
 \subsection{Unit Root Test}\label{unit-root-test}
 
-Unit root is a characteristic of a time series that makes it
-non-stationary. Technically speaking, when 
-a time series is modeled according to an autoregressive model 
+Unit root is a characteristic of a time series that makes it non-stationary. Technically speaking, when a time series is modeled according to an autoregressive model 
 
 \begin{equation}
 Y_t = c + \phi_1 Y_{t-1} + \epsilon_t
 \end{equation} 
 a unit root is said to exist when the value \(\phi_1 = 1\).
 
-As we have seen this is equivalent to say that the time series is
-non-stationary (see Section~\ref{stationary-and-non-stationary-time-series}) and more generally, 
-the number of unit roots contained in the series corresponds to 
-the number of differencing operations required to make the series stationary.
+As we have seen this is equivalent to say that the time series is non-stationary (see  Section~\ref{stationary-and-non-stationary-time-series}) and more generally, the number of unit roots contained in the series corresponds to the number of differencing operations required to make the series stationary.
 
 \subsubsection{Dickey-Fuller Test}\label{dickey-fuller-test}
 
@@ -607,56 +495,41 @@ Imagine a simple AR(1) model
 \begin{equation}
 Y_t = \phi Y_{t − 1} + \epsilon_t
 \end{equation}
-where \(Y_t\) is the variable of
-interest, \(t\) is the time index and \(\epsilon_t\) is the error term.
-A unit root is present if \(\phi = 1\) and, as we have already seen, the
-model would be non-stationary in this case.
+where \(Y_t\) is the variable of interest, \(t\) is the time index and \(\epsilon_t\) is the error term. A unit root is present if \(\phi = 1\) and, as we have already seen, the model would be non-stationary in this case.
 
 \begin{equation*}
 \textrm{null hypothesis (H0)}:= \phi =1
 \end{equation*}
 
-The Dickey-Fuller test consists of modeling the first
-difference series with an autoregressive model
+The Dickey-Fuller test consists of modeling the first difference series with an autoregressive model
 
 \begin{equation}
 \Delta Y_t = (\phi − 1) Y_{t − 1} + \epsilon_t = \delta Y_{t − 1} + \epsilon_t
 \end{equation}
-where \(\Delta\) represents the first difference. Once this model has
-been estimated, testing for a unit root is equivalent to test for
-\(\delta = 0\). If the null hypothesis is \textbf{not} rejected, the series is
-taken to be \textbf{non-stationary}.
+where \(\Delta\) represents the first difference. Once this model has been estimated, testing for a unit root is equivalent to test for \(\delta = 0\). If the null hypothesis is \textbf{not} rejected, the series is taken to be \textbf{non-stationary}.
 
-The Augmented Dickey-Fuller test is an \emph{augmented} version of the
-previous test. It expands the Dickey-Fuller equation
+The Augmented Dickey-Fuller test is an \emph{augmented} version of the previous test. It expands the Dickey-Fuller equation
 to include higher order regressive processes in the model
 
 \[\Delta Y_t = \delta Y_{t-1} + \delta_1 \Delta Y_{t-1} + \cdots + \delta_{p-1} \Delta Y_{t-p+1} + \epsilon_t\]
 
-Notice that only more differencing terms have been added, while the
-rest of the equation remains the same, the null hypothesis
-is unchanged too.
+Notice that only more differencing terms have been added, while the rest of the equation remains the same, the null hypothesis is unchanged too.
 
-A key point to remember here is: since the null hypothesis assumes the
-presence of unit root, the p-value obtained should be less than the
-significance level (say 0.05) in order to reject it,
-thereby, inferring that the series is stationary.
+A key point to remember here is: since the null hypothesis assumes the presence of unit root, the p-value obtained should be less than the significance level (say 0.05) in order to reject it, thereby, inferring that the series is stationary.
 
-The \texttt{statsmodel} package provides an implementation of
-the ADF test via the \(\tt{adfuller()}\) function in
-\texttt{statsmodels.tsa.stattools}.
+The \texttt{statsmodel} package provides an implementation of the ADF test via the \(\tt{adfuller()}\) function in \texttt{statsmodels.tsa.stattools}.
 
-\begin{codebox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{statsmodels}\PY{n+nn}{.}\PY{n+nn}{tsa}\PY{n+nn}{.}\PY{n+nn}{stattools} \PY{k}{import} \PY{n}{adfuller}
+\begin{ipython}
+from statsmodels.tsa.stattools import adfuller
 
-\PY{n}{result} \PY{o}{=} \PY{n}{adfuller}\PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{value}\PY{o}{.}\PY{n}{values}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{f}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ADF Statistic: }\PY{l+s+si}{\PYZob{}result[0]\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{f}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{p\PYZhy{}value: }\PY{l+s+si}{\PYZob{}result[1]\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-\PY{k}{for} \PY{n}{key}\PY{p}{,} \PY{n}{value} \PY{o+ow}{in} \PY{n}{result}\PY{p}{[}\PY{l+m+mi}{4}\PY{p}{]}\PY{o}{.}\PY{n}{items}\PY{p}{(}\PY{p}{)}\PY{p}{:}
-    \PY{n+nb}{print}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Critial Values:}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-    \PY{n+nb}{print}\PY{p}{(}\PY{n}{f}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{   }\PY{l+s+si}{\PYZob{}key\PYZcb{}}\PY{l+s+s1}{, }\PY{l+s+si}{\PYZob{}value\PYZcb{}}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-
+result = adfuller(df.value.values)
+print('ADF Statistic: {}'.format(result[0])')
+print('p-value: {}'.format(result[1]))
+for key, value in result[4].items():
+    print('Critial Values:')
+    print('{}, {}'.format(key, value))
+\end{ipython}
+\begin{ioutput}
 ADF Statistic: 3.145185689306739
 p-value: 1.0
 Critial Values:
@@ -665,47 +538,35 @@ Critial Values:
    5\%, -2.8770397560752436
 Critial Values:
    10\%, -2.5750324547306476
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \section{Autocorrelation and Partial Autocorrelation Functions}
 \label{autocorrelation-and-partial-autocorrelation-functions}
 
 \subsection{Autocorrelation}\label{autocorrelation}
 
-Autocorrelation is simply the correlation of a series with its own
-lags (the previous values of the series). If a series is
-significantly autocorrelated, that means, the lags may be helpful in
-predicting its current value.
+Autocorrelation is simply the correlation of a series with its own lags (the previous values of the series). If a series is significantly autocorrelated, that means, the lags may be helpful in predicting its current value.
 
-We can use statistical measures to calculate the correlation between the
-output variable and values at previous time steps. 
+We can use statistical measures to calculate the correlation between the output variable and values at previous time steps. 
 
 \subsubsection{Lag Plots}\label{lag-plots}
 
-A lag plot is a scatter plot of a time series against a lag of itself
-and it is normally used to check for autocorrelation. If there is any
-pattern in there, then the series is said to be autocorrelated. 
-If there is no such a pattern, the series is likely to be
-white noise.
-\texttt{pandas} provides a built-in plot function to do exactly this (\texttt{lag\_plot()}). Figure~\ref{fig:lag_plot} shows lag plots up to 
-the forth order.
+A lag plot is a scatter plot of a time series against a lag of itself and it is normally used to check for autocorrelation. If there is any pattern in there, then the series is said to be autocorrelated. If there is no such a pattern, the series is likely to be white noise.
+\texttt{pandas} provides a built-in plot function to do exactly this (\texttt{lag\_plot()}). Figure~\ref{fig:lag_plot} shows lag plots up to the forth order.
 
-\begin{codebox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot} \PY{k}{as} \PY{n}{plt}
-\PY{k+kn}{from} \PY{n+nn}{pandas}\PY{n+nn}{.}\PY{n+nn}{plotting} \PY{k}{import} \PY{n}{lag\PYZus{}plot}
-\PY{n}{plt}\PY{o}{.}\PY{n}{rcParams}\PY{o}{.}\PY{n}{update}\PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{ytick.left}\PY{l+s+s1}{\PYZsq{}} \PY{p}{:} \PY{k+kc}{False}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{axes.titlepad}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{l+m+mi}{10}\PY{p}{\PYZcb{}}\PY{p}{)}
+\begin{ipython}
+from matplotlib import pyplot as plt
+from pandas.plotting import lag_plot
 
-\PY{n}{fig}\PY{p}{,} \PY{n}{axes} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{subplots}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{4}\PY{p}{,} \PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{24}\PY{p}{,}\PY{l+m+mi}{6}\PY{p}{)}\PY{p}{,} \PY{n}{sharex}\PY{o}{=}\PY{k+kc}{True}\PY{p}{,} \PY{n}{sharey}\PY{o}{=}\PY{k+kc}{True}\PY{p}{)}
-\PY{k}{for} \PY{n}{i}\PY{p}{,} \PY{n}{ax} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{axes}\PY{o}{.}\PY{n}{flatten}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{p}{:}\PY{l+m+mi}{4}\PY{p}{]}\PY{p}{)}\PY{p}{:}
-    \PY{n}{lag\PYZus{}plot}\PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{value}\PY{p}{,} \PY{n}{lag}\PY{o}{=}\PY{n}{i}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{,} \PY{n}{ax}\PY{o}{=}\PY{n}{ax}\PY{p}{,} \PY{n}{c}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{firebrick}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
-    \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}title}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Lag }\PY{l+s+s1}{\PYZsq{}} \PY{o}{+} \PY{n+nb}{str}\PY{p}{(}\PY{n}{i}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{)}
+plt.rcParams.update({'ytick.left' : False, 'axes.titlepad':10})
+fig, axes = plt.subplots(1, 4, figsize=(24,6), sharex=True, sharey=True)
+for i, ax in enumerate(axes.flatten()[:4]):
+    lag_plot(df.value, lag=i+1, ax=ax, c='firebrick')
+    ax.set_title('Lag ' + str(i+1))
 
-\PY{n}{fig}\PY{o}{.}\PY{n}{suptitle}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Lag Plots of Drug Sales}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{y}\PY{o}{=}\PY{l+m+mf}{1.05}\PY{p}{)}    
-\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
-\end{Verbatim}
-\end{codebox}
+fig.suptitle('Lag Plots of Drug Sales', y=1.05)
+plt.show()
+\end{ipython}
 
 \begin{figure}[htb]
 	\centering
@@ -719,20 +580,19 @@ the correlation between observation and lag variables. This
 can be easily calculated using the \texttt{corr()} function
 on the \texttt{DataFrame} of the dataset.
 
-\begin{codebox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{pandas} \PY{k}{import} \PY{n}{concat}
+\begin{ipython}
+from pandas import concat
 
-\PY{n}{dataframe} \PY{o}{=} \PY{n}{concat}\PY{p}{(}\PY{p}{[}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{value}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{shift}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{4}\PY{p}{)}\PY{p}{,} \PY{n}{df}\PY{p}{[}\PY{l+m+mi}{4}\PY{p}{:}\PY{p}{]}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{value}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{]}\PY{p}{,} \PY{n}{axis}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{)}
-\PY{n}{dataframe}\PY{o}{.}\PY{n}{columns} \PY{o}{=} \PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{t\PYZhy{}4}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{t}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}
-\PY{n}{result} \PY{o}{=} \PY{n}{dataframe}\PY{o}{.}\PY{n}{corr}\PY{p}{(}\PY{p}{)}
-\PY{n+nb}{print}\PY{p}{(}\PY{n}{result}\PY{p}{)}
-
+dataframe = concat([df['value'].shift(-4), df[4:]['value']], axis=1)
+dataframe.columns = ['t-4', 't']
+result = dataframe.corr()
+print(result)
+\end{ipython}
+\begin{ioutput}
           t-4         t
 t-4  1.000000  0.878839
 t    0.878839  1.000000
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 This is a good confirmation of Fig.~\ref{fig:lag_plot} since the result 
 shows a strong
@@ -741,30 +601,15 @@ positive correlation (0.88) between the observation and the lag-4 value.
 \subsubsection{Autocorrelation Plots}
 \label{autocorrelation-plots}
 
-The autocorrelation is comprised of both
-the direct correlation and indirect correlations. These indirect
-correlations are a linear function of the correlation of the
-observation, with lags at intermediate time steps.
+The autocorrelation is comprised of both the direct correlation and indirect correlations. These indirect correlations are a linear function of the correlation of the observation, with lags at intermediate time steps.
 
-A plot of the autocorrelation of a time series as a function of the lag 
-is called the \emph{AutoCorrelation Function} (ACF), sometimes it is 
-also called a correlogram.
+A plot of the autocorrelation of a time series as a function of the lag is called the \emph{AutoCorrelation Function} (ACF), sometimes it is also called a correlogram.
 
-In order to plot the autocorrelation coefficient for each lag variable,
-\texttt{pandas} provides again built-in plot function called
-\texttt{autocorrelation\_plot()}.
-The \texttt{statsmodels} library also provides a version of the plot with
-\texttt{plot\_acf()} function.
+In order to plot the autocorrelation coefficient for each lag variable, \texttt{pandas} provides again built-in plot function called \texttt{autocorrelation\_plot()}. The \texttt{statsmodels} library also provides a version of the plot with \texttt{plot\_acf()} function.
 
-The plot provides the lag number along the \(x\)-axis and the
-correlation coefficient value on the \(y\)-axis. The
-plot also includes solid and dashed lines that indicate the 95\% and
-99\% confidence interval for the correlation values. Correlation values
-above these lines are more significant than those below the line,
-providing a threshold or cutoff for selecting more relevant lag values.
+The plot provides the lag number along the \(x\)-axis and the correlation coefficient value on the \(y\)-axis. The plot also includes solid and dashed lines that indicate the 95\% and 99\% confidence interval for the correlation values. Correlation values above these lines are more significant than those below the line, providing a threshold or cutoff for selecting more relevant lag values.
 
-In \texttt{statsmodels} is also available the function \texttt{acf} which 
-returns a list with the autocorrelation values.
+In \texttt{statsmodels} is also available the function \texttt{acf} which returns a list with the autocorrelation values.
 %\begin{codebox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
 %\begin{Verbatim}[commandchars=\\\{\}]
 %\PY{k+kn}{from} \PY{n+nn}{pandas}\PY{n+nn}{.}\PY{n+nn}{plotting} \PY{k}{import} \PY{n}{autocorrelation\PYZus{}plot}
@@ -780,21 +625,20 @@ returns a list with the autocorrelation values.
 %	\label{fig:acf}
 %\end{figure}
 
-\begin{codebox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{statsmodels}\PY{n+nn}{.}\PY{n+nn}{graphics}\PY{n+nn}{.}\PY{n+nn}{tsaplots} \PY{k}{import} \PY{n}{plot\PYZus{}acf}
-\PY{k+kn}{from} \PY{n+nn}{statsmodels}\PY{n+nn}{.}\PY{n+nn}{tsa}\PY{n+nn}{.}\PY{n+nn}{stattools} \PY{k}{import} \PY{n}{acf}
+\begin{ipython}
+from statsmodels.graphics.tsaplots import plot_acf
+from statsmodels.tsa.stattools import acf
 
-\PY{n}{plot\PYZus{}acf}\PY{p}{(}\PY{n}{df}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{value}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{p}{,} \PY{n}{lags}\PY{o}{=}\PY{l+m+mi}{200}\PY{p}{)}
-\PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{acf}\PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{value}\PY{p}{,} \PY{n}{nlags}\PY{o}{=}\PY{l+m+mi}{20}\PY{p}{)}\PY{p}{)}
-
-[1.         0.92056815 0.88782519 0.85385862 0.84052841 0.82523769
+plot_acf(df['value'], lags=200)
+plt.show()
+print (acf(df.value, nlags=20))
+\end{ipython}
+\begin{ioutput}
+[1.        0.92056815 0.88782519 0.85385862 0.84052841 0.82523769
 0.79629658 0.77950157 0.75953251 0.74337588 0.74521347 0.74134847
 0.78031252 0.71424686 0.68014097 0.65401657 0.63791893 0.62349882
 0.60171747 0.58230335 0.5638103 ]
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
     
 \begin{figure}[htb]
 	\centering
@@ -806,34 +650,27 @@ returns a list with the autocorrelation values.
 \subsection{Partial Autocorrelation Function}
 \label{partial-autocorrelation-function}
 
-Partial Autocorrelation function (PACF) also conveys similar information
-to ACF but it only deals with the pure correlation of a series and its
-lag, excluding the correlation contributions from the intermediate lags.
+Partial Autocorrelation function (PACF) also conveys similar information to ACF but it only deals with the pure correlation of a series and its lag, excluding the correlation contributions from the intermediate lags.
 
-The partial autocorrelation of lag-\(k\) of a series is the coefficient
-of that lag in the autoregression equation of \(Y\). For example, 
-the partial autocorrelation of lag-3 is the
-coefficient \(\phi_3\) in the autoregressive Equation~\ref{eq:ar}.
+The partial autocorrelation of lag-\(k\) of a series is the coefficient of that lag in the autoregression equation of \(Y\). For example, the partial autocorrelation of lag-3 is the coefficient \(\phi_3\) in the autoregressive Equation~\ref{eq:ar}.
 
-The \texttt{statsmodels} library also provides a version of the plot with
-\texttt{plot\_pacf()} function and an accessor to PACF values, \texttt{pacf()}.
+The \texttt{statsmodels} library also provides a version of the plot with \texttt{plot\_pacf()} function and an accessor to PACF values, \texttt{pacf()}.
 
-\begin{codebox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-\begin{Verbatim}[commandchars=\\\{\}]
-\PY{k+kn}{from} \PY{n+nn}{matplotlib} \PY{k}{import} \PY{n}{pyplot}
-\PY{k+kn}{from} \PY{n+nn}{statsmodels}\PY{n+nn}{.}\PY{n+nn}{tsa}\PY{n+nn}{.}\PY{n+nn}{stattools} \PY{k}{import} \PY{n}{pacf}
-\PY{k+kn}{from} \PY{n+nn}{statsmodels}\PY{n+nn}{.}\PY{n+nn}{graphics}\PY{n+nn}{.}\PY{n+nn}{tsaplots} \PY{k}{import} \PY{n}{plot\PYZus{}pacf}
+\begin{ipython}
+from matplotlib import pyplot
+from statsmodels.tsa.stattools import pacf
+from statsmodels.graphics.tsaplots import plot_pacf
 
-\PY{n}{plot\PYZus{}pacf}\PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{value}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}\PY{p}{,} \PY{n}{lags}\PY{o}{=}\PY{l+m+mi}{50}\PY{p}{)}
-\PY{n}{pyplot}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
-\PY{n+nb}{print} \PY{p}{(}\PY{n}{pacf}\PY{p}{(}\PY{n}{df}\PY{o}{.}\PY{n}{value}\PY{p}{,} \PY{n}{nlags}\PY{o}{=}\PY{l+m+mi}{20}\PY{p}{)}\PY{p}{)}
-
+plot_pacf(df.value.tolist(), lags=50)
+pyplot.show()
+print (pacf(df.value, nlags=20))	
+\end{ipython}
+\begin{ioutput}
 [ 1.          0.92510297  0.28297106  0.0759758   0.16921494  0.09370324
  -0.06396075  0.0560044   0.01650882  0.00431904  0.17496764  0.08742467
   0.41635623 -0.63684013 -0.15223434  0.10337984 -0.10246178  0.04619914
   0.26331492 -0.06447131 -0.05881505]
-\end{Verbatim}
-\end{codebox}
+\end{ioutput}
 
 \begin{figure}[htb]
 	\centering
@@ -845,23 +682,13 @@ The \texttt{statsmodels} library also provides a version of the plot with
 \subsection{Interpretation or ACF and PACF Plots}
 \label{intuition-for-acf-and-pacf-plots}
 
-Plots of the autocorrelation function and the partial autocorrelation
-function for a time series tell a very different story. 
+Plots of the autocorrelation function and the partial autocorrelation function for a time series tell a very different story. 
 
-Consider a time series that was generated by an autoregression (AR)
-process with a lag-\(k\).
+Consider a time series that was generated by an autoregression (AR) process with a lag-\(k\).
 
-We know that the ACF describes the autocorrelation between an
-observation and another observation at a prior time step that includes
-direct and indirect dependence information. This means we would expect
-the ACF for the AR(\(k\)) time series to be strong to a lag-\(k\) and
-the 'inertia' of that relationship would carry on to subsequent lag
-values, trailing off at some point as the effect was weakened.
+We know that the ACF describes the autocorrelation between an observation and another observation at a prior time step that includes direct and indirect dependence information. This means we would expect the ACF for the AR(\(k\)) time series to be strong to a lag-\(k\) and the 'inertia' of that relationship would carry on to subsequent lag values, trailing off at some point as the effect was weakened.
 
-On the other hand we know that the PACF only describes the 
-direct relationship between an observation and its lag. 
-This would suggest that there would be no correlation for 
-lag values beyond \(k\).
+On the other hand we know that the PACF only describes the direct relationship between an observation and its lag. This would suggest that there would be no correlation for lag values beyond \(k\).
 
 Consider instead a time series that was generated by a moving average (MA)
 process with a lag-\(k\).
