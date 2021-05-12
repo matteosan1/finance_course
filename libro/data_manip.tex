@@ -465,7 +465,55 @@ Figure~\ref{fig:standardization} shows the comparison of the "volume" distributi
 		\includegraphics[width=0.45\textwidth]{figures/volume_std.png}
 	}
 	\caption{Comparison between "volume" distributions.}
-	\label{fig:dummy2}
+	\label{fig:standardization}
+\end{figure}
+
+\subsection{Operations on Data}
+Using \texttt{pandas} all sorts of calculations between rows or columns can be made. Some example of that will be shown in the next Chapters, here just a simple application of Moving Average (MA) is described.
+
+In finance, technical analysis is an analysis methodology for forecasting the direction of prices through the study of past market data, primarily price and volume. Technical analysts rely on a combination of technical indicators to study a stock and give insight about possible trading strategies. 
+
+Consider for example a particular indicator called \emph{Bollinger Bands}. It is usually used to provide potential buy / sell signals and to define the prevailing high and low prices in a market to characterize the trading band of a financial instrument or commodity. You can think of Bollinger Bands as a volatility indicator. Bands consist of Moving Average lines, a upper band and lower band. The upper and lower bands are simply MA adding and subtracting standard deviation ($\sigma$), which is a sort of  measurement of volatility. 
+\[
+\begin{split}
+\textrm{Upper Band} & = (\textrm{MA} + K\sigma)\\
+\textrm{Lower Band} & = (\textrm{MA} − K\sigma)
+\end{split}
+\]
+
+In the following example we are going to use a 20 day moving average and $K=2$. Imagine to have the historical series of AMZN stock closing prices. Bollinger Bands can be quickly and easily constructed as follows 
+
+\begin{ipython}
+import ffn
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = ffn.get('amzn', start='2017-04-02', end='2018-05-02')
+
+# calculate Moving Average with 20 days window
+ma = df.rolling(window=20).mean()
+
+# calculate the standar deviation
+rstd = df.rolling(window=20).std()
+
+df['upper'] = ma + 2 * rstd
+df['lower'] = ma - 2 * rstd
+
+ax = df.plot(title='AMZN Price and Bollinger Bands', figsize=(10,8))
+ax.fill_between(df.index, df['lower'], df['upper'], color='#ADCCFF', alpha='0.4')
+ax.set_xlabel('date')
+ax.set_ylabel('Price Moving Average')
+ax.set_xlim('2017-05-02', '2018-05-02')
+ax.grid()
+\end{ipython}
+
+The resulting plot is shown in Fig.~\ref{fig:bollinger_bands} which can be interpreted by saying that approximately 90\% of prices lay between the two bands. Therefore the bands can be used to identify potential overbought or oversold conditions. If stock price breaks out the upper band, it could be an overbought condition (indication of short). Similarly, when it breaks out the lower band, it could be oversold condition (indication of long). 
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/bollinger_bands}
+	\caption{Bollinger Bands plot applied to AMZN historical prices.}
+	\label{fig:bollinger_bands}
 \end{figure}
 
 \section{Plotting in \texttt{python}}\label{plotting-in-python}
