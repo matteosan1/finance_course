@@ -61,7 +61,8 @@ x0 = [10, 10]
 bounds = [(0, 100) for _ in range(len(x0))]
 r = minimize(of, x0, bounds=bounds, constraints=cons)
 print (r)
-
+\end{ipython}
+\begin{ioutput}
      fun: 1750002.070622686
      jac: array([20000., 25000.])
  message: 'Optimization terminated successfully.'
@@ -71,7 +72,7 @@ print (r)
   status: 0
  success: True
        x: array([25.00004033, 50.00005056])
-\end{ipython}    
+\end{ioutput}    
 So refinery 1 should work 25 days while refinery 2 50 days to minimize the production costs to 1750000 M (see objective function value in the minimization report).
 \end{solution}
 
@@ -103,7 +104,6 @@ for months, rate in market_quotes.items():
 swaps.append(swap)
 \end{ipython}
 \end{solution}
-
 
 \begin{question}
 From the \texttt{OvernightIndexSwap} created in the previous example derive a discount curve using the bootstrap method.
@@ -149,7 +149,8 @@ from scipy.optimize import minimize
 
 result = minimize(objective_function, x0, bounds=bounds)
 print (result)
-
+\end{ipython}
+\begin{ioutput}
      fun: 0.000819919032900304
 hess_inv: <34x34 LbfgsInvHessProduct with dtype=float64>
      jac: array([ 6.58948735e+05, -1.58720803e+01, -6.53143264e+01, 
@@ -176,41 +177,41 @@ hess_inv: <34x34 LbfgsInvHessProduct with dtype=float64>
                  1.00031629, 0.99911234, 0.99790839, 0.99675545, 0.99567393,
                  0.99470465, 0.9938476 , 0.99189884, 0.99021534, 0.98959296,
                  0.98930728, 0.98917464, 0.98957256, 0.98982763])
-\end{ipython}
+\end{ioutput}
 \end{solution}
 
-\begin{question}
-Take the \texttt{OvernightIndexSwap} class from \texttt{finmarkets} module and add a new method called \texttt{fair\_value\_strike} which takes a discount curve object and returns the fixed rate which would make the OIS with zero NPV.
-
-\noindent\textbf{Hint:} first take the formulas for the NPV of the fixed and floating legs, put one equal to the other and solve for $K$.
-\end{question}
-
-\cprotEnv\begin{solution}
-As the hint suggested the two NPV equations are compared:
-
-\[\mathrm{NPV}_{\mathrm{fix}} = NK \sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}\]
-
-\[\mathrm{NPV}_{\mathrm{float}} = N \cdot [D(d_0) - D(d_n)]\]
-
-\[K \sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360} = [D(d_0) - D(d_n)]\]
-
-\[K = \cfrac{[D(d_0) - D(d_n)]}{\sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}}\]
-Now in \texttt{python}:
-
-\begin{ipython}
-class OverNightIndexSwap:
-    ...
-    def fair_value_strike(self, discount_curve):
-        den = 0
-        for i in range(1, len(self.payment_dates)):
-            start_date = self.payment_dates[i-1]
-            end_date = self.payment_dates[i]
-            tau = (end_date - start_date).days / 360
-            df = discount_curve.df(end_date)
-            den += df * tau
-            num = (discount_curve.df(self.payment_dates[0]) -
-                discount_curve.df(self.payment_dates[-1]))
-        return num/den
-\end{ipython}
-Finally add this method to the class implementation in \texttt{finmarkets.py}.
-\end{solution}
+%\begin{question}
+%Take the \texttt{OvernightIndexSwap} class from \texttt{finmarkets} module and add a new method called \texttt{fair\_value\_strike} which takes a discount curve object and returns the fixed rate which would make the OIS with zero NPV.
+%
+%\noindent\textbf{Hint:} first take the formulas for the NPV of the fixed and floating legs, put one equal to the other and solve for $K$.
+%\end{question}
+%
+%\cprotEnv\begin{solution}
+%As the hint suggested the two NPV equations are compared:
+%
+%\[\mathrm{NPV}_{\mathrm{fix}} = NK \sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}\]
+%
+%\[\mathrm{NPV}_{\mathrm{float}} = N \cdot [D(d_0) - D(d_n)]\]
+%
+%\[K \sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360} = [D(d_0) - D(d_n)]\]
+%
+%\[K = \cfrac{[D(d_0) - D(d_n)]}{\sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}}\]
+%Now in \texttt{python}:
+%
+%\begin{ipython}
+%class OverNightIndexSwap:
+%    ...
+%    def fair_value_strike(self, discount_curve):
+%        den = 0
+%        for i in range(1, len(self.payment_dates)):
+%            start_date = self.payment_dates[i-1]
+%            end_date = self.payment_dates[i]
+%            tau = (end_date - start_date).days / 360
+%            df = discount_curve.df(end_date)
+%            den += df * tau
+%            num = (discount_curve.df(self.payment_dates[0]) -
+%                discount_curve.df(self.payment_dates[-1]))
+%        return num/den
+%\end{ipython}
+%Finally add this method to the class implementation in \texttt{finmarkets.py}.
+%\end{solution}
