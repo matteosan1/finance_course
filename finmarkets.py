@@ -114,7 +114,7 @@ def generate_swap_dates(start_date, n_months, tenor_months=12):
     
     dates = []
     
-    for n in range(0, n_months, tenor_months):
+    for n in range(0, int(n_months), int(tenor_months)):
         dates.append(start_date + relativedelta(months=n))
     dates.append(start_date + relativedelta(months=n_months))
     
@@ -155,22 +155,20 @@ class InterestRateSwap:
                 a += discount_curve.df(self.fixed_leg_dates[i])
         return a
 
-    def swap_rate(self, discount_curve, libor_curve):
-        s = 0
-        for j in range(1, len(self.floating_leg_dates)):
-            F = libor_curve.forward_rate(self.floating_leg_dates[j-1])
-            tau = (self.floating_leg_dates[j] - self.floating_leg_dates[j-1]).days / 360
-            P = discount_curve.df(self.floating_leg_dates[j])
-            s += F * tau * P
-        return s / self.annuity(discount_curve)
-
-    def spread(self, discount_curve, libor_curve):
+    def num(self, discount_curve, libor_curve):
         s = 0
         for j in range(1, len(self.floating_leg_dates)):
             F = libor_curve.forward_rate(self.floating_leg_dates[j-1])
             tau = (self.floating_leg_dates[j] - self.floating_leg_dates[j-1]).days / 360
             D = discount_curve.df(self.floating_leg_dates[j])
             s += F * tau * D
+        return s
+    
+    def swap_rate(self, discount_curve, libor_curve):
+        return self.num(discount_curve, libor_curve) / self.annuity(discount_curve)
+
+    def spread(self, discount_curve, libor_curve):
+        s = self.num(discount_curve, libor_curve)
 
         den = 0
         for j in range(1, len(self.floating_leg_dates)):
