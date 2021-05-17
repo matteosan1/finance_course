@@ -537,16 +537,9 @@ down_cost = 7
 
 \end{ipython}
 
-Finally we have to impose the constraint on the budget. This is done by
-defining a function that computes the cost of the fence and
-compare it to the total budget. 
-The constraint is passed to the minimizer with a dictionary (or a list 
-of dictionaries if there are more) which has three keys: 
-\(\tt{type}\), in this case set to \texttt{'eq'}
-(like equality, since we want to spend all of our available money so the
-fence has to cost exactly \$700), \texttt{'fun'} which defines the constraint 
-function and \texttt{'args'} which is optional and is set to a tuple 
-whose items are possible parameters for the constraint function (see Section~\ref{sec:kwargs_args}).
+Finally we have to impose the constraint on the budget. This is done by defining a function that computes the cost of the fence and compare it to the total budget. 
+The constraint is passed to the minimizer with a dictionary (or a list  of dictionaries if there are more) which has three keys: \(\tt{type}\), in this case set to \texttt{'eq'} (like equality, since we want to spend all of our available money so the
+fence has to cost exactly \$700), \texttt{'fun'} which defines the constraint function and \texttt{'args'} which is optional and is set to a tuple whose items are possible parameters for the constraint function (see Section~\ref{sec:kwargs_args}).
 
 The constraint is then defined as
 
@@ -812,10 +805,101 @@ print ("40y rate: {}".format(-log(curve.df(d)) / 40))
 	\label{fig:discount_curve}
 \end{figure}
 
+\section{Discount Factors with Pseudo-inverse}
+The minimization algorithm described in the previous Sections is not the only way to derive discount factors. An alternative procedure involves matrix inversion and in some special cases the usage of the \emph{pseudoinverse} described in Chapter~\ref{sec:the-moore-penrose-pseudoinverse}. Details on this algorithm can be found in~\cite{bib:boostrap_pseudoinv}.
+
+Consider a set of $n$ financial instruments (e.g. bonds, future, swaps,\ldots). The price of such instruments is connected to the discount factors by the following relationship
+
+\begin{equation}
+P_i = \sum_{j=0}^{m} C_{i,j} d_j
+\label{eq:discounted_cashflows}
+\end{equation}
+where $P_i$ is the market quote of the $i^{th}$ product, $C_{i,j}$ is the $j^{th}$ cash-flow of the $i^{th}$ product and $d_j$ is the discount factor relative to period $(t_0, t_j)$.
+Eq.~\ref{eq:discounted_cashflows} can be written in matrix form
+
+\begin{equation}
+\boldsymbol{P} = [C]\boldsymbol{d}
+\label{eq:discount_matrix}
+\end{equation}
+and now $P$ and $d$ are column vectors while $[C]$ is a $n \times m$ matrix where each row element is a cash-flow associated to the row product.
+
+Recalling Section~\ref{sec:matrix-equations}, Eq.~\ref{eq:discount_matrix} represents a system of equations which can be solved to determine the unknown $\boldsymbol{d}$.
+The sought solution is 
+\begin{equation}
+\boldsymbol{d} = [C^{-1}] \boldsymbol{P}
+\end{equation} 
+If matrix $[C]$ is not invertible (i.e. the system of equations is under-determined) $[C^{-1}]$ can be replaced by the optimal approximation $[C^+]$ (i.e. the pseudo-inverse). 
+
+To illustrate the algorithm let's consider again the example, used previously, with five coupon bearing bonds (coupons of 4\%, 5\%, 6\%, 7\% and 8\% respectively) with maturities ranging from 1 to 5 years, each having a value of \euro{100} and traded at par. In this case we have
+\begin{equation*}
+\boldsymbol{P} = 
+\begin{bmatrix}
+100 \\
+100 \\
+100 \\
+100 \\
+100 
+\end{bmatrix}; \quad
+[C] = 
+\begin{bmatrix}
+104 & 0 & 0 & 0 & 0 \\
+5 & 105 & 0 & 0 & 0 \\
+6 & 6 & 106 & 0 & 0 \\
+7 & 7 & 7 & 107 & 0 \\
+8 & 8 & 8 & 8 & 108
+\end{bmatrix}; \quad
+\begin{bmatrix}
+d_1 \\
+d_2 \\
+d_3 \\
+d_4 \\
+d_5 
+\end{bmatrix}
+\end{equation*}
+The \texttt{python} implementation to determine the solution is given in the snippet below. The code use by default the pseudo-inverse since if $[C]$ is invertible holds $[C^+] = [C^{-1}]$. 
+\begin{ipython}
+import numpy as np
+
+C = np.array([[104, 0, 0, 0, 0],
+              [5, 105, 0, 0, 0],
+              [6, 6, 106, 0, 0],
+              [7, 7, 7, 107, 0],
+              [8, 8, 8, 8, 108]])
+P = np.array([100, 100, 100, 100, 100])
+
+Cinv = np.linalg.inv(C)
+d = Cinv.dot(P.T)
+print (d)
+\end{ipython}
+\begin{ioutput}
+[0.96153846 0.90659341 0.83765291 0.75756548 0.66938146]	
+\end{ioutput}
+To determine the corresponding yields just use \texttt{brentq} to solve $1/(1+y_n)^{n}$
+\begin{ipython}
+from scipy.optimize import brentq
+
+def rate(x, d, tau):
+    return d - 1/(1+x)**tau
+
+for i in range(5):
+    print ("yield y{}: {:.4f}".format(i+1, brentq(rate, 0, 1, args=(d[i], i+1))))
+\end{ipython}
+\begin{ioutput}
+yield y1: 0.0400
+yield y2: 0.0503
+yield y3: 0.0608
+yield y4: 0.0719
+yield y5: 0.0836
+\end{ioutput}
+which matches those in Table~\ref{tab:rates}.
+
+In this simple example just bonds were considered but clearly the method can be extended also to other instruments when creating the cash-flow matrix $[C]$.
+
 \section{Exercises}
 \input{bootstrap_ex_text}
 
 \begin{thebibliography}{9}
 \bibitem{bib:default_from_bond} J. C. Hull, \emph{Options, Futures and Other Derivatives, 7th Ed.}, Swaps (Ch. 7), Pearson Prentice Hall, 2009
 \bibitem{bib:bootsrap} \href{https://financetrain.com/bootstrapping-spot-rate-curve-zero-curve}{\emph{Bootstrapping Spot Rate Curve}} [Online]
+\bibitem{bib:boostrap_pseudoinv} D. Filipovic, S. Willems, \emph{Exact Smooth Term-Structure Estimation}, arxiv: 1606.03899, February 12, 2018
 \end{thebibliography}
