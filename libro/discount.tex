@@ -291,14 +291,10 @@ class DiscountCurve:
 \end{ipython}
 
 \begin{finmarkets}
-This class is going to be the first step in the creation of a \texttt{python} financial library,
-so copy the code into a separate file called \texttt{finmarkets.py} so that you can later reuse 
-it.
-Also be sure that the code is well documented in its part.	
+This class is going to be the first step in the creation of a \texttt{python} financial library, so copy the code into a separate file called \texttt{finmarkets.py} so that you can later reuse it. Also be sure that the code is well documented in its part.	
 \end{finmarkets}
 
-Assume we have three discount factors, we can now use our new class to create the corresponding
-discount curve. Then the \texttt{df} method provides discount factors on every date within the interval of the given pillar dates.
+Assume we have three discount factors, we can now use our new class to create the corresponding discount curve. Then the \texttt{df} method provides discount factors on every date within the interval of the given pillar dates.
 
 \begin{ipython}
 from datetime import date
@@ -368,7 +364,8 @@ plt.show()
 \noindent
 Discrepancies in the linear plot are most likely due to rounding.
 
-\section{Forward Rates}\label{calculating-forward-rates}
+\section{Forward Rates}
+\label{calculating-forward-rates}
 A forward rate is an interest rate applicable to a financial transaction that will take place in the future. It can be considered as the market's expectations for future prices and can serve as an indicator of how it believes will perform.
 
 Contrary the \emph{spot rate} is used by buyers and sellers looking to make an immediate purchase or sale, and it cannot be an indicator of market expectations.
@@ -401,37 +398,25 @@ F(T_1, T_2) = r_{1,2} = \frac {1}{T_{2}-T_{1}}(\ln D(0,T_{1})-\ln D(0,T_{2}))
 \label{eq:forward_rate_continous}
 \end{equation}
 
-We now write a very simple \texttt{ForwardRateCurve} class which doesn't compute discount factors or other fancy values but it is just a container for a list of forward rates and can interpolates between them.
-Also this class goes into the \texttt{finmarkets} module and will be used to define the LIBOR curve needed throughout future Chapters.
-
-In this case it is enough to write a class that has three attributes: a set of pillar dates and the corresponding forward rates. The reference date to convert the pillars for the interpolation (i.e. today) is taken from the first item of the pillar list. There will be just a single method \texttt{forward\_rate} to return an interpolated rate.
+\begin{finmarkets}
+We now write a \texttt{ForwardRateCurve} class which extends \texttt{DiscountCurve}, and given a set of spot rates, computes forward rates at any arbitrary date. This class adds to its parent just a method to actually compute the forward rates. Also it goes into the \texttt{finmarkets} module and will be used to define LIBOR curves needed in the rest of these Lectures.
+\end{finmarkets}
 
 \begin{ipython}
 import numpy
+from math import log
 
-class ForwardRateCurve(object):
-    def __init__(self, pillar_dates, rates):
-        self.today = pillar_dates[0]
-        self.rates = rates
-        self.pillar_days = [(pillar_date - self.today).days \
-        for pillar_date in pillar_dates]
-
-    def forward_rate(self, d):
-        d_days = (d - self.today).days
-        return numpy.interp(d_days, self.pillar_days, self.rates)
+class ForwardRateCurve(DiscountCurve):
+    def forward_rate(self, d1, d2):
+        return (log(self.df(d1)) - log(self.df(d2))) / ((d2 - d1).days / 365)
 \end{ipython}
 
 \section{Multi-curve Framework}
 \label{sec:financial-crisis}
 
-Prior to the 2008 financial crisis, interbank deposits posed little 
-credit/liquidity issues, interbank lending rates (IBOR rates, e.g. LIBOR, EURIBOR)
-were essentially a good proxy for risk free rates. 
-Basis swap spreads were negligible and thereby neglected. 
+Prior to the 2008 financial crisis, interbank deposits posed little credit/liquidity issues, interbank lending rates (IBOR rates, e.g. LIBOR, EURIBOR) were essentially a good proxy for risk free rates. Basis swap spreads were negligible and thereby neglected. 
 
-Looking at the historical series of the EURIBOR (6M) rate versus the EONIA 
-Overnight Indexed Swap (OIS-6M) rate over the time interval 2006-2011 in Fig.~\ref{fig:credit_crunch} it becomes
-apparent how before August 2007 the two rates display strictly overlapping trends differing of no more than 6 bps.
+Looking at the historical series of the EURIBOR (6M) rate versus the EONIA Overnight Indexed Swap (OIS-6M) rate over the time interval 2006-2011 in Fig.~\ref{fig:credit_crunch} it becomes apparent how before August 2007 the two rates display strictly overlapping trends differing of no more than 6 bps.
 
 \begin{figure}[htb]
 	\centering
@@ -445,17 +430,14 @@ A single yield curve constructed out of selected deposit rates, FRA/EDF rates an
 
 During the 2008 financial crisis, the failure of some banks however proved that interbank lending rates (e.g. LIBOR, EURIBOR\ldots) were not risk-free. Meanwhile there was also significant counterparty credit risk arising from derivative transactions that were not subject to collateral or margin calls. Basis swap spreads greatly widened, and persist to this day. 
 
-Still looking at Fig.~\ref{fig:credit_crunch} it is clear how in August 2007 a sudden increase of the EURIBOR rate and a simultaneous decrease of the OIS rate leads to the explosion of the corresponding basis spread, touching the peak of 222 bps in October 2008, when Lehman Brothers filed for bankruptcy. Successively the basis has sensibly reduced and stabilized between 40 bps and 60 bps (notice that the precrisis level has never been recovered). 
-The same effect is observed for other similar couples of series, e.g. EURIBOR 3M vs OIS 3M.
+Still looking at Fig.~\ref{fig:credit_crunch} it is clear how in August 2007 a sudden increase of the EURIBOR rate and a simultaneous decrease of the OIS rate leads to the explosion of the corresponding basis spread, touching the peak of 222 bps in October 2008, when Lehman Brothers filed for bankruptcy. Successively the basis has sensibly reduced and stabilized between 40 bps and 60 bps (notice that the precrisis level has never been recovered). The same effect is observed for other similar couples of series, e.g. EURIBOR 3M vs OIS 3M.
 
 The existence of such significant basis swap spreads reflects the fact that after the crisis the interest rate market has been segmented into subareas corresponding to instruments with different underlying rate tenors, characterized by different rate dynamics. 
 
 Traditional single curve based pricing approach ignores these differences. It mixes different underlying rate tenors and incorporates different rate dynamics, eventually leads to inconsistency.
-After the crisis, the market practice has thus evolved to take into account the new market information (e.g. the basis swap spreads, collateralization, etc.), that translate into the additional requirement of homogeneity and funding. The homogeneity requirement means that interest rate derivatives with a given underlying rate tenor must be priced and hedged using vanilla interest rate market instruments with the same underlying. The funding requirement means that 
-the discount rate of any cash flow generated by the derivative must be consistent, by no-arbitrage, with the funding rate associated with that cash flow. 
+After the crisis, the market practice has thus evolved to take into account the new market information (e.g. the basis swap spreads, collateralization, etc.), that translate into the additional requirement of homogeneity and funding. The homogeneity requirement means that interest rate derivatives with a given underlying rate tenor must be priced and hedged using vanilla interest rate market instruments with the same underlying. The funding requirement means that the discount rate of any cash flow generated by the derivative must be consistent, by no-arbitrage, with the funding rate associated with that cash flow. 
 
-Driven by the crisis, many derivative contracts have been updated to include permissible credit mitigants for a transaction, such as netting and collateralization in cash.
-Since standard agreements stipulate daily margination on collateral and the cash collateral earns a return at overnight rate, overnight rate becomes a natural choice for the risk-free discount rate or the funding rate. This is referred to as \emph{OIS discounting}.
+Driven by the crisis, many derivative contracts have been updated to include permissible credit mitigants for a transaction, such as netting and collateralization in cash. Since standard agreements stipulate daily margination on collateral and the cash collateral earns a return at overnight rate, overnight rate becomes a natural choice for the risk-free discount rate or the funding rate. This is referred to as \emph{OIS discounting}.
 
 The large spread between risk free rate and interbank lending rate during and after 2008 financial crisis it is not possible anymore to use a single curve for discounting and derivative valuation. The traditional single curve used for both  cash flow projection and discounting turned out to be obsolete. The markets have since nearly switched to multi-curve framework. 
 
@@ -509,25 +491,25 @@ For example, if we want to calculate the net present value (NPV) of a forward 6-
 %  market for the risk-free rate.
 %\end{itemize}
 
-Our financial library has to implement the following calculation
-
-\[\mathrm{NPV} = D_{\mathrm{EONIA}}(T_1) \cdot \frac{1}{T_2-T_1}\Big(\frac{D_{\mathrm{LIBOR}}(T_1)}{D_{\mathrm{LIBOR}}(T_2)} - 1 \Big)\]
-\noindent
-In order to do so we can extend the \texttt{DiscountCurve} class with a \texttt{forward\_rate}
-method
-
-\begin{ipython}
-class DiscountCurve:
-    ...
-    def forward_rate(self, d1, d2):
-        return (self.df(d1) / self.df(d2) - 1.0) * \
-            (365.0 / ((d2 - d1).days))
-\end{ipython}
+%Our financial library has to implement the following calculation
+%
+%\[\mathrm{NPV} = D_{\mathrm{EONIA}}(T_1) \cdot \frac{1}{T_2-T_1}\Big(\frac{D_{\mathrm{LIBOR}}(T_1)}{D_{\mathrm{LIBOR}}(T_2)} - 1 \Big)\]
+%\noindent
+%In order to do so we can extend the \texttt{DiscountCurve} class with a \texttt{forward\_rate} method
+%
+%\begin{ipython}
+%class DiscountCurve:
+%    ...
+%    def forward_rate(self, d1, d2):
+%        return (self.df(d1) / self.df(d2) - 1.0) * \
+%            (365.0 / ((d2 - d1).days))
+%\end{ipython}
 
 As an example let's define EONIA and LIBOR curves and compute the net present value of the forward 6-month LIBOR coupon mentioned before.
 
 \begin{ipython}
-from finmarkets import DiscountCurve
+from finmarkets import DiscountCurve, ForwardRateCurve
+from datetime import date
 
 today_date = date (2020, 1, 1)
 t1 = date(2020, 4, 1)
@@ -537,16 +519,16 @@ df_eonia = [1.0, 0.97, 0.72]
 pillar_dates_libor = [date(2020, 1, 1), date(2020, 6, 1), date(2020, 12 ,1)]
 df_libor = [1.0, 0.95, 0.90]
 eonia_curve = DiscountCurve(today_date, pillar_dates_eonia, df_eonia)
-libor_curve = DiscountCurve(today_date, pillar_dates_libor, df_libor)
+libor_curve = ForwardRateCurve(today_date, pillar_dates_libor, df_libor)
 npv = eonia_curve.df(t1) * libor_curve.forward_rate(t1, t2)
 npv_pre2008 = libor_curve.df(t1) * libor_curve.forward_rate(t1, t2)
 
-print ("NPV post 2008:", npv)
-print ("NPV pre 2008:", npv_pre2008)
+print ("NPV post 2008: {:.5f}".format(npv))
+print ("NPV pre 2008: {:.5f}".format(npv_pre2008))
 \end{ipython}
 \begin{ioutput}
-NPV post 2008: 0.11533243116069992
-NPV pre 2008: 0.11269481011359303
+NPV post 2008: 0.11210
+NPV pre 2008: 0.10953
 \end{ioutput}
 
 \subsection{Transitioning away from LIBOR~\cite{bib:str}}
