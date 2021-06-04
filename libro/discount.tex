@@ -401,16 +401,34 @@ F(T_1, T_2) = r_{1,2} = \frac {1}{T_{2}-T_{1}}(\ln D(0,T_{1})-\ln D(0,T_{2}))
 \end{equation}
 
 \begin{finmarkets}
-We now write a \texttt{ForwardRateCurve} class which extends \texttt{DiscountCurve}, and given a set of spot rates, computes forward rates at any arbitrary date. This class adds to its parent just a method to actually compute the forward rates. Also it goes into the \texttt{finmarkets} module and will be used to define LIBOR curves needed in the rest of these Lectures.
+We now write a \texttt{ForwardRateCurve} class which, given a set of spot rates, computes forward rates at any arbitrary date. This class has just a method to actually compute the forward rates. Also it goes into the \texttt{finmarkets} module and will be used to define LIBOR curves needed in the rest of these Lectures.
 \end{finmarkets}
 
 \begin{ipython}
 import numpy
 from math import log
 
-class ForwardRateCurve(DiscountCurve):
+class ForwardRateCurve:
+    def __init__(self, today, pillar_dates, rates):
+        self.today = today
+        self.pillar_dates = pillar_dates
+        self.rates = rates
+
+        self.pillar_days = [(pillar_date - self.today).days
+            for pillar_date in self.pillar_dates]        
+
+    def interp_rate(self, d):
+        d_days = (d - self.today).days
+        interpolated_rate = numpy.interp(d_days, self.pillar_days, self.rates)
+        return interpolated_rate, d_days 
+
     def forward_rate(self, d1, d2):
-        return (log(self.df(d1)) - log(self.df(d2))) / ((d2 - d1).days / 365)
+        if d1 == d2:
+            return self.interp_rate(d1)[0]
+        else:
+            r1, d1_days = self.interp_rate(d1)
+            r2, d2_days = self.interp_rate(d2)
+            return (r2*d2_days - r1*d1_days)/ ((d2_days - d1_days) / 365)
 \end{ipython}
 
 \section{Multi-curve Framework}
@@ -512,25 +530,27 @@ As an example let's define EONIA and LIBOR curves and compute the net present va
 \begin{ipython}
 from finmarkets import DiscountCurve, ForwardRateCurve
 from datetime import date
+from math import exp 
 
-today_date = date (2020, 1, 1)
+today = date (2020, 1, 1)
 t1 = date(2020, 4, 1)
 t2 = date(2020, 10, 1)
-pillar_dates_eonia = [date(2020, 1, 1), date(2021, 1, 1), date(2022, 10 ,1)]
+pillar_dates_eonia = [today, date(2021, 1, 1), date(2022, 10 ,1)]
 df_eonia = [1.0, 0.97, 0.72]
-pillar_dates_libor = [date(2020, 1, 1), date(2020, 6, 1), date(2020, 12 ,1)]
-df_libor = [1.0, 0.95, 0.90]
-eonia_curve = DiscountCurve(today_date, pillar_dates_eonia, df_eonia)
-libor_curve = ForwardRateCurve(today_date, pillar_dates_libor, df_libor)
+pillar_dates_libor = [today, date(2020, 6, 1), date(2020, 12 ,1)]
+libor = [0.005, 0.01, 0.015]
+eonia_curve = DiscountCurve(today, pillar_dates_eonia, df_eonia)
+libor_curve = ForwardRateCurve(today, pillar_dates_libor, libor)
 npv = eonia_curve.df(t1) * libor_curve.forward_rate(t1, t2)
-npv_pre2008 = libor_curve.df(t1) * libor_curve.forward_rate(t1, t2)
+r0 = libor_curve.forward_rate(today, t1)
+npv_pre2008 = exp(-r0*(t1-today).days/365) * libor_curve.forward_rate(t1, t2)
 
 print ("NPV post 2008: {:.5f}".format(npv))
 print ("NPV pre 2008: {:.5f}".format(npv_pre2008))
 \end{ipython}
 \begin{ioutput}
-NPV post 2008: 0.11210
-NPV pre 2008: 0.10953
+NPV post 2008: 0.01587
+NPV pre 2008: 0.01596
 \end{ioutput}
 
 \subsection{Transitioning away from LIBOR~\cite{bib:str}}

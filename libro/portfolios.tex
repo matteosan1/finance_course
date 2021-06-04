@@ -36,7 +36,7 @@ Some notations that will be used later are
   	\sigma_p^2 = \mathbf{w^T}\Sigma\mathbf{w} 
   \end{equation}
   where $\mathbf{w} = (w_1,w_2,\ldots,w_N)$ is the vector of weights. 
-  For a very brief introduction to matrices see Appendix~\ref{app:matrices};
+  For a very brief introduction to matrices see Chapter~\ref{sec:matrices};
 \item
   portfolio return volatility (standard deviation):
   \begin{equation}
@@ -92,8 +92,13 @@ Otherwise it can be directly used from \href{https://raw.githubusercontent.com/m
 Data, shown in Figure~\ref{fig:stocks}, is made of the historical 
 series of the closing prices in the last 5 years. 
 
-With \texttt{pandas} the main characteristics of these time series can
-be easily computed (e.g. daily returns, covariance matrix,\ldots):
+With \texttt{pandas} the main characteristics of these time series can be easily computed (e.g. daily returns, covariance matrix,\ldots).
+Variance adds across time if returns in one interval of time are uncorrelated with returns in other intervals of time. The correlation of returns across time (called \emph{autocorrelation}) is close to zero for most asset classes. This means that variances will grow with the length of the forecast horizon and the risk will grow with the square root of the forecast horizon. Thus, a 5\% annual risk is equivalent to a 2.5\% risk over the first quarter or a 10\% active risk over four years. 
+
+This relationship can be used to “annualize” risk, i.e. standardize risk numbers to an annual period. Considering daily returns of a stock and observe a daily return standard deviation of $\sigma_{daily}$, it can be converted to annual risk according to
+\begin{equation}
+\sigma_{yearly} = \sigma_{daily}\cdot\sqrt{252}
+\end{equation}
 
 \begin{ipython}
 daily_returns = df.pct_change()
@@ -444,6 +449,313 @@ So the optimization using the Sharpe ratio gives us a portfolio that is on the m
 
 Usually, any Sharpe ratio greater than 1.0 is considered acceptable to good by investors. A ratio higher than 2.0 is rated as very good. A ratio of 3.0 or higher is considered excellent. A ratio under 1.0 is sub-optimal.
 
+\section{Portfolio Diversification}
+
+Diversification is a common topic in portfolio construction and allows to combine risky stocks so that their combination (the portfolio) is less risky than any of its components. Although such diversification is a familiar notion, it may be worthwhile to review the manner in which diversification reduces risk.
+
+Suppose there are two companies located on an isolated island whose chief industry is tourism. One company manufactures suntan lotion. Its stock predictably performs well in sunny years and poorly in rainy ones. The other company produces umbrellas. Its stock performs equally poorly in sunny years and well in rainy ones. Each company earns a 12\% average return.
+
+In purchasing either stock, investors incur a great amount of risk because of variability in the stock price driven by fluctuations in weather conditions. Investing half the funds in the suntan lotion stock and half in the stock of the umbrella manufacturer, however, results in a return of 12\% regardless of which weather condition prevails. Portfolio diversification thus transforms two risky stocks, each with an average return of 12\%, into a riskless portfolio certain of earning the expected 12\%.
+
+Unfortunately, the perfect negative relationship between the returns on these two stocks is very rare in the real world. To some extent, corporate securities move together, so complete elimination of risk through simple portfolio diversification is impossible. However, as long as some lack of parallelism in the returns of securities exists, diversification will always reduce risk.
+
+Empirical studies have demonstrated that unsystematic risk can be virtually eliminated in portfolios of 30 to 40 randomly selected stocks. Of course, if investments are made in closely related industries, more securities are required to eradicate it.
+
+When using the standard variation of the portfolio return as a measure of the risk, as in the Markowitz model, it is easy to show how diversification allows to reduce the risk. 
+The standard deviation of a stock portfolio is not the weighted average of the standard deviations of the component stocks.
+For example, suppose the correlation between the return of stocks 1 and 2 is $\rho_{12}$. If the portfolio is equally weighted then
+
+\begin{equation}
+\sigma_{P} = \sqrt{(0.5\cdot\sigma_1 )^2 + (0.5\cdot\sigma_2 )^2 + 2\cdot(0.5\cdot\sigma_1)(0.5\cdot\sigma_2)\rho_{12}} \lt (0.5\cdot\sigma_1 ) + (0.5\cdot\sigma_2 )
+\end{equation}
+
+In general the inequality holds unless $\rho_{12}=1$, for risk, the whole is less than the sum of
+its parts. This is the key to portfolio diversification. Figure~\ref{fig:diversification} shows the risk of a portfolio made up from IBM and General Electric against the fraction of GE stock in the portfolio. The curved line represents the risk of the portfolio; the straight line represents sum of the two single risks. The risk of GE is 27.4\% per year; the risk of IBM is 29.7\% per year; and the two returns are 62.9\% correlated. The difference between the two lines is an indication of the benefit of diversification in reducing risk.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/diversification}
+	\caption{Risk of a portfolio made up from IBM and General Electric against the fraction of GE stock in the portfolio. The curved line represents the risk of the portfolio; the straight line represents sum of the two single risks.}
+	\label{fig:diversification}
+\end{figure}
+
+We can see the power of diversification in another example. Given a  portfolio of $N$ stocks, each with risk $\sigma$ and uncorrelated returns, the risk of an equal-weighted portfolio of these stocks will be
+\begin{equation}
+\sigma_P = \cfrac{\sigma}{\sqrt{N}}
+\end{equation}
+
+For a more useful insight into diversification, assume now that the correlation between the returns of all pairs of stocks is equal to $\rho$. Then the risk of an equally weighted portfolio is which can be further simplified when considering a portfolio contains a very large number of correlated stocks:
+\begin{equation}
+\sigma_P = \sigma\cdot\sqrt{\cfrac{1+\rho(N-1)}{N}};\quad \lim_{N \to +\infty} \sigma_P = \sigma\cdot\sqrt{\rho}
+\label{eq:risk_correlation}
+\end{equation}
+
+To get a feel for this, consider the example of an equal-weighted portfolio of the 20 Major Market Index constituent stocks. In December 1992, these stocks had an average risk of 27.8\%, while the equal-weighted portfolio has a risk of 20.4\%. Equation~\ref{eq:risk_correlation} then implies an average correlation between these stocks of 0.52. 
+
+%As we have already seen no measure of unsystematic risk appears in the risk premium, of CAPM model, since it is assumed that diversification has eliminated it.
+%
+%In the Markowitz model instead diversification is achieved by seeking to combine in a portfolio assets with returns that are less than perfectly positively correlated, in an effort to lower portfolio risk (variance) without sacrificing return, through the reduction of the correlation matrix $\Sigma$.
+
+\section{Risk Parity Portfolio}
+\label{risk-parity-portfolio}
+
+An alternative approach to Markowitz theory is given by the \emph{risk parity}. A risk parity portfolio is an investment allocation strategy which focuses on the allocation of risk, rather than on the allocation of capital. 
+A risk parity (equal risk) portfolio is characterised by having equal risk contributions to the total risk from each individual asset. 
+
+Risk parity allocation is also referred to as equally-weighted risk contributions portfolio method. Equally-weighted risk contributions is not about \emph{having the same volatility}, it is about having each asset contributing in the same way to the portfolio overall volatility. For this we will have to define the contribution of each asset to the portfolio risk. 
+
+This allocation strategy has gained popularity in the last decades since it is believed to provide better risk adjusted return than capital based allocation strategies.
+
+Let's go over a very basic example to better illustrate how to construct a simple risk parity (equal risk) portfolio. Consider a portfolio of \(N\) assets: \(x_{1}, \ldots, x_N\) where as
+usual the weight of the $i^{th}$ asset is denoted by \(w_{i}\). The \(w_{i}\) form the allocation vector \(\mathbf{w}\). Let us further denote the covariance matrix of the assets as \(\Sigma\). The volatility of the portfolio is then defined as:
+
+\begin{equation} 
+\sigma_p={\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} = \sum_{i=1}^{N}\sigma _{i}\qquad\textrm{with}~\sigma _{i} = w_{i}\cdot \cfrac{\partial\sigma_p}{\partial w_{i}}={\cfrac {w_{i}(\Sigma \mathbf{w})_{i}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}}
+\end{equation}
+so that \(\sigma _{i}\) can be interpreted as the contribution of the $i^{th}$ asset to the overall risk of the portfolio.
+
+\begin{attention}
+	\subsubsection{Derivation of $\sigma_i$}
+	Expressing explicitly in matrix form the standard deviation of the portfolio we get
+	\[
+	\begin{split}
+	\sigma_p={\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} & =
+	\sqrt{
+		\begin{bmatrix}
+		w_{1} \\
+		w_{2}
+		\end{bmatrix}
+		\begin{bmatrix}
+		\sigma_{11} & \sigma_{21} \\
+		\sigma_{12} & \sigma_{22} 
+		\end{bmatrix}
+		\begin{bmatrix}
+		w_{1} & w_{2} \\
+		\end{bmatrix}
+	}\\
+	&=
+	\sqrt{
+		\begin{bmatrix}
+		w_{1} \\
+		w_{2}
+		\end{bmatrix}
+		\begin{bmatrix}
+		w_{1}\sigma_{11} + w_{2}\sigma_{12} & w_{1}\sigma_{21} + w_{2}\sigma_{22} \\
+		\end{bmatrix}
+	} \\
+	&= \sqrt{
+		w_{1}w_{1}\sigma_{11} + w_{2}w_{1}\sigma_{12} + w_{1}w_{2}\sigma_{21} + w_{2}w_{2}\sigma_{22} }
+	\end{split}
+	\]
+	Now performing for example the derivative with respect to $w_1$ we obtain
+	\[\cfrac{\partial\sigma_p}{\partial w_1} = \cfrac{1}{2}\cdot\cfrac{2\cdot w_1\sigma_{11} + 2\cdot w_{2}\sigma_{21}}{\sigma_p} = \cfrac{w_1\sigma_{11} + w_{2}\sigma_{21}}{\sigma_p} = \cfrac{(\Sigma \mathbf{w})_{1}}{\sigma_p}\]
+	
+	Summing up $\sum w_i\cdot\cfrac{\partial\sigma_p}{\partial w_i}$ we get back $\sigma_p$
+\end{attention}
+
+Equal risk contribution then means \(\sigma _{i} =\sigma _{j}\) for all \(i,j\) or equivalently \(\sigma _{i}=\sigma_p/N\). So
+
+\begin{equation}
+\sigma _{i} = \cfrac{\sigma_p}{N}={\cfrac {w_{i}(\Sigma \mathbf{w})_{i}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}}\implies w_{i} = \frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}
+\end{equation}
+Since we want the previous expression to be true for each $i$, the solution for the weights can be found by solving the minimisation problem
+
+\begin{equation} 
+\underset{\mathbf{w}}{\min } \sum _{i=1}^{N}\left[w_{i}-{\frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}}\right]^{2} 
+\end{equation}
+
+Going back to our data sample let's find out the weights to give us a risk parity portfolio.
+
+\begin{ipython}
+	num_assets = 5
+	def risk_parity(w, cov):
+	variance = w.T.dot(cov.dot(w))
+	sum = 0
+	N = len(w)
+	for i in range(N):
+	sum += (w[i] - (variance/(N*cov.dot(w)[i])))**2
+	return sum
+	
+	args = (covariance,)
+	constraints = ({'type': 'eq', 'fun': sum_weights})
+	bounds = tuple((0, 1) for asset in range(num_assets))
+	weights = [1./num_assets for _ in range(num_assets)]
+	opts = minimize(risk_parity, weights, args=(covariance,),
+	bounds=bounds, constraints=constraints)
+	print (opts)
+\end{ipython}
+\begin{ioutput}
+	fun: 2.2881862766486147e-07
+	jac: array([-6.98851511e-04,  1.92391042e-04, -4.08403758e-05, 
+	-2.54432521e-05,  1.13250609e-03])
+	message: 'Optimization terminated successfully.'
+	nfev: 38
+	nit: 5
+	njev: 5
+	status: 0
+	success: True
+	x: array([0.25863039, 0.18154282, 0.19666705, 0.22190633, 
+	0.14125342])
+\end{ioutput}
+
+\begin{ipython}
+	sigma_i = []
+	std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
+	for i in range(num_assets):
+	a = opts.x[i]*covariance.dot(opts.x)[i]
+	sigma_i.append(a/std)
+	
+	for i in range(num_assets):
+	print ("Risk contribution for asset {}: {:.3f}%"
+	.format(i, sigma_i[i]/sum(sigma_i)*100))
+\end{ipython}
+\begin{ioutput}
+	Risk contribution for asset 0: 19.974%
+	Risk contribution for asset 1: 19.999%
+	Risk contribution for asset 2: 19.990%
+	Risk contribution for asset 3: 19.992%
+	Risk contribution for asset 4: 20.045%
+\end{ioutput}
+
+%Figure~\ref{fig:risk_parity} shows the fraction of risk allocated to each asset and the corresponding weight within the portfolio.
+
+\subsection{Risk Budget Allocation}
+\label{risk-budget-allocation}
+
+The same technique can be used if we would like to calculate a portfolio
+with risk budget allocation. In this case we want to associate to each asset a particular level of risk. If we consider the previous equation
+
+\begin{equation} 
+\sigma _{i}=\cfrac{\sigma_p}{N} 
+\end{equation}
+where we set the risk contribution fraction to every asset to \(1/N\);
+now we can simply replace \(1/N\) with the desired fraction of risk (\(f_i\)) for each asset
+
+\begin{equation} 
+\sigma _{i}=f_i \cdot \sigma_p 
+\end{equation}
+so that the relation to minimise becomes
+
+\begin{equation} 
+\underset{\mathbf{w}}{\min} \sum _{i=1}^{N}\left[w_{i}-{\frac {f_i \cdot \sigma_p^{2}}{(\Sigma \mathbf{w})_{i}}}\right]^{2} 
+\end{equation}
+
+Translating it into \texttt{python} we get:
+
+\begin{ipython}
+	def risk_budget(w, target_risk, cov):
+	variance = w.T.dot(cov.dot(w))
+	sum = 0
+	N = len(w)
+	for i in range(N):
+	sum += (w[i] - (target_risk[i]*variance)/(cov.dot(w)[i]))**2
+	return sum
+	
+	f_i = [0.3, 0.2, 0.2, 0.15, 0.15]
+	args = (f_i, covariance)
+	constraints = ({'type': 'eq', 'fun': sum_weights})
+	bounds = tuple((0, 1) for asset in range(num_assets))
+	weights = [1./num_assets for _ in range(num_assets)]
+	opts = minimize(risk_budget, weights, args=(f_i, covariance),
+	bounds=bounds, constraints=constraints)
+	print (opts)
+\end{ipython}
+\begin{ioutput}
+	fun: 4.058673684147486e-08
+	jac: array([-2.64817707e-04,  3.30937403e-04,  2.14530647e-05, 
+	-7.65372775e-05,  3.67853561e-04])
+	message: 'Optimization terminated successfully.'
+	nfev: 45
+	nit: 6
+	njev: 6
+	status: 0
+	success: True
+	x: array([0.3459366 , 0.1800917 , 0.19394454, 0.16890483, 
+	0.11112233])
+\end{ioutput}
+\begin{ipython}  
+	sigma_i = []
+	std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
+	for i in range(num_assets):
+	a = opts.x[i]*covariance.dot(opts.x)[i]
+	sigma_i.append(a/std)
+	
+	for i in range(num_assets):
+	print ("Risk contribution for asset {}: {:.3f}%"
+	.format(i, sigma_i[i]/sum(sigma_i)*100))    
+\end{ipython}
+\begin{ioutput}
+	Risk contribution for asset 0: 29.988%
+	Risk contribution for asset 1: 20.010%
+	Risk contribution for asset 2: 19.996%
+	Risk contribution for asset 3: 14.993%
+	Risk contribution for asset 4: 15.012%
+\end{ioutput}
+
+%Figure~\ref{risk_allocation} shows the amount of risk associated to each asset and their weights within the portfolio. 
+Indeed for each stock we have allocated the desired amount of risk.
+
+
+\subsection{Maximum Diversification Portfolio}
+\label{maximum-diversification-portfolio}
+
+Diversification it is most often either pursued in tandem with another objective, such as return maximization, or pursued simply by including more asset classes or adding constraints based on intuition.
+
+But it does not have to be this way and diversification can be pursued explicitly as the sole objective in portfolio construction.
+In a 2008 paper~\cite{bib:diversification}, the diversification ratio $D$ of a portfolio has been defined as
+
+\begin{equation}
+D=\cfrac{\mathbf{w^T}\boldsymbol{\sigma}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} 
+\end{equation}
+where $\boldsymbol{\sigma}$ is the vector of volatilities and $\Sigma$ is the covariance matrix. The denominator represents the volatility of the portfolio and the numerator the weighted average volatility of the assets. More diversification within a portfolio decreases the denominator and leads to a higher diversification ratio.
+Let's construct a portfolio that maximize this ratio.
+
+\begin{ipython}
+	def diversification_ratio(w):
+	w_vol = np.dot(np.sqrt(np.diag(covariance)), w.T)
+	port_vol = np.sqrt(np.dot(w.T, np.dot(covariance, w)))
+	diversification_ratio = w_vol/port_vol
+	return -diversification_ratio
+	
+	bounds = tuple((0, 1) for asset in range(num_assets))
+	cons = ({'type': 'eq', 'fun': sum_weights},)
+	#cons = cons + ({'type': 'ineq', 'fun': long_only_constraint},)
+	weights = [1./num_assets for _ in range(num_assets)]
+	opts = minimize(diversification_ratio, weights, bounds=bounds,
+	constraints=cons)
+	print (opts)
+\end{ipython}
+\begin{ioutput}
+	fun: -1.3580745811820554
+	jac: array([-0.00035974,  0.00029349, -0.00035594,  0.00077944,  
+	0.00016446])
+	message: 'Optimization terminated successfully.'
+	nfev: 36
+	nit: 5
+	njev: 5
+	status: 0
+	success: True
+	x: array([0.34867985, 0.18062199, 0.15557008, 0.1235694, 
+	0.19155868])
+\end{ioutput}
+\begin{ipython}
+	ret = np.*@sum@*(returns*opts.x)
+	vol = np.sqrt(np.dot(opts.x.T, np.dot(covariance, opts.x)))
+	print ("Diversification: ", -opts.fun)
+\end{ipython}
+\begin{ioutput}
+	Diversification: 1.3580745811820554
+\end{ioutput}
+
+Figure~\ref{fig:max_div} shows how the maximum diversified portfolio compares to the efficient frontier.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/max_div.png}
+	\caption{Portfolio constructed with the maximum diversification technique shown in the return/variance plane.}
+	\label{fig:max_div}
+\end{figure}
+
 \section{Capital Asset Pricing Model}
 \label{sec:capm}
 The Capital Asset Pricing Model (CAPM) describes the relationship between expected return of assets and \emph{systematic risk} of the market.
@@ -745,281 +1057,6 @@ From Fig.~\ref{fig:ret_pc1} to~\ref{fig:ret_pc3} it is clear how the PC1 portfol
 \end{figure}
 
 It can be verified that PC1 portfolio still looks like the market also for other time horizon, repeating the same steps using weekly or monthly data.
-
-\section{Risk Parity Portfolio}
-\label{risk-parity-portfolio}
-
-An alternative approach to Markowitz theory is given by the \emph{risk parity}. A risk parity portfolio is an investment allocation strategy which focuses on the allocation of risk, rather than on the allocation of capital. 
-A risk parity (equal risk) portfolio is characterised by having equal risk contributions to the total risk from each individual asset. 
-
-Risk parity allocation is also referred to as equally-weighted risk contributions portfolio method. Equally-weighted risk contributions is not about \emph{having the same volatility}, it is about having each asset contributing in the same way to the portfolio overall volatility. For this we will have to define the contribution of each asset to the portfolio risk. 
-
-This allocation strategy has gained popularity in the last decades since it is believed to provide better risk adjusted return than capital based allocation strategies.
-
-Let's go over a very basic example to better illustrate how to construct a simple risk parity (equal risk) portfolio. Consider a portfolio of \(N\) assets: \(x_{1}, \ldots, x_N\) where as
-usual the weight of the $i^{th}$ asset is denoted by \(w_{i}\). The \(w_{i}\) form the allocation vector \(\mathbf{w}\). Let us further denote the covariance matrix of the assets as \(\Sigma\). The volatility of the portfolio is then defined as:
-
-\begin{equation} 
-	\sigma_p={\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} = \sum_{i=1}^{N}\sigma _{i}\qquad\textrm{with}~\sigma _{i} = w_{i}\cdot \cfrac{\partial\sigma_p}{\partial w_{i}}={\cfrac {w_{i}(\Sigma \mathbf{w})_{i}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}}
-\end{equation}
-so that \(\sigma _{i}\) can be interpreted as the contribution of the $i^{th}$ asset to the overall risk of the portfolio.
-
-\begin{attention}
-\subsubsection{Derivation of $\sigma_i$}
-Expressing explicitly in matrix form the standard deviation of the portfolio we get
-\[
-\begin{split}
-	\sigma_p={\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} & =
-	\sqrt{
-		\begin{bmatrix}
-			w_{1} \\
-			w_{2}
-		\end{bmatrix}
-		\begin{bmatrix}
-			\sigma_{11} & \sigma_{21} \\
-			\sigma_{12} & \sigma_{22} 
-		\end{bmatrix}
-		\begin{bmatrix}
-			w_{1} & w_{2} \\
-		\end{bmatrix}
-	}\\
-	&=
-	\sqrt{
-		\begin{bmatrix}
-			w_{1} \\
-			w_{2}
-		\end{bmatrix}
-		\begin{bmatrix}
-			w_{1}\sigma_{11} + w_{2}\sigma_{12} & w_{1}\sigma_{21} + w_{2}\sigma_{22} \\
-		\end{bmatrix}
-	} \\
-	&= \sqrt{
-		w_{1}w_{1}\sigma_{11} + w_{2}w_{1}\sigma_{12} + w_{1}w_{2}\sigma_{21} + w_{2}w_{2}\sigma_{22} }
-\end{split}
-\]
-Now performing for example the derivative with respect to $w_1$ we obtain
-\[\cfrac{\partial\sigma_p}{\partial w_1} = \cfrac{1}{2}\cdot\cfrac{2\cdot w_1\sigma_{11} + 2\cdot w_{2}\sigma_{21}}{\sigma_p} = \cfrac{w_1\sigma_{11} + w_{2}\sigma_{21}}{\sigma_p} = \cfrac{(\Sigma \mathbf{w})_{1}}{\sigma_p}\]
-
-Summing up $\sum w_i\cdot\cfrac{\partial\sigma_p}{\partial w_i}$ we get back $\sigma_p$
-\end{attention}
-
-Equal risk contribution then means \(\sigma _{i} =\sigma _{j}\) for all \(i,j\) or equivalently \(\sigma _{i}=\sigma_p/N\). So
-
-\begin{equation}
-\sigma _{i} = \cfrac{\sigma_p}{N}={\cfrac {w_{i}(\Sigma \mathbf{w})_{i}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}}\implies w_{i} = \frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}
-\end{equation}
-Since we want the previous expression to be true for each $i$, the solution for the weights can be found by solving the minimisation problem
-
-\begin{equation} 
-\underset{\mathbf{w}}{\min } \sum _{i=1}^{N}\left[w_{i}-{\frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}}\right]^{2} 
-\end{equation}
-
-Going back to our data sample let's find out the weights to give us a risk parity portfolio.
-
-\begin{ipython}
-num_assets = 5
-def risk_parity(w, cov):
-    variance = w.T.dot(cov.dot(w))
-    sum = 0
-    N = len(w)
-    for i in range(N):
-        sum += (w[i] - (variance/(N*cov.dot(w)[i])))**2
-    return sum
-
-args = (covariance,)
-constraints = ({'type': 'eq', 'fun': sum_weights})
-bounds = tuple((0, 1) for asset in range(num_assets))
-weights = [1./num_assets for _ in range(num_assets)]
-opts = minimize(risk_parity, weights, args=(covariance,),
-                bounds=bounds, constraints=constraints)
-print (opts)
-\end{ipython}
-\begin{ioutput}
-    fun: 2.2881862766486147e-07
-    jac: array([-6.98851511e-04,  1.92391042e-04, -4.08403758e-05, 
-                -2.54432521e-05,  1.13250609e-03])
-message: 'Optimization terminated successfully.'
-   nfev: 38
-    nit: 5
-   njev: 5
- status: 0
-success: True
-      x: array([0.25863039, 0.18154282, 0.19666705, 0.22190633, 
-                0.14125342])
-\end{ioutput}
-
-\begin{ipython}
-sigma_i = []
-std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
-for i in range(num_assets):
-    a = opts.x[i]*covariance.dot(opts.x)[i]
-    sigma_i.append(a/std)
-
-for i in range(num_assets):
-    print ("Risk contribution for asset {}: {:.3f}%"
-           .format(i, sigma_i[i]/sum(sigma_i)*100))
-\end{ipython}
-\begin{ioutput}
-Risk contribution for asset 0: 19.974%
-Risk contribution for asset 1: 19.999%
-Risk contribution for asset 2: 19.990%
-Risk contribution for asset 3: 19.992%
-Risk contribution for asset 4: 20.045%
-\end{ioutput}
-
-%Figure~\ref{fig:risk_parity} shows the fraction of risk allocated to each asset and the corresponding weight within the portfolio.
-
-\subsection{Risk Budget Allocation}
-\label{risk-budget-allocation}
-
-The same technique can be used if we would like to calculate a portfolio
-with risk budget allocation. In this case we want to associate to each asset a particular level of risk. If we consider the previous equation
-
-\begin{equation} 
-\sigma _{i}=\cfrac{\sigma_p}{N} 
-\end{equation}
-where we set the risk contribution fraction to every asset to \(1/N\);
-now we can simply replace \(1/N\) with the desired fraction of risk (\(f_i\)) for each asset
-
-\begin{equation} 
-\sigma _{i}=f_i \cdot \sigma_p 
-\end{equation}
-so that the relation to minimise becomes
-
-\begin{equation} 
-\underset{\mathbf{w}}{\min} \sum _{i=1}^{N}\left[w_{i}-{\frac {f_i \cdot \sigma_p^{2}}{(\Sigma \mathbf{w})_{i}}}\right]^{2} 
-\end{equation}
-
-Translating it into \texttt{python} we get:
-
-\begin{ipython}
-def risk_budget(w, target_risk, cov):
-    variance = w.T.dot(cov.dot(w))
-    sum = 0
-    N = len(w)
-    for i in range(N):
-        sum += (w[i] - (target_risk[i]*variance)/(cov.dot(w)[i]))**2
-    return sum
-
-f_i = [0.3, 0.2, 0.2, 0.15, 0.15]
-args = (f_i, covariance)
-constraints = ({'type': 'eq', 'fun': sum_weights})
-bounds = tuple((0, 1) for asset in range(num_assets))
-weights = [1./num_assets for _ in range(num_assets)]
-opts = minimize(risk_budget, weights, args=(f_i, covariance),
-                bounds=bounds, constraints=constraints)
-print (opts)
-\end{ipython}
-\begin{ioutput}
-    fun: 4.058673684147486e-08
-    jac: array([-2.64817707e-04,  3.30937403e-04,  2.14530647e-05, 
-                -7.65372775e-05,  3.67853561e-04])
-message: 'Optimization terminated successfully.'
-   nfev: 45
-    nit: 6
-   njev: 6
- status: 0
-success: True
-      x: array([0.3459366 , 0.1800917 , 0.19394454, 0.16890483, 
-                0.11112233])
-\end{ioutput}
-\begin{ipython}  
-sigma_i = []
-std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
-for i in range(num_assets):
-    a = opts.x[i]*covariance.dot(opts.x)[i]
-    sigma_i.append(a/std)
-
-for i in range(num_assets):
-    print ("Risk contribution for asset {}: {:.3f}%"
-           .format(i, sigma_i[i]/sum(sigma_i)*100))    
-\end{ipython}
-\begin{ioutput}
-Risk contribution for asset 0: 29.988%
-Risk contribution for asset 1: 20.010%
-Risk contribution for asset 2: 19.996%
-Risk contribution for asset 3: 14.993%
-Risk contribution for asset 4: 15.012%
-\end{ioutput}
-
-%Figure~\ref{risk_allocation} shows the amount of risk associated to each asset and their weights within the portfolio. 
-Indeed for each stock we have allocated the desired amount of risk.
-
-\section{Portfolio Diversification}
-
-Diversification is a common topic in portfolio construction and allows to combine risky stocks so that their combination (the portfolio) is less risky than any of its components. Although such diversification is a familiar notion, it may be worthwhile to review the manner in which diversification reduces risk.
-
-Suppose there are two companies located on an isolated island whose chief industry is tourism. One company manufactures suntan lotion. Its stock predictably performs well in sunny years and poorly in rainy ones. The other company produces umbrellas. Its stock performs equally poorly in sunny years and well in rainy ones. Each company earns a 12\% average return.
-
-In purchasing either stock, investors incur a great amount of risk because of variability in the stock price driven by fluctuations in weather conditions. Investing half the funds in the suntan lotion stock and half in the stock of the umbrella manufacturer, however, results in a return of 12\% regardless of which weather condition prevails. Portfolio diversification thus transforms two risky stocks, each with an average return of 12\%, into a riskless portfolio certain of earning the expected 12\%.
-
-Unfortunately, the perfect negative relationship between the returns on these two stocks is very rare in the real world. To some extent, corporate securities move together, so complete elimination of risk through simple portfolio diversification is impossible. However, as long as some lack of parallelism in the returns of securities exists, diversification will always reduce risk.
-
-Empirical studies have demonstrated that unsystematic risk can be virtually eliminated in portfolios of 30 to 40 randomly selected stocks. Of course, if investments are made in closely related industries, more securities are required to eradicate it.
-
-As we have already seen no measure of unsystematic risk appears in the risk premium, of CAPM model, since it is assumed that diversification has eliminated it.
-
-In the Markowitz model instead diversification is achieved by seeking to combine in a portfolio assets with returns that are less than perfectly positively correlated, in an effort to lower portfolio risk (variance) without sacrificing return, through the reduction of the correlation matrix $\Sigma$.
-
-\subsection{Maximum Diversification Portfolio}
-\label{maximum-diversification-portfolio}
-
-Diversification it is most often either pursued in tandem with another objective, such as return maximization, or pursued simply by including more asset classes or adding constraints based on intuition.
-
-But it does not have to be this way and diversification can be pursued explicitly as the sole objective in portfolio construction.
-In a 2008 paper~\cite{bib:diversification}, the diversification ratio $D$ of a portfolio has been defined as
-
-\begin{equation}
-D=\cfrac{\mathbf{w^T}\boldsymbol{\sigma}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} 
-\end{equation}
-where $\boldsymbol{\sigma}$ is the vector of volatilities and $\Sigma$ is the covariance matrix. The denominator represents the volatility of the portfolio and the numerator the weighted average volatility of the assets. More diversification within a portfolio decreases the denominator and leads to a higher diversification ratio.
-Let's construct a portfolio that maximize this ratio.
-
-\begin{ipython}
-def diversification_ratio(w):
-    w_vol = np.dot(np.sqrt(np.diag(covariance)), w.T)
-    port_vol = np.sqrt(np.dot(w.T, np.dot(covariance, w)))
-    diversification_ratio = w_vol/port_vol
-    return -diversification_ratio
-
-bounds = tuple((0, 1) for asset in range(num_assets))
-cons = ({'type': 'eq', 'fun': sum_weights},)
-#cons = cons + ({'type': 'ineq', 'fun': long_only_constraint},)
-weights = [1./num_assets for _ in range(num_assets)]
-opts = minimize(diversification_ratio, weights, bounds=bounds,
-                constraints=cons)
-print (opts)
-\end{ipython}
-\begin{ioutput}
-    fun: -1.3580745811820554
-    jac: array([-0.00035974,  0.00029349, -0.00035594,  0.00077944,  
-                 0.00016446])
-message: 'Optimization terminated successfully.'
-   nfev: 36
-    nit: 5
-   njev: 5
- status: 0
-success: True
-      x: array([0.34867985, 0.18062199, 0.15557008, 0.1235694, 
-                0.19155868])
-\end{ioutput}
-\begin{ipython}
-ret = np.*@sum@*(returns*opts.x)
-vol = np.sqrt(np.dot(opts.x.T, np.dot(covariance, opts.x)))
-print ("Diversification: ", -opts.fun)
-\end{ipython}
-\begin{ioutput}
-Diversification: 1.3580745811820554
-\end{ioutput}
-
-Figure~\ref{fig:max_div} shows how the maximum diversified portfolio compares to the efficient frontier.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/max_div.png}
-	\caption{Portfolio constructed with the maximum diversification technique shown in the return/variance plane.}
-	\label{fig:max_div}
-\end{figure}
 
 \section{Exercises}
 \input{portfolio_ex_text}
