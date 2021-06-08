@@ -130,8 +130,7 @@ nflx  0.028064  0.048576  0.044753  0.040630  0.178332
 \begin{figure}[htb]
 \centering
 \includegraphics[width=0.7\textwidth]{figures/portfolio_sample}
-\caption{Historical series of the closing price of five companies. To compare them, prices, have been normalized to the 
-first value in each series}
+\caption{Historical series of the closing price of five companies. To compare them, prices have been normalized to the first value in each series}
 \label{fig:stocks}
 \end{figure}
     
@@ -244,7 +243,7 @@ results.append((np.sqrt(opts.x.T.dot(covariance.dot(opts.x))),
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=0.7\textwidth]{figures/efficient_frontier.png}
+\includegraphics[width=0.7\textwidth]{figures/efficient_frontier}
 \caption{Efficient frontier for our example portfolio obtained minimizing the the variance and requiring an expected return between 0.02 and 0.45.}
 \label{fig:efficient_frontier}
 \end{figure}
@@ -335,7 +334,7 @@ for eff in np.arange(0.10, 0.45, 0.01):
 
 \begin{figure}[htb]
 \centering
-    \includegraphics[width=0.7\textwidth]{figures/cal.png}
+    \includegraphics[width=0.7\textwidth]{figures/cal}
     \caption{Comparison of efficient frontier with a risk-free asset (red) and with risky asset only (blue).}
     \label{fig:cal}
 \end{figure}
@@ -440,7 +439,7 @@ Figure~\ref{fig:sharpe_ratio} shows the result of the optimization for our examp
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.7\textwidth]{figures/sharpe_ratio.png}
+	\includegraphics[width=0.7\textwidth]{figures/sharpe_ratio}
 	\caption{Sharpe portfolio (green cross) compared to the efficient frontier with a risk-free asset (red) and with risky asset only (blue).}
 	\label{fig:sharpe_ratio}
 \end{figure}
@@ -475,7 +474,7 @@ its parts. This is the key to portfolio diversification. Figure~\ref{fig:diversi
 \begin{figure}[htb]
 	\centering
 	\includegraphics[width=0.7\textwidth]{figures/diversification}
-	\caption{Risk of a portfolio made up from IBM and General Electric against the fraction of GE stock in the portfolio. The curved line represents the risk of the portfolio; the straight line represents sum of the two single risks.}
+	\caption{Risk of a portfolio made up from IBM and General Electric against the fraction of GE stock in the portfolio. The curved line represents the risk of the portfolio; the straight line represents the sum of the two single risks.}
 	\label{fig:diversification}
 \end{figure}
 
@@ -567,57 +566,64 @@ Since we want the previous expression to be true for each $i$, the solution for 
 Going back to our data sample let's find out the weights to give us a risk parity portfolio.
 
 \begin{ipython}
-	num_assets = 5
-	def risk_parity(w, cov):
-	variance = w.T.dot(cov.dot(w))
-	sum = 0
-	N = len(w)
-	for i in range(N):
-	sum += (w[i] - (variance/(N*cov.dot(w)[i])))**2
-	return sum
+num_assets = 5
+def risk_parity(w, cov):
+    variance = w.T.dot(cov.dot(w))
+    *@sum@* = 0
+    N = len(w)
+    for i in range(N):
+        *@sum@* += (w[i] - (variance/(N*cov.dot(w)[i])))**2
+    return *@sum@*
 	
-	args = (covariance,)
-	constraints = ({'type': 'eq', 'fun': sum_weights})
-	bounds = tuple((0, 1) for asset in range(num_assets))
-	weights = [1./num_assets for _ in range(num_assets)]
-	opts = minimize(risk_parity, weights, args=(covariance,),
-	bounds=bounds, constraints=constraints)
-	print (opts)
+args = (covariance,)
+constraints = ({'type': 'eq', 'fun': sum_weights})
+bounds = tuple((0, 1) for asset in range(num_assets))
+weights = [1./num_assets for _ in range(num_assets)]
+opts = minimize(risk_parity, weights, args=(covariance,),
+                bounds=bounds, constraints=constraints)
+print (opts)
 \end{ipython}
 \begin{ioutput}
-	fun: 2.2881862766486147e-07
-	jac: array([-6.98851511e-04,  1.92391042e-04, -4.08403758e-05, 
-	-2.54432521e-05,  1.13250609e-03])
-	message: 'Optimization terminated successfully.'
-	nfev: 38
-	nit: 5
-	njev: 5
-	status: 0
-	success: True
-	x: array([0.25863039, 0.18154282, 0.19666705, 0.22190633, 
-	0.14125342])
+    fun: 2.2881862766486147e-07
+    jac: array([-6.98851511e-04,  1.92391042e-04, -4.08403758e-05, 
+                -2.54432521e-05,  1.13250609e-03])
+message: 'Optimization terminated successfully.'
+   nfev: 38
+    nit: 5
+   njev: 5
+ status: 0
+success: True
+x: array([0.25863039, 0.18154282, 0.19666705, 0.22190633, 
+          0.14125342])
 \end{ioutput}
 
 \begin{ipython}
-	sigma_i = []
-	std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
-	for i in range(num_assets):
-	a = opts.x[i]*covariance.dot(opts.x)[i]
+sigma_i = []
+std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
+for i in range(num_assets):
+    a = opts.x[i]*covariance.dot(opts.x)[i]
 	sigma_i.append(a/std)
 	
-	for i in range(num_assets):
-	print ("Risk contribution for asset {}: {:.3f}%"
-	.format(i, sigma_i[i]/sum(sigma_i)*100))
+for i in range(num_assets):
+    print ("Risk contribution for asset {}: {:.3f}%".format(i, sigma_i[i]
+                                                            /sum(sigma_i)*100))
 \end{ipython}
 \begin{ioutput}
-	Risk contribution for asset 0: 19.974%
-	Risk contribution for asset 1: 19.999%
-	Risk contribution for asset 2: 19.990%
-	Risk contribution for asset 3: 19.992%
-	Risk contribution for asset 4: 20.045%
+Risk contribution for asset 0: 19.974%
+Risk contribution for asset 1: 19.999%
+Risk contribution for asset 2: 19.990%
+Risk contribution for asset 3: 19.992%
+Risk contribution for asset 4: 20.045%
 \end{ioutput}
 
-%Figure~\ref{fig:risk_parity} shows the fraction of risk allocated to each asset and the corresponding weight within the portfolio.
+Figure~\ref{fig:risk_parity} shows the fraction of risk allocated to each asset and the corresponding weight within the portfolio.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/risk_parity}
+	\caption{Fraction of risk allocated among the assets of a portfolio. The blue numbers show the corresponding weight of each asset.}
+	\label{fig:risk_parity}
+\end{figure}
 
 \subsection{Risk Budget Allocation}
 \label{risk-budget-allocation}
@@ -639,62 +645,67 @@ so that the relation to minimise becomes
 \begin{equation} 
 \underset{\mathbf{w}}{\min} \sum _{i=1}^{N}\left[w_{i}-{\frac {f_i \cdot \sigma_p^{2}}{(\Sigma \mathbf{w})_{i}}}\right]^{2} 
 \end{equation}
-
+\noindent
 Translating it into \texttt{python} we get:
-
 \begin{ipython}
-	def risk_budget(w, target_risk, cov):
-	variance = w.T.dot(cov.dot(w))
-	sum = 0
-	N = len(w)
-	for i in range(N):
-	sum += (w[i] - (target_risk[i]*variance)/(cov.dot(w)[i]))**2
-	return sum
+def risk_budget(w, target_risk, cov):
+    variance = w.T.dot(cov.dot(w))
+    *@sum@* = 0
+    N = len(w)
+    for i in range(N):
+        *@sum@* += (w[i] - (target_risk[i]*variance)/(cov.dot(w)[i]))**2
+    return *@sum@*
 	
-	f_i = [0.3, 0.2, 0.2, 0.15, 0.15]
-	args = (f_i, covariance)
-	constraints = ({'type': 'eq', 'fun': sum_weights})
-	bounds = tuple((0, 1) for asset in range(num_assets))
-	weights = [1./num_assets for _ in range(num_assets)]
-	opts = minimize(risk_budget, weights, args=(f_i, covariance),
-	bounds=bounds, constraints=constraints)
-	print (opts)
+f_i = [0.3, 0.2, 0.2, 0.15, 0.15]
+args = (f_i, covariance)
+constraints = ({'type': 'eq', 'fun': sum_weights})
+bounds = tuple((0, 1) for asset in range(num_assets))
+weights = [1./num_assets for _ in range(num_assets)]
+opts = minimize(risk_budget, weights, args=(f_i, covariance),
+                bounds=bounds, constraints=constraints)
+print (opts)
 \end{ipython}
 \begin{ioutput}
-	fun: 4.058673684147486e-08
-	jac: array([-2.64817707e-04,  3.30937403e-04,  2.14530647e-05, 
-	-7.65372775e-05,  3.67853561e-04])
-	message: 'Optimization terminated successfully.'
-	nfev: 45
-	nit: 6
-	njev: 6
-	status: 0
-	success: True
-	x: array([0.3459366 , 0.1800917 , 0.19394454, 0.16890483, 
-	0.11112233])
+    fun: 4.058673684147486e-08
+    jac: array([-2.64817707e-04,  3.30937403e-04,  2.14530647e-05, 
+                -7.65372775e-05,  3.67853561e-04])
+message: 'Optimization terminated successfully.'
+   nfev: 45
+    nit: 6
+   njev: 6
+ status: 0
+success: True
+      x: array([0.3459366 , 0.1800917 , 0.19394454, 0.16890483, 
+                0.11112233])
 \end{ioutput}
 \begin{ipython}  
-	sigma_i = []
-	std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
-	for i in range(num_assets):
-	a = opts.x[i]*covariance.dot(opts.x)[i]
-	sigma_i.append(a/std)
+sigma_i = []
+std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
+for i in range(num_assets):
+    a = opts.x[i]*covariance.dot(opts.x)[i]
+    sigma_i.append(a/std)
 	
-	for i in range(num_assets):
-	print ("Risk contribution for asset {}: {:.3f}%"
-	.format(i, sigma_i[i]/sum(sigma_i)*100))    
+for i in range(num_assets):
+    print ("Risk contribution for asset {}: {:.3f}%".format(i, sigma_i[i]
+                                                            /sum(sigma_i)*100))    
 \end{ipython}
 \begin{ioutput}
-	Risk contribution for asset 0: 29.988%
-	Risk contribution for asset 1: 20.010%
-	Risk contribution for asset 2: 19.996%
-	Risk contribution for asset 3: 14.993%
-	Risk contribution for asset 4: 15.012%
+Risk contribution for asset 0: 29.988%
+Risk contribution for asset 1: 20.010%
+Risk contribution for asset 2: 19.996%
+Risk contribution for asset 3: 14.993%
+Risk contribution for asset 4: 15.012%
 \end{ioutput}
 
-%Figure~\ref{risk_allocation} shows the amount of risk associated to each asset and their weights within the portfolio. 
+Figure~\ref{fig:risk_allocation} shows the amount of risk associated to each asset and their weights within the portfolio. 
 Indeed for each stock we have allocated the desired amount of risk.
 
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/risk_allocation}
+	\caption{Fraction of risk allocated among the assets of a portfolio. The blue numbers show the corresponding weight of each asset.}
+	\label{fig:risk_allocation}
+\end{figure}
 
 \subsection{Maximum Diversification Portfolio}
 \label{maximum-diversification-portfolio}
@@ -711,47 +722,50 @@ where $\boldsymbol{\sigma}$ is the vector of volatilities and $\Sigma$ is the co
 Let's construct a portfolio that maximize this ratio.
 
 \begin{ipython}
-	def diversification_ratio(w):
-	w_vol = np.dot(np.sqrt(np.diag(covariance)), w.T)
-	port_vol = np.sqrt(np.dot(w.T, np.dot(covariance, w)))
-	diversification_ratio = w_vol/port_vol
-	return -diversification_ratio
+def diversification_ratio(w):
+    w_vol = np.dot(np.sqrt(np.diag(covariance)), w.T)
+    port_vol = np.sqrt(np.dot(w.T, np.dot(covariance, w)))
+    diversification_ratio = w_vol/port_vol
+    return -diversification_ratio
 	
-	bounds = tuple((0, 1) for asset in range(num_assets))
-	cons = ({'type': 'eq', 'fun': sum_weights},)
-	#cons = cons + ({'type': 'ineq', 'fun': long_only_constraint},)
-	weights = [1./num_assets for _ in range(num_assets)]
-	opts = minimize(diversification_ratio, weights, bounds=bounds,
-	constraints=cons)
-	print (opts)
+bounds = tuple((0, 1) for asset in range(num_assets))
+cons = ({'type': 'eq', 'fun': sum_weights},)
+#cons = cons + ({'type': 'ineq', 'fun': long_only_constraint},)
+weights = [1./num_assets for _ in range(num_assets)]
+opts = minimize(diversification_ratio, weights, bounds=bounds,
+                constraints=cons)
+print (opts)
 \end{ipython}
 \begin{ioutput}
-	fun: -1.3580745811820554
-	jac: array([-0.00035974,  0.00029349, -0.00035594,  0.00077944,  
-	0.00016446])
-	message: 'Optimization terminated successfully.'
-	nfev: 36
-	nit: 5
-	njev: 5
-	status: 0
-	success: True
-	x: array([0.34867985, 0.18062199, 0.15557008, 0.1235694, 
-	0.19155868])
+    fun: -1.3580745811820554
+    jac: array([-0.00035974,  0.00029349, -0.00035594,  0.00077944,  
+                 0.00016446])
+message: 'Optimization terminated successfully.'
+   nfev: 36
+    nit: 5
+   njev: 5
+ status: 0
+success: True
+      x: array([0.34867985, 0.18062199, 0.15557008, 0.1235694, 0.19155868])
 \end{ioutput}
 \begin{ipython}
-	ret = np.*@sum@*(returns*opts.x)
-	vol = np.sqrt(np.dot(opts.x.T, np.dot(covariance, opts.x)))
-	print ("Diversification: ", -opts.fun)
+ret = np.sum(returns*opts.x)
+vol = np.sqrt(np.dot(opts.x.T, np.dot(covariance, opts.x))) 
+print ("Return: ", ret)
+print ("Vol: ", vol)
+print ("Diversification: ", -opts.fun)
 \end{ipython}
 \begin{ioutput}
-	Diversification: 1.3580745811820554
+Return:  0.32143376694380044
+Vol:  0.20743461253140413
+Diversification:  1.360393553158368
 \end{ioutput}
 
 Figure~\ref{fig:max_div} shows how the maximum diversified portfolio compares to the efficient frontier.
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.7\textwidth]{figures/max_div.png}
+	\includegraphics[width=0.7\textwidth]{figures/max_div}
 	\caption{Portfolio constructed with the maximum diversification technique shown in the return/variance plane.}
 	\label{fig:max_div}
 \end{figure}
@@ -807,14 +821,14 @@ Those who use CAPM pick individual stocks or portfolios, and compare them to dif
 	\label{fig:linear_regression}
 \end{figure}
 
-The relationship between risk and expected return is called the \emph{security market line} (SML). An example of this line is shown in Fig.~\ref{fig:sel}. %As indicated before, the expected return on a security generally equals the risk-free rate plus a risk premium. 
+The relationship between risk and expected return is called the \emph{security market line} (SML). An example of this line is shown in Fig.~\ref{fig:sml}. %As indicated before, the expected return on a security generally equals the risk-free rate plus a risk premium. 
 In CAPM the risk premium is measured as $\beta$ times the expected return on the market minus the risk-free rate. No measure of unsystematic risk appears in the risk premium, of course, for in the world of CAPM diversification has already eliminated it.
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.7\textwidth]{figures/sel}
+	\includegraphics[width=0.7\textwidth]{figures/sml}
 	\caption{Security market line.}
-	\label{fig:sel}
+	\label{fig:sml}
 \end{figure}
 
 In the freely competitive financial markets described by CAPM, no security can sell for long at prices low enough to yield more than its appropriate return on the SML. The security would then be very attractive compared with other securities of similar risk, and investors would bid its price up until its expected return fell to the appropriate position on the SML. Conversely, investors would sell off any stock selling at a price high enough to put its expected return below its appropriate position. The resulting reduction in price would continue until the stock’s expected return rose to the level justified by its systematic risk.
@@ -1037,23 +1051,21 @@ for i, index in enumerate(indices[0:3]):
 	
 From Fig.~\ref{fig:ret_pc1} to~\ref{fig:ret_pc3} it is clear how the PC1 portfolio return looks identical to the market portfolio. The second and third PC portfolio returns look quite different instead. It is not easy to interpret them, maybe they are connected to higher order momenta. 
 
-\begin{figure}[tbh]
+\begin{figure}[htbp]
 	\centering
-	\includegraphics[width=.7\textwidth]{figures/cum_ret_pc1_vs_market}
-	\caption{Cumulative return of PC1 portfolio (left) compared to the market return (right).}
-	\label{fig:ret_pc1}
-\end{figure}
-\begin{figure}[tbh]
-	\centering
-	\includegraphics[width=.7\textwidth]{figures/cum_ret_pc2_vs_market}
-	\caption{Cumulative return of PC2 portfolio (left) compared to the market return (right).}
-	\label{fig:ret_pc2}
-\end{figure}
-\begin{figure}[tbh]
-	\centering
-	\includegraphics[width=.7\textwidth]{figures/cum_ret_pc3_vs_market}
-	\caption{Cumulative return of PC3 portfolio (left) compared to the market return (right).}
-	\label{fig:ret_pc3}
+		\subfloat[Cumulative return of PC1 (left) compared to the market return (right).\label{fig:ret_pc1}]{%
+		\includegraphics[width=0.7\textwidth]{figures/cum_ret_pc1_vs_market}
+	}\\
+	\subfloat[Cumulative return of PC2 (left) compared to the market return (right).
+	\label{fig:ret_pc2}]{%
+		\includegraphics[width=0.7\textwidth]{figures/cum_ret_pc2_vs_market}
+	}\\
+	\subfloat[Cumulative return of PC3 (left) compared to the market return (right). 
+	\label{fig:ret_pc3}]{%
+		\includegraphics[width=0.7\textwidth]{figures/cum_ret_pc3_vs_market}
+	}
+	\caption{Comparison of cumulative return of various principle components portfolios to the market return.}
+    \label{fig:dummy2}
 \end{figure}
 
 It can be verified that PC1 portfolio still looks like the market also for other time horizon, repeating the same steps using weekly or monthly data.
