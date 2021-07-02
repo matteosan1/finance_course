@@ -755,57 +755,232 @@ In this second case, being the interior cools down being initially warmer than t
 \end{figure} 
 
 \section{Solving Black Scholes Equation}
-Pricing an option can be done using the Black-Scholes partial differential equation (BS PDE). Here we are talking about partial differential equations since the solution will be function of more than one variables. 
-The BS PDE can be derived by applying It$\hat{o}$’s Lemma to geometric Brownian motion and then setting the necessary conditions to satisfy the continuous-time delta hedging, see Chapter~\ref{ch:BS}
+%Pricing an option can be done using the Black-Scholes partial differential equation (BS PDE). Here we are talking about partial differential equations since the solution will be function of more than one variables. 
+%The BS PDE can be derived by applying It$\hat{o}$’s Lemma to geometric Brownian motion and then setting the necessary conditions to satisfy the continuous-time delta hedging, see Chapter~\ref{ch:BS}
+%
+%\begin{equation}
+%\cfrac{\partial V}{\partial t} + \cfrac{1}{2} \sigma^2 S^2 \cfrac{\partial^2 V}{\partial S^2}+ rS \cfrac{\partial V}{\partial S} − rV = 0
+%\end{equation}
+%
+%We will solve this equation numerically, using \texttt{python}. The main advantage of this method is that it bypasses very complicated analytical calculations with numerical methods, which are done by our computer.
+%
+%This grid will be used to simulate the PDE from point to point. The grid on the $x$-axis will represent the simulated times, which ranges from $[0,1]$ and the $y$-axis will represent the possible stock prices, ranging from $[S_{min},S_{max}]$. The result will be a 3D graph and our job is to determine the option price above each point on the grid.
+%
+%To simulate on the grid we need to determine 3 boundaries (edge) conditions of the grid. In our case, we can do this for the top, the bottom, and the last boundary of the grid. The bottom is the easiest, we will set $S_{min}=0$. The top condition is a bit more tricky. It should be well above the option’s strike price $K$ to ensure the option’s value $V = \textrm{max}(S-K, 0)$ will always (with negligible probability of not happening $p < 0.0001$) payout $S-K$ . We can do this by setting $S_{max}$ 8 standard deviations away from the mean, as the stock price is log-normally distributed. So, if we take $S_{max}=8\sigma*(T-t)^{0.5}$ , we have ensured that property.
+%The option value $V$ at $S_{max}$ can be deducted using a replication argument. If a derivative pays $S-K$ at time $t$, we can replicate it by purchasing 1 unit of stock and putting $e^{(-r(1-t))}*K$ it into a risk-free bank account. So this makes the value of the option for large $S$: $V(t,S_{max})=S_{max} - e^{(-r(1-t))}*K$.
+%The final boundary condition will be the European call option’s payoff, as that will give the exact value for the option. So the three boundary conditions are
+%
+%\begin{gather}
+%V(t, S_{min}) = 0\\
+%V(t,S_{max})=S_{max} - e^{(-r(1-t))}*K\\
+%V(1, S) = \textrm{max}(S-K, 0)
+%\end{gather}
+%
+%In the stock price direction (vertical) we introduce $M$ points. To think about this, imagine that the possible range of $S$ is $[0,100]$ with $M=100$. This will make 100 stock points with 1 at every integer. We do the same in the time direction (horizontal) with $N$ steps. This will create a $N+1 \times  M+1$ matrix, which we can use to create derivative estimates.
+%
+%\subsection{Estimating derivatives}
+%With the discretized space, we can use central difference estimates for the derivatives of the option value (the delta and gamma from the greeks).
+%
+%\begin{gather}
+%\Delta = \cfrac{\partial V(t, S_i)}{\partial S} = \cfrac{V(t, S_{i+1})-V(t, S_{i-1})}{2\delta S}\\
+%\Gamma = \cfrac{\partial^2 V(t, S_i)}{\partial S^2} = \cfrac{V(t, S_{i+1})-2V(t, S_i) + V(t,S_{i-1})}{(\delta S)^2}
+%\end{gather}
+%
+%Plugging these into the Black-Scholes PDE, we get
+%\begin{equation}
+%\cfrac{\partial V_i}{\partial t} + \cfrac{1}{2} \sigma^2 S_i^2 \cfrac{V(t, S_{i+1})-2V(t, S_i) + V(t,S_{i-1})}{(\delta S)^2} + rS_i \cfrac{V(t, S_{i+1})-V(t, S_{i-1})}{2\delta S} − rV_i \approx 0
+%\end{equation}
+%
+%This can be understood easily by visualizing what the above equation does. It basically takes 3 points and calculates a weighted average of those to arrive at a point 1 step forward in time.
+%
+%By iterating the above process we can simulate the above grid by going one step at a time. Note, that as we know the final boundary condition and not the first, we will be actually be going back in time.
+%
+%\begin{equation}
+%V_{t+1} = V_t - \cfrac{1}{2} \sigma^2 S_i^2 \cfrac{V(t, S_{i+1})-2V(t, S_i) + V(t,S_{i-1})}{(\delta S)^2} - rS_i \cfrac{V(t, S_{i+1})-V(t, S_{i-1})}{2\delta S} + rV_t
+%\end{equation}
+%
+%This is a system of ODEs, where $V$ is the column vector of option prices at each timestep. Moreover, we need to add a vector to the above equation that contains the boundary conditions at time $t$: $W_t$ , and then we can rewrite the equation in matrix notation, such that $\Lambda$ contains the multipliers. This equation now contains all the information we have and is called the explicit method. It uses the backward difference estimate for $V$ concerning $t$, which is equivalent to the forward's difference if we were simulating forward it time (we are simulating backward).
+%s
+%\begin{equation}
+%V_{t-1} \approx (1-\Lambda\delta t)V_t -\delta t W_t
+%\end{equation}
+%
+%So, to code it up we need functions for the boundary conditions.
+%
+%\begin{ipython}
+%import numpy as np
+%import scipy.sparse
+%import matplotlib.pyplot as plt
+%from mpl_toolkits.mplot3d import Axes3D
+%
+%def bottom_boundary_condition(K,T,S_min, r, t):
+%    return np.zeros(t.shape)
+%
+%def top_boundary_condition(K,T,S_max, r, t):
+%    return S_max-np.exp(-r*(T-t))*K
+%
+%def bottom_boundary_condition(K,T,S_min, r, t):
+%    return np.maximum(S-K,0)
+%
+%def compute_abc( K, T, sigma, r, S, dt, dS ):
+%    a = -sigma**2 * S**2/(2* dS**2 ) + r*S/(2*dS)
+%    b = r + sigma**2 * S**2/(dS**2)
+%    c = -sigma**2 * S**2/(2* dS**2 ) - r*S/(2*dS)
+%    return a,b,c
+%    
+%def compute_lambda( a,b,c ):
+%    return scipy.sparse.diags( [a[1:],b,c[:-1]],offsets=[-1,0,1])
+%
+%def compute_W(a,b,c, V0, VM): 
+%    M = len(b)+1
+%    W = np.zeros(M-1)
+%    W[0] = a[0]*V0 
+%    W[-1] = c[-1]*VM 
+%    return W    
+%
+%def price_call_explicit( K, T, r, sigma, N, M):
+%    # Choose the shape of the grid
+%    dt = T/N
+%    S_min=0
+%    S_max=K*np.exp(8*sigma*np.sqrt(T))
+%    dS = (S_max-S_min)/M
+%    S = np.linspace(S_min,S_max,M+1)
+%    t = np.linspace(0,T,N+1)
+%    V = np.zeros((N+1,M+1)) #...
+%    
+%    # Set the boundary conditions
+%    V[:,-1] = top_boundary_condition(K,T,S_max,r,t)
+%    V[:,0] = bottom_boundary_condition(K,T,S_max,r,t)
+%    V[-1,:] = final_boundary_condition(K,T,S) #...
+%    
+%    # Apply the recurrence relation
+%    a,b,c = compute_abc(K,T,sigma,r,S[1:-1],dt,dS)
+%    Lambda =compute_lambda( a,b,c) 
+%    identity = scipy.sparse.identity(M-1)
+%    
+%    for i in range(N,0,-1):
+%        W = compute_W(a,b,c,V[i,0],V[i,M])
+%        # Use `dot` to multiply a vector by a sparse matrix
+%        V[i-1,1:M] = (identity-Lambda*dt).dot( V[i,1:M] ) - W*dt
+%        
+%    return V, t, S
+%\end{ipython}
+%
+%
+%Plotting t and S against V , we get a very nice plot of the option payoff at every time-stock combination.
+%
+%We can see that at t=1 the option value is exactly equal to its payoff, which is a great sanity check. Below you can see how the curve evolves into the option payoff at the final time. This is exactly what we want.
+%
+%
+%
+
+
+Let's introduce again the Black-Scholes (BS) equation, see also Chapter~\ref{ch:BS}
 
 \begin{equation}
 \cfrac{\partial V}{\partial t} + \cfrac{1}{2} \sigma^2 S^2 \cfrac{\partial^2 V}{\partial S^2}+ rS \cfrac{\partial V}{\partial S} − rV = 0
 \end{equation}
+where $V$ stands for the price of the option, $S$ denotes the current value of the underlying assets, $t$ is time, $r$ the risk-free interest rate and $\sigma$ is the volatility of the underlying asset.
 
-We will solve this equation numerically, using \texttt{python}. The main advantage of this method is that it bypasses very complicated analytical calculations with numerical methods, which are done by our computer.
+The BS equation is aimed at calculating the price of an option, and the only unknown here is the price of the option ($V$), depending on $S$ and $t$. In the next Sections we will use finite difference method to solve this nonlinear second-order parabolic equation.
 
-This grid will be used to simulate the PDE from point to point. The grid on the $x$-axis will represent the simulated times, which ranges from $[0,1]$ and the $y$-axis will represent the possible stock prices, ranging from $[S_{min},S_{max}]$. The result will be a 3D graph and our job is to determine the option price above each point on the grid.
+\subsection{Initial Conditions}
+Consider an European call option $C(S, t)$ of a stock at the expiry time $t=T$. Its payoff is given by $C(S, T) = \textrm{max}(S-K, 0)$. This is the final condition for the Black-Scholes equation, however, usually we prefer to deal with an initial condition with a form  $C(S,0)=f(S)$. So we can apply a change of variable
 
-To simulate on the grid we need to determine 3 boundaries (edge) conditions of the grid. In our case, we can do this for the top, the bottom, and the last boundary of the grid. The bottom is the easiest, we will set $S_{min}=0$. The top condition is a bit more tricky. It should be well above the option’s strike price $K$ to ensure the option’s value $V = \textrm{max}(S-K, 0)$ will always (with negligible probability of not happening $p < 0.0001$) payout $S-K$ . We can do this by setting $S_{max}$ 8 standard deviations away from the mean, as the stock price is log-normally distributed. So, if we take $S_{max}=8\sigma*(T-t)^{0.5}$ , we have ensured that property.
-The option value $V$ at $S_{max}$ can be deducted using a replication argument. If a derivative pays $S-K$ at time $t$, we can replicate it by purchasing 1 unit of stock and putting $e^{(-r(1-t))}*K$ it into a risk-free bank account. So this makes the value of the option for large $S$: $V(t,S_{max})=S_{max} - e^{(-r(1-t))}*K$.
-The final boundary condition will be the European call option’s payoff, as that will give the exact value for the option. So the three boundary conditions are
+\begin{equation}
+t^* = T - t \rightarrow \cfrac{\partial V}{\partial t} = -\cfrac{\partial V}{\partial t^*} 
+\end{equation}
+which substitued in the BS equation gives
 
+\begin{equation}
+\cfrac{\partial V}{\partial t^*} - \cfrac{1}{2} \sigma^2 S^2 \cfrac{\partial^2 V}{\partial S^2} - rS \cfrac{\partial V}{\partial S} + rV = 0
+\end{equation}
+with initial condition $V(S,0)=\textrm{max}(S-K, 0)$. Be careful that this initial condition reflects the expiry moment $t=T$ and when we are stepping forward to calculate the last time step in $t^*$ we are actually calculating the price of the call option at $t=0$.
+
+\subsection{Boundary Conditions}
+In order to make it a well-posed partial differential equation, we need to define the boundary conditions on both sides. The current price of the stock $S$ can take values in the interval $[0, \infty)$ which is unbounded. However, in the numerical method, we need to set an artificial bound $S_{max}$ concerning the space discretization, otherwise we will have an infinite number of grid points. Usually it is recommended to set $S_{max}$ around four times the exercise price $K$ ($S_{max} = 4K$).
+
+So in conclusion the boundary conditions can be written as
+\begin{equation}
+\begin{cases}
+V(0, t^*) = 0 \\
+V(S_{max}, t^*) = S_{max} - K \\
+\end{cases}
+\end{equation}
+
+\subsection{Problem Statement}
+Consider an European call style option with an underlying currently traded at 20\$ with a volatility of 0.4. The term is three months and the strike price is 10\$. The risk-free interest rate is 10\%. What should the price per share be for the option ?
+
+\begin{ipython}
+import numpy as np
+import matplotlib.pyplot as plt
+
+T = 0.25
+r = 0.1
+sigma = 0.4
+K = 10
+S_max = 4*K
+\end{ipython}
+
+We need to write out the discretized form for each term
 \begin{gather}
-V(t, S_{min}) = 0\\
-V(t,S_{max})=S_{max} - e^{(-r(1-t))}*K\\
-V(1, S) = \textrm{max}(S-K, 0)
+\cfrac{\partial V}{\partial t^*} = \cfrac{V_{i, n+1}-V_{i, n}}{\Delta t} \\
+\cfrac{\partial V}{\partial S} = \cfrac{V_{i+1, n}-V_{i-1, n}}{2\Delta S} \\
+\cfrac{\partial^2 V}{\partial S^2} = \cfrac{V_{i+1, n}-2V_{i, n}+V_{i-1, n}}{\Delta S^2}
 \end{gather}
-
-In the stock price direction (vertical) we introduce $M$ points. To think about this, imagine that the possible range of $S$ is $[0,100]$ with $M=100$. This will make 100 stock points with 1 at every integer. We do the same in the time direction (horizontal) with $N$ steps. This will create a $N+1 \times  M+1$ matrix, which we can use to create derivative estimates.
-
-\subsection{Estimating derivatives}
-With the discretized space, we can use central difference estimates for the derivatives of the option value (the delta and gamma from the greeks).
-
-\begin{gather}
-\Delta = \cfrac{\partial V(t, S_i)}{\partial S} = \cfrac{V(t, S_{i+1})-V(t, S_{i-1})}{2\delta S}\\
-\Gamma = \cfrac{\partial^2 V(t, S_i)}{\partial S^2} = \cfrac{V(t, S_{i+1})-2V(t, S_i) + V(t,S_{i-1})}{(\delta S)^2}
-\end{gather}
-
-Plugging these into the Black-Scholes PDE, we get
-\begin{equation}
-\cfrac{\partial V_i}{\partial t} + \cfrac{1}{2} \sigma^2 S_i^2 \cfrac{V(t, S_{i+1})-2V(t, S_i) + V(t,S_{i-1})}{(\delta S)^2} + rS_i \cfrac{V(t, S_{i+1})-V(t, S_{i-1})}{2\delta S} − rV_i \approx 0
-\end{equation}
-
-This can be understood easily by visualizing what the above equation does. It basically takes 3 points and calculates a weighted average of those to arrive at a point 1 step forward in time.
-
-By iterating the above process we can simulate the above grid by going one step at a time. Note, that as we know the final boundary condition and not the first, we will be actually be going back in time.
+and the the discretized Black-Scholes equation
 
 \begin{equation}
-V_{t+1} = V_t - \cfrac{1}{2} \sigma^2 S_i^2 \cfrac{V(t, S_{i+1})-2V(t, S_i) + V(t,S_{i-1})}{(\delta S)^2} - rS_i \cfrac{V(t, S_{i+1})-V(t, S_{i-1})}{2\delta S} + rV_t
+\cfrac{V_{i, n+1}-V_{i, n}}{\Delta t} - \cfrac{1}{2}\sigma^2 S^2
+\cfrac{V_{i+1, n}-2V_{i, n}+V_{i-1, n}}{\Delta S^2} - rS
+\cfrac{V_{i+1,n}-V_{i-1,n}}{2\Delta S} + rV_{i,n} = 0
 \end{equation}
 
-This is a system of ODEs, where $V$ is the column vector of option prices at each timestep. Moreover, we need to add a vector to the above equation that contains the boundary conditions at time $t$: $W_t$ , and then we can rewrite the equation in matrix notation, such that $\Lambda$ contains the multipliers. This equation now contains all the information we have and is called the explicit method. It uses the backward difference estimate for $V$ concerning $t$, which is equivalent to the forward's difference if we were simulating forward it time (we are simulating backward).
+Since $S=i\Delta S$ we can rearrange the above equation as:
 
 \begin{equation}
-V_{t-1} \approx (1-\Lambda\delta t)V_t -\delta t W_t
+\cfrac{V_{i, n+1}-V_{i, n}}{\Delta t} - \cfrac{1}{2}\sigma^2 i^2
+\left(V_{i+1, n}-2V_{i, n}+V_{i-1, n}\right) - \cfrac{1}{2}ri
+\left(V_{i+1,n}-V_{i-1,n}\right) + rV_{i,n} = 0
+\end{equation}
+and the option price at the next time step can be expressed as
+\begin{equation}
+V_{i, n+1} = \cfrac{1}{2}\left(\sigma^2 i^2+ri\right)V_{i+1,n} \Delta t +
+\left(1-\sigma^2 i^2\Delta t-r\Delta t \right)V_{i,n} +
+\cfrac{1}{2}\left(\sigma^2 i^2 - ri\right)V_{i-1,n} \Delta t
 \end{equation}
 
-So, to code it up we need functions for the boundary conditions.
+\begin{ipython}
+def FTCS(V, N, M, dt, r, sigma):
+    index = np.arange(1, M)
+    for n in range(N):
+        V[1:-1] = 0.5 * (sigma**2 * index**2 * dt + r*index*dt) * V[2:] \
+             + (1 - sigma**2 * index**2 * dt - r*dt) * V[1:-1] \
+                0.5 * (sigma**2 * index**2 * dt - r*index*dt) * V[0:-2]
+    return V 
+    
+N = 2000 # number of time steps
+M = 200  # number of space grids
+dt = T/N
+S = np.linspace(0, S_max, M+1)
+
+V = S - K
+V = np.clip(V, 0, S_max-K)
+
+V_exp = FTCS(V, N, M, dt, r, sigma)
+# using M/2 as index since the grid goes from 0 to 40 (4*K)
+# and we want the price for S=20 
+print ("option price {}".format(V_exp[int(M/2)])) 
+\end{ipython}
+
+Figure~\ref{fig:bs_finite_difference} shows the call option price against the current stock price. As a comparison the same plot obtained with the analytical solution of the Black-Scholes equation is also shown. 
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.9\textwidth]{figures/bs_finite_difference}
+	\caption{European option price as a function of the current stock price, computed using the finite difference method.}
+	\label{fig:bs_finite_difference}
+\end{figure} 
 
 \section{Exercises}
 \input{finite_difference_ex_text}

@@ -1,43 +1,64 @@
 \chapter{Black-Scholes Model}
 \label{ch:BS}
 
-\section{Black-Scholes PDE: Derivation}
-Suppose that stock price S follows a geometric Brownian motion
+\section{Black-Scholes Model}
+Suppose that stock price $S$ follows a geometric Brownian motion
 
 \begin{equation}
 dS = \mu Sdt + \sigma SdW
+\label{eq:bs_gbm}
 \end{equation}
 
-Further assumptions (besides GBP):
+we are going to derive a partial differential equation (PDE) for the price of a derivative based on such a stock.
+
+The model proposed by Black and Scholes relies on the following set of additional assumptions (besides the geometric Brownian motion):
 \begin{itemize}
 \tightlist 
-\item constant risk-less interest rate r;
+\item constant risk-less interest rate $r$;
 \item no transaction costs;
 \item it is possible to buy/sell any (also fractional) number of stocks; similarly with the cash;
 \item no restrictions on short selling;
 \item option is of European type.
 \end{itemize}
 
-We derive a partial differential equation for the price of a derivative.
-Explicit solution for European call and put options.
+After the derivation of the model equation we will determine the explicit solution for European call and put options.
 
-Firstly, let us consider the case of a non-dividend paying stock.
+\subsection{Merton Derivation}
+In this Section we are going to provide the steps followed by Merton to derive the Black-Scholes PDE.
 
-$S$ = stock price,
-$t$= time
-$V=V(S, t)$ = option price
+Firstly, let's consider the case of a non-dividend paying stock. Imagine a portfolio consisting of options, stocks and cash with the properties that at each time $t$ the portfolio has zero value and it is \emph{self-financing}, which means that if there is no exogenous infusion or withdrawal of money, the purchase of a new asset must be financed by the sale of an old one.
 
-Define a portfolio made of 1 option and $\delta$ stocks. The value $P$ of this portfolio is:
+Let be 
+\begin{itemize}
+\item $Q_S$, the number of stoks, each of them with value $S$;
+\item $Q_V$, number of options, each of them with value $V$;
+\item $B$, cash on the account, which is continuously compounded using the risk-free rate $r$.
+\end{itemize}
 
+The required properties can be formulated mathematically as
 \begin{equation}
-P = V + \delta S
-\end{equation}
-So the change in the portfolio value
-\begin{equation}
- dP = dV + \delta dS
+\begin{cases}
+SQ_S+VQ_V+B=0 \\
+SdQ_S + V dQ_V +\delta B = 0 \\
+dB = rBdt+\delta B
+\end{cases}
+\label{eq:bs_properties}
 \end{equation}
 
-From the assumptions of $S$ following a geometric Brownian motion and from the It$\hat{o}$'s lemma:
+Differentiating the first of Eq.~\ref{eq:bs_properties}
+\begin{equation}
+\begin{split}
+&d(SQ_S + VQ_V +B) = d(SQ_S + VQ_V) + \overbrace{dB}^{rBdt+\delta B} = 0 \\
+& \overbrace{SdQ_s + VdQ_V +\delta B}^{=0} + Q_S dS + Q_V dV + rBdt = 0 \\
+& Q_SdS+Q_VdV \overbrace{-r(SQ_S + VQ_V)}^{rB}dt=0\\
+\end{split} 
+\end{equation}
+Dividing by $Q_V$ and setting $\Delta = -\frac{Q_S}{Q_V}$
+\begin{equation}
+dV -rVdt-\Delta (dS - rSdt)=0
+\end{equation}
+$dS$ can be determined from Eq.~\ref{eq:bs_gbm}, while $dV$ applying It$\hat{o}$'s lemma. Then we choose $\Delta$ (i.e. the ratio between the number of stocks and options) so that it eliminates the randomness (i.e. the coefficient at $dW$ is zero).
+  
 \begin{equation}
 dV = \left(\cfrac{\partial V}{\partial t} + \mu S  \cfrac{\partial V}{\partial S} + \cfrac{1}{2} \sigma^2 S^2  \cfrac{\partial^2 V}{\partial S^2} \right) dt + \sigma S \cfrac{\partial V}{\partial S} dW
 \end{equation} 
@@ -49,50 +70,25 @@ We eliminate the randomness
 \begin{equation}
 \delta = -\cfrac{\partial V}{\partial S}
 \end{equation}
-Non-stochastic portfolio, from no-arbitrage consideration its value has to be the same as
-if being on a bank account with interest rate
-\begin{equation}
-dP = rP dt
-\end{equation}
 
-Equality between the two expressions for $dP$ and substituting $P = V + \delta S$ 
 \begin{equation}
 \cfrac{\partial V}{\partial t} + \cfrac{1}{2} \sigma^2 S^2 \cfrac{\partial^2 V}{\partial S^2}+ rS \cfrac{\partial V}{\partial S} − rV = 0
 \end{equation}
 
-\subsection{Dividends in the Black-Scholes Derivation}
-We consider continuous dividend rate $q$, i.e. holding a stock with value $S$ during the time differential $dt$ brings dividends $qSdt$. In this case the change in the portfolio value equals
+\section{Solutions of Black-Scholes PDE}
+Now we need to find a solution $V(S, t)$ to the partial differential equation which holds for $S >0$, $t \in [0, T)$.
 
-\begin{equation}
-dP = dV + \delta dS + \delta qSdt
-\end{equation}
+So far we have not used the fact that we consider an option (in general the PDE holds for any derivative that pays a payoff at time $T$ depending on the stock price at this time).
+Clearly the type of derivative determines the terminal condition at time $T$, so in general $V(S, T)$ = payoff of the derivative.
 
-We proceed in the same way as before and obtain
-\begin{equation}
-\cfrac{\partial V}{\partial t} + \cfrac{1}{2} \sigma^2 S^2 \cfrac{\partial^2 V}{\partial S^2}+ (q-r)S \cfrac{\partial V}{\partial S} − rV = 0
-\end{equation}
-
-\section{Black-Scholes PDE: Solutions}
-
-Mathematical formulation of the model:
-Find solution
-V(S, t) to the partial differential equation (so called Black-Scholes PDE)
-% \partial V \partial t + 12 \sigma 2S2  \partial 2V \partial S2 + rS  \partial V \partial S − rV = 0
-which holds for $S >0$, $t \in [0, T)$.
-
-So far we have not used the fact that we consider an option. PDE holds for any derivative that pays a payoff at time $T$ depending on the stock price at this time
-Type of the derivative determines the terminal condition at time $T$
-In general $V(S, T)$ = payoff of the derivative 
-
-\subsection{Black-Scholes PDE: Simple Solutions}
-SOME SIMPLE "DERIVATIVES":
+\subsection{Simple Solutions}
 How to price the derivatives with the following payoffs:
 \begin{itemize}
 \tightlist
-\item $V(S, T) = S$, it is in fact a stock $V(S, t) = S$
+\item $V(S, T) = S$, it is in fact a stock so $V(S, t) = S$
 \item $V(S, T) = E$ with a certainty we obtain the cash $E$ ($V(S, t) = Ee^{−r(T−t)}$)
 \end{itemize}
-by substitution into the PDE we see that they are indeed solutions.
+by substitution into the PDE it is possible to check that they are indeed solutions.
 %EXERCISES:
 %Find the price of a derivative with payoff
 %$V(S, T) =S^n$,where $n\in N$.
@@ -100,688 +96,95 @@ by substitution into the PDE we see that they are indeed solutions.
 %HINT: Look for the solution in the form
 %$V(S, t) =A(t)S^n$
 
-Find all solutions to the Black-Scholes PDE, which are independent of time, i.e., for which
-$V(S, t) = V(S)$
+%Find all solutions to the Black-Scholes PDE, which are independent of time, i.e., for which
+%$V(S, t) = V(S)$
 
 \subsection{Binary Options}
-Let us consider a binary option, which pays \$1 if the stock price is higher that $E$ at expiration time, otherwise its payoff is zero.
+Let us consider a binary option, which pays \$1 if the stock price is higher that $K$ at expiration time, otherwise its payoff is zero.
 In this case
 \begin{equation}
 V(S, T) = 
 	\begin{cases}
-		1, \quad\textrm{if }S > E\\
+		1, \quad\textrm{if }S > K\\
 		0, \quad\textrm{otherwise}	
 	\end{cases}
 \end{equation}
 
+The main idea is to transform the Black-Scholes PDE to a heat equation with some variable transformations.
 
-The main idea is to transform the Black-Scholes PDE to a heat equation.
-Transformations are independent of the derivative type; it affects only the initial condition of the heat equation
+The first step is to apply the transformation $x = \textrm{ln}(S/K)$ and a new function $Z(x, \tau) = V (Ee^x, T -\tau)$. 
+The PDE for $Z(x, \tau)$ becomes:
+\begin{gather}
+\cfrac{\partial Z}{\partial \tau} -\cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial x^2}+\left(\cfrac{\sigma^2}{2}−r\right)  \cfrac{\partial Z}{\partial x} + rZ = 0\\
+Z(x, 0) =V(Ee^x, T)
+\end{gather}
 
-%Partial differential equation
-% \partial V \partial t +12 \sigma 2S2  \partial 2V \partial S2 + rS  \partial V \partial S − rV = 0
-%which holds for S >0, t∈ [0, T).
+Then we want the PDE to become a heat equation. This is done by considering the new function $u(x,\tau)=e^{\alpha x + \beta\tau}Z(x,\tau)$ where the constant $\alpha, \beta \in \mathbb{R}$ are chosen so that the PDE for $u$ is the heat equation.
 
-Terminal condition $V(S, T)$ = payoff of the derivative for $S > 0$.
+The corresponding PDE for $u$ is
+\begin{gather}
+\cfrac{\partial u}{\partial \tau} -\cfrac{\sigma^2}{2} \cfrac{\partial^2 u}{\partial x^2}+A\cfrac{\partial u}{\partial x} + Bu = 0\\ \\
+u(x,0)=e^{\alpha x}Z(x,0)=e^{\alpha x}V(Ke^x, T)
+\end{gather}
+where
+\begin{equation}
+\begin{cases}
+A=\alpha\sigma^2 + \cfrac{\sigma^2}{2}-r\\
+B=(1+\alpha)r-\beta-\cfrac{\alpha^2\sigma^2+\alpha\sigma^2}{2}
+\end{cases}
+\end{equation}
 
-%STEP 1:
-%Transformation x = ln(S/E) ∈ R, τ = T − t ∈ [0, T] and a
-%new function
-%Z (x, τ ) = V (Eex, T −τ)
-%PDE for
-%Z(x, τ), x∈R, τ∈ [0, T]:
-% \partial Z \partial τ− 12 \sigma 2 \partial 2Z \partial x2+\sigma 22−r  \partial Z \partial x + rZ = 0,
-%Z(x, 0) =V(Eex, T)
-%
-%STEP 2:
-%Transformation to heat equation
-%New function
-%u(x, τ ) =eαx+βτZ(x, τ), where the constants
-%α, β∈R are chosen so that the PDE for u is the heat equation
-%
-%Black-Scholes PDE: transformations
-%PDE for
-%u: \partial u \partial τ−\sigma 22 \partial 2u \partial x2+A \partial u \partial x+ Bu = 0 ,u(x, 0) = eαx Z(x, 0) = eαxV(Eex, T),
-%where
-%A= α\sigma 2+\sigma 22− r, B = (1 +α)r−β−α2\sigma 2+ α\sigma 22
-%
-%In order to have
-%A=B = 0, we set
-%α=r\sigma 2−12, β=r2+\sigma 28+r22\sigma 2
-%
-%STEP 3:
-%Solution
-%u(x, τ) of the PDE  \partial u \partial τ−\sigma 22 \partial 
-%2
-%u
-% \partial x
-%2 = 0 is given by
-%Green formula
-%u
-%(x, τ ) =
-%1
-%√
-%2
-%\sigma 
-%2πτ
-%Z
-%∞
-%−∞
-%e
-%−
-%(x
-%−
-%s)
-%2
-%2
-%\sigma 
-%2
-%τ
-%u
-%(s, 0) ds .
-%• We evaluate the integral and perform backward
-%substitutions
-%u
-%(x, τ
-%)
-%→
-%Z
-%(x, τ
-%)
-%→
-%V
-%(S, t
-%)
-%V. Black-Scholes model: Derivation and solution – p.18/36
-%Black-Scholes PDE: binary option (continued)
-%• Transformations from the previous slides
-%• We obtain the heat equation  \partial u \partial τ
-%−
-%\sigma 
-%2
-%2
-% \partial 
-%2
-%u
-% \partial x
-%2 = 0 with initial
-%condition
-%u
-%(x, 0) =
-%eαx
-%V
-%(Ee
-%x, T) =
-%(
-%eαx if Ee
-%x > E
-%0 otherwise
-%=
-%(
-%eαx if x >
-%0
-%0 otherwise
-%• Solution
-%u
-%(x, τ
-%):
-%u
-%(x, τ ) =
-%1
-%√
-%2π\sigma 
-%2
-%τ
-%Z
-%∞
-%0
-%e
-%−
-%(x
-%−
-%s)
-%2
-%2
-%\sigma 
-%2
-%τ
-%eαsds
-%=
-%. . .
-%=
-%eαx
-%+
-%1
-%2
-%\sigma 
-%2τα
-%2
-%N
-%
-%x
-%+
-%\sigma 
-%2τα
-%\sigma 
-%√
-%τ
-%
-%where
-%N
-%(
-%y) =
-%√1
-%2
-%π
-%R
-%y
-%−∞
-%e
-%−
-%ξ
-%2
-%2 dξ is the cumulative distribution
-%function of a normalized normal distribution
-%V. Black-Scholes model: Derivation and solution – p.19/36
-%Black-Scholes PDE: binary option (continued)
-%• Option price
-%V
-%(S, t
-%):
-%V
-%(S, t) =
-%e
-%−
-%r(T
-%−
-%t)N
-%(
-%d
-%2
-%),
-%where
-%d
-%2
-%=
-%log
-%(
-%S
-%E
-%)
-%+
-%
-%r
-%−
-%\sigma 
-%2
-%2
-%
-%(T
-%−
-%t)
-%\sigma 
-%√
-%T
-%−
-%t
-%V. Black-Scholes model: Derivation and solution – p.20/36
-%Black-Scholes PDE: call option
-%• In this case
-%V
-%(S, T) = max(0, S
-%−
-%E) =
-%(
-%S
-%−
-%E if S > E
-%0 otherwise
-%• The same sequence of transformations; inital condition for
-%the heat equation:
-%u
-%(x, 0) =
-%(
-%eαx
-%(
-%S
-%−
-%E
-%) if x >
-%0
-%0 otherwise
-%and similar evaluation of the integral
-%• Option price:
-%V
-%(S, t) = SN
-%(
-%d
-%1
-%)
-%− Ee
-%−
-%r(T
-%−
-%t)N
-%(
-%d
-%2
-%),
-%where
-%N is the distribution function of a normalized normal
-%distribution and
-%d
-%1
-%=
-%ln
-%S
-%E +(
-%r
-%+
-%\sigma 
-%2
-%2 )(
-%T
-%−
-%t)
-%\sigma 
-%√
-%T
-%−
-%t
-%, d
-%2
-%=
-%d
-%1
-%−
-%\sigma 
-%√
-%T
-%−
-%t
-%V. Black-Scholes model: Derivation and solution – p.21/36
-%Black-Scholes PDE: call option
-%HOMEWORK:
-%Solve the Black-Scholes PDE for a call option on a stock which
-%pays continuous dividends and write it in the form
-%V
-%(S, t) = Se
-%−
-%q(T
-%−
-%t)N
-%(
-%d
-%1
-%)
-%− Ee
-%−
-%r(T
-%−
-%t)N
-%(
-%d
-%2
-%),
-%where
-%N
-%(
-%x) =
-%√1
-%2
-%π
-%R
-%x
-%−∞
-%e
-%−
-%ξ
-%2
-%2 dξ is the distribution function of a
-%normalized normal distribution
-%N(0, 1) and
-%d
-%1
-%=
-%ln
-%S
-%E + (
-%r
-%−
-%q
-%+
-%\sigma 
-%2
-%2 )(
-%T
-%−
-%t
-%)
-%\sigma 
-%√
-%T
-%−
-%t , d
-%2
-%=
-%d
-%1
-%−
-%\sigma 
-%√
-%T
-%−
-%t
-%NOTE: The PDE is different, so the transformations have to be
-%adjusted (do the same steps for the new equation)
-%V. Black-Scholes model: Derivation and solution – p.22/36
-%Black-Scholes PDE: call option
-%Payoff (i.e., terminal condition at time
-%t
-%=
-%T = 1) and solution
-%V
-%(S, t
-%) for selected times
-%t:
-%20 40 60 25 35 30 50 70 45 55 65
-%0
-%20
-%10
-%−2
-%2
-%4
-%6
-%8
-%12
-%14
-%16
-%18
-%22
-%stock price
-%option price
-%payoff
-%t = 0
-%t = 0.25
-%t = 0.5
-%t = 0.75
-%V. Black-Scholes model: Derivation and solution – p.23/36
-%Black-Scholes PDE: put option
-%FORMULATION OF THE PROBLEM
-%• Partial differential equation
-% \partial V
-% \partial t
-%+
-%1
-%2
-%\sigma 
-%2
-%S
-%2
-% \partial 
-%2
-%V
-% \partial S
-%2
-%+ rS  \partial V \partial S
-%− rV = 0
-%which holds for S >
-%0, t
-%∈ [0, T].
-%• Terminal condition:
-%V
-%(S, T) = max(0, E
-%−
-%S
-%)
-%for S >
-%0
-%V. Black-Scholes model: Derivation and solution – p.24/36
-%Black-Scholes PDE: put option
-%APPROACH I.
-%• The same sequence of computations as in the case of a
-%call option
-%APPROACH II.
-%• We use the linearity of the Black- Scholes PDE and the
-%solution for a call which we have already found
-%We show the application of the latter approach.
-%V. Black-Scholes model: Derivation and solution – p.25/36
-%Black-Scholes PDE: putoption
-%• Recall that for the payoffs of a call and a put we have
-%−[call payoff] + [put payoff] + [stock price] =
-%E
-%• Hence:
-%[put payoff] = [call payoff] −
-%S
-%+
-%E
-%• Black-Scholes PDE is linear: a linear combination of
-%solutions is again a solution
-%V. Black-Scholes model: Derivation and solution – p.26/36
-%Black-Scholes PDE: put option
-%• Recall the solutions for
-%V
-%(S, T) =
-%S and
-%V
-%(S, T) =
-%E
-%(page 13):
-%terminal condition solution
-%max(0, S
-%−
-%E
-%)
-%V call
-%(S, t
-%)
-%S
-%S
-%E Ee
-%−
-%r(T
-%−
-%t)
-%• From the linearity:
-%terminal condition solution
-%max(0, S
-%−
-%E
-%)
-%−
-%S
-%+
-%E
-%V call
-%(S, t
-%)
-%−
-%S
-%+ Ee
-%−
-%r(T
-%−
-%t)
-%• Since [put payoff] = max(0, S
-%−
-%E
-%)
-%−
-%S
-%+
-%E, we get
-%V put
-%(S, t) =
-%V call
-%(S, t
-%)
-%−
-%S
-%+ Ee
-%−
-%r(T
-%−
-%t)
-%V. Black-Scholes model: Derivation and solution – p.27/36
-%Solution for a put option
-%• The solution
-%V put
-%(S, t) =
-%V call
-%(S, t
-%)
-%−
-%S
-%+ Ee
-%−
-%r(T
-%−
-%t)
-%can be written in a similar form as the solution for a call
-%option:
-%V ep
-%(S, t) = Ee
-%−
-%r(T
-%−
-%t)N
-%(
-%−
-%d
-%2
-%)
-%− SN
-%(
-%−
-%d
-%1
-%),
-%where N, d
-%1, d
-%2 are the same as before
-%V. Black-Scholes model: Derivation and solution – p.28/36
-%Put option - example
-%Payoff (i.e. terminal condition at time
-%t
-%=
-%T = 1) and solution
-%V
-%(S, t
-%) for selected times
-%t:
-%35 40 45 50 55 60 65
-%0
-%10
-%2
-%4
-%6
-%8
-%12
-%14
-%16
-%18
-%stock price
-%option price
-%payoff
-%t = 0
-%t = 0.25
-%t = 0.5
-%t = 0.75
-%V. Black-Scholes model: Derivation and solution – p.29/36
-%Put option - alternative computation
-%Comics about negative volatility on the webpage of Espen Haug:
-%http://www.espenhaug.com/collector/collector.html
-%V. Black-Scholes model: Derivation and solution – p.30/36
-%Put option - alternative computation
-%• A nightmare about negative volatility:
-%• Not only a dream... according to internet, it really exists
-%and is connected with professor Shiryaev from Moscow...
-%V. Black-Scholes model: Derivation and solution – p.31/36
-%Put option - alternative computation
-%QUESTION: Why does this computation work?
-%V. Black-Scholes model: Derivation and solution – p.32/36
-%Stocks paying dividends
-%•
-%HOMEWORK:
-%Solve the Black-Scholes equation for a put option, if the
-%underlying stock pays continuous dividends.
-%HINT:
-%◦ In this case,
-%V (S, t) =
-%S is not a solution
-%◦ What is the solution satisfying the terminal condition
-%V (S, T) =
-%S? Use
-%financial interpretation and check your answer by substituting it into the PDE
-%•
-%HOMEWORK:
-%Denote
-%V
-%(S, t; E, r, q
-%) the price of an option with exercise
-%price
-%E, if the interest rate is
-%r and the dividend rate is
-%q. Show that
-%V put
-%(S, t; E, r, q) =
-%V call
-%(E, t; S, q, r
-%)
-%HINT: How do the terms
-%d
-%1
-%d
-%2 change when replacing
-%S
-%↔
-%E, r
-%↔
-%q
-%?
-%V. Black-Scholes model: Derivation and solution – p.33/36
-%Combined strategies
-%• From the linearity of the Black-Scholes PDE: if the strategy
-%is a linear combination of call and put options, then its price
-%is the same linear combination of the call and put options
-%prices
-%• It does not necessarily hold in other models:
-%◦ consider a model with some transaction costs; it is not
-%equivalent
-%◦ whether we hedge the options independenty
-%◦ or we hedge the portfolio - in this case, we might be
-%able to reduce transaction costs
-%V. Black-Scholes model: Derivation and solution – p.34/36
-%Combined strategies
-%EXAMPLE:
-%• we buy call options with exerise prices E1, E3 and sell two
-%call options with exercise prices E2, with exercise prices
-%satisfying E1 < E2 < E3 and E1 + E3 = 2E2.
-%• Payoff of the strategy can be written as
-%V (S, T) = max(S−E1, 0) − 2 max(S−E2, 0)+max(S−E3, 0)
-%• Hence its Black-Scholes price is:
-%V (S, t) = V call(S, t; E1) − 2V call(S, t; E2) + V call(S, t; E3)
-%V. Black-Scholes model: Derivation and solution – p.35/36
-%Combined strategies
-%• Numerical example - butterfly with T = 1:
-%10 30 50 70 90 15 25 35 20 40 60 80 45 55 65 75 85
-%0
-%20
-%10
-%2
-%4
-%6
-%8
-%12
-%14
-%16
-%18
-%stock price
-%price of the strategy
-%payoff
-%t = 0
-%t = 0.25
-%t = 0.5
-%t = 0.75
-%Butterfly option strategy
-%V. Black-Scholes model: De
+In order to have $A=B=0$ to get the heat equation we set
+\begin{equation}
+\begin{cases}
+\alpha=\cfrac{r}{\sigma^2}-\cfrac{1}{2}\\
+\beta=\cfrac{r}{2}+\cfrac{\sigma^2}{8}+\cfrac{r^2}{2\sigma^2}
+\end{cases}
+\end{equation}
+
+The solution $u(x,\tau)$ of the resulting PDE is given by hte \emph{Green formula}
+\begin{equation}
+u(x, \tau)=\cfrac{1}{\sqrt{2\sigma^2\pi\tau}}\int^{+\infty}_{-\infty}e^{-\frac{(x-s)^2}{2\sigma^2\tau}}u(s,0)ds
+\end{equation}
+
+After evaluating the integration it is possible to find the original solution $V(S,t)$ performing backward substitutions
+
+\begin{equation}
+V(S, t) = e^{-r(T-t)}N(d_2)
+\end{equation}
+where $d_2=\frac{\textrm{log}(\frac{S}{K}+\left(r-\frac{\sigma^2}{2}\right)(T-t)}{\sigma\sqrt{T-t}}$.
+
+\subsection{Call Option}
+In this case
+\begin{equation}
+V(S,T)=\textrm{max}(0,S-K)=
+\begin{cases}
+S-K,\quad \textrm{if}~S>K\\
+0, \quad\textrm{otherwise}
+\end{cases}
+\end{equation}
+
+The steps are similar to the previous example (i.e. same sequence of transformations, initial conditions for the heat equation):
+\begin{equation}
+u(x,0)=
+\begin{cases}
+e^{\alpha x}(S-K),\quad \textrm{if}~x>0\\
+0, \quad\textrm{otherwise}
+\end{cases}
+\end{equation}
+and similar evaluation of the integral.
+
+Finally the option price
+\begin{equation}
+V(S,t) = SN(d_1)-Ke^{-r(T-t)}N(d_2)
+\end{equation}
+where $N$ is the distribution function of a normalized normal distribution and  $d_1=\frac{\textrm{log}(\frac{S}{K}+\left(r+\frac{\sigma^2}{2}\right)(T-t)}{\sigma\sqrt{T-t}},\quad d_2=d_1-\sigma\sqrt{T-t}$.
+
+Figure~\ref{fig:call_option} shows the option price as a function of the stock price for various values of $t$.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.9\textwidth]{figures/call_option_price}
+	\caption{Option price as a function of the underlying price for various values of $t$.}
+	\label{fig:call_option}
+\end{figure} 
