@@ -24,6 +24,10 @@ print (generate_swap_dates(date.today(), 25))
 10, 20), datetime.date(2022, 11, 20)]
 \end{ioutput}
 
+\begin{finmarkets}
+Add this utility function in \texttt{finmarkets.py} since it will be used very often later on.
+\end{finmarkets}
+
 \section{Overnight Index Swap}\label{overnight-index-swap}
 
 Interest rate swaps (IRS) are generally used to mitigate the risks of
@@ -45,41 +49,26 @@ periods, against a fixed coupon. By definition an OIS is defined by:
   a fixed rate \(K\).
 \end{itemize}
 
-For simplicity in the following we are assuming that the fixed and
-floating legs of our OIS have the same notional and payment dates,
-although this is not necessarily always the case in practice.
-We will always look at these products from the point of view of the
-\textbf{receiver of the floating leg}.
+For simplicity in the following we are assuming that the fixed and floating legs of our OIS have the same notional and payment dates, although this is not necessarily always the case in practice. We will always look at these products from the point of view of the \textbf{receiver of the floating leg}.
 
 \subsection{OIS Valuation}\label{ois-valuation}
-To evaluate the net present value (NPV) of such products the cash flows
-of each leg have to be calculated; today's NPV then is the sum of all
-the discounted cash flows.
+To evaluate the net present value (NPV) of such products the cash flows of each leg have to be calculated; today's NPV then is the sum of all the discounted cash flows.
 
 \subsubsection{Floating leg}\label{floating-leg}
 
-At each payment date, the floating leg pays a cash flow determined as
-follows:
+At each payment date, the floating leg pays a cash flow determined as follows:
 
 \begin{equation}
 f_{\mathrm{float},~i} = N \Bigg\{\prod_{d=d_{i-1}}^{d=d_i-1}\Big(1+r_{\mathrm{O/N}}(d)\cdot\frac{1}{360}\Big) -1 \Bigg\}
 \label{eq:floating_ois}
 \end{equation}
 
-Strictly speaking this formula is valid for an EONIA swaps
-(i.e. for OIS swaps in EUR) other currencies might have
-different conventions. The \(\frac{1}{360}\) fraction appears because
-EONIA rates are quoted using the ACT/360 day-count convention. In
-addition we are making the simplifying assumption of ignoring weekends
-and holidays, so we assume that each overnight rate is valid for only
-one day. The sum of the discounted expected values of these cash flows
-is
+Strictly speaking this formula is valid for an EONIA swaps (i.e. for OIS swaps in EUR) other currencies might have different conventions. The \(\frac{1}{360}\) fraction appears because EONIA rates are quoted using the ACT/360 day-count convention. In addition we are making the simplifying assumption of ignoring weekends and holidays, so we assume that each overnight rate is valid for only one day. The sum of the discounted expected values of these cash flows is
 
 \begin{equation}
 \mathrm{NPV}_{\mathrm{float}} = \sum_{i=1}^{n}D(d_i)\mathbb{E}[f_{\mathrm{float},~i}]
 \end{equation}
-where \(D(d)\) is the discount factor with expiry \(d\). On the other
-hand we have seen from the forward rate definition (see Section~\ref{calculating-forward-rates}) that
+where \(D(d)\) is the discount factor with expiry \(d\). On the other hand we have seen from the forward rate definition (see Section~\ref{calculating-forward-rates}) that
 
 \begin{equation*}
 \prod_{i=0}^{d} (1+r_i) = \underbrace{(1+r_{0,1}\Delta T)\underbrace{(1+r_{1,2}\Delta T)\ldots\underbrace{(1+r_{d-2,d-1}\Delta T)(1+r_{d-1,d}\Delta T)}_{=(1+r_{d-2,d}\Delta T)}}_{=(1+r_{1,d}\Delta T)}}_{=(1+r_{0,d}\Delta T)}
@@ -93,8 +82,7 @@ hence
 \begin{equation}
 \mathrm{NPV}_{\mathrm{float}} = N\cdot \sum_{i=1}^{n}D(d_i) \Big(\frac{D_{\mathrm{OIS}}(d_{i-1})}{D_{\mathrm{OIS}}(d_{i})} - 1\Big)
 \end{equation}
-where \(D_{\mathrm{OIS}}(d)\) is the discount factor implied by OIS
-prices (we will see how to derive it).
+where \(D_{\mathrm{OIS}}(d)\) is the discount factor implied by OIS prices (we will see how to derive it).
 
 %The correct curve to use for discounting the flows of a collateralized contract, like OIS, is the one associated with the collateral. Since OIS contracts are collateralized with cash, and cash accrues daily interest at the overnight rate, the OIS curve is itself the correct curve with which to discount the flows of an OIS contract ! 
 %From what has been said in Section~\ref{sec:financial-crisis}
@@ -110,8 +98,7 @@ prices (we will see how to derive it).
 %
 %So we have that \(D = D_{\mathrm{OIS}}\) and the NPV simplifies to
 
-From what has been said in Section~\ref{sec:financial-crisis} we have that 
-\(D = D_{\mathrm{OIS}}\) and the NPV simplifies to
+From what has been said in Section~\ref{sec:financial-crisis} we have that \(D = D_{\mathrm{OIS}}\) and the NPV simplifies to
 
 \begin{equation}
   \begin{split}
@@ -136,13 +123,7 @@ so the NPV of the fixed leg is
 
 \subsection{\texttt{OvernightIndexSwap} Class}\label{discount-factor-determination-from-market-quotes}
 
-Our ultimate goal is to take a series of Overnight Index Swap
-quotations, and determine the discount factors implied by their prices.
-To do this we will build a class to represent OIS and compute its value,
-given a particular discount curve. Then we will use this class, put inside
-a numerical optimizer, to \emph{invert} the relationship that connects 
-NPV and discount curve so that the \emph{implied} discount
-factors can be determined from OIS market quotes.
+Our ultimate goal is to take a series of Overnight Index Swap quotations, and determine the discount factors implied by their prices. To do this we will build a class to represent OIS and compute its value, given a particular discount curve. Then we will use this class, put inside a numerical optimizer, to \emph{invert} the relationship that connects NPV and discount curve so that the \emph{implied} discount factors can be determined from OIS market quotes.
 
 \begin{ipython}
 class OvernightIndexSwap:
@@ -170,6 +151,10 @@ class OvernightIndexSwap:
         fixed_npv = self.npv_fixed_leg(discount_curve)
         return float_npv - fixed_npv
 \end{ipython}
+
+\begin{finmarkets}
+This class also goes into \texttt{finmarkets.py} library as a useful tool to work with Overnight Index Swaps.
+\end{finmarkets}
 
 To test it a discount curve is needed. In the following example a fake curve is defined and used with an OIS product.
 
@@ -222,14 +207,15 @@ The issue is that EONIA swap market is over the counter (OTC) and it's not strai
 Though there exist some electronic platform in which market participants post bids and offers and other participants can apply them, in practice a lot of trading is still done over "voice", i.e.~by phone or more
 commonly over chat. For convenience, however, Bloomberg provides a service which displays indicative real time rates as provided by a selection of relevant brokers. Note that interest rate swap quotes vary from standard price quotes of commonly traded instruments, they can appear puzzling because the quotes are effectively interest rates.
 
-In the following we use a similarly created dataset (\href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/ois_quotes.csv}{\texttt{ois\_data.csv}}) to derive our discount curve; with the help of \texttt{pandas} the dataset can be inspected:
+In the following we use a similarly created dataset (\href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/ois_quotes.csv}{\texttt{ois\_data.csv}}) to derive the discount curve; with the help of \texttt{pandas} the dataset can be inspected:
 
 \begin{ipython}
-import pandas, datetime
+import pandas as pd
+from datetime import date
 
-observation_date = datetime.date.today()
-mq = pandas.read_csv('ois_data.csv')
-mq.head()
+observation_date = date.today()
+mq = pd.read_csv('ois_data.csv')
+print (mq.head())
 \end{ipython}
 \begin{ioutput}
  maturity   rate
@@ -242,11 +228,8 @@ mq.head()
 \noindent
 Next the dataset could be converted into a dictionary or accessed directly from the \(\tt{DataFrame}\), it is just matter of taste.
 
-Let's say we want to build a 15 months swap instance using data
-contained in \(\tt{ois\_data}\). Be careful when doing this
-operation and double check the units of rates and quotes. In
-this case for example quotes are expressed in percent so you need to
-multiply by 0.01 to use them. Another misleading detail to check is that 15 months quote is not the fifteenth entry in the \(\tt{DataFrame}\) (actually it is the twelfth).
+Let's say we want to build a 15 months swap instance using data contained in \(\tt{ois\_data}\). Be careful when doing this
+operation and double check the units of rates and quotes. In this case for example quotes are expressed in percent so you need to multiply by 0.01 to use them. Another misleading detail to check is that 15 months quote is not the fifteenth entry in the \(\tt{DataFrame}\) (actually it is the twelfth).
 
 \begin{ipython}
 ois = OvernightIndexSwap(1e6,
@@ -264,12 +247,7 @@ Clearly to use the \texttt{npv} method to calculate the OIS's NPV we need a disc
 
 \subsection{Constructing the Yield Curve}\label{the-bootstrapping-technique}
 
-Keep aside for a moment our swaps and introduce the \emph{bootstrap
-algorithm}. In finance, bootstrapping is a method for constructing a
-(zero-coupon) fixed-income yield curve from the prices of a set of
-coupon-bearing products, e.g. bonds and swaps. The term structure of
-spot returns is obtained from the bond yields by solving for them
-recursively, by forward substitution: this iterative process is what is called the bootstrap method. 
+Keep aside for a moment our swaps and introduce the \emph{bootstrap algorithm}. In finance, bootstrapping is a method for constructing a (zero-coupon) fixed-income yield curve from the prices of a set of coupon-bearing products, e.g. bonds and swaps. The term structure of spot returns is obtained from the bond yields by solving for them recursively, by forward substitution: this iterative process is what is called the bootstrap method. 
 
 The usefulness of bootstrap resides on that using only a few carefully selected zero-coupon products, it becomes possible to derive forward and spot rates for all maturities given the solved curve.
 
@@ -433,10 +411,10 @@ Find the size of a circular cylindrical can of volume, \(330~\mathrm{cm}^3\), th
 
 Clearly to minimize the costs, the company needs to reduce the amount of aluminum used in the production, consequently the can surface, which can be expressed as the sum of the lateral surface plus twice the base surface
 
-\begin{equation*} 
+\begin{equation} 
 S = 2\pi rh + 2\pi r^2 
 \label{eq:can_surface}
-\end{equation*}
+\end{equation}
 On the other hand the volume is fixed to 33~cl or 330~\(\mathrm{cm}^3\) and this allows to simplify previous
 equation by removing \(h\)
 
@@ -485,10 +463,10 @@ print (r)
 \end{ioutput}
 
 \begin{curiosity}
-So to minimize the cost the company should produce cans with a radius of about 3.745~cm (or about 74~mm diameter). It looks like Coke or other similar companies have done a similar calculation since the result is surprisingly close to that of a real can. 
+So to minimize the cost the company should produce cans with a radius of about 3.745~cm (or about 74~mm diameter). It looks like Coke company have done a similar calculation since the result is surprisingly close to that of a real can. 
 
 From \href{	https://www.ball.com/eu/solutions/markets-capabilities/capabilities/beverage-cans/standard-range
-}{here} it looks like a real can has a 66.3~mm diameter, a little smaller than our result but it was expected since the base is not flat.    
+}{here} results that a real can has a 66.3~mm diameter, a little smaller than our result but it was expected since the base is not flat.    
 \end{curiosity}
 
 \subsubsection{Another Example with Constraint}
@@ -589,11 +567,11 @@ This function is plotted in Fig.~\ref{fig:local_minima} in the range $[0, 2]$, a
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.7\textwidth]{figures/local_minima.png}
+	\includegraphics[width=0.7\textwidth]{figures/local_minima}
 	\caption{Plot of an example function with many local minima. The red points highlights initial value and minimum found in a \emph{bad} minimization, green points for a good minimization.}
 	\label{fig:local_minima}
 \end{figure}
-Let's try to find a minimum and set the initial value to $x=1.1$.
+Let's try to find a minimum setting the initial value to $x=1.1$.
 \begin{ipython}
 x0 = [1.1]
 bounds = [(0.01, 20)]
@@ -635,10 +613,7 @@ hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
 \end{ioutput}
 Now clearly the algorithm found the absolute minimum in $x=0.29691798$ (i.e. the green point in Fig.~\ref{fig:local_minima}) because there was no chance to find a local minimum during the iterations.
 
-This is just an example of what could happen when minimizing a function.
-When dealing with complicated cases it is possible to make a \emph{scan} of the objective 
-function to try to approximately determine where the global minimum is and choose 
-suitable initial values of the guess parameters.
+This is just an example of what could happen when minimizing a function. When dealing with complicated cases it is possible to make a \emph{scan} of the objective function to try to approximately determine where the global minimum is and choose suitable initial values of the guess parameters.
 However there shouldn't be such an issue in the application of the bootstrap algorithm since the function that is minimized is a sum of squared terms which has no local minimum, just a global minimum (i.e. it is a hyper-parabola).
 
 \subsection{Back to OIS Example}\label{ois-example}
@@ -649,18 +624,14 @@ each OIS by minimizing the sum of their NPV squared (our \(f_i\)):
 \mathrm{min}_{\mathcal{C}} \Big\{\sum_{i=1}^{n}\mathrm{NPV}(\mathrm{OIS}_i, \mathcal{C})^2\Big\}
 \end{equation}
 
-A discount curve is characterized by pillar dates and discount factors. The description of the problem we have given above does not, specifies any constraint on the number of pillar dates of 
-the discount curve \(\mathcal{C}\). However, the pillar dates determine the number of unknown variables of the optimization problem. A curve with \(N\) pillar dates has \(N\) discount factors (note that the first discount factor, with value date equal to the today date, is constrained to 1). \textbf{In practice, therefore, it makes sense to choose the pillar dates in such a way that 
-	there is exactly the same number of degrees of freedom in the optimization to match data.} 
-The natural choice is to choose the pillar dates of the discount curve equal to the set of expiry dates of the swaps.
+A discount curve is characterized by pillar dates and discount factors. The description of the problem we have given above does not, specifies any constraint on the number of pillar dates of the discount curve \(\mathcal{C}\). However, the pillar dates determine the number of unknown variables of the optimization problem. A curve with \(N\) pillar dates has \(N\) discount factors (note that the first discount factor, with value date equal to the today date, is constrained to 1). \textbf{In practice, therefore, it makes sense to choose the pillar dates in such a way that there is exactly the same number of degrees of freedom in the optimization to match data.} The natural choice is to choose the pillar dates of the discount curve equal to the set of expiry dates of the swaps.
 
 Once we've fixed \(\mathbf{d}\) to be a vector of pillar dates equal to the expiry dates of the swaps, and we use \(\mathbf{x}\) to represent the vector of discount factors, then the problem becomes:
 
 \begin{equation}
 \mathrm{min}_{\mathbf{x}} \Big\{\sum_{i=1}^{N}\mathrm{NPV}(\mathrm{OIS}_i, \mathcal{C}(\mathbf{d}, \mathbf{x}))^2\Big\}
 \end{equation}
-which is our optimization problem: (\textbf{to find the minimum of the above expression as a function of x}) that can be solved using one of the available numerical optimization routines 
-in \texttt{python}.
+which is our optimization problem: (\textbf{to find the minimum of the above expression as a function of x}) that can be solved using one of the available numerical optimization routines in \texttt{python}.
 
 First the swaps has to be created according to all the available market quotes (also the pillar dates of the unknown discount curve)
 
@@ -671,10 +642,10 @@ observation_date = date(2019, 10, 23)
 pillar_dates = [observation_date]
 swaps = []
 
-for i in range(len(df)):
+for i in range(len(mq)):
     swap = OvernightIndexSwap(1e6,
              generate_swap_dates(observation_date,
-             mq['maturity'].tolist()[i]),
+                                 mq['maturity'].tolist()[i]),
              0.01 * mq['rate'].tolist()[i])
     swaps.append(swap)
 
@@ -723,30 +694,21 @@ result = minimize(objective_function, x0, bounds=bounds,
 print (result)
 \end{ipython}
 \begin{ioutput}
-      fun: 0.000819919032900304
- hess_inv: <34x34 LbfgsInvHessProduct with dtype=float64>
-      jac: array([ 6.58948735e+05, -1.58720803e+01, -6.53143264e+01,
--1.03323232e+02,
-       -1.26050260e+02, -1.31748898e+02, -1.20374599e+02, -9.15399651e+01,
-       -4.24363322e+01,  2.44903182e+01,  1.14345243e+02,  2.22002243e+02,
-       -3.72021700e+00,  4.21398633e+01,  4.21787852e+01,  4.22369487e+01,
-        4.23327026e+01,  4.31814758e+01,  4.44924460e+01,  4.62078978e+01,
-        4.82906823e+01, -3.69972738e+00, -1.42454702e+00,  7.53771932e-01,
-        2.79741018e+00,  4.62896699e+00,  6.24844054e+00,  9.93101553e+00,
-        1.31122434e+01,  1.42880909e+01,  1.48279215e+01,  1.50787019e+01,
-        1.43267935e+01,  1.38451324e+01])
-  message: b'CONVERGENCE: REL\_REDUCTION\_OF\_F\_<=\_FACTR*EPSMCH'
-     nfev: 840
-      nit: 7
+      fun: 0.0006561234813731959
+ hess_inv: <30x30 LbfgsInvHessProduct with dtype=float64>
+      jac: array([-1.46749218, -1.52880351, -1.58043371, -1.62444368,
+                  -1.65793781, -1.68430928, -1.69973037, -1.70611237, 
+                  -1.70035125, -1.68091034, -1.64422388, -6.24051456,  
+                   2.15976419,  1.88313032,  1.73861385, -1.39376647,  
+                   3.25043542,  6.29526861,  4.68446978,  0.59831059,
+                  -2.50678569, -2.87296531, -0.35746643,  3.87250114,  
+                   8.63671196, -1.6629543 ,  4.92871632,  2.83505097, 
+                  -1.31891876, -1.77479162])
+  message: b'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH'
+     nfev: 496
+      nit: 9
    status: 0
   success: True
-        x: array([1.        , 1.00030147, 1.00058831, 1.00089012, 1.00119726,
-                  1.00147996, 1.00178743, 1.00208107, 1.00238467, 1.00267865,
-                  1.00298261, 1.00327737, 1.00357104, 1.00357104, 1.00355063,
-                  1.00352002, 1.00346901, 1.00302007, 1.00232627, 1.00141821,
-                  1.00031629, 0.99911234, 0.99790839, 0.99675545, 0.99567393,
-                  0.99470465, 0.9938476 , 0.99189884, 0.99021534, 0.98959296,
-                  0.98930728, 0.98917464, 0.98957256, 0.98982763])
 \end{ioutput}
 \end{itemize}
 
@@ -765,48 +727,46 @@ print ("Initial objective function value ", objective_function(x0))
 print ("Final objective function value ", objective_function(result.x))
 \end{ipython}
 \begin{ioutput}
-Initial objective function value  26.27213544937082
-Final objective function value  5.664309920943246e-11
+Initial objective function value  1399018851176.301
+Final objective function value  0.0006561234813731959
 \end{ioutput}
-The objective function at the end of the minimisation is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied, the initial value was around $26$ and now it is $10^{-11}$ so 13 orders of magnitude smaller. This means that with the derived discount curve the NPV's of our OIS won't be identically 0 but so small that can be regarded as they would.
+The objective function at the end of the minimisation is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied, the initial value was around $10^{11}$ and now it is $10^{-4}$ so 15 orders of magnitude smaller. This means that with the derived discount curve the NPV's of our OIS won't be identically 0 but so small that can be regarded as they would.
 
 It can be very useful to also look at some diagnostic plots to check if the minimization was successful. Figure~\ref{fig:minimization_diagnostic} reports on the left the objective function value as a function of discount factor $(x_0)$; clearly we have found a minimum (the orange point represent $x_0$ value at the end of the minimization). On the right instead, the value of the objective function at each iteration is shown, its value is decreasing dramatically (notice that the $y$ axis is drawn in log scale).
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.45\linewidth]{figures/obj_func.png}
-	\includegraphics[width=0.45\linewidth]{figures/obj_func_iter.png}
-	\caption{Diagnostic plots for the minimization algorithm. On the left the objective function value as a function of the discount factor $x_0$, on the right the objective function value as a function of the iteration number (the orange point represent $x_0$ value at the end of the minimization).}
+	\includegraphics[width=0.9\linewidth]{figures/obj_func_diagnostic}
+	\caption{Diagnostic plots for the minimization algorithm. On the left the objective function value as a function of the discount factor $x_1$ (the red point represent $x_0$ value at the end of the minimization), on the right the objective function value as a function of the iteration number.}
 	\label{fig:minimization_diagnostic}
 \end{figure}
 
-Finally we can create the discount curve implied by the market quotes of
-our swaps (see Fig.~\ref{fig:discount_curve}) and try to compute some implied rates.
+Finally we can create the discount curve implied by the market quotes of our swaps (see Fig.~\ref{fig:discount_curve}) and try to compute some implied rates.
 
 \begin{ipython}
 from math import log
 
 dfs = np.insert(result.x, 0, 1)
 curve = DiscountCurve(observation_date, pillar_dates, dfs)
-d = date(2059, 11, 23)
+d = date(2039, 11, 23)
 
-print ("40y df: {}".format(curve.df(d)))
-print ("40y rate: {}".format(-log(curve.df(d)) / 40))
+print ("20y df: {}".format(curve.df(d)))
+print ("20y rate: {}".format(-log(curve.df(d)) / 20))
 \end{ipython}
 \begin{ioutput}
-40y df: 0.6454865298509954
-40y rate: 0.01094377341721375
+20y df: 0.6105
+20y rate: 0.0247
 \end{ioutput}
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.7\textwidth]{figures/example_discount_curve.png}
+	\includegraphics[width=0.7\textwidth]{figures/example_discount_curve}
 	\caption{Plot of the discount curve implied by Overnight Index Swap market quotes.}
 	\label{fig:discount_curve}
 \end{figure}
 
 \section{Discount Factors with Pseudo-inverse}
-The minimization algorithm described in the previous Sections is not the only way to derive discount factors. An alternative procedure involves matrix inversion and in some special cases the usage of the \emph{pseudoinverse} described in Chapter~\ref{sec:the-moore-penrose-pseudoinverse}. Details on this algorithm can be found in~\cite{bib:boostrap_pseudoinv}.
+The minimization algorithm described in the previous Sections is not the only way to derive discount factors. An alternative procedure involves matrix inversion and in some special cases the usage of the \emph{pseudoinverse} described in Section~\ref{sec:the-moore-penrose-pseudoinverse}. Details on this algorithm can be found in~\cite{bib:boostrap_pseudoinv}.
 
 Consider a set of $n$ financial instruments (e.g. bonds, future, swaps,\ldots). The price of such instruments is connected to the discount factors by the following relationship
 
@@ -847,7 +807,7 @@ To illustrate the algorithm let's consider again the example, used previously, w
 6 & 6 & 106 & 0 & 0 \\
 7 & 7 & 7 & 107 & 0 \\
 8 & 8 & 8 & 8 & 108
-\end{bmatrix}; \quad
+\end{bmatrix}; \quad \boldsymbol{d} =
 \begin{bmatrix}
 d_1 \\
 d_2 \\

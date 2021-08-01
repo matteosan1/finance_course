@@ -1,6 +1,6 @@
 \chapter{Copulas and Its Applications}
 
-Copulas (or copul\ae in Latin) are an interesting mathematical tool to represent correlations between probability distributions. They can be used to describe complex dependencies in multivariate risk models, when more basic tools such as a multivariate Gaussian distribution is inappropriate. Another commonly used application of copulas is sampling from correlated random variables.
+Copulas (or copul\ae~in Latin) are an interesting mathematical tool to represent correlations between probability distributions. They can be used to describe complex dependencies in multivariate risk models, when more basic tools such as a multivariate Gaussian distribution is inappropriate. Another commonly used application of copulas is sampling from correlated random variables.
 
 In this Chapter the copula concept is reviewed and some example applications are shown. 
 %Before going into the copulas we need to learn how to transform a distribution into another using the \emph{probability integral transform}. 
@@ -23,39 +23,24 @@ Consider two assets. Two random variables $P_1$ and $P_2$, i.e. the default prob
 Using an appropriate random sample it is possible to determine the correlation coefficient between $v_1$ and $v_2$ to then estimate the default correlation ($\rho_D$) between asset 1 and 2.
 
 \begin{equation}
-\rho_D = \cfrac{n\sum (v_{1i} v_{2i}) - \sum v_{1i} \sum v_{2i}}{\sqrt{(n\sum v_{1i}^2 - (\sum v_{1i})^2)(n\sum w_{2i}^2 - (\sum w_{2i})^2)}}
+\rho_D = \cfrac{n\sum (v_{1i} v_{2i}) - \sum v_{1i} \sum v_{2i}}{\sqrt{(n\sum v_{1i}^2 - (\sum v_{1i})^2)(n\sum v_{2i}^2 - (\sum v_{2i})^2)}}
 \label{eq:discrete_correlation_coefficient}
 \end{equation}
 Equation~\ref{eq:discrete_correlation_coefficient} is just a discrete version of Eq.~\ref{eq:correlation_coefficient}.
 
-The challenge to do a Monte Carlo relies on the modeler’s ability to generate
-realistic default scenarios. That is, being able to be loyal to $p$ (the average
-default probability of the pool) and $\rho_D$ (the assets’ default correlation.) Note that if we are dealing with two assets, the default correlation is captured by one number. In the case of $N$ assets, $\rho_D$ is a symmetric matrix. In the
-simplest case, that is, when all the pair-wise correlations are the same, all the
-off-diagonals elements are identical. 
+The challenge to do a Monte Carlo relies on the modeler’s ability to generate realistic default scenarios. That is, being able to be loyal to $p$ (the average default probability of the pool) and $\rho_D$ (the assets’ default correlation.) Note that if we are dealing with two assets, the default correlation is captured by one number. In the case of $N$ assets, $\rho_D$ is a symmetric matrix. In the simplest case, that is, when all the pair-wise correlations are the same, all the off-diagonals elements are identical. 
 
 \section{Distribution Transformation}
 \label{distribution-transformation}
 
-Distribution transformation is a very useful tool which will be
-extensively used with the copula concept that we discuss in the next
-Sections. The technique we are going to outline transforms every random
-variable, regardless its distribution, into uniform and vice versa and is called
-\emph{inverse transform} or (probability integral transform).
+Distribution transformation is a very useful tool which will be extensively used with the copula concept that we discuss in the next Sections. The technique we are going to outline transforms every random variable, regardless its distribution, into uniform and vice versa and is called \emph{inverse transform} or (probability integral transform).
 
-Computationally, this method involves computing the quantile function 
-(see Section~\ref{quantile-function}) of
-the original distribution; in other words, computing the cumulative
-distribution function ($F_X(x)$) (which maps a number
-to a probability between 0 and 1) and then inverting that
-function. 
+Computationally, this method involves computing the quantile function (see Section~\ref{sec:quantile-function}) of the original distribution; in other words, computing the cumulative distribution function ($F_X(x)$) (which maps a number to a probability between 0 and 1) and then inverting that function. 
 
 \begin{attention}
 \subsubsection{Demonstration}
-Let's start with a random variable $X$ with an arbitrary distribution and let $F_X$ be the 
-cumulative distribution function of $X$ (\(F(x) = P(X \leq x)\)).
-We would like to find a transformation $T:[0,1]\rightarrow\mathbb{R}$ such that $T(U)=X$, where
-$U$ is the uniform distribution in $[0,1]$. 
+Let's start with a random variable $X$ with an arbitrary distribution and let $F_X$ be the cumulative distribution function of $X$ (\(F(x) = P(X \leq x)\)). 
+We would like to find a transformation $T:[0,1]\rightarrow\mathbb{R}$ such that $T(U)=X$, where $U$ is the uniform distribution in $[0,1]$. 
 \begin{equation*}
 F_{X}(x)= P(X\leq x)=P(T(U)\leq x)= P(U\leq T^{-1}(x))=T^{-1}(x),{\text{ for }}x\in \mathbb {R}
 \end{equation*}
@@ -68,14 +53,9 @@ Therefore to transform a generic random variable to uniform (and vice versa) we 
 \begin{equation}
 x = F_{X}^{-1}(u)\quad\mathrm{and}\quad u = F_X(x)	
 \end{equation} 
+Let's see few examples of how this can be done in \(\tt{python}\). Imagine we want to transform an uniform distribution into a Gaussian. The transformation takes uniform samples of a variable \(u\) between 0 and 1, interpreted as a probability, and then returns $F^{-1}(u)$. 
 
-Let's see few examples of how this can be done in \(\tt{python}\).
-Imagine we want to transform an uniform distribution into a Gaussian.
-The transformation takes uniform samples of a variable \(u\) between 0 and
-1, interpreted as a probability, and then returns $F^{-1}(u)$. 
-
-Table~\ref{tab:transformation} shows the samples of $U$ and their representation on the standard normal
-distribution determined using the algorithm explained above.
+Table~\ref{tab:transformation} shows the samples of $U$ and their representation on the standard normal distribution determined using the algorithm explained above.
 
 \begin{ipython}
 from scipy.stats import uniform, norm
@@ -106,13 +86,8 @@ for u in uniform_samples:
 \label{tab:transformation}
 \end{table}
 
-Now let's see how this can be done directly with an entire distribution. Let's start again from 
-the uniform distribution. This can be sampled either using \texttt{random.random} 
-like in Section~\ref{pseudo-random-numbers} or with \texttt{scipy.stats.uniform}. 
-Each distribution defined in \texttt{scipy.stats} has a convenient method \texttt{rvs(size=aSize)} 
-(random variable sample) to sample from it as many time as specified by the arguments \texttt{size}. 
-Usually the second method is preferred since it exploits \texttt{numpy.array} and let us avoid a 
-lot of for-loop cycles.
+Now let's see how this can be done directly with an entire distribution. Let's start again from the uniform distribution. This can be sampled either using \texttt{random.random} like in Section~\ref{pseudo-random-numbers} or with \texttt{scipy.stats.uniform}. 
+Each distribution defined in \texttt{scipy.stats} has a convenient method \texttt{rvs(size=aSize)} (random variable sample) to sample from it as many time as specified by the arguments \texttt{size}. Usually the second method is preferred since it exploits \texttt{numpy.array} and let us avoid a lot of for-loop cycles.
 
 In any case in the left plot of Fig.~\ref{fig:uniform_and_gauss} the resulting distribution is shown.
 
@@ -120,13 +95,9 @@ In any case in the left plot of Fig.~\ref{fig:uniform_and_gauss} the resulting d
 x = uniform(0, 1).rvs(10000)
 \end{ipython}
 
-Next we want to transform these samples so that instead of uniform they
-are normally distributed. As we have just seen the transform that does this
-is the inverse of the cumulative density function of the normal 
-distribution, or \((\tt{ppf(x))}\) in \texttt{python}. 
+Next we want to transform these samples so that instead of uniform they are normally distributed. As we have just seen the transform that does this is the inverse of the cumulative density function of the normal distribution, or \((\tt{ppf(x))}\) in \texttt{python}. 
 
-In the right plot of Fig.~\ref{fig:uniform_and_gauss} the Gaussian obtained 
-with the code below is shown
+In the right plot of Fig.~\ref{fig:uniform_and_gauss} the Gaussian obtained with the code below is shown
 
 \begin{ipython}
 x_trans = norm.ppf(x)
@@ -134,7 +105,7 @@ x_trans = norm.ppf(x)
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=1.\textwidth]{figures/uniform_gauss.png}
+	\includegraphics[width=1.\textwidth]{figures/uniform_gauss}
 	\caption{On the left the generated uniform distribution, on the right its Gaussian transform.}
 	\label{fig:uniform_and_gauss}
 \end{figure}
@@ -143,13 +114,12 @@ If we plot them together in a 2D plot we can get a sense of what is going on usi
     
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.5\textwidth]{figures/lesson6_7_0.png}
+  \includegraphics[width=0.5\textwidth]{figures/uniform_to_gauss}
   \caption{2D plot showing the transformation that maps our initial uniform distribution to the resulting Gaussian.}
   \label{fig:uniform_to_gauss}
 \end{figure}
     
-The nice thing of this technique is that it can be used for any arbitrary (univariate) probability distribution, like for example t-Student~\cite{bib:t_student} or Gumbel~\cite{bib:gumbel}.
-A similar transformation from uniform to t-Student is shown in Fig.~\ref{fig:uniform_to_tstudent}.
+The nice thing of this technique is that it can be used for any arbitrary (univariate) probability distribution, like for example t-Student~\cite{bib:t_student} or Gumbel~\cite{bib:gumbel}. A similar transformation from uniform to t-Student is shown in Fig.~\ref{fig:uniform_to_tstudent}.
 
 \begin{ipython}
 from scipy.stats import t
@@ -164,17 +134,14 @@ x_trans = t(4).ppf(x)
   \label{fig:uniform_to_tstudent}
 \end{figure}
 
-Clearly to do the opposite transformation, that is from an arbitrary distribution
-to the uniform, we can just apply the inverse of the inverse CDF, that is the CDF itself\ldots
+Clearly to do the opposite transformation, that is from an arbitrary distribution to the uniform, we can just apply the inverse of the inverse CDF, that is the CDF itself\ldots
 
-In such a way we can go from distribution A to distribution B passing through 
-a uniform distribution rather quickly. An example is shown in Fig.~\ref{fig:a_to_b_to_a}.
+In such a way we can go from distribution A to distribution B passing through a uniform distribution rather quickly. An example is shown in Fig.~\ref{fig:a_to_b_to_a}.
 
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=1.\textwidth]{figures/a_to_b_to_a}
-	\caption{Example of transformation, it starts with a uniform distribution, 
-		goes into a Gaussian and back to the initial uniform.}
+	\caption{Example of transformation, it starts with a uniform distribution, goes into a Gaussian and back to the initial uniform.}
 	\label{fig:a_to_b_to_a}
 \end{figure}
 
@@ -217,10 +184,7 @@ At the beginning of this Chapter we have seen how to convert anything uniformly 
   finally transform the uniform marginals to whatever we need to.
 \end{itemize}
 
-In this example we sample from a multivariate (two-dimensional) normal with a 0.5 correlation, 
-see Fig.~ \ref{fig:multivariate_with_correlation}. This is not mandatory 
-though, since
-we could have modeled correlations with different distribution either.
+In this example we sample from a multivariate (two-dimensional) normal with a 0.5 correlation, see Fig.~ \ref{fig:multivariate_with_correlation}. This is not mandatory though, since we could have modeled correlations with different distribution either.
 
 \begin{ipython}
 from scipy.stats import multivariate_normal
@@ -229,9 +193,9 @@ mvnorm = multivariate_normal(mean=[0, 0] , cov=[[1, 0.5], [0.5, 1]])
 x = mvnorm.rvs(100000)
 \end{ipython}
 
-\begin{figure}[hb]
+\begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.5\textwidth]{figures/lesson6_14_0.png}
+  \includegraphics[width=0.5\textwidth]{figures/2d_gaussian}
   \caption{2D normal distribution with a correlation factor of 0.5.}
   \label{fig:multivariate_with_correlation}
 \end{figure}
@@ -244,7 +208,7 @@ x_unif = norm.cdf(x)
 
 Plots like the one shown in Fig.~\ref{fig:copula} are how copulas are usually visualized. Since we have used a multivariate standard normal to model the correlation this is an example of \textbf{Gaussian Copula}.
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.45\textwidth]{figures/copula_2d}
 \quad
@@ -524,7 +488,7 @@ orig_X = np.dot(Z, np.linalg.inv(L))
 \bibitem{bib:copula}P. Wilmott, \emph{Quantitative Finance (2nd edition)}, Credit Derivatives (Ch. 41), John Wiley and Sons, 2006 
 \bibitem{bib:copula_nelsen}R. Nelsen, \emph{An Introduction to Copulas}, Springer–Verlag, 1999
 \bibitem{bib:copula_cherubini}U. Cherubini, E. Luciano, W. Vecchiato, \emph{Copula Methods in Finance}, John Wiley \& Sons, 2004
-\bibitem{bib:tstudent}\href{https://en.wikipedia.org/wiki/Student\%27s\_t-distribution}{\emph{t-Student distribution}}, Wikipedia [Online]
-\bibitem{bib:Gumbel}\href{https://en.wikipedia.org/wiki/Gumbel_distribution}{\emph{Gumbel distribution}}, Wikipedia [Online]
+\bibitem{bib:t_student}\href{https://en.wikipedia.org/wiki/Student\%27s\_t-distribution}{\emph{t-Student distribution}}, Wikipedia [Online]
+\bibitem{bib:gumbel}\href{https://en.wikipedia.org/wiki/Gumbel_distribution}{\emph{Gumbel distribution}}, Wikipedia [Online]
 \bibitem{bib:beta}\href{https://en.wikipedia.org/wiki/Beta_distribution}{\emph{Beta distribution}}, Wikipedia [Online]
 \end{thebibliography}
