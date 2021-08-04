@@ -125,6 +125,15 @@ so the NPV of the fixed leg is
 
 Our ultimate goal is to take a series of Overnight Index Swap quotations, and determine the discount factors implied by their prices. To do this we will build a class to represent OIS and compute its value, given a particular discount curve. Then we will use this class, put inside a numerical optimizer, to \emph{invert} the relationship that connects NPV and discount curve so that the \emph{implied} discount factors can be determined from OIS market quotes.
 
+The \texttt{OvernightIndexSwap} class will have also a method called \texttt{fair\_value\_strike} which takes a discount curve object and returns the fixed rate which would make the OIS net present value (NPV) zero. This is quite easy since it is enugh to equal the expressions for the NPV of each swap leg and solve for $K$.
+
+\begin{equation}
+\begin{gathered}
+K \sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360} = [D(d_0) - D(d_n)] \\
+K = \cfrac{[D(d_0) - D(d_n)]}{\sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}}
+\end{gathered}
+\end{equation}
+
 \begin{ipython}
 class OvernightIndexSwap:
     def __init__(self, notional, payment_dates, fixed_rate):
@@ -150,6 +159,19 @@ class OvernightIndexSwap:
         float_npv = self.npv_floating_leg(discount_curve)
         fixed_npv = self.npv_fixed_leg(discount_curve)
         return float_npv - fixed_npv
+
+    def fair_value_strike(self, discount_curve):
+        den = 0
+        for i in range(1, len(self.payment_dates)):
+            start_date = self.payment_dates[i-1]
+            end_date = self.payment_dates[i]
+            tau = (end_date - start_date).days / 360
+            df = discount_curve.df(end_date)
+            den += df * tau
+            num = (discount_curve.df(self.payment_dates[0]) -
+                discount_curve.df(self.payment_dates[-1]))
+        return num/den
+
 \end{ipython}
 
 \begin{finmarkets}
