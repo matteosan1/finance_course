@@ -1071,30 +1071,83 @@ From Fig.~\ref{fig:ret_pc1} to~\ref{fig:ret_pc3} it is clear how the PC1 portfol
 It can be verified that PC1 portfolio still looks like the market also for other time horizon, repeating the same steps using weekly or monthly data.
 
 \subsection{Impact of Covid19}
-Using an approach similar to that used in the previous Section it can be assessed the impact of the Covid19 pandemic on the market, clustering together assets that were most/least affected without any prior knowledge of their fundamental.
-This analysis involves the stocks included in the S\&P500 in the time period between $1^{st}$ of January 2020 and $30^{th}$ of June 2021.
+Using a similar approach it can be assessed the impact of the Covid19 pandemic on different stocks, clustering together assets that were most/least affected without any prior knowledge of their fundamental.
+This analysis involves the same data used before in the time period between $1^{st}$ of January 2020 and $16^{th}$ of August 2020.
+The analysis goes along the lines of the previous one
+\begin{ipython}
+import yfinance as yf
+tickers = ["BA","CAT","CVX","CSCO","KO",
+           "DOW","XOM","GS","HD","INTC","IBM",
+           "JNJ","JPM","MCD","MRK","MSFT","NKE",
+           "PFE","PG","RTX","TRV","UNH","VZ",
+           "V","WBA", "WMT", "^DJI"]
 
-Let's look at the first principal component and select the stocks that have the most and least negative PCA weights, as shown in Fig.~\ref{fig:pca_covid_neg}.
+proxy = yf.Tickers(tickers)           
+df = proxy.history(start='2020-01-02', end='2020-08-16')['Close'].pct_change().dropna()
+\end{ipython}
+\begin{ioutput}
+[*********************100%***********************]  27 of 27 completed
+\end{ioutput}
 
-%\begin{figure}[htb]
-%	\centering
-%	\includegraphics[width=.7\textwidth]{figures/pc1_weights_covid_neg}
-%	\caption{Ten most negative (top) and least negative (bottom) weights of the PC1 portfolio.}
-%	\label{fig:pca_covid_neg}
-%\end{figure}
+After downloading data the PCA analysis is performed
+\begin{ipython}
+import numpy as np
 
-Notice from the figure above how the most negative stocks are in the tourism and the energy sector. This makes sense since Covid19 heavily impacted the traveling business, as well as the energy companies that provide fuels for those business. On the other hand, the least impacted companies fall into the consumer good sectors, which also makes sense since this sector benefited fro the boost in sales consumer goods due to the quarantine measures.
+equities = df.iloc[:, :-1]
+cov = equities.cov()
+eigVals, eigVecs = np.linalg.eig(cov)
+\end{ipython}
 
-In addition we can formulate a winning portfolio that is long the top 10 companies according to the PCA weights. As shown in the figure below, the resulting portfolio would have performed significantly better than the market, since it invested in companies that actually benefited from the pandemic. 
+Let's look at the first principal component and select the corresponding stocks that have the best and the worst PCA weights, as shown in Fig.~\ref{fig:pca_covid_neg}.
 
-%\begin{figure}[htb]
-%	\centering
-%	\includegraphics[width=.7\textwidth]{figures/pc1_weights_covid_neg}
-%	\caption{Ten most negative (top) and least negative (bottom) weights of the PC1 portfolio.}
-%	\label{fig:pca_covid_return}
-%\end{figure}
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=.7\textwidth]{figures/pc1_weights_covid}
+	\caption{Ten most negative (top) and least negative (bottom) weights of the PC1 portfolio.}
+	\label{fig:pca_covid_neg}
+\end{figure}
 
-Note that this portfolio is formed with look-ahead bias, indeed portfolio weights are computed using future date that were not available at the time of market downturn. The PCA used in this way is therefore a backward looking analytics tool.
+Notice from Figure~\ref{fig:pca_covid_neg} how the most negative stocks are Boing and Chevron, connected to travel and energy sector. This makes sense since Covid19 heavily impacted the traveling business, as well as the energy companies that provide fuels for those business. On the other hand, the least impacted companies are Verizon, Wallmart, Pfizer and Johnson \& Johnson, which belong to sectors boosted during the quarantine measures and the pandemic in general.
+
+In addition we can check the winning portfolio that is long the top 3 companies according to the PCA weights.
+
+\begin{ipython}
+# normalize weights
+norm_eigVecs = abs(eigVecs.T[0])/sum(abs(eigVecs.T[0]))
+
+# market portfolio
+pc_daily_ret = equities.dot(norm_eigVecs)
+pc_cum_ret = pc_daily_ret.cumsum()
+
+# worst portfolio
+worst_idx = np.argsort(eigVecs.T[0])[:3]
+eq_worst = equities.iloc[:, worst_idx]
+worst_eigv = norm_eigVecs[worst_idx]
+worst_ret = eq_worst.dot(worst_eigv).cumsum()
+print ("Worst :", df.columns[worst_idx])
+                 
+# best portfolio         
+best_idx = np.argsort(eigVecs.T[0])[-3:]
+eq_best = equities.iloc[:, best_idx]
+best_eigv = norm_eigVecs[best_idx]
+best_ret = eq_best.dot(best_eigv).cumsum()
+print ("Best :", df.columns[best_idx])
+\end{ipython}
+\begin{ioutput}
+Worst : Index(['BA', 'CVX', 'DOW'], dtype='object')
+Best : Index(['JNJ', 'VZ', 'WMT'], dtype='object')
+\end{ioutput}
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=.7\textwidth]{figures/pc1_weights_covid_returns}
+	\caption{Three most negative and least negative weights portfolios compared to the market portfolio.}
+	\label{fig:pca_covid_return}
+\end{figure}
+
+As shown in Figure~\ref{fig:pca_covid_return}, the resulting portfolio would have performed significantly better than the market, since it invested in companies that actually didn't suffer to much from the pandemic. 
+ 
+Note that this portfolio is formed with look-ahead bias, indeed portfolio weights are computed using future dates that were not available at the time of market downturn. The PCA used in this way is therefore a backward looking analytics tool.
 
 \section{Exercises}
 \input{portfolio_ex_text}
