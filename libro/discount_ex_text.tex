@@ -1,75 +1,117 @@
+\cprotEnv\begin{question}
+\label{ex:yield_discount}
+Using the \texttt{DiscountCurve} class, implemented in this Chapter, build a curve with the given inputs (pillar dates and yields)
+
+\begin{ipython}
+today = date(2020, 10, 15)
+dates = [date(2021, 1, 15), date(2021, 4, 15), date(2021, 7, 15),
+         date(2021, 10, 15), date(2022, 10, 15), date(2023, 10, 15),
+         date(2024, 10, 15), date(2025, 10, 15), date(2026, 10, 15),
+         date(2027, 10, 15), date(2028, 10, 15), date(2029, 10, 15),
+         date(2030, 10, 15), date(2031, 10, 15), date(2032, 10, 15),
+         date(2033, 10, 15), date(2034, 10, 15), date(2035, 10, 15),
+         date(2036, 10, 15), date(2037, 10, 15), date(2038, 10, 15),
+         date(2039, 10, 15), date(2040, 10, 15), date(2041, 10, 15),
+         date(2042, 10, 15), date(2043, 10, 15), date(2044, 10, 15),
+         date(2045, 10, 15), date(2046, 10, 15), date(2047, 10, 15),
+         date(2048, 10, 15), date(2049, 10, 15), date(2050, 10, 15)]
+yields = [-0.652548, -0.687966, -0.718319, -0.744011, -0.807362,
+          -0.822144, -0.803715, -0.763496, -0.709892, -0.649001,
+          -0.585169, -0.521425, -0.459808, -0.401628, -0.347657,
+          -0.298283, -0.253620, -0.213593, -0.178005, -0.146578,
+          -0.118993, -0.094911, -0.073989, -0.055896, -0.040317,
+          -0.026957, -0.015546, -0.005840,  0.002383,  0.009320,
+           0.015145,  0.020013,  0.024059]
+\end{ipython}
+\noindent
+By interpolation, find the 18m yield, then draw the yield curve. Finally instantiate a \texttt{DiscountCurve} object, draw the curve and discount factors at the following dates
+\begin{ipython}
+df_dates = [date(2025, 4, 15), date(2031, 4, 15)]
+\end{ipython}
+\end{question}
+
+\cprotEnv\begin{solution}
+To interpolate the given yields the \texttt{interp} function can be used. Before doing that it is necessary to convert the dates into numbers (i.e. the difference between the actual date and "today").
+\begin{ipython}
+from dateutil.relativedelta import relativedelta
+import numpy as np
+
+num_dates = [(d-today).days for d in dates]
+target = (today+relativedelta(months=18)-today).days
+print (np.interp(target, num_dates, yields))
+\end{ipython}
+\begin{ioutput}
+-0.7755997178082192
+\end{ioutput}
+
+Figure~\ref{fig:ex_yield} shows the yield curve and the interpolated point of the 18m yield.
+
+\begin{figure}[htpb]
+\centering
+\includegraphics[width=0.7\linewidth]{figures/ex_yield}
+\caption{Yield curve resulting from the exercise inputs.}
+\label{fig:ex_yield}
+\end{figure}
+
+To construct the discount curve first it is necessary to define the discount factors from the yields. Then you need to instantiate a \texttt{DiscountCurve} object with the mandatory inputs and call the \texttt{df} method to compute the discount factors at the required dates.
+\begin{ipython}
+from finmarkets import DiscountCurve
+
+dfs = []
+for i, d in enumerate(dates):
+    dfs.append(np.exp(-yields[i]/100*((d-today).days/365)))
+    
+dc = DiscountCurve(today, dates, dfs)
+print (dc.df(date(2025, 4, 15)))
+print (dc.df(date(2031, 4, 15)))
+\end{ipython}
+\begin{ioutput}
+1.035800870152254
+1.0461387588227613
+\end{ioutput}
+
+Figure~\ref{fig:ex_discount} shows the discount curve and the interpolated discount factors.
+
+\begin{figure}[htpb]
+\centering
+\includegraphics[width=0.7\linewidth]{figures/ex_discount}
+\caption{Discount curve resulting from the exercise inputs.}
+\label{fig:ex_discount}
+\end{figure}
+\end{solution}
+
+%\cprotEnv\begin{question}
+%Calculate the forward interest for the period from six months (180/360) from now to nine months (270/360) from now if the six month rate is 4.50\% p.a. and the nine month rate is 4.25\% p.a.
+%\end{question}
+%
+%\cprotEnv\begin{solution}
+%FV
+%FV
+%6
+%9
+%1 +0.045* 180/360 1025
+%1 +0.0425 *270-360 10525
+%
+%360/90 *1.03188/1.02250 = 0.0367 = 3.67
+%\end{solution}
+
 \begin{question}
-\texttt{Python} has a useful command called \texttt{assert} which can be used for checking that a given condition is satisfied, and raising an error if the condition is not satisfied.
-
-The following line does not cause an error, in fact it does nothing since 1 is lower than 2, hence the condition is met.
-
-\lstinline[language=iPython]|assert 1 < 2|
-
-\noindent
-This causes an error (the condition is evaluated to false). 
-
-\lstinline[language=iPython]|assert 1 > 2|
-
-\noindent
-\texttt{assert} can take a second argument with a message to display in case of failure.
-
-\lstinline[language=iPython]|assert 1 > 2, "Two is greater than one"|
-
-\noindent
-Now takes the \texttt{df} function from the Chapter on Discounting and modify it by adding some assertions to check that:
-
-\begin{itemize}
-\item the pillar date list contains at least 2 elements;
-\item the pillar date list has the same length as the discount factor one;
-\item the first pillar date is equal to the today's date;
-\item the value date (first argument \texttt{d}) is greater or equal to the first pillar date and also less than or equal to the last pillar date.
-\end{itemize}
-
-Then try using the function with some invalid data to make sure that your assertions are correctly checking the desired conditions
+Given the same inputs of Exercise~\ref{ex:yield_discount} and using the \texttt{ForwardRateCurve} class compute the 10y forward rate in 1y from today. 
 \end{question}
 
 \cprotEnv\begin{solution}
 \begin{ipython}
-# import modules and objects that we need
-from datetime import date
-import numpy
-import math
+from finmarkets import ForwardRateCurve
 
-today_date = date(2017, 10, 1)
-pillar_dates = [date(2017, 10, 1),
-date(2018, 10, 1),
-date(2019, 10, 1)]
-discount_factors = [1.0, 0.95, 0.8]
-
-def df(d, observation_date, pillar_dates, discount_factors):
-    ############## CHECKS ################
-    assert len(pillar_dates) >= 2, " need at least 2 pillar dates"
-    assert len(pillar_dates) == len(discount_factors), \
-        "number of pillar dates should be equal to \
-         the number of pillar discount factors"
-    assert observation_date == pillar_dates[0], \
-        "first pillar date should be the observation date"
-    assert pillar_dates[0] <= d <= pillar_dates[-1], \
-        "Invalid value date %s" % (d)
-    ############## END OF CHECKS ################
-    log_discount_factors = []
-    for discount_factor in discount_factors:
-        log_discount_factors.append(math.log(discount_factor))
-    pillar_days = []
-    for pillar_date in pillar_dates:
-        pillar_days.append((pillar_date - observation_date).days)
-    d_days = (d - observation_date).days
-    interpolated_log_discount_factor = \
-        numpy.interp(d_days, pillar_days, log_discount_factors)
-    return math.exp(interpolated_log_discount_factor)
-
-df(date(2019, 1, 1), today_date, pillar_dates, discount_factors)
+fc = ForwardRateCurve(today, dates, yields)
+print ("{:.4f}%".format(fc.forward_rate(date(2021, 10, 15), date(2031, 10, 15))/100))
 \end{ipython}
 \begin{ioutput}
-0.9097285910181567
+-0.0037%
 \end{ioutput}
 \end{solution}
 
+<<<<<<< HEAD
 \cprotEnv\begin{question}
 Mario wants to lease a car for 3 years. The car dealer has given him two payment options to choose from:
 
@@ -174,148 +216,3 @@ Amount at the end of 10 years is 16645.5 dollars.
 %\end{tcolorbox}
 %\end{solution}
 
-%\begin{question}
-%Following the steps outlined in Chapter Discount Factors, implement a \texttt{DiscountCurve} class and add it to \texttt{finmarkets} module. The class should have as attributes the pillar dates and the corresponding discount factors and two methods, one to interpolate discount factors and another to calculate forward rates.
-%Finally using that class compute the forward 6M LIBOR coupon using the curves given below in pre and post 2008 crisis way.
-%
-%\textbf{Input:}
-%\begin{Shaded}
-%\begin{Highlighting}[]
-%\NormalTok{observation_date }\OperatorTok{=}\NormalTok{ date (}\DecValTok{2020}\NormalTok{, }\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{)}
-%\NormalTok{t1 }\OperatorTok{=}\NormalTok{ date(}\DecValTok{2020}\NormalTok{,}\DecValTok{4}\NormalTok{, }\DecValTok{1}\NormalTok{)}
-%\NormalTok{t2 }\OperatorTok{=}\NormalTok{ date(}\DecValTok{2020}\NormalTok{, }\DecValTok{10}\NormalTok{, }\DecValTok{1}\NormalTok{)}
-%
-%\CommentTok{# for EONIA}
-%\NormalTok{pillar_dates_eonia }\OperatorTok{=}\NormalTok{ [date(}\DecValTok{2020}\NormalTok{ , }\DecValTok{1}\NormalTok{ ,}\DecValTok{1}\NormalTok{), }
-%\NormalTok{                      date(}\DecValTok{2021}\NormalTok{, }\DecValTok{1}\NormalTok{, }\DecValTok{1}\NormalTok{), }
-%\NormalTok{                      date(}\DecValTok{2022}\NormalTok{, }\DecValTok{10}\NormalTok{ ,}\DecValTok{1}\NormalTok{)]}
-%\NormalTok{discount_factors_eonia }\OperatorTok{=}\NormalTok{ [}\FloatTok{1.0}\NormalTok{, }\FloatTok{0.97}\NormalTok{, }\FloatTok{0.72}\NormalTok{]}
-%
-%\CommentTok{# for LIBOR 6M}
-%\NormalTok{pillar_dates_libor }\OperatorTok{=}\NormalTok{ [date(}\DecValTok{2020}\NormalTok{, }\DecValTok{1}\NormalTok{ ,}\DecValTok{1}\NormalTok{), }
-%\NormalTok{                      date(}\DecValTok{2020}\NormalTok{, }\DecValTok{6}\NormalTok{, }\DecValTok{1}\NormalTok{), }
-%\NormalTok{                      date(}\DecValTok{2020}\NormalTok{, }\DecValTok{12}\NormalTok{ ,}\DecValTok{1}\NormalTok{)]}
-%\NormalTok{discount_factors_libor }\OperatorTok{=}\NormalTok{ [}\FloatTok{1.0}\NormalTok{, }\FloatTok{0.95}\NormalTok{, }\FloatTok{0.90}\NormalTok{]}
-%\end{Highlighting}
-%\end{Shaded}
-%\end{question}
-%
-%\begin{solution}
-%\begin{tcolorbox}[size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-%\begin{Verbatim}[commandchars=\\\{\}]
-%\PY{k+kn}{import} \PY{n+nn}{math}
-%\PY{k+kn}{import} \PY{n+nn}{numpy}
-%\PY{k+kn}{from} \PY{n+nn}{datetime} \PY{k}{import} \PY{n}{date}
-%
-%\PY{k}{class} \PY{n+nc}{DiscountCurve}\PY{p}{:}
-%
-%    \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{today}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{discount\PYZus{}factors}\PY{p}{)}\PY{p}{:}
-%        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today} \PY{o}{=} \PY{n}{today}
-%        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates} \PY{o}{=} \PY{n}{pillar\PYZus{}dates}
-%        \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{discount\PYZus{}factors} \PY{o}{=} \PY{n}{discount\PYZus{}factors}
-%
-%    \PY{k}{def} \PY{n+nf}{df}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{d}\PY{p}{)}\PY{p}{:}
-%        \PY{n}{log\PYZus{}discount\PYZus{}factors} \PY{o}{=} \PYZbs{}
-%          \PY{p}{[}\PY{n}{math}\PY{o}{.}\PY{n}{log}\PY{p}{(}\PY{n}{discount\PYZus{}factor}\PY{p}{)} 
-%           \PY{k}{for} \PY{n}{discount\PYZus{}factor} \PY{o+ow}{in} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{discount\PYZus{}factors}\PY{p}{]}
-%        \PY{n}{pillar\PYZus{}days} \PY{o}{=} \PY{p}{[}\PY{p}{(}\PY{n}{pillar\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days} 
-%                       \PY{k}{for} \PY{n}{pillar\PYZus{}date} \PY{o+ow}{in} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}dates}\PY{p}{]}
-%        \PY{n}{d\PYZus{}days} \PY{o}{=} \PY{p}{(}\PY{n}{d} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days}
-%        \PY{n}{interpolated\PYZus{}log\PYZus{}discount\PYZus{}factor} \PY{o}{=} \PYZbs{}
-%            \PY{n}{numpy}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{d\PYZus{}days}\PY{p}{,} \PY{n}{pillar\PYZus{}days}\PY{p}{,} \PY{n}{log\PYZus{}discount\PYZus{}factors}\PY{p}{)}
-%        \PY{k}{return} \PY{n}{math}\PY{o}{.}\PY{n}{exp}\PY{p}{(}\PY{n}{interpolated\PYZus{}log\PYZus{}discount\PYZus{}factor}\PY{p}{)}
-%
-%    \PY{k}{def} \PY{n+nf}{forward\PYZus{}rate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{d1}\PY{p}{,} \PY{n}{d2}\PY{p}{)}\PY{p}{:}
-%        \PY{k}{return} \PY{p}{(}\PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d1}\PY{p}{)} \PY{o}{/} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{d2}\PY{p}{)} \PY{o}{\PYZhy{}} \PY{l+m+mf}{1.0}\PY{p}{)} \PY{o}{*} \PYZbs{}
-%                \PY{p}{(}\PY{l+m+mf}{365.0} \PY{o}{/} \PY{p}{(}\PY{p}{(}\PY{n}{d2} \PY{o}{\PYZhy{}} \PY{n}{d1}\PY{p}{)}\PY{o}{.}\PY{n}{days}\PY{p}{)}\PY{p}{)}
-%\end{Verbatim}
-%\end{tcolorbox}
-%
-%\begin{tcolorbox}[breakable, size=fbox, boxrule=1pt, pad at break*=1mm,colback=cellbackground, colframe=cellborder]
-%\begin{Verbatim}[commandchars=\\\{\}]
-%\PY{k+kn}{from} \PY{n+nn}{finmarkets} \PY{k}{import} \PY{n}{DiscountCurve}
-%
-%\PY{n}{observation\PYZus{}date} \PY{o}{=} \PY{n}{date} \PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-%\PY{n}{t1} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,}\PY{l+m+mi}{4}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-%\PY{n}{t2} \PY{o}{=} \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}
-%
-%\PY{c+c1}{\PYZsh{} for EONIA}
-%\PY{n}{pillar\PYZus{}dates\PYZus{}eonia} \PY{o}{=} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020} \PY{p}{,} \PY{l+m+mi}{1} \PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-%                      \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2021}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-%                      \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2022}\PY{p}{,} \PY{l+m+mi}{10} \PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
-%\PY{n}{discount\PYZus{}factors\PYZus{}eonia} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.97}\PY{p}{,} \PY{l+m+mf}{0.72}\PY{p}{]}
-%
-%\PY{c+c1}{\PYZsh{} for LIBOR 6M}
-%\PY{n}{pillar\PYZus{}dates\PYZus{}libor} \PY{o}{=} \PY{p}{[}\PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{1} \PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-%                      \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)}\PY{p}{,} 
-%                      \PY{n}{date}\PY{p}{(}\PY{l+m+mi}{2020}\PY{p}{,} \PY{l+m+mi}{12} \PY{p}{,}\PY{l+m+mi}{1}\PY{p}{)}\PY{p}{]}
-%\PY{n}{discount\PYZus{}factors\PYZus{}libor} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{l+m+mf}{0.95}\PY{p}{,} \PY{l+m+mf}{0.90}\PY{p}{]}
-%
-%
-%\PY{n}{eonia\PYZus{}curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,} 
-%                            \PY{n}{pillar\PYZus{}dates\PYZus{}eonia}\PY{p}{,} 
-%                            \PY{n}{discount\PYZus{}factors\PYZus{}eonia}\PY{p}{)}
-%\PY{n}{libor\PYZus{}curve} \PY{o}{=} \PY{n}{DiscountCurve}\PY{p}{(}\PY{n}{observation\PYZus{}date}\PY{p}{,} 
-%                            \PY{n}{pillar\PYZus{}dates\PYZus{}libor}\PY{p}{,} 
-%                            \PY{n}{discount\PYZus{}factors\PYZus{}libor}\PY{p}{)}
-%
-%
-%\PY{n}{npv} \PY{o}{=} \PY{n}{eonia\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{t1}\PY{p}{)} \PY{o}{*} \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{t1}\PY{p}{,} \PY{n}{t2}\PY{p}{)}
-%
-%\PY{c+c1}{\PYZsh{} Compute it in the pre\PYZhy{}2008 way}
-%\PY{n}{npv\PYZus{}pre2008} \PY{o}{=} \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{df}\PY{p}{(}\PY{n}{t1}\PY{p}{)} \PY{o}{*} \PY{n}{libor\PYZus{}curve}\PY{o}{.}\PY{n}{forward\PYZus{}rate}\PY{p}{(}\PY{n}{t1}\PY{p}{,} \PY{n}{t2}\PY{p}{)}
-%
-%\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{NPV post 2008:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{npv}\PY{p}{)}
-%\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{NPV pre 2008:}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{npv\PYZus{}pre2008}\PY{p}{)}
-%
-%NPV post 2008: 0.11533243116069992
-%NPV pre 2008: 0.11269481011359303
-%\end{Verbatim}
-%\end{tcolorbox}
-%\end{solution}
-%
-%\begin{question}
-%Write a ForwardRateCurve class (for EURIBOR/LIBOR rate curve) which
-%doesn't compute discount factors but only interplatates forward rates;
-%then add it to the \texttt{finmarkets} module (this function is used to
-%define the LIBOR curve needed throughout future lessons).
-%\end{question}
-%
-%\begin{solution}
-%In this case it is enough to write a new \texttt{class} that has three
-%attributes: a today date, a set of pillar\_dates and the corresponding
-%rates. There will be just a single method \texttt{forward\_rate} which
-%returns the corresponding interpolated rate.
-%
-%\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
-%\begin{Verbatim}[commandchars=\\\{\}]
-%\PY{k+kn}{import} \PY{n+nn}{numpy}
-%        
-%\PY{c+c1}{\PYZsh{} an EURIBOR or LIBOR rate curve}
-%\PY{c+c1}{\PYZsh{} doesn\PYZsq{}t calculate discount factors, only interpolates forward rates}
-%\PY{k}{class} \PY{n+nc}{ForwardRateCurve}\PY{p}{(}\PY{n+nb}{object}\PY{p}{)}\PY{p}{:}
-%   
-%   \PY{c+c1}{\PYZsh{} the special \PYZus{}\PYZus{}init\PYZus{}\PYZus{} method defines how to}
-%   \PY{c+c1}{\PYZsh{} construct instances of the class}
-%   \PY{k}{def} \PY{n+nf}{\PYZus{}\PYZus{}init\PYZus{}\PYZus{}}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{pillar\PYZus{}dates}\PY{p}{,} \PY{n}{rates}\PY{p}{)}\PY{p}{:}
-%       
-%       \PY{c+c1}{\PYZsh{} we just store the arguments as attributes of the instance}
-%       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today} \PY{o}{=} \PY{n}{pillar\PYZus{}dates}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
-%       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rates} \PY{o}{=} \PY{n}{rates}
-%       
-%       \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days} \PY{o}{=} \PY{p}{[}
-%           \PY{p}{(}\PY{n}{pillar\PYZus{}date} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days}
-%           \PY{k}{for} \PY{n}{pillar\PYZus{}date} \PY{o+ow}{in} \PY{n}{pillar\PYZus{}dates}
-%       \PY{p}{]}
-%       
-%       
-%   \PY{c+c1}{\PYZsh{} interpolates the forward rates stored in the instance}
-%   \PY{k}{def} \PY{n+nf}{forward\PYZus{}rate}\PY{p}{(}\PY{n+nb+bp}{self}\PY{p}{,} \PY{n}{d}\PY{p}{)}\PY{p}{:}
-%       \PY{n}{d\PYZus{}days} \PY{o}{=} \PY{p}{(}\PY{n}{d} \PY{o}{\PYZhy{}} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{today}\PY{p}{)}\PY{o}{.}\PY{n}{days}
-%       \PY{k}{return} \PY{n}{numpy}\PY{o}{.}\PY{n}{interp}\PY{p}{(}\PY{n}{d\PYZus{}days}\PY{p}{,} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{pillar\PYZus{}days}\PY{p}{,} \PY{n+nb+bp}{self}\PY{o}{.}\PY{n}{rates}\PY{p}{)}
-%\end{Verbatim}
-%\end{tcolorbox}
-%\end{solution}
-
-
-  
