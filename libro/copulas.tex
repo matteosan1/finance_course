@@ -262,7 +262,7 @@ Everything discussed in this Section can be easily generalized to higher dimensi
 
 %\subsubsection{Clayton copula}
 
-\subsection{Generate Correlated Distributions}
+\section{Generate Correlated Distributions}
 \label{generate-correlated-distributions}
 
 In order to generate numbers from correlated distributions it is enough to follow similar steps to those described before:
@@ -429,6 +429,57 @@ Indeed given the perfect correlation between the probabilities either there is n
 %	...
 %	\end{Verbatim}
 %\end{tcolorbox}
+
+\subsection{Cholesky transformation to correlate and uncorrelate variables}
+In Section~\ref{sec:cholesky} it has been shown that a given matrix, $[\Sigma]$ can be factored uniquely into a product $[\Sigma]=[L]^T [L]$, where $[L]$ is a lower triangular matrix with positive diagonal entries. The matrix $[L]$ is the Cholesky (or "square root") matrix.
+
+If the original $[\Sigma]$ is a covariance matrix, geometrically, the Cholesky matrix, transforms uncorrelated variables into variables whose variances and covariances are given by $[\Sigma]$. 
+
+The Cholesky matrix can be used to create correlations among random variables. For example, suppose that $X$  are independent standard normal variables. The matrix $[L]$ can be used to create new variables $Z$ such that the covariance of $Z$ equal $[\Sigma]$.
+Figure~\ref{fig:cholesky_norm} shows the original uncorrelated variable $X$ (left), the transformed variable $Z$ with correlation $[\Sigma]$ (right).
+
+\begin{ipython}
+from scipy.stats import multivariate_normal
+import numpy as np
+
+np.random.seed(10)
+
+trials = 1000
+m_norm = multivariate_normal(mean=[0, 0], cov=[[1,0],
+                                               [0,1]])
+
+X = m_norm.rvs(size=trials)
+
+sigma = np.array([[3, 1], [1, 1]])
+L = np.linalg.cholesky(sigma)
+print (L)
+Z = np.dot(x, L)
+\end{ipython}
+\begin{ioutput}
+[[1.73205081 0.        ]
+ [0.57735027 0.81649658]]
+\end{ioutput}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/cholesky_norm}
+  \caption{The original uncorrelated variable $X$ (left), the transformed variable $Z$ (right).}
+  \label{fig:cholesky_norm}
+\end{figure}
+
+Clearly, if you start with correlated variable, you can apply the inverse of the Cholesky transformation.
+If you take the $Z$ points generated above and apply $[L]^{-1}$ transform the original data is obtained. Figure~\ref{fig:cholesky_inv} shows the resulting distribution.
+
+\begin{ipython}
+orig_X = np.dot(Z, np.linalg.inv(L))
+\end{ipython}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/cholesky_inv}
+  \caption{The transformed variable $Z$ (left), and the original data obtained by the application of the inverse Cholesky transformation (right).}
+  \label{fig:cholesky_inv}
+\end{figure}
 
 \section{Exercises}
 \input{copula_ex_text}
