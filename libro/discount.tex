@@ -1,9 +1,99 @@
 \chapter{Interpolation, Discount Factors and Forward Rates}
-\label{interpolation---practical-lesson-3}
+\label{interpolation}
 
 In this Chapter we will start to see applications of \texttt{python} to financial calculations.
-In particular discount curves and forward rates will be involved, implementing the first utilities that go into a financial module that will be developed throughout this course.
+In particular discount curves and forward rates will be involved, implementing the first utilities that will be added to a financial module developed throughout this course.
 In doing so we will review a widely used mathematical tool: \emph{interpolation}.
+
+\section{Discounting}
+\label{discount-factors}
+
+\subsection{Time Value of Money}
+Imagine a bank that offers a guaranteed return of 10\% on whichever amount of money a client put in her account as long as that amount stays in the account for one full year (no withdrawals possible). If the client knows that would need \$11000 at the end of one year to buy something, how much money does she need to put in today so that the $X$ amount (principal) at the claimed 10\% a year interest rate will grow to \$11000 at the end of year one ?
+
+We know that at 10\%, a dollar today grows to
+
+\begin{ipython}
+1 * (1 + 0.1)
+\end{ipython}
+\begin{ioutput}
+1.1
+\end{ioutput}
+
+The needed investment $X$ can be found by inverting the previous formula:
+
+\begin{equation*}
+X \cdot (1 + 10\%) = 11000 \implies X = 11000 / (1 + 10\%)
+\end{equation*}
+
+\begin{ipython}
+11000 / (1 + 0.1)
+\end{ipython}
+\begin{ioutput}
+10000
+\end{ioutput}
+
+What this says is that to have \$11000 one year from now, the client needs \$10000 at an interest rate of 10\% today.
+What about 11000 dollars two years from now ? Taking the approach used above
+
+\begin{equation*}
+	X = 11000 / \left((1 + 10\%) \cdot (1 + 10\%)\right) =  11000/(1+10\%)^ 2
+\end{equation*}
+
+\begin{ipython}
+11000 / (1 + 0.1)**2
+\end{ipython}
+\begin{ioutput}
+9090.90909090909
+\end{ioutput}
+
+Which means the 11000 dollars we need two years from now are valued about 9090 dollars today.
+
+What we have just done above is called \emph{discounting}. We are adjusting (i.e. discounting) the value of a payment that will be received at a point in future. Therefore, we are discounting back a future value to bring it to its present value. The rate used to adjust the future payment is called the *discount rate*.
+
+The idea behind discounting is also known as time value of money. Since a dollar at a fixed interest rate will grow in any bank account at that certain rate, if it is invested in an alternate opportunity, it should at least earn that rate from the other alternative to even consider the alternative worth thinking about. Discounting adjusts future payments, investment returns and even return of principal on this basis. The bottom line is that if you fail to earn the discount rate, you have actually lost money, since any bank, would at least have given you the discount rate as return for depositing your money with them. Anything less than that would mean that you have not put your money to its best use.
+
+When we calculate the value of future payments today, we are doing a \emph{present value} (NPV or PV) calculation. When we calculate the value of anything in the future we do a \emph{future value} calculation.
+
+A positive NPV denotes that at a certain cost of capital the returns or inflows from an investment opportunity outweigh the outflows or costs of investment, and vice versa. Obviously, when comparing various alternatives available for investment, the option with the most positive NPV or least negative NPV will be favoured or chosen. 
+
+As an example imagine that you have the chance to invest in a project, Ventures, Inc. that will pay \$100 in year 1, and \$200 in year 2. How much are you willing to pay for this opportunity ? (assume an annual discount rate of 10\%).
+
+The answer to the question is that you will be willing to pay at most an amount that is equal to the present value of this stream of payments. To calculate the present value, you need to scale each payment by its respective discount factors ($D_n$ discount factor for year $n$)
+\begin{equation}
+	D_n = \cfrac{1}{(1 + r)^n}
+\end{equation}
+
+\begin{ipython}
+d1 = 1/(1 + 0.1)**1
+d2 = 1/(1 + 0.1)**2
+
+print ("discount factor for year 1: {:.2f}".format(d1))
+print ("discount factor for year 2: {:.2f}".format(d2))
+
+pv = 100*d1 + 200*d2
+
+print ("Total PV: {:.2f}".format(pv))
+\end{ipython}
+\begin{ioutput}
+discount factor for year 1: 0.91
+discount factor for year 2: 0.83
+Total PV: 256.20
+\end{ioutput}
+\noindent
+Hence, you would be willing to pay \$256.2 for this opportunity.
+
+If there are $Y$ payments each year the discount factor formula becomes
+
+\begin{equation}
+D_n = \left(1+\cfrac{r}{Y}\right)^{-n}
+\end{equation}
+\noindent
+When the continuously-compounded hypothesis is used instead the discount factor becomes
+
+\begin{equation}
+D_n = e^{-\frac{r}{Y}n}
+\end{equation}
 
 \section{Linear Interpolation}
 \label{linear-interpolation}
@@ -207,28 +297,22 @@ It can be easily demonstrated that the linear approximation between two points o
 
 To improve the approximation accuracy with complicated curves a polynomial of higher order can be used ($𝑝(𝑥)=𝑎_0 + 𝑎_1 𝑥+ 𝑎_2 𝑥^2+\cdots$), for example in the evaluation of natural logarithm or trigonometric functions. It has to be clear however that going to higher degrees does not always help~\cite{bib:runge}.
 
-\section{Discount Factors}
-\label{discount-factors}
-The discount factor, $D(T)$, is the factor by which a future cash flow must be multiplied in order to obtain its present value. For a zero-rate (also called spot rate) $r$, and a time to cash flow $T$ (in years), the discount factor is:
-
-\begin{equation}
-D(0, T)= \frac {1}{(1+rT)}
-\label{eq:discount_factor}
-\end{equation}
-
-When the continuously-compounded hypothesis is used the discount factor becomes
-
-\begin{equation}
-D(0, T)= e^{-rT}
-\label{eq:discount_factor_cc}
-\end{equation}
-
-\subsection{Discount Curve Interpolation}
+\section{Discount Curve Interpolation}
 \label{discount-curve-interpolation}
+With $D(T)$ (or $D(0,T)$) it is represented the discount factor for a zero-rate (also called spot rate) $r$, and a time to cash flow $T$ (in years).
+
+Discount factors are usually presented as curves (\emph{discount curves}) where each point represents a discount factor relative to a future date. Figure~\ref{fig:example_discount_curve} shows an example of discount curve.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.7\linewidth]{figures/discount_curve}
+	\caption{Example of discount curve.}
+	\label{fig:example_discount_curve}
+\end{figure}
 
 Since discount curves are made of a discrete set of discount factors derived at some dates, we may need to find the factor at some different time; this is a typical financial application of interpolation.
 
-To develop some \texttt{python} code which interpolates a discount curve are needed:
+To develop some \texttt{python} code which interpolates a discount curve the following inputs are needed:
 
 \begin{itemize}
 \tightlist
@@ -420,7 +504,7 @@ class ForwardRateCurve:
     def interp_rate(self, d):
         d_days = (d - self.today).days
         interpolated_rate = numpy.interp(d_days, self.pillar_days, self.rates)
-        return interpolated_rate, d_days 
+        return interpolated_rate, d_days/365
 
     def forward_rate(self, d1, d2):
         if d1 == d2:
@@ -428,8 +512,25 @@ class ForwardRateCurve:
         else:
             r1, d1_days = self.interp_rate(d1)
             r2, d2_days = self.interp_rate(d2)
-            return (r2*d2_days - r1*d1_days)/ ((d2_days - d1_days) / 365)
+            return ((1+r2*d2_days)/(1+r1*d1_days)-1) / (d2_days - d1_days)
 \end{ipython}
+
+As an example let's compute a forward rate from fake rates.
+\begin{ipython}
+from datetime import date
+observation_date = date (2020, 1, 1)
+
+pillar_dates = [date(2020, 1, 1), 
+date(2021, 1, 1), 
+date(2022, 8, 1)]
+rates = [0.05, 0.07, 0.08]
+
+fc = ForwardRateCurve(observation_date, pillar_dates, rates)
+print ("forward rate: {:.3f}".format(fc.forward_rate(date(2021, 1, 1), date(2022, 1, 1))))
+\end{ipython}
+\begin{solution}
+forward rate: 0.077
+\end{solution}
 
 \section{Multi-curve Framework}
 \label{sec:financial-crisis}
@@ -529,18 +630,19 @@ As an example let's define EONIA and LIBOR curves and compute the net present va
 
 \begin{ipython}
 from finmarkets import DiscountCurve, ForwardRateCurve
-from datetime import date
-from math import exp 
+from math import exp
 
 today = date (2020, 1, 1)
 t1 = date(2020, 4, 1)
 t2 = date(2020, 10, 1)
-pillar_dates_eonia = [today, date(2021, 1, 1), date(2022, 10 ,1)]
-df_eonia = [1.0, 0.97, 0.72]
-pillar_dates_libor = [today, date(2020, 6, 1), date(2020, 12 ,1)]
+pillar_dates_eonia = [today, date(2021, 1, 1), date(2022, 10 ,1)] 
+eonia_rates = [1.0, 0.97, 0.72]
+pillar_dates_libor = [today, date(2020, 6, 1), date(2020, 12 ,1)] 
 libor = [0.005, 0.01, 0.015]
-eonia_curve = DiscountCurve(today, pillar_dates_eonia, df_eonia)
-libor_curve = ForwardRateCurve(today, pillar_dates_libor, libor)
+
+eonia_curve = DiscountCurve(today, pillar_dates_eonia, eonia_rates) 
+libor_curve = ForwardRateCurve(today, pillar_dates_libor, libor) 
+
 npv = eonia_curve.df(t1) * libor_curve.forward_rate(t1, t2)
 r0 = libor_curve.forward_rate(today, t1)
 npv_pre2008 = exp(-r0*(t1-today).days/365) * libor_curve.forward_rate(t1, t2)
@@ -549,8 +651,8 @@ print ("NPV post 2008: {:.5f}".format(npv))
 print ("NPV pre 2008: {:.5f}".format(npv_pre2008))
 \end{ipython}
 \begin{ioutput}
-NPV post 2008: 0.01587
-NPV pre 2008: 0.01596
+NPV post 2008: 0.01584
+NPV pre 2008: 0.01593
 \end{ioutput}
 
 \subsection{Transitioning away from LIBOR~\cite{bib:str}}

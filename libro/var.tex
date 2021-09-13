@@ -37,13 +37,14 @@ In the proposed examples historical series of Apple and Netflix
 are used also we will assume to have a portfolio made of 
 \textbf{60\% of AAPL and 40\% NFLX stocks}.
  
-You can download the dateset with \texttt{ffn} as in the following code or to
+You can download the dateset with \texttt{yfinance} as in the following code or to
 check out \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/historical_data.csv}{historical\_data.csv}.
 
 \begin{ipython}
-import ffn
+import yfinance as yf
 	
-df = ffn.get("aapl,nflx, start='2014-01-02', end='2018-03-27')
+proxy = yf.Tickers(['AAPL', 'NFLX'])
+df = proxy.history(start='2014-01-02', end='2021-03-27')['Close']
 print (df.head())
 \end{ipython}
 \begin{ioutput}
@@ -63,22 +64,19 @@ import pandas as pd
 import numpy as np
 
 w = np.array([0.6, 0.4])
-df = pd.read_csv("historical_date.csv")
-aapl = df[df['ticker']=="AAPL"].copy()
-nlfx = df[df['ticker']=="NFLX"].copy()
-aapl['rets'] = aapl['adj_close']/aapl['adj_close'].shift(1) - 1
-nflx['rets'] = nflx['adj_close']/nflx['adj_close'].shift(1) - 1
+df['AAPL_rets'] = df['AAPL']/df['AAPL'].shift(1) - 1
+df['NFLX_rets'] = df['NFLX']/df['NFLX'].shift(1) - 1
 
-print (aapl.head())
+print (df.head())
 \end{ipython}
 \begin{ioutput}
-                 aapl       nflx  aapl_rets  nflx_rets
-Date
-2014-01-02  17.598297  51.831429        NaN        NaN
-2014-01-03  17.211735  51.871429  -0.021966   0.000772
-2014-01-06  17.305593  51.367142   0.005453  -0.009722
-2014-01-07  17.181829  48.500000  -0.007152  -0.055817
-2014-01-08  17.290642  48.712856   0.006333   0.004389
+                 AAPL       NFLX  AAPL_rets  NFLX_rets
+Date                                                  
+2014-01-02  17.542171  51.831429        NaN        NaN
+2014-01-03  17.156841  51.871429  -0.021966   0.000772
+2014-01-06  17.250401  51.367142   0.005453  -0.009722
+2014-01-07  17.127035  48.500000  -0.007151  -0.055817
+2014-01-08  17.235500  48.712856   0.006333   0.004389
 \end{ioutput}
 
 \subsection{Historical Simulation}
@@ -104,22 +102,22 @@ Using the historical series seen above the procedure can be outlined as follows.
 import numpy as np
 
 rets = []
-for i in range(1, len(aapl)):
-    rets.append(w[0]*aapl.iloc[i]['rets'] + w[1]*nflx.loc[i]['rets'])
+for idx in df.index[1:]:
+rets.append(w[0]*df.loc[idx]['AAPL_rets'] + w[1]*df.loc[idx]['NFLX_rets'])
 
-price = [aapl.iloc[-1]['adj_close'], nflx.iloc[-1]['adj_close']]
+price = [df.iloc[-1]['AAPL'], df.iloc[-1]['NFLX']]
 portfolio_price = w.dot(price)
 hist_var = portfolio_price*np.percentile(rets, 1)
 
 print ('Historical VAR is {:.3f}'.format(hist_var))
 \end{ipython}
 \begin{ioutput}
-Historical VAR is -2.412
+Historical VAR is -12.996
 \end{ioutput}
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.7\textwidth]{figures/historical_var.png}
+	\includegraphics[width=0.7\textwidth]{figures/historical_var}
 	\caption{Distribution of the changes of values estimated from historical data. 
 		The red line shows the 99\% VaR.}
 	\label{fig:hist_var}
@@ -161,8 +159,8 @@ Let's start from the first case, computing mean and standard deviation of each h
 \begin{ipython}
 from scipy.stats import multivariate_normal
 
-mean = [np.mean(aapl['rets']), np.mean(nflx['rets'])]
-cov = np.cov(aapl['rets'][1:], nflx['rets'][1:-1])
+mean = [np.mean(df['AAPL_rets']), np.mean(df['NFLX_rets'])]
+cov = np.cov(df['AAPL_rets'][1:], df['NFLX_rets'][1:])
 mvnorm = multivariate_normal(mean=mean, cov=cov)
 np.random.seed(1)
 n_sims = 100000
@@ -173,7 +171,7 @@ mc_var = portfolio_price * np.percentile(p_returns, 1)
 print('Simulated VAR is {:.3f}'.format(mc_var))
 \end{ipython}
 \begin{ioutput}
-Simulated VAR is -2.197
+Simulated VAR is -11.267
 \end{ioutput}
 
 \begin{figure}[htb]
@@ -197,13 +195,13 @@ for _ in range(trials):
     for i in range(2):
         s += w[i] * price[i] * exp((mean[i] - 0.5 * cov[i][i]) * T +
              sqrt(cov[i][i]) * sqrt(T) * normal())
-        dP.append(portfolio_price - s)
+    dP.append(portfolio_price - s)
 
 mc_var2 = np.percentile(dP, 1)
 print('Simulated VAR is {:.3f}'.format(mc_var2))
 \end{ipython}
 \begin{ioutput}
-Simulated VAR is -1.913
+Simulated VAR is -13.717
 \end{ioutput}
 
 \begin{figure}[htb]

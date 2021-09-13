@@ -1,4 +1,75 @@
 \cprotEnv\begin{question}
+Mario wants to lease a car for 3 years. The car dealer has given him two payment options to choose from:
+	
+	\begin{table}[htbp]
+		\centering
+		\begin{tabular}{l|c|c|c|c|c|c|c}
+			Year & 0 & 0.5 & 1 & 1.5 & 2 & 2.5 & 3 \\
+			\hline
+			Option 1 &	3000.00	& 500.00 & 500.00 &	500.00 & 500.00 & 500.00 & 500.00 \\
+			\hline
+			Option 2 &	5000.00	& 350.00 & 350.00 &	350.00 & 350.00 & 350.00 & 350.00 \\
+		\end{tabular}
+	\end{table}
+	
+	Which payment option should he choose? (Assume an annual discount rate of 10\%)
+\end{question}
+
+\cprotEnv\begin{solution}
+	In order to decide which payment to choose from, he would need to calculate the PV of the payment stream, and look at which costs him the least. 
+	
+	\begin{gather*}
+		DF_n = 1/(1 + r)^n \\
+		PV_n = [\textrm{payment in year n}] / DF_n \\
+		Total PV = \sum PV_n
+	\end{gather*}
+	
+	\begin{ipython}
+		def discount_factor(year):
+		return 1/(1 + 0.1)**year
+		
+		opt1 = {0:3000, 0.5:500, 1:500, 1.5:500, 2:500, 2.5:500, 3:500}
+		opt2 = {0:5000, 0.5:350, 1:350, 1.5:350, 2:350, 2.5:350, 3:350}
+		
+		npv1 = sum([discount_factor(k)*v for k,v in opt1.items()])
+		npv2 = sum([discount_factor(k)*v for k,v in opt2.items()])
+		
+		print ("Option1: {:.1f}".format(npv1))
+		print ("Option2: {:.1f}".format(npv2))
+	\end{ipython}
+	\begin{ioutput}
+		Option1: 5547.5
+		Option2: 6783.3
+	\end{ioutput}
+	Hence he should choose option 1 as it costs him less than option 2.
+\end{solution}
+
+\begin{question}
+	Tots and Toys, Inc. offers Maria an investment plan that requires 10 yearly payments of 1000 dollars, starting from today. The plan promises an annual return of 8\% on her investment. The money will be available to her at the end of 10 years (no withdrawls are allowed before that time.) 
+	What amount will she get at the end of 10 years?
+\end{question}
+
+\cprotEnv\begin{solution}
+	The question requires you to find the future value (FV) of the stream of payments. The rate given is 8\%.
+	In order to find the FV, you need to multiply each amount by its respective FV factor, and then sum the results.
+	
+	\begin{ipython}
+		def fv_factor(year):
+		return (1 + 0.08)**year
+		
+		fv = 0
+		for year in range(11):
+		fv += 1000*fv_factor(year)
+		
+		print ("future value: {:.1f}".format(fv))
+	\end{ipython}
+	\begin{ioutput}
+		future value: 16645.5
+	\end{ioutput}
+	Amount at the end of 10 years is 16645.5 dollars.
+\end{solution}
+
+\cprotEnv\begin{question}
 \label{ex:yield_discount}
 Using the \texttt{DiscountCurve} class, implemented in this Chapter, build a curve with the given inputs (pillar dates and yields)
 
@@ -95,6 +166,7 @@ Figure~\ref{fig:ex_discount} shows the discount curve and the interpolated disco
 %360/90 *1.03188/1.02250 = 0.0367 = 3.67
 %\end{solution}
 
+
 \begin{question}
 Given the same inputs of Exercise~\ref{ex:yield_discount} and using the \texttt{ForwardRateCurve} class compute the 10y forward rate in 1y from today. 
 \end{question}
@@ -110,77 +182,6 @@ print ("{:.4f}%".format(fc.forward_rate(date(2021, 10, 15), date(2031, 10, 15))/
 -0.0037%
 \end{ioutput}
 \end{solution}
-
-%\texttt{Python} has a useful command called \texttt{assert} which can be used for checking that a given condition is satisfied, and raising an error if the condition is not satisfied.
-%
-%The following line does not cause an error, in fact it does nothing since 1 is lower than 2, hence the condition is met.
-%
-%\lstinline[language=iPython]|assert 1 < 2|
-%
-%\noindent
-%This causes an error (the condition is evaluated to false). 
-%
-%\lstinline[language=iPython]|assert 1 > 2|
-%
-%\noindent
-%\texttt{assert} can take a second argument with a message to display in case of failure.
-%
-%\lstinline[language=iPython]|assert 1 > 2, "Two is greater than one"|
-%
-%\noindent
-%Now takes the \texttt{df} function from the Chapter on Discounting and modify it by adding some assertions to check that:
-%
-%\begin{itemize}
-%\item the pillar date list contains at least 2 elements;
-%\item the pillar date list has the same length as the discount factor one;
-%\item the first pillar date is equal to the today's date;
-%\item the value date (first argument \texttt{d}) is greater or equal to the first pillar date and also less than or equal to the last pillar date.
-%\end{itemize}
-%
-%Then try using the function with some invalid data to make sure that your assertions are correctly checking the desired conditions
-%\end{question}
-%
-%\cprotEnv\begin{solution}
-%\begin{ipython}
-%# import modules and objects that we need
-%from datetime import date
-%import numpy
-%import math
-%
-%today_date = date(2017, 10, 1)
-%pillar_dates = [date(2017, 10, 1),
-%date(2018, 10, 1),
-%date(2019, 10, 1)]
-%discount_factors = [1.0, 0.95, 0.8]
-%
-%def df(d, observation_date, pillar_dates, discount_factors):
-%    ############## CHECKS ################
-%    assert len(pillar_dates) >= 2, " need at least 2 pillar dates"
-%    assert len(pillar_dates) == len(discount_factors), \
-%        "number of pillar dates should be equal to \
-%         the number of pillar discount factors"
-%    assert observation_date == pillar_dates[0], \
-%        "first pillar date should be the observation date"
-%    assert pillar_dates[0] <= d <= pillar_dates[-1], \
-%        "Invalid value date %s" % (d)
-%    ############## END OF CHECKS ################
-%    log_discount_factors = []
-%    for discount_factor in discount_factors:
-%        log_discount_factors.append(math.log(discount_factor))
-%    pillar_days = []
-%    for pillar_date in pillar_dates:
-%        pillar_days.append((pillar_date - observation_date).days)
-%    d_days = (d - observation_date).days
-%    interpolated_log_discount_factor = \
-%        numpy.interp(d_days, pillar_days, log_discount_factors)
-%    return math.exp(interpolated_log_discount_factor)
-%
-%df(date(2019, 1, 1), today_date, pillar_dates, discount_factors)
-%\end{ipython}
-%\begin{ioutput}
-%0.9097285910181567
-%\end{ioutput}
-%\end{solution}
 
 %\begin{question}
 %Copy into the file \texttt{finmarkets.py} the function used to compute Black Scholes formula used in Ex.~\ref{ex:BS2}. This is another utility for our financial library. Then repeat Ex.~\ref{ex:BS2} now using the version of the Black and Scholes formula in the \texttt{finmarkets} module.

@@ -6,38 +6,251 @@ In this Chapter a closer look two a couple more of modules is given. These modul
 \section{Getting Data}\label{getting-data}
 
 The first step of any analysis is usually the one that involves selection and manipulation of data we want to process. Data sources can be various (e.g. website, figures, twitter messages, CSV or Excel files\ldots) and partially reflect its nature which can range from \emph{unstructured} data (without any inherent structure, e.g. social media data) to completely \emph{structured} data (where the data model is defined and usually there is no error associated, e.g. stock trading data).
-Two specific modules are available in \texttt{python} in order to gather financial data for our studies: \texttt{quandl}~\cite{quandl} and \texttt{ffn}~\cite{ffn}.
+Various modules are available in \texttt{python} in order to gather financial data for our studies: \texttt{quandl}~\cite{bib:quandl}, \texttt{yfinance}~\cite{bib:yfinance},\texttt{ffn}~\cite{bib:ffn}\ldots
 
-Below a very simple example with \texttt{fnn}, that retrieves the closing prices of few securities. The same job with \texttt{quandl} is just a little bit more complicated since it involves the request for a token, but it just takes few minutes more.  
+Below a simple example using \texttt{yfinance}, that retrieves the closing prices of few securities. The same job with \texttt{quandl} is just a little bit more complicated since it involves the request for a token, but it just takes few minutes more.  
 
 \begin{ipython}
-import ffn
+import yfinance as yf
 
-end = '2015-01-01'
-start = '2007-01-01'
-symbols = ['SPY','TLT','MSFT']
+tickers = ['SPY','TLT','MSFT']
+	
+proxy = yf.Tickers(tickers)
 
-prices = ffn.get(symbols, start=start, end=end)
-prices.pct_change()
+data = proxy.history(start="2021-01-01", end="2021-08-10")
+print (data.head())
 \end{ipython}
 \begin{ioutput}
-                 spy       tlt      msft
-Date
-2007-01-03       NaN       NaN       NaN
-2007-01-04  0.002122  0.006063 -0.001675
-2007-01-05 -0.007976 -0.004353 -0.005703
-2007-01-08  0.004626  0.001793  0.009784
-2007-01-09 -0.000850  0.000000  0.001003
-...        ...       ...       ...
-2014-12-24  0.000096  0.005443 -0.006399
-2014-12-26  0.003225  0.003711 -0.005401
-2014-12-29  0.001343  0.007475 -0.008981
-2014-12-30 -0.005366  0.002713 -0.009062
-2014-12-31 -0.009923  0.001910 -0.012123
-	
-[2014 rows x 3 columns]
+[*********************100%***********************]  3 of 3 completed
+                 Close                         Dividends            \
+                  MSFT         SPY         TLT      MSFT  SPY  TLT   
+Date                                                                 
+2020-12-31  221.397675  371.444244  156.292892       0.0  0.0  0.0   
+2021-01-04  216.689423  366.387390  156.104645       0.0  0.0  0.0   
+2021-01-05  216.898438  368.910828  154.945297       0.0  0.0  0.0   
+2021-01-06  211.274414  371.116394  151.764557       0.0  0.0  0.0   
+2021-01-07  217.286652  376.630249  150.426834       0.0  0.0  0.0   
+
+                  High                                 Low  ...              \
+                  MSFT         SPY         TLT        MSFT  ...         TLT   
+Date                                                        ...               
+2020-12-31  221.975010  372.219162  156.639710  218.670263  ...  156.015445   
+2021-01-04  221.975014  373.004005  156.738813  213.822655  ...  155.113756   
+2021-01-05  217.515598  370.073219  155.520015  214.708553  ...  154.241775   
+2021-01-06  215.494931  374.524071  152.448273  210.965841  ...  150.902473   
+2021-01-07  218.331828  377.425025  150.783555  212.727716  ...  149.881842   
+
+                  Open                                 Stock Splits    Volume  \
+MSFT               SPY         TLT                     MSFT SPY TLT      MSFT   
+Date                                                                            
+2020-12-31  220.680983  369.357919  156.025363            0   0   0  20942100   
+2021-01-04  221.507173  372.864902  155.242576            0   0   0  37130100   
+2021-01-05  216.261380  365.701890  155.520015            0   0   0  23823000   
+2021-01-06  211.194780  367.301414  152.418547            0   0   0  35930700   
+2021-01-07  213.056186  373.649793  150.407012            0   0   0  27694500   
+
+
+                  SPY       TLT  
+Date                             
+2020-12-31   78520700   7742100  
+2021-01-04  110210800  13152900  
+2021-01-05   66426200  10458100  
+2021-01-06  107997700  22827300  
+2021-01-07   68766800  14651900  
+
+[5 rows x 21 columns]
 \end{ioutput}
 
+The \texttt{history} method returns a dataframe (a particular data structure that will be described later in this Chapter) with a lot of information concerning the selected stocks like open and close prices, dividends, volume etc.
+Beside the \texttt{start} and \texttt{end} parameters which define the range in which to retrieve data another useful one is \texttt{interval} which specifies its granularity. It can take the following values: 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo. However it is important to note that the 1m data is only retrievable for the last 7 days, and anything intraday (interval <1d) only for the last 60 days.  
+In the following example we are going to download the monthly historical series of the closing price of our stocks.
+
+\begin{ipython}
+data = proxy.history(start="2021-01-01", end="2021-08-10", interval='1mo')['Close']
+print (data.head())
+\end{ipython}
+\begin{ioutput}
+[*********************100%***********************]  3 of 3 completed
+                  MSFT         SPY         TLT
+Date                                          
+2021-01-01  230.893845  367.659088  150.615112
+2021-02-01  231.311905  377.882019  141.816010
+2021-02-17         NaN         NaN         NaN
+2021-03-01  235.226837  393.747986  134.371506
+2021-03-19         NaN         NaN         NaN
+\end{ioutput}
+Note that the table contains also dates in which may be dividends (in this case there are none so the rows are NaN).
+
+When dealing with just one ticker it could be possible to display all the Financial data related to the company by using \texttt{info}. It will show all the information regarding the company including its Sector, No. of Employees, Business Summary, etc.
+
+\begin{ipython}
+proxy = yf.Ticker('MSFT')
+
+print (proxy.info)
+\end{ipython}
+\begin{ioutput}
+\{'zip': '98052-6399', 'sector': 'Technology', 'fullTimeEmployees': 181000, 
+'longBusinessSummary': 'Microsoft Corporation develops, ...'companyOfficers': [], 
+'website': 'http://www.microsoft.com', 'maxAge': 1, 'address1': 'One Microsoft Way', 
+'industry': 'Software-Infrastructure', 'ebitdaMargins': 0.48080003, ....\}
+\end{ioutput}
+
+Financial Data Analyst requires the details about the Dividends and Splits the company has given to its shareholders. With the \texttt{actions} function, we can download this.
+
+\begin{ipython}
+print (proxy.actions)
+\end{ipython}
+\begin{ioutput}
+            Dividends  Stock Splits
+Date                               
+1987-09-21       0.00           2.0
+1990-04-16       0.00           2.0
+1991-06-27       0.00           1.5
+1992-06-15       0.00           1.5
+1994-05-23       0.00           2.0
+...               ...           ...
+2020-05-20       0.51           0.0
+2020-08-19       0.51           0.0
+2020-11-18       0.56           0.0
+2021-02-17       0.56           0.0
+2021-05-19       0.56           0.0
+
+[79 rows x 2 columns]
+\end{ioutput}
+
+Other than the \texttt{actions} function we can use \texttt{dividends} and \texttt{splits} functions separately to view them individually.
+
+To know the sustainability of the stock there is a predefined function named \texttt{sustainability} which can be used to display data about the sustainability of the company.
+
+\begin{ipython}
+print (proxy.sustainability)
+\end{ipython}
+\begin{ioutput}
+                                     Value
+2021-5                                    
+palmOil                              False
+controversialWeapons                 False
+gambling                             False
+socialScore                           9.37
+nuclear                              False
+furLeather                           False
+alcoholic                            False
+gmo                                  False
+catholic                             False
+socialPercentile                      None
+peerCount                              103
+governanceScore                       4.83
+environmentPercentile                 None
+animalTesting                        False
+tobacco                              False
+totalEsg                             14.63
+highestControversy                       3
+esgPerformance                  UNDER_PERF
+coal                                 False
+pesticides                           False
+adult                                False
+percentile                            7.59
+peerGroup              Software & Services
+smallArms                            False
+environmentScore                      0.42
+governancePercentile                  None
+militaryContract                     False
+\end{ioutput}
+
+Recommendations for buying or selling a company’s stock is provided by different Finacial Firms. In order to analyze the stock price, we must know what these firms recommend. To analyze the recommendations we can use the \texttt{recommendations} function.
+
+\begin{ipython}
+print (proxy.recommendations)
+\end{ipython}
+\begin{ioutput}
+                               Firm       To Grade From Grade Action
+Date                                                                
+2012-03-16 08:19:00  Argus Research            Buy                up
+2012-03-19 14:00:00  Hilliard Lyons  Long-Term Buy              main
+2012-03-22 07:03:00  Morgan Stanley     Overweight              main
+2012-04-03 11:53:00             UBS            Buy              main
+2012-04-20 06:18:00   Deutsche Bank            Buy              main
+...                             ...            ...        ...    ...
+2021-07-28 14:47:46        Barclays     Overweight              main
+2021-07-28 14:49:16       Citigroup            Buy              main
+2021-07-28 14:51:12          Mizuho            Buy              main
+2021-07-28 14:54:54   Credit Suisse     Outperform              main
+2021-07-29 10:53:54       JP Morgan     Overweight              main
+\end{ioutput}
+
+\texttt{calendar} function can be used to know about the earnings and revenue of the company.
+
+\begin{ipython}
+print (proxy.calendar)
+\end{ipython}
+\begin{ioutput}
+                                    0                    1
+Earnings Date     2021-10-25 10:59:00  2021-10-29 12:00:00
+Earnings Average                 1.90                 1.90
+Earnings Low                     1.64                 1.64
+Earnings High                    2.03                 2.03
+Revenue Average           44102900000          44102900000
+Revenue Low               40850000000          40850000000
+Revenue High              44914700000          44914700000
+\end{ioutput}
+
+For every company listed on the stock market, there is a unique ISIN (International Securities Identification Number) no. we can retrieve this number using \texttt{isin} function
+
+\begin{ipython}
+print (proxy.isin)
+\end{ipython}
+\begin{ioutput}
+US5949181045
+\end{ioutput}
+
+During option trading we must know about the option expiry date, using the \texttt{options} function we can retrieve the Option Expiry Date of that particular stock.
+
+\begin{ipython}
+print (proxy.options)
+\end{ipython}
+\begin{ioutput}
+('2021-08-13', '2021-08-20', '2021-08-27', '2021-09-03', '2021-09-10', 
+ '2021-09-17', '2021-09-24', '2021-10-15', '2021-11-19', '2021-12-17', 
+ '2022-01-21', '2022-03-18', '2022-06-17', '2022-09-16', '2023-01-20', 
+ '2023-03-17', '2023-06-16')
+\end{ioutput}
+
+Finally to get for example calls data:
+\begin{ipython}
+opt = proxy.option_chain(date='2021-08-13')
+print (opt.calls)
+\end{ipython}
+\begin{ioutput}
+         contractSymbol       lastTradeDate  strike  lastPrice  bid  ask  \
+0   MSFT210813C00180000 2021-08-09 14:48:40   180.0     109.05  0.0  0.0   
+1   MSFT210813C00185000 2021-08-09 13:35:15   185.0     105.45  0.0  0.0   
+2   MSFT210813C00190000 2021-08-03 15:04:10   190.0      95.10  0.0  0.0   
+3   MSFT210813C00195000 2021-08-03 14:35:40   195.0      89.60  0.0  0.0   
+4   MSFT210813C00200000 2021-08-09 13:37:35   200.0      89.26  0.0  0.0   
+5   MSFT210813C00205000 2021-08-03 14:11:33   205.0      79.85  0.0  0.0   
+...
+
+    change  percentChange   volume  openInterest  impliedVolatility  \
+0      0.0            0.0      5.0             5           0.000010   
+1      0.0            0.0      3.0             0           0.000010   
+2      0.0            0.0      NaN             4           0.000010   
+3      0.0            0.0      1.0            10           0.000010   
+4      0.0            0.0      1.0             8           0.000010   
+5      0.0            0.0      1.0             0           0.000010   
+...
+
+    inTheMoney contractSize currency  
+0         True      REGULAR      USD  
+1         True      REGULAR      USD  
+2         True      REGULAR      USD  
+3         True      REGULAR      USD  
+4         True      REGULAR      USD  
+5         True      REGULAR      USD  
+\end{ioutput}
+
+These are the main functions of \texttt{yfinance} which can be used for stock data analysis. A more detailed guide can be found \href{https://algotrading101.com/learn/yfinance-guide/}{\emph{here}}.
+
+\section{Manipulating Data}
 Our primary goal, before start processing data, is to collect and store the information in a suitable data structure. \texttt{python} provides a very useful module, called \texttt{pandas}, which allows to collect and save data in \emph{dataframe} objects that can be later on manipulated for analysis purposes~\cite{pandas}.
 
 Looking at \texttt{pandas} manual, dataframes are defined as multi-dimensional, size-mutable, potentially heterogeneous, tabular data structure with labeled axes (rows and columns), in much simpler words it is a table whose structure can be modified.
@@ -479,16 +692,17 @@ Consider for example a particular indicator called \emph{Bollinger Bands}. It is
 In the following example we are going to use a 20 day moving average and $K=2$. Imagine to have the historical series of AMZN stock closing prices. Bollinger Bands can be quickly and easily constructed as follows 
 
 \begin{ipython}
-import ffn
+import yfinance as yf
 import pandas as pd
 import matplotlib.pyplot as plt
 
-df = ffn.get('amzn', start='2017-04-02', end='2018-05-02')
+proxy = yf.Ticker('AMZN')
+df = proxy.history(start='2017-04-02', end='2018-05-02')['Close']
 
 # calculate Moving Average with 20 days window
 ma = df.rolling(window=20).mean()
 
-# calculate the standar deviation
+# calculate the standard deviation
 rstd = df.rolling(window=20).std()
 
 df['upper'] = ma + 2 * rstd
@@ -1254,6 +1468,7 @@ plt.savefig("myfigure.png")
   %  %\bibitem{survey2019} StackOverflow \emph{The TEXbook}, Addison-Wesley, Reading,Massachusetts, second edition, 1984,
 \bibitem{pandas} \href{https://pandas.pydata.org/docs/}{\emph{Pandas Official Documentation}} [Online]
 \bibitem{matplotlib} \href{https://matplotlib.org}{\emph{Matplotlib Official Documentation}} [Online]
-\bibitem{quandl} \href{https://docs.quandl.com/}{\emph{Quandl Documentation}} [Online]
-\bibitem{ffn} \href{https://pmorissette.github.io/ffn/}{\emph{Financial Functions for Python}} [Online]
+\bibitem{bib:quandl} \href{https://docs.quandl.com/}{\emph{Quandl Documentation}} [Online]
+\bibitem{bib:yfinance} \href{https://github.com/ranaroussi/yfinance}{\emph{YFinance Documentation}} [Online]
+\bibitem{bib:ffn} \href{https://pmorissette.github.io/ffn/}{\emph{Financial Functions for Python}} [Online]
 \end{thebibliography}
