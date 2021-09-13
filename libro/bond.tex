@@ -44,54 +44,62 @@ P = \sum_{t=1}^T e^{-yt}C + e^{-yT}N
 \end{equation}
 where $C$ is the coupon end $N$ the nominal.
 
-Finding the yield to maturity is equivalent to find the zeros of Eq.~\ref{eq:yield_to_maturity}, so the \texttt{brentq} algorithm (already used in Section~\ref{the-bootstrapping-technique}) method can be used again.
+Finding the yield to maturity is equivalent to find the zeros of Eq.~\ref{eq:yield_to_maturity}.
+To find the zeros of a function $f(x)$ means to determine the values $\hat{x}$ such that $f(\hat{x})=0$ and the process is equivalently called finding the roots of $f(x)$. There various methods to achieve that, in the following we will see two of them.
 
-\begin{ipython}
-from scipy.optimize import brentq
-from finmarkets import generate_dates
-from datetime import date
-import math 
-
-def bond_price(r, today, payment_dates, C, N, P0):
-    price = 0
-    for p in payment_dates:
-        if p >= today:
-            dt = (p - today).days/365
-            price += math.exp(-r*dt)*C
-    price += math.exp(-r*dt)*N - P0
-    return price
-    
-today = date.today()
-payment_dates = generate_dates(today, 12*5, 6)
-
-print (brentq(bond_price, -1, 1, args=(today, payment_dates, 5, 100, 100)))
-\end{ipython}
-\begin{ioutput}
-0.11019645500365874
-\end{ioutput}
-
-Alternatively it could be used the \emph{bisection}. Bisection method is considered the simplest one-dimensional root-finding algorithm. The general interest is to find the value $x$ of a continuous function $f$ such that $f(x)= 0$.
-
-Suppose we know the two points of an interval $[a,b]$, and that $f (a)\lt 0$ and $f(b)\gt 0$.
+\emph{Bisection}~\cite{bib:bisection} method is considered the simplest one-dimensional root-finding algorithm.
+Suppose we know two points of an interval $[a,b]$, and that $f (a)\lt 0$ and $f(b)\gt 0$.
 Since the value of $f(a)$ is negative and $f(b)$ is positive, the bisection method assumes that the root $x$ lies somewhere between $a$ and $b$ and gives $f(x) = 0$.
 
 Taking the midpoint of this $[a, b]$ interval as $c$, the bisection method then evaluates this value as $f(c)$.
 If $f(c) = 0$ or is very close to zero by some predetermined error tolerance value, then a root is declared as found. If $f(c)\lt 0$, then we may conclude that a root exists along the interval $[c, b]$, or along the interval $[a,c]$ otherwise.
 
-On the next evaluation, $c$ is replaced as either $a$ or $b$ accordingly. With the new interval shortened, the bisection method repeats with the same evaluation to determine the next value of $c$. This process continues, shrinking the width of the interval until the root is determined as found.
+On the next evaluation, $c$ is replaced as either $a$ or $b$ accordingly. With the new interval shortened, the bisection method repeats with the same evaluation to determine the next value of $c$. This process continues, shrinking the width of the interval until the root is determined as found. Figure~\ref{fig:bisection} shows an example of bisection algorithm application.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\linewidth]{figures/bisection}
+\caption{Example of bisection algorithm to find the roots of a function $f(x)$.}
+\label{fig:bisection}
+\end{figure}
 
 The biggest advantage of using the bisection method is its guarantee to converge to an approximation of the root, given a predetermined error tolerance level and the maximum number of iterations allowed. It should be noted that the bisection method does not require knowledge of the derivative of the unknown function. In certain continuous functions, the derivative could be complex or even impossible to calculate. This makes the bisection method extremely valuable for working on functions that are not smooth.
-Because the bisection method does not require derivative information from the continuous function, its major drawback is that it takes up more computational time in the iterative evaluation as compared to other root-finder methods. 
+Because of that, its major drawback is that it takes up more computational time in the iterative evaluation as compared to other root-finder methods. 
 
 Although this method is simple enough to be quickly implemented in \texttt{python} we will opt for the surely bug free version available in \texttt{scipy.optimize.bisect}.
 
 \begin{ipython}
-from scipy.optimize import bisect
+from scipy.optimize import bisect 
+from datetime import date
+from finmarkets import generate_dates
 
-print (bisect(bond_price, -1, 1, args=(today, payment_dates, 5, 100, 100)))
+def ytom(y, N, C, P0, start_date, maturity_years, tenor=1):
+    price = 0
+    payment_dates = generate_dates(start_date, maturity_years*12, tenor*12)
+
+    for p in payment_dates[1:]:
+        dt = (p - start_date).days/365
+        price += C*tenor*N/(1+y)**dt 
+    price += (1+y)**dt*N - P0
+    return price
+    
+today = date.today()
+print (bisect(bond_price, -0.99, 1, args=(100, 0.05, 95, today, 6, 0.5)))
 \end{ipython}
 \begin{ioutput}
-0.11019645500527986
+0.06092598138641734
+\end{ioutput}
+
+An alternative algorithm is the \emph{Brent's method}~\cite{bib:brent} which combines the advantages of both bisection and secant (another root-finding algorithm) methods. Its \texttt{python} implementation is in \texttt{scipy.optimize.brentq}.
+
+\begin{ipython}
+from scipy.optimize import brentq
+    
+today = date.today()
+print (brentq(ytom, -0.99, 1, args=(100, 0.05, 95, today, 6, 0.5)))
+\end{ipython}
+\begin{ioutput}
+0.060925981384977894
 \end{ioutput}
 
 \noindent
@@ -116,42 +124,36 @@ It estimates how many years it will take for an investor to be repaid the bond�
 Imagine a three-year bond with a face value of \$100 that pays a 10\% coupon semi-annually and has a yield to maturity (YTM) of 6\%. We will first compute the present value of the bond and then calculate its Macaulay duration.
 
 \begin{ipython}
-from finmarkets import generate_swap_dates
-from datetime import date
-import math 
-
-def bond_price(r, today, payment_dates, C, N, tenor):
+def bond_pv(N, C, r, start_date, maturity_years, tenor=1):
     price = 0
-    for p in payment_dates:
-        if p > today:
-            dt = (p - today).days/365
-            price += math.exp(-r*dt)*C*tenor*N
-    price += math.exp(-r*dt)*N
+    payment_dates = generate_dates(start_date, maturity_years*12, tenor*12)
+
+    for p in payment_dates[1:]:
+        dt = (p - start_date).days/365
+        price += C*tenor*N/(1+r)**dt 
+    price += N/(1+r)**dt
     return price
-
-today = date.today()
-payment_dates = generate_swap_dates(today, 12*3, 6)
-
-print (bond_price(0.06, today, payment_dates, 0.1, 100, 0.5))
-\end{ipython}
-\begin{ioutput}
-110.55442078433816
-\end{ioutput}
-
-\begin{ipython}
-def mac_duration(today, payment_dates, r, C, N, tenor, P0):
+    
+def mac_duration(N, C, y, P0, start_date, maturity_years, tenor=1):
     d = 0
-    for p in payment_dates:
-        if p > today:
-            dt = (p - today).days/365
-            d += dt*math.exp(-r*dt)*C*tenor*N/P0
-    d += dt*math.exp(-r*dt)*N/P0
+    payment_dates = generate_dates(start_date, maturity_years*12, tenor*12)
+
+    for p in payment_dates[1:]:
+        dt = (p - start_date).days/365
+        d += dt*C*tenor*N/(1+y)**dt/P0 
+    d += dt*N/(1+y)**dt/P0
     return d
 
-print (mac_duration(today, payment_dates, 0.06, 0.1, 100, 0.5, 110.55))
+today = date.today()
+P0 = bond_pv(100, 0.1, 0.06, today, 3, 0.5)
+print ("Bond price: {:.2f}".format(P0))
+
+dur = (mac_duration(100, 0.1, 0.06, P0, today, 3, 0.5))
+print ("Duration: {:.2f}".format(dur))
 \end{ipython}
 \begin{ioutput}
-2.686350417638767
+Bond price: 111.08
+Duration: 2.69
 \end{ioutput}
 
 This result can be interpreted by saying that it will take about two years and 7 months to be repaid for the bond expenses.
@@ -183,16 +185,14 @@ Consider a 3-year 10\% coupon bond with a face value of 100\$. Suppouse its yiel
 
 \begin{ipython}
 today = date.today()
-payment_dates = generate_swap_dates(today, 12*3, 6)
 
-price = bond_price(0.12, today, payment_dates, 0.10, 100, 0.5)
+price = bond_pv(100, 0.1, 0.12, today, 3, 0.5)
 print ("Price: {:.3f}".format(price))
-dur = mac_duration(today, payment_dates, 0.12, 0.1, 100, 0.5, price)
-print ("Duration: {:.3f}".format(dur))
-\end{ipython}
+dur = mac_duration(100, 0.1, 0.12, price, today, 3, 0.5)
+print ("Duration: {:.3f}".format(dur))\end{ipython}
 \begin{ioutput}
-Price: 94.183
-Duration: 2.656
+Price: 95.878
+Duration: 2.658
 \end{ioutput}
 
 Replacing those values into Eq.~\ref{eq:price_sens} it is possible to estimate the sensitivity of the bond price to small changes of the yield.
@@ -203,23 +203,46 @@ print ("DeltaP: {:.3f}".format(dP))
 print ("P+DP: {:.3f}".format(price+dP))
 \end{ipython}
 \begin{ioutput}
-DeltaP: -0.250
-P+DP: 93.933
+DeltaP: -0.255
+P+DP: 95.623
 \end{ioutput}
 
 To check how good is this approximation we can compute the bond price assuming the new yield
 \begin{ipython}
 today = date.today()
-payment_dates = generate_swap_dates(today, 12*3, 6)
 
-price = bond_price(0.121, today, payment_dates, 0.10, 100, 0.5)
+price = bond_pv(100, 0.1, 0.121, today, 3, 0.5)
 print ("Price: {:.3f}".format(price))
 \end{ipython}
 \begin{ioutput}
-Price: 93.933
+Price: 95.651
 \end{ioutput}
 
-Which is in very good agreement with the approximate calculation.
+Which is in good agreement with the approximate calculation.
+When the yield variation is larger the simple linear approximation is not valid anymore as shown in Fig.~\ref{fig:bond_sensitivity}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\linewidth]{figures/bond_duration}
+\caption{Bond price sensitivity to yield variation. For large movements of the yield the simple linear approximation given by
+ Eq.~\ref{eq:price_sens} is not valid anymore.}
+\label{fig:bond_sensitivity}
+\end{figure}
+
+\subsection{Price Value of a Basis Point}
+A very common risk measure is the sensitivity of the price of a bond to changes in its yield. The price value of a basis point, PVBP, sometimes called the dollar value of a basis point, or $DV01$, measures the decline in price associated with a one basis point increase in the yield.
+
+\begin{equation}
+DV01 = −\cfrac{dP}{dy}\times 0.0001
+\end{equation}
+
+$DV01$ can be computed directly, by computing the price at the current yield, adding one basis point to the yield, and recomputing the price.
+
+$DV01$ can also be computed directly from duration. In particular, we have seen that $dP/P = -D dy$. Hence $dP = -D Pdy$ and
+
+\begin{equation}
+DV01 = -D P \times 0.0001
+\end{equation}
 
 \subsubsection{Modified Duration}
 In the previous analysis we have assumed continuous compounding. If instead $y$ is expressed with a compounding frequency of $m$ times per year then 
@@ -247,21 +270,26 @@ Considering a portfolio of bonds, the convexity tends to be greatest when it pro
 
 Choosing a portfolio of assets with net duration and net convexity both close to zero, we make ourselves immune to relatively large shifts in the zero curve (i.e. large movements of the yield)
 
-\subsection{Price Value of a Basis Point}
-A very common risk measure is the sensitivity of the price of a bond to changes in its yield. The price value of a basis point, PVBP, sometimes called the dollar value of a basis point, or $DV01$, measures the decline in price associated with a one basis point increase in the yield.
-
+\subsection{Duration, Convecxity and $DV01$ of a Bond Portfolio}
+The duration of a bond portfolio, $D_p$, is computed as the weighted average of the durations of the individual
+bonds:
 \begin{equation}
-DV01 = −\cfrac{dP}{dy}\times 0.0001
+D_p = \sum_{i=1}^{K} \alpha_i D_i
 \end{equation}
-
-$DV01$ can be computed directly, by computing the price at the current yield, adding one basis point to the yield, and recomputing the price.
-
-As an example imagine a five year bond pays 10\% coupons semi annually and is priced at par. ($y = 0.10$). To compute $DV01$ we reprice the bond at a yield of 0.1001. This leads to a price of \$99.9614. Hence, $DV01$ = 100 - 99.9614 = \$0.0386.
-
-$DV01$ can also be computed directly from modified duration. In particular, we have seen that $dP/P = -D_m dy$. Hence $dP = -D_m Pdy$ and
-
+where $K$ is the number of different bonds and $\alpha_i$ is the fraction of portfolio dollars invested in bond $i$. Similarly, the convexity of a bond portfolio, Conv$_p$, is the weighted average of the convexities of the individual bonds.
 \begin{equation}
-DV01 = -D_m P \times 0.0001
+\textrm{Conv}_p = \sum^{K}_{i=1} \alpha_i \textrm{Conv}_i
 \end{equation}
+The $DV01_p$ of a portfolio is defined as the change in value resulting from equal one basis point declines in all yields. Let $DV01_i$ represent the dollar value of a basis point associated with the i$^{th}$ bond. Then
+\begin{equation}
+DV01_p = \sum^{K}_{i=1}x_i DV01_i
+\end{equation}
+where $x_i$ is the number of bonds of type $i$ in the portfolio.
 
-Again reconsider our five year bond that pays 10\% coupons semi annually and is priced at par. ($y = 0.10$). The modified duration of this bond is $D_m = 3.86$. Hence $DV01 = 100 \cdot 3.86 \cdot 0.0001 = \$0.0386$.
+\section*{Exercises}
+\input{bond_ex_text}
+
+\begin{thebibliography}{9}
+	\bibitem{bib:bisection}\href{https://en.wikipedia.org/wiki/Bisection_method}{\emph{Bisection Method}}, Wikipedia [Online]
+	\bibitem{bib:brent} \href{https://en.wikipedia.org/wiki/Brent%27s_method}{\emph{Brent's Method}}, Wikipedia [Online]
+\end{thebibliography}
