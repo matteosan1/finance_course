@@ -31,7 +31,7 @@ The fixed leg pays a predetermined cash flow at annual frequency,
 regardless of the tenor of the underlying floating rate (for simplicity we will only consider swaps with maturities which are multiples of 1 year).
 
 Before going into the details of the valuation of IRSs, we need to
-modify the \texttt{generate\_swap\_dates} function in
+modify the \texttt{generate\_dates} function in
 \texttt{finmarkets} module to generate the payment dates for both the
 fixed and floating legs. 
 The modification consists of the addition of a new input
@@ -41,7 +41,7 @@ parameter, the tenor, which was previously fixed to 12 months.
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
-def generate_swap_dates(start_date, n_months, tenor_months=12):
+def generate_dates(start_date, n_months, tenor_months=12):
     dates = []
     for n in range(0, n_months, tenor_months):
         dates.append(start_date + relativedelta(months=n))
@@ -63,10 +63,10 @@ Having set the default value of \texttt{tenor\_months} to 12 allows the new func
        
 Using this function and the contract parameters we will be able to determine a sequence of payment dates for each leg of the IRS.
 
-\subsection{IRS Valuation}\label{irs-valuation}
+\subsection{IRS Valuation}
+\label{irs-valuation}
 
-Let \(d_0=d_0^{\mathrm{fixed}},...,d_p^{\mathrm{fixed}}\) be the fixed leg payment dates and
-\(d_0=d_0^{\mathrm{float}},...,d_p^{\mathrm{float}}\) be the floating leg payment dates, and let's use the following notation:
+Let \(d_0=d_0^{\mathrm{fixed}},...,d_p^{\mathrm{fixed}}\) be the fixed leg payment dates and \(d_0=d_0^{\mathrm{float}},...,d_p^{\mathrm{float}}\) be the floating leg payment dates, and let's use the following notation:
 
 \begin{itemize}
 \tightlist
@@ -118,7 +118,7 @@ For convenience the relevant inputs that will be used later (LIBOR and discount 
 \begin{ipython}
 import pandas as pd
 from datetime import date
-from finmarkets import DiscountCurve, ForwardRateCurve
+from finmarkets import DiscountCurve, ForwardRateCurve, generate_dates
 
 pricing_date = date(2020, 10, 20)
 discount_data = pd.read_excel('libro/input_files/discount_curve.xlsx')
@@ -130,7 +130,7 @@ lc = ForwardRateCurve(pricing_date,
 libor_data['date'].dt.date.tolist(),
 libor_data['rate'].tolist())
 
-print(dc.df(date(2021, 1, 1)))
+print (dc.df(date(2021, 1, 1)))
 print (lc.forward_rate(pricing_date, date(2021, 7, 2)))
 \end{ipython}
 \begin{ioutput}
@@ -190,8 +190,9 @@ of 5\%, 6 month tenor and a maturity of 4 years; discount and LIBOR
 curves are the same as before.
 
 \begin{ipython}
+pricing_date = date.today()
 start_date = date.today() + relativedelta(months=1)
-irs = InterestRateSwap(start_date, 1e6, 0.05, 6, 4)
+irs = InterestRateSwap(pricing_date, start_date, 1e6, 0.05, 6, 4)
 print ("{:.2f} EUR".format(irs.npv(dc, lc)))
 \end{ipython}
 \begin{ioutput}
@@ -295,7 +296,8 @@ This is just an example. Actually may be an overkill to use inheritance here, si
 Anyway this is a practical application to show how it works.
 \end{finmarkets}
 
-\section{Swaptions}\label{interest-rate-swaptions}
+\section{Swaptions}
+\label{interest-rate-swaptions}
 
 Swaptions are the equivalent of European options for the interest rate markets. They give the option holder the right but not the obligation to enter into an Interest Rate Swap at a predetermined fixed rate at the exercise date \(d_{ex}\).
 
@@ -341,9 +343,9 @@ def npvSwaptionBS(pricing_date, irs, sigma, discount_curve, libor_curve, T):
     return irs.notional * A * (S * norm.cdf(d_plus) - K * norm.cdf(d_minus))
 
 sigma = 0.07
-irs = InterestRateSwap(start_date, 1e6, 0.01, 6, 4)
 pricing_date = date(2019, 11, 15)
 exercise_date = start_date
+irs = InterestRateSwap(pricing_date, start_date, 1e6, 0.01, 6, 4)
 T = (exercise_date - pricing_date).days / 365
 npv = npvSwaptionBS(pricing_date, irs, sigma, dc, lc, T)
 print("Swaption NPV with BS: {:.3f} EUR".format(npv))
