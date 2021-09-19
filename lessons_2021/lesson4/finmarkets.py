@@ -35,37 +35,6 @@ def call(S_t, K, r, vol, ttm):
 def put(S_t, K, r, vol, ttm):
     return K * exp(-r * ttm) * norm.cdf(-d2(S_t, K, r, vol, ttm)) - S_t * norm.cdf(-d1(S_t, K, r, vol, ttm))
 
-# Discount curve class
-class DiscountCurve:
-    def __init__(self, today, pillar_dates, discount_factors):
-        # we just store the arguments as attributes of the instance
-        self.today = today
-        self.pillar_dates = pillar_dates
-        self.discount_factors = discount_factors
-        
-        self.log_discount_factors = [
-            math.log(discount_factor)
-            for discount_factor in self.discount_factors
-        ]
-        
-        self.pillar_days = [
-            (pillar_date - self.today).days
-            for pillar_date in self.pillar_dates
-        ]        
-        
-    def df(self, d):
-        d_days = (d - self.today).days
-        interpolated_log_discount_factor = numpy.interp(d_days, self.pillar_days, self.log_discount_factors)
-        
-        return math.exp(interpolated_log_discount_factor) 
-    
-    def forward_libor(self, d1, d2):
-        return (
-            self.df(d1) /
-            self.df(d2) - 1
-        ) / ((d2  - d1).days / 365)
-
-
 class DiscountCurve:
     def __init__(self, today, pillar_dates, discount_factors):
         # we just store the arguments as attributes of the instance
@@ -144,7 +113,7 @@ class OvernightIndexSwap:
             start_date = self.payment_dates[i-1]
             end_date = self.payment_dates[i]
             
-            tau = (end_date - start_date).days / 360
+            tau = (end_date - start_date).days / 365
             df = discount_curve.df(end_date)
             
             npv = npv + df * tau
@@ -168,7 +137,6 @@ def generate_dates(start_date, n_months, tenor_months=12):
     
     return dates    
 
-
 class InterestRateSwap:
     def __init__(self, obs_date, start_date, nominal, fixed_rate, tenor_months, maturity_years):
         self.nominal = nominal
@@ -179,24 +147,23 @@ class InterestRateSwap:
         self.floating_leg_dates = generate_dates(start_date, 12 * maturity_years,
                                                       tenor_months)
         
-    def fixed_leg(self, discount_curve, libor_curve):
+    def fixed_leg(self, discount_curve):
         s = 0
         for j in range(1, len(self.fixed_leg_dates)):
-            tau = 0.5#(self.fixed_leg_dates[j] - self.fixed_leg_dates[j-1]).days / 360
-            D = round(discount_curve.df(self.floating_leg_dates[j]), 4)
+            tau = (self.fixed_leg_dates[j] - self.fixed_leg_dates[j-1]).days / 360
+            D = discount_curve.df(self.fixed_leg_dates[j])
             s += self.fixed_rate * tau * D
         return self.nominal * s
 
     def floating_leg(self, discount_curve, libor_curve):
         s = 0
         for j in range(1, len(self.floating_leg_dates)):
-            if self.obs_daej == 1:
+            if self.obs_date == 1:
                 F = 1/discount_curve.df(self.floating_leg_dates[j])
             else:
-                F = discount_curve.forward_libor(self.floating_leg_dates[0], self.floating_leg_dates[j+1])
-            tau = 0.5#(self.floating_leg_dates[j] - self.floating_leg_dates[j-1]).days / 360
-            D = round(discount_curve.df(self.floating_leg_dates[j]), 4)
-            print (1/F, tau)
+                F = libor_curve.forward_rate(self.floating_leg_dates[0], self.floating_leg_dates[j+1])
+            tau = (self.floating_leg_dates[j] - self.floating_leg_dates[j-1]).days / 360
+            D = discount_curve.df(self.floating_leg_dates[j])
             s += F * tau * D
         return self.nominal*s
         
@@ -210,8 +177,7 @@ class InterestRateSwap:
     def num(self, discount_curve, libor_curve):
         s = 0
         for j in range(1, len(self.floating_leg_dates)):
-            #F = libor_curve.forward_rate(self.floating_leg_dates[j-1])
-            F = discount_curve.forward_libor(self.floating_leg_dates[j], self.floating_leg_dates[j-1])
+            F = libor_curve.forward_rate(self.floating_leg_dates[j], self.floating_leg_dates[j-1])
             tau = (self.floating_leg_dates[j] - self.floating_leg_dates[j-1]).days / 360
             D = discount_curve.df(self.floating_leg_dates[j])
             s += F * tau * D
