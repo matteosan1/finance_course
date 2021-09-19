@@ -118,7 +118,7 @@ Let's test the newly created class with some inputs.
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
-start_date = date(2020, 11, 4)
+start_date = date.today()
 cc = CreditCurve(
     [start_date, start_date + relativedelta(years=2)],
     [1.0, 0.8])
@@ -136,9 +136,7 @@ cc.hazard(start_date + relativedelta(years=1))
             
 \section{Credit Default Swaps}\label{credit-deafult-swaps}
 
-Once we have implemented a \texttt{CreditCurve} class which allows us to
-interpolate survival probabilities and also to calculate the hazard rate at arbitrary
-dates, we can use it to price \textbf{Credit Default Swaps} (CDSs).
+Once we have implemented a \texttt{CreditCurve} class which allows us to interpolate survival probabilities and also to calculate the hazard rate at arbitrary dates, we can use it to price \textbf{Credit Default Swaps} (CDSs).
 
 A Credit Default Swap is a financial agreement that the seller of the CDS will compensate the buyer in the event of a debt default or other credit event. 
 That is, the seller of the CDS insures the buyer against some reference asset defaulting. The buyer of the CDS makes a series of payments (the CDS \emph{spread}) to the seller and, in exchange, may expect to receive a payoff if the asset defaults.
@@ -178,18 +176,16 @@ In the valuation of the premium leg, we'll use the following notation:
   \(\tau\) the \emph{random variable} representing the date of the credit event.
 \end{itemize}
 
-At each payment date \(d_i\), a cash flow of \(S\) is paid if and only if the
-credit event has \emph{not} occurred before that date. Therefore the NPV of the
-each flow is
+At each payment date \(d_i\), a cash flow of \(F\cdot S\) is paid if and only if the credit event has \emph{not} occurred before that date. Therefore the NPV of the each flow is
 
 \begin{equation}
 f_{\textrm{premium}}^i = \mathbb{E}\left[F\times S \times D(d_i) \times \mathbb{1}(\tau > d_i) \right]
 \end{equation}
-where \(\mathbb{1}(\tau > d_i)\) means that the expectation value has to
-be evaluated when \(\tau > d_i\). 
+where \(\mathbb{1}(\tau > d_i)\) means that the expectation value has to be evaluated when \(\tau > d_i\). 
 
+Since the NPV depends on the random variable $\tau$, the estimate of its value needs to be done through an expectation.
 Remembering the definition of expected value~\ref{sec:expected-value}, we can interpret 
-\(F\cdot S\cdot D(d_i)\) as our variables and \(N(d, d_i)\) as our probabilities so the NPV of the leg can be expressed as:
+\(F\cdot S\cdot D(d_i)\) as the variables and \(N(d, d_i)\) as the probabilities so the premium leg NPV can be expressed as:
 
 \begin{equation}
 	\textrm{NPV}_{premium} = F\cdot S \cdot \sum_{i=1}^{n} D(d_i) \cdot N(d, d_i)
@@ -205,9 +201,7 @@ We assume that as soon as a credit event occurs (at a time $\tau$) the LGD is pa
 
 Also in this case we are dealing with a probabilistic event so the expectation value has to be computed taking into account the payments $F(1-R)\times D(\tau)$ averaged over the default probability space $DP(d, \tau)$. 
 
-Using the law of total probability, we can break the previous expression down into the sum
-of "daily NPVs" calculated as a function of the \emph{daily} default
-probabilities:
+Using the law of total probability, we can break the previous expression down into the sum of "daily NPVs" calculated as a function of the \emph{daily} default probabilities:
 
 \begin{align}
 \begin{split}
@@ -232,14 +226,14 @@ Figure~\ref{fig:default_p} illustrates the steps to convert the daily default pr
 As for the other kind of contracts we develop also a \texttt{CreditDefaultSwap} class. In this case the class has methods to compute NPVs for the premium and default legs.
 
 \begin{ipython}
-from finmarkets import generate_swap_dates
+from finmarkets import generate_dates
 
 class CreditDefaultSwap:
     def __init__(self, notional, start_date, fixed_spread,
                  maturity_y, tenor=3, recovery=0.4):
         self.notional = notional
-        self.payment_dates = generate_swap_dates(start_date,
-                                                 maturity_y*12, tenor)
+        self.payment_dates = generate_dates(start_date,
+                                            maturity_y*12, tenor)
         self.fixed_spread = fixed_spread
         self.recovery = recovery
 
@@ -265,17 +259,20 @@ class CreditDefaultSwap:
         return self.npv_default_leg(discount_curve, credit_curve) - \
                self.npv_premium_leg(discount_curve, credit_curve)
 \end{ipython}
-\noindent
+\begin{finmarkets}
+This class has to go into $\tt{finmarkets.py}$.
+\end{finmarkets}
+
 To test the class data contained in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/discount_curve_ch_10.xlsx}{discount\_curve\_ch10.xlsx} is used.
 
 \begin{ipython}
 import pandas as pd
 from datetime import date
 from dateutil.relativedelta import relativedelta
-from finmarkets import DiscountCurve
+from finmarkets import DiscountCurve, CreditDefaultSwap, CreditCurve
 
 dc_data = pd.read_excel("discount_curve_ch10.xlsx")
-observation_date = date(2020, 11, 1)
+observation_date = date.today() 
 dc = DiscountCurve(observation_date,
 dc_data['pillars'].dt.date.tolist(),
 dc_data['discount_factors'].tolist())
