@@ -114,7 +114,7 @@ If we plot them together in a 2D plot we can get a sense of what is going on usi
     
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.5\textwidth]{figures/uniform_to_gauss}
+  \includegraphics[width=0.45\textwidth]{figures/uniform_to_gauss}
   \caption{2D plot showing the transformation that maps our initial uniform distribution to the resulting Gaussian.}
   \label{fig:uniform_to_gauss}
 \end{figure}
@@ -127,9 +127,9 @@ from scipy.stats import t
 x_trans = t(4).ppf(x)
 \end{ipython}
 
-\begin{figure}[htb]
+\begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.5\textwidth]{figures/tstudent_to_uniform}
+  \includegraphics[width=0.45\textwidth]{figures/tstudent_to_uniform}
   \caption{2D plot showing the transformation that maps a uniform distribution to a t-Student.}
   \label{fig:uniform_to_tstudent}
 \end{figure}
@@ -140,23 +140,44 @@ In such a way we can go from distribution A to distribution B passing through a 
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=1.\textwidth]{figures/a_to_b_to_a}
+	\includegraphics[width=0.7\textwidth]{figures/a_to_b_to_a}
 	\caption{Example of transformation, it starts with a uniform distribution, goes into a Gaussian and back to the initial uniform.}
 	\label{fig:a_to_b_to_a}
 \end{figure}
+\newpage
 
 \section{Copula}
 \label{copula}
 
-In probability theory a \emph{copula} $\mathcal{C}(F_1, F_2, \ldots, F_n, \rho)$ is a multivariate (multidimensional) cumulative distribution function whose marginal probability distributions (i.e. the probability distribution of each dimension) are uniform on the interval $[0, 1]$ ($F_i = U_i =\mathrm{uniform}(0,1)$), \(\rho\) represents the correlation between each variable.
+A \emph{copula} is a multivariate distribution which examines the association or the dependence between many variables. It allows the joining of multiple univariate distributions to a single multivariate distribution.
 
-Copulas are used to describe the dependencies between random variables and have been widely used in quantitative finance to model risk. Copulas are popular since they allow to easily model and estimate the distribution of random vectors by representing marginals and their correlation separately.
+Copula provide risk managers and market analysts with a measure of the dependence between various financial variables that is not subject to the same limitations as correlation. Correlation only works well with the normal distribution, but financial markets don't always exhibit properties of the normal distribution.
 
+To create a correlation copula, two or more unknown distributions are mapped to a well-known distribution, such as the normal distribution, whose properties are well established. As a result, a joint probability distribution is created while still maintaining the individual (constituent) marginal distributions
+
+In probability theory a copula $\mathcal{C}(F_1, F_2, \ldots, F_n, \rho)$ is a multivariate (multidimensional) cumulative distribution function whose marginal probability distributions (i.e. the probability distribution of each dimension) are uniform on the interval $[0, 1]$ ($F_i = U_i =\mathrm{uniform}(0,1)$), \(\rho\) represents the correlation between each variable.
+
+%Copulas are used to describe the dependencies between random variables and have been widely used in quantitative finance to model risk. 
+Copulas are popular since they allow to easily model and estimate the distribution of random vectors by representing marginals and their correlation separately.
 Essentially we can split a complicated problem into simpler components so that copula results to be very handy.
 
-Despite the obscure and daunting definition given above the concept of copula is quite simple so let's try to clarify it a bit with a practical example.
+Despite the obscure and daunting definition given above the concept of copula is quite simple so it will be clarified later on with a couple of practical examples.
 
-\subsection{Example Case}
+\subsection{Sklar's Theorem}
+
+A key part of copulas is \emph{Sklar’s theorem}. The theorem states that any multivariate joint distribution can be written in terms of univariate marginal distribution functions and a copula which describes the dependence structure between the variables. Mathematically, the theorem can be stated as follows: suppose we have only two random variables, $X$ and $Y$. If $F(x,y)$ is a joint distribution function with continuous marginals 
+$F_x(x)=u$ and $F_y(y)=v$, then the joint distribution $F(x,y)$ can be written in terms of a unique function $\mathcal{C}(u,v)$:
+\begin{equation}
+F(x,y)=\mathcal{C}(u,v)
+\end{equation}
+\noindent
+where $\mathcal{C}(u,v)$ is the copula of $F(x,y)$.
+
+The copula function describes how the multivariate function $F(x,y)$ is derived from or coupled with the marginal distribution functions $F_x(x)$ and $F_y(y)$.
+
+%As a final note, let's state \emph{Sklar's theorem} which assesses that any multivariate joint distribution can be written in terms of univariate marginal functions and a copula which describes the dependence structure between the variables.
+
+\section{Example Case}
 \label{example-problem-case}
 
 Imagine to have to measure two correlated variables. For example, we look at various rivers and for every river at the maximum water level of that river over a certain time-period. In addition, we also count how many months each river caused floods.
@@ -250,17 +271,112 @@ x2 = m2.rvs(10000)
     
 Using the uniform distribution as a common base for our transformations we can easily introduce correlations and flexibly construct complex probability distributions. 
 
-As a final note, let's state \emph{Sklar's theorem} which assesses that any multivariate joint distribution can be written in terms of univariate marginal functions and a copula which describes the dependence structure between the variables.
-
 Everything discussed in this Section can be easily generalized to higher dimensions.
 
-%\subsection{Other Copulas}
-%In the previous Section we have seen an application of a Gaussian copula but exists many other different 
-%kind of copulas. Two typical examples are the t-copula and the Clayton copula.
+\subsection{Copula with Unknown Marginals}
+In the previous example of the rivers the marginal distributions of floods and water height were known. Nevertheless the percentile-to-percentile transformation allows to determine the copula function also in more complicated situations.
 
-%\subsubsection{t-copula}
+Imagine for example a risk manager which owns two non-investment graded bonds (e.g. rated BB+ and BB respectively). The bonds have been issued by two companies and their default probabilities (DP) are as listed below:
 
-%\subsubsection{Clayton copula}
+\begin{table}[htbp]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+Time & DP Asset 1 & DP Asset 2 \\
+\hline
+\hline
+1 & 0.065 & 0.238 \\
+2 & 0.081 & 0.152 \\
+3 & 0.072 & 0.113 \\
+4 & 0.064 & 0.092 \\
+5 & 0.059 & 0.072 \\
+\hline
+\end{tabular}
+\end{table}
+
+How can a Gaussian copula be constructed to estimate the joint default probability of these two companies in the next year, assuming a one year Gaussian default correlation of $\rho_M = 0.4$ ?
+
+Applying a procedure similar to that used to derive Table~\ref{tab:transformation} it is possible to map the cumulative default probabilities $Q(t)$ to the standard normal distribution via $N^{-1}[Q(t)]$.
+
+\begin{ipython}
+from scipy.stats import norm
+import numpy as np
+
+C1 = np.array([0.065, 0.146, 0.218, 0.282, 0.341])
+C2 = np.array([0.238, 0.390, 0.503, 0.595, 0.667])
+
+for c in C1:
+    print ("{} -> {:.4f}".format(c, norm.ppf(c)))
+print ("")
+for c in C2:
+    print ("{} -> {:.4f}".format(c, norm.ppf(c)))
+\end{ipython}
+\begin{ioutput}
+0.065 -> -1.5141
+0.146 -> -1.0537
+0.218 -> -0.7790
+0.282 -> -0.5769
+0.341 -> -0.4097
+
+0.238 -> -0.7128
+0.39 -> -0.2793
+0.503 -> 0.0075
+0.595 -> 0.2404
+0.667 -> 0.4316
+\end{ioutput}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+Time & DP Asset 1 & $Q_{\textrm{BB+}}(t)$ & $N^{-1}[Q_{\textrm{BB+}}(t)]$ & DP Asset 2 & $Q_{\textrm{BB}}(t)$ & $N^{-1}[Q_{\textrm{BB}}(t)]$\\
+\hline
+\hline
+1 & 0.065 & 0.065 & -1.5141 & 0.238 & 0.238 & -0.7128\\
+2 & 0.081 & 0.146 & -1.0537 & 0.152 & 0.39 & -0.2793\\
+3 & 0.072 & 0.218 & -0.7790 & 0.113 & 0.503 & 0.0075\\
+4 & 0.064 & 0.282 & -0.5769 & 0.092 & 0.595 & 0.2404\\
+5 & 0.059 & 0.341 & -0.4097 & 0.072 & 0.667 & 0.4316\\
+\hline
+\end{tabular}
+\end{table}
+
+At this point we can apply the correlation structure $\rho_M$ of the Gaussian multivariate distribution ($M$) to the transformed marginals $N^{-1}[Q_{\textrm{BB+}}(t)]$ and $N^{-1}[Q_{\textrm{BB}}(t)]$.
+
+The joint probability of both companies defaulting within one year can be calculated as
+
+\begin{equation*}
+Q(t_{\textrm{BB+}}\leq 1 \cap t_{\textrm{BB+}}\leq 1) = M(X_{\textrm{BB+}}\leq -1.5141 \cap X_{\textrm{BB+}}\leq -0.7128, \rho=0.4)
+\end{equation*}
+
+\begin{ipython}
+from scipy.stats import multivariate_normal
+
+g = multivariate_normal(mean=[0,0],
+                        cov=[[1, 0.4],
+                             [0.4, 1]])
+
+print (g.cdf([-1.5141, -0.7128]))
+\end{ipython}
+\begin{ioutput}
+0.03435364791840133
+\end{ioutput}
+\noindent
+which results to be around 3.4\%. Figure~\ref{fig:copula_no_marginals} shows the joint probability distribution, the number we were looking for is given by the fraction of events delimited by the red lines with respect to the total.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\linewidth]{figures/copula_no_marginals}
+\caption{Multivariate Gaussian probability distribution with correlation $\rho=0.4$. The red lines delimited the area representing the default of the two companies within year one.}
+\label{fig:copula_no_marginals}
+\end{figure}
+
+\subsection{Type of Copulas}
+There are numerous types of copulas but there are two main classes: one-factor copulas and two-factor copulas.
+
+The most popular one-factor copulas are the Gaussian copula and the Archimedean copula family. The latter can be split further into Gumbel, Clayton, and Frank copulas.
+
+Two-factor copulas include the student’s t copula, Frechet copula, and Marshal-Olkin copula. We concentrate on the Gaussian copula.
 
 \section{Generate Correlated Distributions}
 \label{generate-correlated-distributions}
@@ -284,8 +400,8 @@ In order to generate numbers from correlated distributions it is enough to follo
   appropriate correlation.
 \end{itemize}
 
-A practical application concerns probability of default. Imagine three companies ($A$, $B$ and $C$) which have a cumulative probability of defaulting within the next two years of 10\%.
-Let's try to compute the probabilities to have the three of them all defaulting within the next two years in two cases: independent default probabilities and perfectly correlated probabilities.
+Imagine three companies ($A$, $B$ and $C$) which have a cumulative probability of defaulting within the next two years of 10\%.
+Let's compare the probability to have the three of them all defaulting within the next two years in two cases: independent default probabilities and perfectly correlated probabilities.
 
 In the first case (independent probabilities), the odds to get three defaults within two years will be the product of the single probabilities, hence:
 
