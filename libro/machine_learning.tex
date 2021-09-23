@@ -1183,6 +1183,273 @@ at each time interval. So up to $t=4$ the CNN is more than 95\% sure there is no
 At $t=5$ the CNN starts to recognize a pattern assigning about 20\% probability to the "head and shoulder" class.
 For $t\geq 6$ the neural network clearly recognizes the pattern.
 	
+\section{Bankruptcy Prediction}
+A company faces bankruptcy when they are unable to pay off their debts. The Taiwan Economic Journal for the years 1999 to 2009 has listed the details of company bankruptcy based on the business regulations of the Taiwan Stock Exchange which is a financial institution located in Taipei, Taiwan, with over 900 listed companies. The dataset includes 94 numerical attributes that help understand the possibility of bankruptcy.
+
+This interesting and simple application of ANN aims at analyzing the possibility of whether an organization would face bankruptcy. Beside the actual application of machine learning to another classification problem, a couple more concepts are analyzed in this example:
+\begin{itemize}
+\item \emph{imbalanced datasets}: is a situation when there is an unequal distribution of classes in the dataset. It can be solved by either upsampling (i.e. introducing minority class at power with majority class) or downsampling (i.e. reducing majority class to match the size of minority class);
+\item finding the best attributes to work with through feature selection (i.e. it will be shown how programmatically pick the best features).
+\end{itemize}
+
+\begin{ipython}
+import pandas as pd
+
+data = pd.read_csv("bankruptcy_data.csv")
+pd.options.display.max_columns=100
+pd.options.display.max_rows=10
+pd.set_option('display.float_format', '{:.2f}'.format)
+
+print (data.head())
+\end{ipython}
+\begin{ioutput}
+   Net Worth Turnover Rate (times)  Revenue per person  \
+0                             0.03                0.03   
+1                             0.03                0.01   
+2                             0.01                0.03   
+3                             0.03                0.02   
+4                             0.04                0.06   
+
+   Operating profit per person  Allocation rate per person  \
+0                         0.39                        0.04   
+1                         0.39                        0.01   
+2                         0.38                        0.14   
+3                         0.38                        0.02   
+4                         0.39                        0.02   
+
+   Working Capital to Total Assets  Quick Assets/Total Assets  \
+...                        
+\end{ioutput}
+
+Given the very large number of available features it could be useful to remove those which present high correlation with other features.
+
+Two techniques can be used: either perform a principal component analysis on the dataset and keep just the highest ranked feature of the most significant components~\ref{sec:PCA} or numerically compute the feature correlation and define a threshold to remove the attributes above this value.
+
+Here the latter will be used, choosing a correlation threshold of $|\rho|\geq 0.95$.
+
+\begin{ipython}
+from sklearn.metrics import ConfusionMatrixDisplay
+
+corr_mat = data.corr()
+corr_mat = corr_mat.iloc[1:, 1:]
+
+drop_list = {}
+for i in range(len(corr_mat.columns)):
+    for j in range(i):
+        if corr_mat.iloc[i, j] >= 0.95 or corr_mat.iloc[i, j] <= -0.95:
+            if corr_mat.columns[j] not in drop_list:
+                drop_list.setdefault(corr_mat.columns[j], []) \
+                         .append(corr_mat.columns[i])
+                
+for d in drop_list:
+    print (d)
+\end{ipython}
+\begin{ioutput}
+ROA(C) before interest and depreciation before interest
+ROA(A) before interest and % after tax
+Operating Gross Margin
+Pre-tax net Interest Rate
+After-tax net Interest Rate
+Net Value Per Share (B)
+Net Value Per Share (A)
+Persistent EPS in the Last Four Seasons
+After-tax Net Profit Growth Rate
+Debt ratio %
+Operating Profit Per Share (Yuan)
+Per Share Net profit before tax (Yuan)
+Current Liabilities/Liability
+Current Liabilities/Equity
+Realized Sales Gross Margin
+Borrowing dependency
+Current Liability to Equity
+\end{ioutput}
+\noindent 
+By analysing the dictionary it is also possible to check where the maximum correlation happens.
+
+These 17 attributes are highly correlated with other in the dataset and therefore they do not bring additional discrimination power to the network so can be safely discarded. To check the effect of removing columns from the dataset it should be compared the performance of the NN with and without the selected attributes, here for simplicity this step will be skipped.
+
+\begin{ipython}
+data = data.drop(drop_list, axis=1)
+y = data['Bankrupt?']
+X = data.drop(['Bankrupt?'], axis=1)
+\end{ipython}
+
+\subsection{Unbalanced Datasets}
+
+\begin{ipython}
+print (data['Bankrupt?'].value_counts())
+\end{ipython}
+\begin{ioutput}
+0    6599
+1     220
+Name: Bankrupt?, dtype: int64
+\end{ioutput}
+
+From the above check it is apparent that the dataset is highly imbalanced (i.e. the main problem with imbalanced classification is that there are too few examples of the minority class for a model to effectively learn the decision boundary). In this case it has been decided to reduce the problem by oversampling the dataset with the Synthetic Minority Oversampling Technique (SMOT)~\cite{bib:smot}. 
+
+\begin{attention}
+This can be achieved by simply duplicating examples from the minority class in the training dataset prior to fitting a model. This can balance the class distribution but does not provide any additional information to the model.
+
+An improvement on duplicating examples from the minority class is to synthesize new examples from the minority class, a type of data augmentation for tabular data that can be very effective.
+
+SMOTE works by selecting examples that are close in the feature space, drawing a line between the examples in the feature space and creating a new sample at a point along that line.
+
+Specifically, a random example from the minority class is first chosen. Then k of the nearest neighbors for that example are found (typically k=5). A randomly selected neighbor is chosen and a synthetic example is created at a randomly selected point between the two examples in feature space.
+\end{attention}
+
+This procedure can be used to create as many synthetic examples for the minority class as are required. 
+The approach is effective because new synthetic examples from the minority class are created that are plausible, that is, are relatively close in feature space to existing examples from the minority class.
+
+A general downside of the approach is that synthetic examples are created without considering the majority class, possibly resulting in ambiguous examples if there is a strong overlap for the classes.
+
+In \texttt{python} SMOT algorithm is implemented in \texttt{imblearn.over\_sampling} module.
+
+\begin{ipython}
+from imblearn.over_sampling import SMOTE
+
+oversample = SMOTE()
+X_sm, y_sm = oversample.fit_resample(X, y)
+print (y_sm.value_counts())
+\end{ipython}
+\begin{ioutput}
+1    6599
+0    6599
+Name: Bankrupt?, dtype: int64
+\end{ioutput}
+
+The last step to prepare the dataset for the analysis is its normalization which is necessary since each column values range very differently.
+
+\begin{ipython}
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(X_sm, y_sm,
+                                                    test_size=0.2,
+                                                    random_state = 101,
+                                                    stratify = y_sm)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+\end{ipython}
+
+\begin{attention}
+Note that the \texttt{stratify} parameter creates batches of the sample with the same proportion between the classes. While \texttt{random\_state} set the seeds for the random number generation for simpler debugging.
+\end{attention}
+
+Now we can define the neural network architecture and go on with the training. An early stopping callback has been implemented in order to stop the training in case no improvement is observed in the last 50 epochs.
+
+\begin{ipython}
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.callbacks import EarlyStopping
+
+model = Sequential()
+
+model.add(Dense(units=77, activation='relu'))
+model.add(Dropout(0.3))
+model.add(Dense(units=77, activation='relu'))
+model.add(Dropout(0.3))
+model.add(Dense(units=1, activation='sigmoid'))
+
+model.compile(loss='binary_crossentropy', optimizer='adam')
+
+early_stop = EarlyStopping(monitor='val_loss', 
+                           mode='min', 
+                           verbose=1, 
+                           patience=50)
+
+model.fit(x=X_train,
+          y=y_train,
+          epochs=600,
+          validation_data=(X_test, y_test), 
+          verbose=1,
+          callbacks=[early_stop])
+\end{ipython}
+\begin{ioutput}
+Epoch 1/600
+330/330 [==============================] - 2s 4ms/step - loss: 0.3348 
+- val_loss: 0.2354
+Epoch 2/600
+330/330 [==============================] - 1s 3ms/step - loss: 0.2318 
+- val_loss: 0.2007
+...
+330/330 [==============================] - 2s 5ms/step - loss: 0.0148 
+- val_loss: 0.0896
+Epoch 00082: early stopping
+\end{ioutput}
+
+\begin{ipython}
+loss = model.history.history['loss']
+val_loss = model.history.history['val_loss']
+\end{ipython}
+
+Figure~\ref{fig:bankruptcy_loss} reports the loss function values, in training and testing samples, versus the epoch number. From the plot it is clear how there is no significant improvement after epoch 30 in the testing sample, that's why the training is stopped early.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\linewidth]{figures/bankruptcy_loss}
+\caption{Loss value as a function of the number of epochs in training and testing sample.}
+\label{fig:bankruptcy_loss}
+\end{figure}
+
+Performance-wise the ANN can be evaluated using the so called \emph{confusion matrix} plot in Figure~\ref{fig:confusion_matrix}. This is a matrix that compares the number of actual and predicted events in each category, reporting the true and false predictions. In case of two classes only it becomes:
+
+\begin{equation*}
+\begin{bmatrix}
+TP & FP \\
+FN & TN  
+\end{bmatrix}
+\end{equation*}
+\noindent
+where $TP$ are the true "positive", $FN$ false "negative" and so on.
+
+\begin{ipython}
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+
+ann_predictions = (model.predict(X_test) > 0.5).astype("int32")
+
+cm = confusion_matrix(y_test, ann_predictions)
+cmd_obj = ConfusionMatrixDisplay(cm, display_labels=['No Bankruptcy', 'Bankruptcy'])
+cmd_obj.plot()
+cmd_obj.ax_.set(
+                title='',
+                xlabel='Predicted',
+                ylabel='Actual')
+plt.show()
+\end{ipython}
+
+From this matrix a number of information can be determined~\cite{bib:sensitivity}:
+
+\makegapedcells\begin{table}[htbp]
+\centering
+\begin{tabular}{|l|c|c|}
+\hline
+Mis-classification (error rate) & $\frac{FP+FN}{n}$ & 0.8\% \\
+\hline
+Sensitivity (true positive) & $\frac{TP}{FN+TP}$ & 99.9 \% \\
+\hline
+False positive & $\frac{FP}{TN+FP}$ & 1.5\% \\
+\hline
+Specificity (true negative) & $\frac{TN}{TN+FP}$ &  98.5\% \\
+\hline
+False negative & $\frac{FN}{TP+FN}$ & 0.08\% \\
+\hline
+Precision & $\frac{TP}{FP+TP}$ & 98.4\% \\ 
+\hline
+Accuracy & $\frac{TN+TP}{n}$ & 99.2\% \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\linewidth]{figures/confusion_matrix}
+\caption{Confusion matrix for the evaluation of the ANN to predict bankruptcy events.}
+\label{fig:confusion_matrix}
+\end{figure}
+
+Since the goal was to train a neural network to predict company bankruptcy the most interesting parameter is the \emph{specificity} which is pretty high (with a very tiny false negative rate).
+ 
 \begin{thebibliography}{9}
 \bibitem{bib:deep_learning} I. Goodfellow, Y. Bengio and A. Courville, \href{http://www.deeplearningbook.org}{\emph{Deep Learning}}, MIT Press, 2016
 \bibitem{bib:nn_over_human}K. Grace, J. Salvatier, A. Dafoe, B. Zhang and O. Evans, \emph{When Will AI Exceed Human Performance? Evidence from AI Experts}, arXiv:1705.08807, 2005
@@ -1192,4 +1459,6 @@ For $t\geq 6$ the neural network clearly recognizes the pattern.
 \bibitem{bib:keras}\href{https://keras.io/}{\emph{Keras Documentation}}, [Online]  
 \bibitem{bib:tensorflow}\href{https://www.tensorflow.org/}{\emph{Tensorflow Documentation}}, [Online] 
 \bibitem{bib:scikit}\href{https://scikit-learn.org/stable/}{\emph{scikit-learn Documentation}}, [Online]
+\bibitem{bib:smot}Nitesh Chawla, et al., \emph{SMOTE: Synthetic Minority Over-sampling Technique.}, 2012
+\bibitem{bib:sensitivity}\href{https://en.wikipedia.org/wiki/Sensitivity_and_specificity}{\emph{Sensitivity and specificity}}, [Online]
 \end{thebibliography}

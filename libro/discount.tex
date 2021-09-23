@@ -1,29 +1,25 @@
 \chapter{Interpolation, Discount Factors and Forward Rates}
 \label{interpolation}
 
-In this Chapter we will start to see applications of \texttt{python} to financial calculations.
-In particular discount curves and forward rates will be involved, implementing the first utilities that will be added to a financial module developed throughout this course.
+In this Chapter we will start to see some applications of \texttt{python} to financial calculations.
+In particular discount curves and forward rates will be involved, and the first utilities that will be added to financial module developed throughout this course will be implemented.
 In doing so we will review a widely used mathematical tool: \emph{interpolation}.
 
 \section{Discounting}
 \label{discount-factors}
 
 \subsection{Time Value of Money}
-Imagine a bank that offers a guaranteed return of 10\% on whichever amount of money a client put in her account as long as that amount stays in the account for one full year (no withdrawals possible). If the client knows that would need \$11000 at the end of one year to buy something, how much money does she need to put in today so that the $X$ amount (principal) at the claimed 10\% a year interest rate will grow to \$11000 at the end of year one ?
+Imagine a bank that offers a guaranteed return of 10\% on whichever amount of money a client put in her account as long as that amount stays in the account for one full year (no withdrawals possible). If the client knows that would need \$11000 at the end of one year, how much money does she need to put in today so that the $X$ amount (principal) at the claimed 10\% a year interest rate will grow to \$11000 at the end of year one ?
 
-We know that at 10\%, a dollar today grows to
+We know that at 10\%, $X$ dollar today grows to
 
-\begin{ipython}
-1 * (1 + 0.1)
-\end{ipython}
-\begin{ioutput}
-1.1
-\end{ioutput}
-
-The needed investment $X$ can be found by inverting the previous formula:
+\begin{equation}
+X * (1 + 0.1) = Y
+\end{equation}
+so the needed investment $X$ can be found by inverting the previous formula:
 
 \begin{equation*}
-X \cdot (1 + 10\%) = 11000 \implies X = 11000 / (1 + 10\%)
+X \cdot (1 + 10\%) = 11000 \implies X = \cfrac{11000}{(1 + 10\%)}
 \end{equation*}
 
 \begin{ipython}
@@ -33,11 +29,11 @@ X \cdot (1 + 10\%) = 11000 \implies X = 11000 / (1 + 10\%)
 10000
 \end{ioutput}
 
-What this says is that to have \$11000 one year from now, the client needs \$10000 at an interest rate of 10\% today.
+What this says is that to have \$11000 in one year from now, the client needs to invest \$10000 at an interest rate of 10\% today.
 What about 11000 dollars two years from now ? Taking the approach used above
 
 \begin{equation*}
-	X = 11000 / \left((1 + 10\%) \cdot (1 + 10\%)\right) =  11000/(1+10\%)^ 2
+	X = \cfrac{11000}{\left((1 + 10\%) \cdot (1 + 10\%)\right)} =  \cfrac{11000}{(1+10\%)^ 2}
 \end{equation*}
 
 \begin{ipython}
@@ -47,21 +43,23 @@ What about 11000 dollars two years from now ? Taking the approach used above
 9090.90909090909
 \end{ioutput}
 
-Which means the 11000 dollars we need two years from now are valued about 9090 dollars today.
+Which means the \$11000 we need two years from now are valued about 9090 dollars today.
 
-What we have just done above is called \emph{discounting}. We are adjusting (i.e. discounting) the value of a payment that will be received at a point in future. Therefore, we are discounting back a future value to bring it to its present value. The rate used to adjust the future payment is called the *discount rate*.
+What we have just done above is called \emph{discounting}. We are adjusting (i.e. discounting) the value of a payment that will be received at a point in future. Therefore, we are discounting back a future value to bring it to its present value (PV or NPV). The rate used to adjust the future payment is called the \emph{discount rate}.
 
-The idea behind discounting is also known as time value of money. Since a dollar at a fixed interest rate will grow in any bank account at that certain rate, if it is invested in an alternate opportunity, it should at least earn that rate from the other alternative to even consider the alternative worth thinking about. Discounting adjusts future payments, investment returns and even return of principal on this basis. The bottom line is that if you fail to earn the discount rate, you have actually lost money, since any bank, would at least have given you the discount rate as return for depositing your money with them. Anything less than that would mean that you have not put your money to its best use.
+The idea behind discounting is also known as \emph{time value of money}. Since a dollar at a fixed interest rate will grow in any bank account at that certain rate, if it is invested in an alternative opportunity, it should at least earn that same rate  to even consider the alternative worth thinking about. 
 
-When we calculate the value of future payments today, we are doing a \emph{present value} (NPV or PV) calculation. When we calculate the value of anything in the future we do a \emph{future value} calculation.
+In practice discounting adjusts future payments, investment returns and even return of principal on this basis. The bottom line is that if you fail to earn the discount rate, you have actually lost money, since any bank, would at least have given you the discount rate as return for depositing your money with them. Anything less than that would mean that you have not put your money to its best use.
+
+When we calculate the value of future payments today, we are doing a present value calculation. When we calculate the value of anything in the future we do a \emph{future value} calculation.
 
 A positive NPV denotes that at a certain cost of capital the returns or inflows from an investment opportunity outweigh the outflows or costs of investment, and vice versa. Obviously, when comparing various alternatives available for investment, the option with the most positive NPV or least negative NPV will be favoured or chosen. 
 
-As an example imagine that you have the chance to invest in a project, Ventures, Inc. that will pay \$100 in year 1, and \$200 in year 2. How much are you willing to pay for this opportunity ? (assume an annual discount rate of 10\%).
+As an example imagine that you have the chance to invest in a project, that will pay \$100 in year 1, and \$200 in year 2. How much are you willing to pay for this opportunity ? (assume an annual discount rate of 10\%).
 
-The answer to the question is that you will be willing to pay at most an amount that is equal to the present value of this stream of payments. To calculate the present value, you need to scale each payment by its respective discount factors ($D_n$ discount factor for year $n$)
+The answer to the question is that you will be willing to pay at most an amount that is equal to the present value of this stream of payments. To calculate it you need to scale each payment by its respective discount factors ($D_n$ discount factor for year $n$)
 \begin{equation}
-	D_n = \cfrac{1}{(1 + r)^n}
+D_n = \cfrac{1}{(1 + r)^n}
 \end{equation}
 
 \begin{ipython}
@@ -98,21 +96,21 @@ D_n = e^{-rn}
 \section{Linear Interpolation}
 \label{linear-interpolation}
 
-Consider to have few data points, obtained by sampling or experimenting. These points represent the values of a not well known function \(f(x)\), where \(x\) is an independent variable (e.g.~in recording a trip: distances at certain times, \(d = f(t)\)).
+Consider to have few data points, obtained by sampling or experimenting. These points represent the values of a not well known function \(f(x)\), where \(x\) is an independent variable (e.g. in recording a trip: distances at certain times, \(d = f(t)\)).
 
-It may be necessary to estimate values of the function $f$ at values for which we don't have samples. Interpolation is a method of "constructing" new points within the range of the known data.
+It may be necessary to estimate values of the function $f$ at particular $x$ for which samples are not available. Interpolation is a method of "constructing" these "new points" within the range of known data.
 
 Let's clarify the technique with an example.
-Assume you are going on holidays by car and that luckily there isn't much traffic so that you can drive at constant speed (which gives a linear relation between traveled space and time i.e.~\(s = v \cdot t\), which means that if you plot the distances \(s\) as a function of the time \(t\) you get a line with slope \(v\)), see Fig.~\ref{fig:samples_for_interpolation}.
+Assume you are going on holidays by car and that luckily there isn't much traffic so that you can drive at constant speed (which gives a linear relation between traveled space and time i.e.~\(s = v \cdot t\). This means that if you plot the distances \(s\) as a function of the time \(t\) you get a line with slope \(v\)), see Fig.~\ref{fig:samples_for_interpolation}.
 
 \begin{figure}
   \centering
   \includegraphics[width=0.7\textwidth]{figures/interp_example1.png}
-  \caption{An example of sampling of traveled distances at some time (black points). The green and red crosses show an interpolated and an extrapolated point. It is clear how the extrapolation failed since the after 200 minutes the relation between time and space changed.}
+  \caption{An example of sampling of traveled distances at some time (black points). The blue and red crosses show an interpolated and an extrapolated point. It is clear how the extrapolation failed since after 150 minutes the relation between time and space changed.}
   \label{fig:samples_for_interpolation}
 \end{figure}
 
-Given two samples of the car traveled distance \(s_1\) and \(s_2\) taken at two different times \(t_1\) and \(t_2\) you can linearly interpolate to find your position at different times using the following relations:
+Given two samples of the traveled distance \(s_1\) and \(s_2\) taken at two different times \(t_1\) and \(t_2\) you can linearly interpolate to find the distance at an intermediate time using the following relations:
 
 \begin{equation}
 s = (1 - w)\cdot s_1 + w \cdot s_2
@@ -133,12 +131,11 @@ Setting \(w = \cfrac{t - t_1}{t_2 - t_1}\) and solving for \(s\) we find the des
 (s_2 - s_1)\cdot w = s - s_1\quad\implies\quad s = (1 - w)\cdot s_1 + w \cdot s_2
 \end{equation}
 
-This formula can also be understood as a weighted average where the weights are inversely related to the distance from the end points to the unknown point ($w_1 = (1 - w) = \cfrac{t_2 - t}{t_2 -t_1}, w_2 = w$), which means that the closer point has more influence than the farther point.
+This formula can also be understood as a weighted average where the weights are inversely related to the distance from the end points to the unknown point ($w_1 = (1 - w) = \cfrac{t_2 - t}{t_2 -t_1}, w_2 = w$), which means that the closer point has more "influence" than the farther point.
 \end{attention}
 
 Back to our example, if
-\(s_1 = 25.75~\mathrm{km}\;(@t_1 = 15~\mathrm{min})\) and
-\(s_2 = 171.7~\mathrm{km}\;(@t_2 = 100~\mathrm{min})\) let's find distance traveled in 1 hour (interpolation):
+\(s_1 = 25.75~\mathrm{km}\;(@t_1 = 15~\mathrm{min})\) and \(s_2 = 171.7~\mathrm{km}\;(@t_2 = 100~\mathrm{min})\) let's find distance traveled in 1 hour (interpolation):
 
 \begin{ipython}
 s_1 = 25.75 # distance in km
@@ -155,7 +152,7 @@ print ("{:.1f} km".format(s))
 103.0 km
 \end{ioutput}
 
-Always interpret critically your results to guess if they make sense or not and to avoid mistakes. In the previous example we certainly expected something between 25.75 and 171.7~km (our range ends) furthermore since we are looking for the distance at a time which is almost halfway the interval, the result will be somehow in the middle or around 98.6~km. This is indeed more or less what we have got.
+Always interpret critically your results to guess if they make sense or not and avoid mistakes. In the previous example we certainly expected something between 25.75 and 171.7~km (our range ends) furthermore since we are looking for the distance at a time which is almost halfway the interval, the result will be somehow in the middle, around 98.6~km. This is indeed more or less what we have got.
 This simple kind of reasoning should be applied every time you have a result to quickly judge it.
 
 \begin{curiosity}
@@ -175,7 +172,7 @@ NASA took the entire responsibility for having vaporized about 300~M\$ in the Ma
 
 \subsubsection{Extrapolation}
 
-If we believe the relation between our variable stays the same ($f(t)$ still linear), we can use the same formula to \emph{extrapolate} values \emph{outside} our initial sample. For example if we keep the same constant velocity in our trip we could check the distance traveled after 3 hours:
+If we believe the relation between our variables stay the same ($f(t)$ still linear), we can use the same formula to \emph{extrapolate} values \emph{outside} the range of the sample. For example if we keep the same constant velocity in our trip we could check the distance traveled after 3 hours:
 
 \begin{ipython}
 t = 180
@@ -187,7 +184,7 @@ print ("{:.1f} km".format(s))
 309.1 km
 \end{ioutput}
 
-In the given example the extrapolation failed since after minute 200 the traveled space ceased to be a linear function of time.
+In the given example the extrapolation failed since after minute 150 the traveled space ceased to be a linear function of time.
 
 \subsection{Log-linear Interpolation}
 \label{log-linear-interpolation}
@@ -213,7 +210,7 @@ p = \textrm{exp}(s)
 \end{gathered}
 \end{align}
 
-Let's see another example. Atmospheric pressure decreases with the altitude (i.e.~the highest you flight the lower is the pressure) following an exponential law:
+Let's see an example. Atmospheric pressure decreases with the altitude (i.e. the highest you flight the lower is the pressure) following an exponential law:
 
 \begin{equation}
 p = p_0\cdot e^{-\alpha h}
@@ -229,8 +226,7 @@ where
   \(\alpha\) is a constant
 \end{itemize}
 
-Taking the logarithm of each side of the equation we get a linear relation which 
-can be interpolated as seen before:
+Taking the logarithm of each side of the equation we get a linear relation which can be interpolated as seen before:
 
 \begin{equation}
 s = \mathrm{log}(p) = \mathrm{log}(p_0\cdot e^{-\alpha h})\propto - \alpha \cdot h
@@ -238,8 +234,7 @@ s = \mathrm{log}(p) = \mathrm{log}(p_0\cdot e^{-\alpha h})\propto - \alpha \cdot
 
 Now assume that we have measured
 \(p_1 = 90~\mathrm{kPa}\;(h_1 = 1000~\mathrm{m})\) and
-\(p_2 = 40~\mathrm{kPa}\;(h_1 = 7000~\mathrm{m})\) what will be the
-atmospheric pressure on top of Mont Blanc (\(4812~\mathrm{m}\)) ? and on top of Mount Everest (\(8848~\mathrm{m}\)) ?
+\(p_2 = 40~\mathrm{kPa}\;(h_1 = 7000~\mathrm{m})\) what will be the atmospheric pressure on top of Mont Blanc (\(4812~\mathrm{m}\)) ? and on top of Mount Everest (\(8848~\mathrm{m}\)) ?
 
 \begin{ipython}
 # pressure on top of the Mont Blanc (interpolation)
@@ -277,9 +272,7 @@ In this case we check our results by plotting the found pressures on top of the 
 \begin{figure}
 \centering
 \includegraphics[width=0.7\linewidth]{figures/Atmospheric_Pressure_vs._Altitude.png}
-\caption{Atmospheric pressure versus altitude (Wikipedia). Green points
-represent our measurements, red points represent
-interpolation/extrapolation.}
+\caption{Atmospheric pressure versus altitude (Wikipedia). Green points represent our measurements, red points represent interpolation/extrapolation.}
 \label{fig:Pvsh}
 \end{figure}
 
@@ -332,8 +325,7 @@ D(t) = \mathrm{exp}(d(t))
 \end{equation}
 where \(i\) is such that \(t_i \le t \le t_{i+1}\)
 
-Instead of reinventing the wheel and performing the interpolation with homemade code, 
-the function \texttt{interp}, provided by the module \texttt{numpy}, is used. 
+Instead of reinventing the wheel and performing the interpolation with homemade code the function \texttt{numpy.interp} is used. 
 Say we want to interpolate the points at $x = 2.5$ given the following values:
 
 \begin{ipython}
@@ -348,11 +340,11 @@ np.interp(2.5, xp, fp)
 \end{ioutput}
 
 Since discount factors are an essential part for every financial calculation and we will keep using them everywhere, a \texttt{python} class which manages discount factors and curves is develop, using an object oriented approach.
-This class, that we name \texttt{DiscountCurve}, should have as attributes the pillar dates with the corresponding discount factors and at least a method to interpolate discount factors.
+This class, that we name \texttt{DiscountCurve}, should have: as attributes the pillar dates with the corresponding discount factors and at least a method to interpolate discount factors.
 
-When dealing with discount factors we need to be careful though. \texttt{numpy.interp} only accepts numbers or a list of numbers as argument i.e. it doesn't automatically convert or interpret dates as numbers and doesn't know how to interpolate them. So we need to do the conversion ourselves before passing any date to the interpolation function. This transformation will be implemented directly in the constructor of the class by replacing each date with the number of days from a reference date ($t_0$).
+When dealing with discount factors we need to be careful though. \texttt{numpy.interp} only accepts numbers or a list of numbers as argument (i.e. it doesn't automatically convert or interpret dates as numbers and doesn't know how to interpolate them). So we need to do the conversion ourselves before passing any date to the interpolation function. This transformation will be implemented directly in the constructor of the class by replacing each date with the number of days from a reference date ($t_0$).
 
-Furthermore we also attempted a simple optimization of the code, in the constructor we are going to compute also the logarithm of the input discount factors, so that we can save some computation time with respect to doing the log at every call of the interpolation method. 
+Furthermore we also attempted a simple optimization of the code: in the constructor we are going to compute also the logarithm of the input discount factors, so that we can save some computation time with respect to doing the log at every call of the interpolation method. 
 
 \begin{ipython}
 import math
@@ -424,8 +416,7 @@ plt.show()
 \begin{figure}[htb]
 	\centering
 	\includegraphics[width=0.7\textwidth]{figures/log_discount_curve}
-	\caption{Plot of the discount curve defined in the text and of the two computed
-		discount factors with semi-log scale.}
+	\caption{Plot of the discount curve defined in the text and of the two computed discount factors with semi-log scale.}
 	\label{fig:log_discount_curve}
 \end{figure}
 \noindent
@@ -452,7 +443,7 @@ Discrepancies in the linear plot are most likely due to rounding.
 
 \section{Forward Rates}
 \label{calculating-forward-rates}
-A forward rate is an interest rate applicable to a financial transaction that will take place in the future. It can be considered as the market's expectations for future prices and can serve as an indicator of how it believes will perform.
+A forward rate is an interest rate applicable to a financial transaction that will take place in the future. It can be considered as the market's expectation for future prices and can serve as an indicator of how it believes will perform.
 
 Contrary the \emph{spot rate} is used by buyers and sellers looking to make an immediate purchase or sale, and it cannot be an indicator of market expectations.
 
