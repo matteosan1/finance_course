@@ -57,9 +57,10 @@ A positive NPV denotes that at a certain cost of capital the returns or inflows 
 
 As an example imagine that you have the chance to invest in a project, that will pay \$100 in year 1, and \$200 in year 2. How much are you willing to pay for this opportunity ? (assume an annual discount rate of 10\%).
 
-The answer to the question is that you will be willing to pay at most an amount that is equal to the present value of this stream of payments. To calculate it you need to scale each payment by its respective discount factors ($D_n$ discount factor for year $n$)
+The answer to the question is that you will be willing to pay at most an amount that is equal to the present value of this stream of payments. To calculate it you need to scale each payment by its respective discount factors ($D(0, T)$ discount factor for year $T$)
 \begin{equation}
-D_n = \cfrac{1}{(1 + r)^n}
+D(0, T) = \cfrac{1}{(1 + r)^T}
+\label{eq:discount_factor}
 \end{equation}
 
 \begin{ipython}
@@ -81,16 +82,16 @@ Total PV: 256.20
 \noindent
 Hence, you would be willing to pay \$256.2 for this opportunity.
 
-If there are $Y$ payments each year the discount factor formula becomes
-
-\begin{equation}
-D_n = \left(1+\cfrac{r}{Y}\right)^{-n}
-\end{equation}
-\noindent
+%If there are $Y$ payments each year the discount factor formula becomes
+%
+%\begin{equation}
+%D(0, T) = \left(1+\cfrac{r}{Y}\right)^{-T}
+%\end{equation}
+%\noindent
 When the continuously-compounded hypothesis is used instead the discount factor becomes
 
 \begin{equation}
-D_n = e^{-rn}
+D(0, T) = e^{-rT}
 \end{equation}
 
 \section{Linear Interpolation}
@@ -526,7 +527,7 @@ forward rate: 0.077
 \section{Multi-curve Framework}
 \label{sec:financial-crisis}
 
-Prior to the 2008 financial crisis, interbank deposits posed little credit/liquidity issues, interbank lending rates (IBOR rates, e.g. LIBOR, EURIBOR) were essentially a good proxy for risk free rates. Basis swap spreads were negligible and thereby neglected. 
+Prior to the 2008 financial crisis, inter-bank deposits posed little credit/liquidity issues, inter-bank lending rates (e.g. LIBOR, EURIBOR) were essentially a good proxy for risk free rates. Basis swap spreads were negligible and thereby neglected. 
 
 Looking at the historical series of the EURIBOR (6M) rate versus the EONIA Overnight Indexed Swap (OIS-6M) rate over the time interval 2006-2011 in Fig.~\ref{fig:credit_crunch} it becomes apparent how before August 2007 the two rates display strictly overlapping trends differing of no more than 6 bps.
 
@@ -538,20 +539,20 @@ Looking at the historical series of the EURIBOR (6M) rate versus the EONIA Overn
 	\label{fig:credit_crunch}
 \end{figure}
 
-A single yield curve constructed out of selected deposit rates, FRA/EDF rates and swap rates served both the cash flow projection and discounting purposes.
+A single yield curve constructed out of selected deposit, FRA and swap rates served both the cash flow projection and discounting purposes.
 
-During the 2008 financial crisis, the failure of some banks however proved that interbank lending rates (e.g. LIBOR, EURIBOR\ldots) were not risk-free. Meanwhile there was also significant counterparty credit risk arising from derivative transactions that were not subject to collateral or margin calls. Basis swap spreads greatly widened, and persist to this day. 
+During the 2008 financial crisis, the failure of some banks however proved that inter-bank lending rates were not risk-free. Meanwhile there was also significant counterparty credit risk arising from derivative transactions that were not subjected to collateral. Basis swap spreads greatly widened, and persist to this day. 
 
-Still looking at Fig.~\ref{fig:credit_crunch} it is clear how in August 2007 a sudden increase of the EURIBOR rate and a simultaneous decrease of the OIS rate leads to the explosion of the corresponding basis spread, touching the peak of 222 bps in October 2008, when Lehman Brothers filed for bankruptcy. Successively the basis has sensibly reduced and stabilized between 40 bps and 60 bps (notice that the precrisis level has never been recovered). The same effect is observed for other similar couples of series, e.g. EURIBOR 3M vs OIS 3M.
+Still looking at Fig.~\ref{fig:credit_crunch} it is clear how in August 2007 a sudden increase of the EURIBOR rate and a simultaneous decrease of the OIS rate led to the explosion of the corresponding basis spread, touching the peak of 222 bps in October 2008, when Lehman Brothers filed for bankruptcy. Successively the basis has sensibly reduced and stabilized between 40 and 60 bps (notice that the pre-crisis level has never been recovered). The same effect is observed for other similar couples of series, e.g. EURIBOR 3M vs OIS 3M.
 
-The existence of such significant basis swap spreads reflects the fact that after the crisis the interest rate market has been segmented into subareas corresponding to instruments with different underlying rate tenors, characterized by different rate dynamics. 
+The existence of such significant basis swap spread reflects the fact that after the crisis interest rate market has been segmented into subareas corresponding to instruments with different underlying rate tenors, characterized by different rate dynamics. 
 
-Traditional single curve based pricing approach ignores these differences. It mixes different underlying rate tenors and incorporates different rate dynamics, eventually leads to inconsistency.
+Traditional single curve based pricing approach ignores these differences. It mixes different underlying rate tenors and incorporates different rate dynamics, eventually leading to inconsistency.
 After the crisis, the market practice has thus evolved to take into account the new market information (e.g. the basis swap spreads, collateralization, etc.), that translate into the additional requirement of homogeneity and funding. The homogeneity requirement means that interest rate derivatives with a given underlying rate tenor must be priced and hedged using vanilla interest rate market instruments with the same underlying. The funding requirement means that the discount rate of any cash flow generated by the derivative must be consistent, by no-arbitrage, with the funding rate associated with that cash flow. 
 
 Driven by the crisis, many derivative contracts have been updated to include permissible credit mitigants for a transaction, such as netting and collateralization in cash. Since standard agreements stipulate daily margination on collateral and the cash collateral earns a return at overnight rate, overnight rate becomes a natural choice for the risk-free discount rate or the funding rate. This is referred to as \emph{OIS discounting}.
 
-The large spread between risk free rate and interbank lending rate during and after 2008 financial crisis it is not possible anymore to use a single curve for discounting and derivative valuation. The traditional single curve used for both  cash flow projection and discounting turned out to be obsolete. The markets have since nearly switched to multi-curve framework. 
+The large spread between risk free rate and inter-bank lending rate during and after 2008 financial crisis it is not possible anymore to use a single curve for discounting and derivative valuation. The traditional single curve used for both cash flow projection and discounting turned out to be obsolete. The markets have since nearly switched to multi-curve framework. 
 
 For example, if we want to calculate the net present value (NPV) of a forward 6-month LIBOR coupon, we need to simultaneously use two different discount curves: 
 
@@ -647,8 +648,7 @@ NPV pre 2008: 0.01593
 \end{ioutput}
 
 \subsection{Transitioning away from LIBOR~\cite{bib:str}}
-A working group on euro risk-free rates was established to identify and recommend risk-free rates that could serve as a basis for an alternative to current benchmarks used in a variety of financial
-instruments and contracts in the euro area, such as the euro overnight index average (EONIA) and the euro interbank offered rate (EURIBOR). 
+A working group on euro risk-free rates was established to identify and recommend risk free rates that could serve as a basis for an alternative to current benchmarks used in a variety of financial instruments and contracts in the euro area, such as the euro overnight index average (EONIA) and the euro inter-bank offered rate (EURIBOR). 
 
 The group recommended on September 2018 that the euro short-term rate (STR) be used as the risk-free rate for the euro area and is now focused on supporting the market with transitioning.
 The ECB published the STR for the first time on 2nd October 2019, reflecting trading activity on 1st October 2019.
