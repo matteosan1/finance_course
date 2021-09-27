@@ -9,7 +9,7 @@ Some notations that will be used later are
 \begin{itemize}
 \tightlist
 \item
-  expected return: 
+  portfolio expected return: 
   \begin{equation} 
   	\mathbb{E}(R_{p}) = \sum _{i}w_{i} \mathbb{E}(R_{i}) 
   \end{equation} 
@@ -36,7 +36,7 @@ Some notations that will be used later are
   	\sigma_p^2 = \mathbf{w^T}\Sigma\mathbf{w} 
   \end{equation}
   where $\mathbf{w} = (w_1,w_2,\ldots,w_N)$ is the vector of weights. 
-  For a very brief introduction to matrices see Chapter~\ref{sec:matrices};
+  For a brief introduction to matrices see Chapter~\ref{sec:matrices};
 \item
   portfolio return volatility (standard deviation):
   \begin{equation}
@@ -47,12 +47,12 @@ Some notations that will be used later are
 \section{The Markowitz Mean/Variance Portfolio Model}
 \label{the-markowitz-meanvariance-portfolio-model}
 
-Although investors may expect a particular return when they buy a stock, they may be disappointed or pleasantly surprised, because fluctuations in stock prices result in fluctuating returns. 
+Although investors may expect a particular return when they buy a stock, they also may be disappointed or pleasantly surprised, because fluctuations in stock prices result in fluctuating returns. 
 
 This model, first introduced by Markowitz, defines risk as the possibility that actual returns will deviate from expected returns, and the degree of potential fluctuation determines the degree of risk.
-So it assumes that an investor has two considerations when constructing an investment portfolio: expected return and variance in return (i.e. measure of risk or of the variability in realized return around the expected return). 
+So it assumes that an investor has two considerations when constructing an investment portfolio: expected return and variance in return (i.e. measure of risk). 
 
-Hence the Markowitz model requires two major kinds of information:
+Hence the Markowitz model requires two major information:
 
 \begin{itemize}
 \tightlist
@@ -66,10 +66,9 @@ Hence the Markowitz model requires two major kinds of information:
 
 In the following examples we are going to use real data
 of five companies:  AAPL, AMZN, FB, GOOG, NFLX. As for data used in the previous Chapter
-it can be downloaded with \texttt{yfinance}:
+it can be downloaded with \texttt{yfinance}. Otherwise it can be directly used from \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/portfolio_data.csv}{portfolio\_data.csv}.
 
 \begin{ipython}
-import pandas as pd
 import yfinance as yf
 
 proxy = yf.Tickers(['AAPL', 'AMZN', 'FB', 'GOOG', 'NFLX'])
@@ -88,15 +87,21 @@ Date
 2014-04-01 17.336205 342.989990	62.619999 565.607117 52.098572
 2014-04-02 17.365013 341.959991	62.720001 565.447571 51.840000
 \end{ioutput}
+ 
+Data, shown in Figure~\ref{fig:stocks}, is made of the historical series of the closing prices in the last 5 years. 
 
-Otherwise it can be directly used from \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/portfolio_data.csv}{portfolio\_data.csv}. 
-Data, shown in Figure~\ref{fig:stocks}, is made of the historical 
-series of the closing prices in the last 5 years. 
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/portfolio_sample}
+	\caption{Historical series of the closing price of five companies. To compare them, prices have been normalized to the first value in each series}
+	\label{fig:stocks}
+\end{figure}
 
 With \texttt{pandas} the main characteristics of these time series can be easily computed (e.g. daily returns, covariance matrix,\ldots).
-Variance adds across time if returns in one interval of time are uncorrelated with returns in other intervals of time. The correlation of returns across time (called \emph{autocorrelation}) is close to zero for most asset classes. This means that variances will grow with the length of the forecast horizon and the risk will grow with the square root of the forecast horizon. Thus, a 5\% annual risk is equivalent to a 2.5\% risk over the first quarter or a 10\% active risk over four years. 
+Variances can be added across time intervals if return in one interval is uncorrelated with those in others. The correlation of returns across time intervals (called \emph{autocorrelation}) is in general close to zero for most assets. This means that variances will grow with the length of the forecast horizon and the risk will grow with the square root of the forecast horizon. 
+Thus, a 5\% annual risk is equivalent to a 2.5\% risk over the first quarter or a 10\% active risk over four years. 
 
-This relationship can be used to “annualize” risk, i.e. standardize risk numbers to an annual period. Considering daily returns of a stock and observe a daily return standard deviation of $\sigma_{daily}$, it can be converted to annual risk according to
+This relationship can be used to “annualize” risk, i.e. standardize risk numbers to an annual period. The observed daily return standard deviation ($\sigma_{daily}$) can be converted to annual risk according to
 \begin{equation}
 \sigma_{yearly} = \sigma_{daily}\cdot\sqrt{252}
 \end{equation}
@@ -127,35 +132,26 @@ fb    0.026075  0.041196  0.069723  0.036337  0.044753
 goog  0.022764  0.039654  0.036337  0.052001  0.040630
 nflx  0.028064  0.048576  0.044753  0.040630  0.178332
 \end{ioutput}
-
-\begin{figure}[htb]
-\centering
-\includegraphics[width=0.7\textwidth]{figures/portfolio_sample}
-\caption{Historical series of the closing price of five companies. To compare them, prices have been normalized to the first value in each series}
-\label{fig:stocks}
-\end{figure}
     
-In order to "simulate" a portfolio it is enough to throw five random weights with the constraint that they had to sum up to 1. 
-In Figure~\ref{fig:mc_portfolio} a large number of simulated portfolios are shown in the return vs volatility plane. 
-In this case no attempt of any optimization whatsoever has been made.
+\subsection{Portfolio Simulation}
+In order to "simulate" a portfolio of $n$ assets it is enough to throw $n$ random weights with the only constraint that they had to sum up to 1. 
+In Figure~\ref{fig:mc_portfolio} a large number of simulated portfolios (made of the five assets mentioned above) are shown in the return vs volatility plane. 
+Note that in these simulation no attempt of any optimization whatsoever has been made.
 
-\begin{figure}[hbt]
+\begin{figure}[hbtp]
 \centering
-\includegraphics[width=0.8\textwidth]{figures/return_variance}
+\includegraphics[width=0.7\textwidth]{figures/return_variance}
 \caption{Distribution in the expected return/volatility plane of a large number of simulated portfolios.}
 \label{fig:mc_portfolio}
 \end{figure}
 
-Investors may use short sales in their portfolios (a portfolio is short in those stocks with negative portfolio weights). 
-Although short selling extends the set of possible portfolios we are not going to consider them here.
+Investors may use \emph{short sales} in their portfolios (a portfolio is short in those stocks with negative weights). 
+Although short selling extends the set of possible portfolios we are not going to consider it here.
 
 \section{Optimisation}\label{optimization}
 
-Markowitz model states that \emph{the weights of a portfolio should be chosen 
-such that its volatility (or its variance) is minimised}. 
-So the application of this model reduces to
-an optimisation problem: given the covariance matrix of the portfolio
-$\Sigma$, estimated from their historical series, we need to find
+Markowitz model states that \textbf{the weights of a portfolio should be chosen such that its volatility (or its variance) is minimised}. 
+So the application of this model reduces to an optimisation problem: given the covariance matrix of the portfolio $\Sigma$, we need to find
 
 \begin{equation}
 	\underset{\mathbf{w}}{\min}\{\sigma_p^2\} = \underset{\mathbf{w}}{\min}\{\mathbf{w^T}\Sigma\mathbf{w}\}
@@ -168,14 +164,10 @@ so it is enough to repeat the same steps:
 
 \begin{itemize}
 \tightlist
-\item
-  define an objective function (in this case the portfolio variance);
-\item
-  define a set of constraints ($\sum w_i = 1$);
-\item
-  set an initial guess for the weights;
-\item
-  pass everything to \texttt{scipy.optimize.minimize}.
+\item   define an objective function (in this case the portfolio variance);
+\item define a set of constraints ($\sum w_i = 1$);
+\item set an initial guess for the weights;
+\item run the algorithm with \texttt{scipy.optimize.minimize}.
 \end{itemize}
 
 \begin{ipython}
@@ -215,14 +207,41 @@ The solution recommends to devote about 44\% of the portfolio to AAPL, about 6\%
 
 In this example we based the model simply on straightforward statistical data derived from daily returns. However it could be possible, rather than estimate the expected returns from historical data, to base this estimate on information about expected future performance of the asset.
 
-\section{Efficient Frontier}\label{efficient-frontier}
-There is no precise way for an investor to determine the “correct” trade off between risk and return. If she wants a higher expected return, she generally has to “pay for it” with higher risk. Thus, one is frequently interested in looking at the relative distribution of the two.
 
-In finance terminology, we would like to trace out the \emph{efficient frontier} of return and risk. This is doable solving for the minimum variance portfolio over a range of values for the expected return (e.g. ranging from 0.20 to 0.45).
+\subsection{Limits of the Markowitz Model}
+\label{limits-of-the-markowitz-model}
 
+Despite the significant utility of the Markowitz theory, there are some major limitations in this model:
+
+\begin{itemize}
+	\tightlist
+	\item
+	it is difficult to forecast asset returns with accuracy using
+	historical data, which tends to be a poor forecasting source. As
+	return estimates have a much larger impact on the asset allocations,
+	small changes in return assumptions can lead to inefficient
+	portfolios. Therefore, the model tends to lead to highly concentrated
+	portfolios (out-of sample weights) that do not offer as much
+	diversification benefits in practice as they seem to provide in
+	theory;
+	\item
+	the correlation between assets is assumed to be fixed and predictable, while
+	in the real world, the systematic relationships between different assets 
+	do not remain constant. This means that the theory becomes less useful during 
+	times of uncertainty, which is exactly when investors need the most protection 
+	from volatility.
+\end{itemize}
+
+Extensions of the Markowitz model are defined in~\cite{bib:post_modern_theory} and~\cite{bib:black_litterman}, although they are beyond the scope of these lectures. 
+
+\section{Efficient Frontier}
+\label{efficient-frontier}
+There is no precise way for an investor to determine the “correct” trade off between risk and return. The desired higher expected return needs to be paid for with higher risk. Thus, one is frequently interested in looking at the relative distribution of the two.
+
+In finance terminology, means to trace the \emph{efficient frontier of return and risk}. This can be done in two alternative ways: either solving for the minimum variance portfolio over a range of expected return values or solving for the maximum return portfolio over a range of variance values.
+
+The following example computes the efficient frontier plot (shown in Fig.~\ref{fig:efficient_frontier}) using the first method with the return ranging from 0.20 to 0.45.
 This time beside the constraint on the sum of weights, we have to add the one that forces the resulting return to be equal to the chosen target.
-
-The following example produce the efficient frontier plot shown in Fig.~\ref{fig:efficient_frontier}.
 
 \begin{ipython}
 def efficient_frontier(w, asset_returns, target_return):
@@ -252,37 +271,10 @@ results.append((np.sqrt(opts.x.T.dot(covariance.dot(opts.x))),
 Efficient portfolios offer investors the highest possible expected return for a given level of risk. 
 An investor seeking high expected returns and low volatility should invest only in efficient portfolios and will choose from the set of efficient portfolios based on her risk tolerance.
     
-\subsection{Limits of the Markowitz Model}
-\label{limits-of-the-markowitz-model}
-    
-Despite the significant utility of the Markowitz theory, there are some major limitations in this model:
-    
-\begin{itemize}
-  	\tightlist
-   	\item
-   	it is difficult to forecast asset returns with accuracy using
-   	historical data, which tends to be a poor forecasting source. As
-   	return estimates have a much larger impact on the asset allocations,
-   	small changes in return assumptions can lead to inefficient
-   	portfolios. Therefore, the model tends to lead to highly concentrated
-   	portfolios (out-of sample weights) that do not offer as much
-   	diversification benefits in practice as they seem to provide in
-   	theory;
-   	\item
-    the correlation between assets is assumed to be fixed and predictable, while
-    in the real world, the systematic relationships between different assets 
-    do not remain constant. This means that the theory becomes less useful during 
-    times of uncertainty, which is exactly when investors need the most protection 
-    from volatility.
-    \end{itemize}
-    
-Extensions of the Markowitz model are defined in~\cite{bib:post_modern_theory} and~\cite{bib:black_litterman}, 
-although they are beyond the scope of these lectures. 
-    
-\section{Portfolios with a Risk-Free Asset}
+\subsection{Portfolios with a Risk-Free Asset}
 \label{portfolios-with-a-risk-free-asset}
 
-When one of the investments available is risk free, then the efficient frontier has a particularly simple form. The risk–return combinations of the risk-free investment and a risky portfolio lie on a straight line connecting the two investments: the capital allocation line (CAL). The slope of the CAL measures the trade off between risk and return. A higher slope means that investors receive a higher expected return in exchange for taking on more risk.
+When one of the investments available is risk free, then the efficient frontier has a particularly simple form. The risk–return combinations of the risk-free investment and a risky portfolio lie on a straight line connecting the two investments: the \emph{capital allocation line} (CAL). The slope of the CAL measures the trade off between risk and return. A higher slope means that investors receive a higher expected return in exchange for taking on more risk.
 
 The capital allocation line aids investors in choosing how much to invest in a risk-free asset and one or more risky assets.
 
@@ -301,13 +293,13 @@ The calculation of risk for this portfolio is simple because the standard deviat
 \begin{equation*} 
 	\sigma_p = (1-w_f)\cdot \sigma_r 
 \end{equation*}
-In this very simple example, if an investor invested 100\% into the risk-free asset (\(w_f=1\)), the expected return would be 3\% and the risk of the portfolio would be 0\%. Likewise, investing 100\% into the stock (\(w_f=0\)) would give an investor an expected return of 10\% and a portfolio risk of 20\%. If the investor allocated 25\% to the risk-free asset and 75\% to the risky asset, the portfolio expected return and risk calculations would be
+In this simple example, if an investor invested 100\% into the risk-free asset (\(w_f=1\)), the expected return would be 3\% and the risk of the portfolio would be 0\%. Otherwise, investing 100\% into the stock (\(w_f=0\)) would give an investor an expected return of 10\% and a portfolio risk of 20\%. If the investor allocated 25\% to the risk-free asset and 75\% to the risky asset, the portfolio expected return and risk calculations would be
 
 \[ \mathbb{E}(R_p) = (3\% \cdot 25\%) + (10\% \cdot 75\%) = 0.75\% + 7.5\% = 8.25\% \]
 
 \[ \sigma_p = 75\% \cdot 20\% = 15\% \]
 
-Applying the same reasoning to our example we can consider an additional risk-free asset with an expected return of 10\% and repeat the minimisation to determine the efficient frontier of the resulting portfolio. Notice how the objective function is almost the same as before, while the target return constraint now includes the risk-free asset.
+If we add a risk-free asset, with an expected return of 10\%, to the five risky ones considered so far we can repeat the Markowitz minimisation to determine the efficient frontier of the resulting portfolio. Notice how the objective function is almost the same as before, while the target return constraint now includes the risk-free asset.
 
 \begin{ipython}
 num_assets = 6
@@ -340,49 +332,46 @@ for eff in np.arange(0.10, 0.45, 0.01):
     \label{fig:cal}
 \end{figure}
     
-As it is clear from Fig.~\ref{fig:cal} the efficient frontier has become a straight line, tangent to the frontier of the risky assets only. When the target is 10\% the entire investment is allocated to the risk-free asset, as the target increases the fraction of the risky assets grows
-proportionally to the volatility. 
+As expected the efficient frontier has become a straight line, tangent to the frontier of the risky assets (Fig.~\ref{fig:cal}). When the target is 10\% the entire investment is allocated to the risk-free asset, as the target increases the fraction of risky assets grows proportionally to the volatility. 
 
-It is important to notice that in general the relative proportions devoted to risky investments do not change. Only the allocation between the risk-free asset and the risky assets change.
+It is important to notice that in general the relative proportions among the risky investments do not change with or without the risk-free asset. Only the allocation between risk-free and risky assets varies.
 
-\subsection{The Sharpe Ratio}
+\section{The Sharpe Ratio}
 \label{the-sharpe-ratio}
 The goal of an investor who is seeking to earn the highest possible expected return for any level of volatility is to find the portfolio that generates the steepest possible line when combined with the risk-free investment. The slope of the line is called the \emph{Sharpe ratio} of the portfolio.
 
-For some portfolio of risky assets let 
+For a portfolio of risky assets let 
 
 \begin{itemize}
 \tightlist
-\item
-  \(R_r\) its expected return;
-\item
-  \(\sigma_r\) its standard deviation in return;
-\item
-  \(r_f\) the return of a risk-free asset.
+\item \(R_r\) its expected return;
+\item \(\sigma_r\) its standard deviation in return;
+\item \(r_f\) the return of a risk-free asset.
 \end{itemize}
 
-A plausible single measure (as opposed to the two measures, risk and return) of attractiveness of portfolio is the Sharpe ratio:
+A plausible single measure of attractiveness of a portfolio (as opposed to the two measures, risk and return proposed by Markowitz) is the Sharpe ratio:
 
 \begin{equation} \cfrac{R_r - r_f}{\sigma_r} \end{equation}
+\noindent
+In words, it measures how much additional return is achieved for the additional risk taken on, relative to investing all in the risk-free asset. 
 
-In words, it measures how much additional return we achieved for the additional risk we took on, relative to putting all our money in the risk-free asset. The portfolio that maximizes this ratio has some interesting properties. Suppose 
+The portfolio that maximizes this ratio has some interesting properties. Suppose that
 
 \begin{itemize}
 \tightlist
 \item
-  \(R_\textrm{target}\) our desired target return;
+  \(R_\textrm{target}\) the desired target return;
 \item
-  \(w_r\) the fraction of our wealth we place in the portfolio (the
-  rest placed in the risk-free asset).
+  \(w_r\) the fraction of wealth placed in the portfolio (the rest placed in the risk-free asset).
 \end{itemize}
-
-To meet our return target, we must have:
+\noindent
+To meet the target return the weights need to be chosen such that:
 
 \begin{equation*} 
 	(1 - w_r) * r_f + w_r * R_r =R_\textrm{target} 
 \end{equation*}
-
-The standard deviation of our total investment is: \(w_r\cdot \sigma_r\). Solving for \(w_r\) in the equation above, we get:
+\noindent
+The standard deviation of the investment is: \(w_r\cdot \sigma_r\). Solving for \(w_r\) in the equation above, we get:
 
 \begin{equation*} 
 	w_r = \cfrac{R_\textrm{target} - r_f}{R_r - r_f} 
@@ -398,9 +387,9 @@ Minimising the portfolio standard deviation means:
 	\textrm{min}\left[\cfrac{R_\textrm{target} - r_f}{R_r - r_f}\cdot \sigma_r\right]\implies\textrm{max}\left[\cfrac{R_r - r_f}{\sigma_r}\right]
 \end{equation}
 
-So, regardless of our risk/return preference, the money we invest in risky assets should be invested in the portfolio that maximises the Sharpe ratio, because it will be also the portfolio that minimize the risk (i.e. standard deviation) at the same time.
+So, regardless of investor risk/return preference, the investment should go in the portfolio that maximises the Sharpe ratio, because it will be the one that minimize the risk (i.e. standard deviation) and maximise the return at the same time.
 
-Let's see the application of the Sharpe ratio on our sample.
+Let's compute the Sharpe portofolio with our sample.
 
 \begin{ipython}
 num_assets = 5
@@ -436,7 +425,7 @@ success: True
 Sharpe ratio:  1.2577787922793253
 \end{ioutput}
 
-Figure~\ref{fig:sharpe_ratio} shows the result of the optimization for our example. Notice that in general the relative proportions of the stocks are the same as in the previous case where we explicitly included a risk free asset (0.12, 0.54, 0., 0., 0.33).
+Figure~\ref{fig:sharpe_ratio} shows the result of the optimization. Notice that in general the relative proportions of the stocks are the same as in the previous case where we explicitly included a risk free asset (0.12, 0.54, 0., 0., 0.33).
 
 \begin{figure}[htb]
 	\centering
@@ -445,52 +434,57 @@ Figure~\ref{fig:sharpe_ratio} shows the result of the optimization for our examp
 	\label{fig:sharpe_ratio}
 \end{figure}
 
-So the optimization using the Sharpe ratio gives us a portfolio that is on the minimum volatility efficient frontier, and gives the maximum return relative to putting all our money in the risk-free asset (so graphically it sits in the tangent point between CAL and efficient frontier).
+So using the Sharpe ratio gives a portfolio that is on the minimum volatility efficient frontier, and gives the maximum return relative to putting all our money in the risk-free asset (so graphically it sits in the tangent point between CAL and efficient frontier).
 
 Usually, any Sharpe ratio greater than 1.0 is considered acceptable to good by investors. A ratio higher than 2.0 is rated as very good. A ratio of 3.0 or higher is considered excellent. A ratio under 1.0 is sub-optimal.
 
 \section{Portfolio Diversification}
 
-Diversification is a common topic in portfolio construction and allows to combine risky stocks so that their combination (the portfolio) is less risky than any of its components. Although such diversification is a familiar notion, it may be worthwhile to review the manner in which diversification reduces risk.
+A security total risk can be divided into \emph{unsystematic}, the risk portion peculiar to the company that can be diversified away, and systematic, the nondiversifiable portion that is related to the movement of the stock market and is therefore unavoidable. 
 
-Suppose there are two companies located on an isolated island whose chief industry is tourism. One company manufactures suntan lotion. Its stock predictably performs well in sunny years and poorly in rainy ones. The other company produces umbrellas. Its stock performs equally poorly in sunny years and well in rainy ones. Each company earns a 12\% average return.
+Diversification is a common topic in portfolio construction and allows to combine risky stocks so that the resulting portfolio is less risky than any of its components. Although such diversification is a familiar notion, it may be worthwhile to review the manner in which diversification reduces risk.
 
-In purchasing either stock, investors incur a great amount of risk because of variability in the stock price driven by fluctuations in weather conditions. Investing half the funds in the suntan lotion stock and half in the stock of the umbrella manufacturer, however, results in a return of 12\% regardless of which weather condition prevails. Portfolio diversification thus transforms two risky stocks, each with an average return of 12\%, into a riskless portfolio certain of earning the expected 12\%.
+Suppose there are two companies located on an isolated island whose chief industry is tourism. One company manufactures suntan lotion; its stock predictably performs well in sunny years and poorly in rainy ones. The other company produces umbrellas; its stock performs equally poorly in sunny years and well in rainy ones. Each company earns a 12\% average return.
+
+In purchasing either stock, investors incur a great amount of risk because of the price variability driven by fluctuations in weather conditions. Investing half the funds in the suntan lotion stock and half in the umbrella manufacturer stock, however, results in a return of 12\% regardless of which weather condition prevails. Portfolio diversification thus transforms two risky stocks, each with an average return of 12\%, into a riskless portfolio certain of earning the expected 12\%.
 
 Unfortunately, the perfect negative relationship between the returns on these two stocks is very rare in the real world. To some extent, corporate securities move together, so complete elimination of risk through simple portfolio diversification is impossible. However, as long as some lack of parallelism in the returns of securities exists, diversification will always reduce risk.
 
-Empirical studies have demonstrated that unsystematic risk can be virtually eliminated in portfolios of 30 to 40 randomly selected stocks. Of course, if investments are made in closely related industries, more securities are required to eradicate it.
+Empirical studies have demonstrated that risk can be virtually eliminated in portfolios of 30 to 40 randomly selected stocks. Of course, if investments are made in closely related industries, more securities are required to eradicate it.
 
 When using the standard variation of the portfolio return as a measure of the risk, as in the Markowitz model, it is easy to show how diversification allows to reduce the risk. 
-The standard deviation of a stock portfolio is not the weighted average of the standard deviations of the component stocks.
+Indeed the standard deviation of a portfolio is not the weighted average of the standard deviations of the component stocks.
 For example, suppose the correlation between the return of stocks 1 and 2 is $\rho_{12}$. If the portfolio is equally weighted then
 
 \begin{equation}
 \sigma_{P} = \sqrt{(0.5\cdot\sigma_1 )^2 + (0.5\cdot\sigma_2 )^2 + 2\cdot(0.5\cdot\sigma_1)(0.5\cdot\sigma_2)\rho_{12}} \lt (0.5\cdot\sigma_1 ) + (0.5\cdot\sigma_2 )
 \end{equation}
 
-In general the inequality holds unless $\rho_{12}=1$, for risk, the whole is less than the sum of
-its parts. This is the key to portfolio diversification. Figure~\ref{fig:diversification} shows the risk of a portfolio made up from IBM and General Electric against the fraction of GE stock in the portfolio. The curved line represents the risk of the portfolio; the straight line represents sum of the two single risks. The risk of GE is 27.4\% per year; the risk of IBM is 29.7\% per year; and the two returns are 62.9\% correlated. The difference between the two lines is an indication of the benefit of diversification in reducing risk.
+The inequality holds unless $\rho_{12}=1$, so in general, for risk, the whole is less than the sum of its parts. 
+This is the key to portfolio diversification.
+
+Figure~\ref{fig:diversification} shows the risk of a portfolio made up of IBM and General Electric stocks against the fraction of GE stocks in the portfolio. The curved line represents the risk of the portfolio; the straight line represents the sum of the two single risks. The risk of GE is 27.4\% per year, the risk of IBM is 29.7\% per year, and the two returns are 62.9\% correlated. The difference between the two lines is an indication of the benefit of diversification in reducing risk.
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/diversification}
-	\caption{Risk of a portfolio made up from IBM and General Electric against the fraction of GE stock in the portfolio. The curved line represents the risk of the portfolio; the straight line represents the sum of the two single risks.}
-	\label{fig:diversification}
+\centering
+\includegraphics[width=0.7\textwidth]{figures/diversification}
+\caption{Risk of a portfolio made up from IBM and General Electric against the fraction of GE stock in the portfolio. The curved line represents the risk of the portfolio; the straight line represents the sum of the two single risks.}
+\label{fig:diversification}
 \end{figure}
 
-We can see the power of diversification in another example. Given a  portfolio of $N$ stocks, each with risk $\sigma$ and uncorrelated returns, the risk of an equal-weighted portfolio of these stocks will be
-\begin{equation}
-\sigma_P = \cfrac{\sigma}{\sqrt{N}}
-\end{equation}
-
-For a more useful insight into diversification, assume now that the correlation between the returns of all pairs of stocks is equal to $\rho$. Then the risk of an equally weighted portfolio is which can be further simplified when considering a portfolio contains a very large number of correlated stocks:
-\begin{equation}
-\sigma_P = \sigma\cdot\sqrt{\cfrac{1+\rho(N-1)}{N}};\quad \lim_{N \to +\infty} \sigma_P = \sigma\cdot\sqrt{\rho}
-\label{eq:risk_correlation}
-\end{equation}
-
-To get a feel for this, consider the example of an equal-weighted portfolio of the 20 Major Market Index constituent stocks. In December 1992, these stocks had an average risk of 27.8\%, while the equal-weighted portfolio has a risk of 20.4\%. Equation~\ref{eq:risk_correlation} then implies an average correlation between these stocks of 0.52. 
+%We can see the power of diversification in another example. Given a  portfolio of $N$ stocks, each with risk $\sigma$ and uncorrelated returns, the risk of an equal-weighted portfolio of these stocks will be
+%\begin{equation}
+%\sigma_P = \cfrac{\sigma}{\sqrt{N}}
+%\end{equation}
+%
+%Assume now that the correlation between the returns of all pairs of stocks is equal to $\rho$. Then the risk of an equally weighted portfolio is:
+%\begin{equation}
+%\sigma_P = \sigma\cdot\sqrt{\cfrac{1+\rho(N-1)}{N}};\quad \lim_{N \to +\infty} \sigma_P = \sigma\cdot\sqrt{\rho}
+%\label{eq:risk_correlation}
+%\end{equation}
+%which can be further simplified when considering a portfolio contains a very large number of correlated stocks
+%
+%To get a feel for this, consider the example of an equal-weighted portfolio of the 20 Major Market Index constituent stocks. In December 1992, these stocks had an average risk of 27.8\%, while the equal-weighted portfolio has a risk of 20.4\%. Equation~\ref{eq:risk_correlation} then implies an average correlation between these stocks of 0.52. 
 
 %As we have already seen no measure of unsystematic risk appears in the risk premium, of CAPM model, since it is assumed that diversification has eliminated it.
 %
@@ -499,15 +493,15 @@ To get a feel for this, consider the example of an equal-weighted portfolio of t
 \section{Risk Parity Portfolio}
 \label{risk-parity-portfolio}
 
-An alternative approach to Markowitz theory is given by the \emph{risk parity}. A risk parity portfolio is an investment allocation strategy which focuses on the allocation of risk, rather than on the allocation of capital. 
-A risk parity (equal risk) portfolio is characterised by having equal risk contributions to the total risk from each individual asset. 
-
-Risk parity allocation is also referred to as equally-weighted risk contributions portfolio method. Equally-weighted risk contributions is not about \emph{having the same volatility}, it is about having each asset contributing in the same way to the portfolio overall volatility. For this we will have to define the contribution of each asset to the portfolio risk. 
+An alternative approach to optimize a portfolio is given by the \emph{risk parity}. A risk parity portfolio is an investment allocation strategy which focuses on the allocation of risk, rather than on the allocation of capital. 
+Such a portfolio is characterised by having equal risk contributions to the total risk from each individual asset. 
 
 This allocation strategy has gained popularity in the last decades since it is believed to provide better risk adjusted return than capital based allocation strategies.
 
-Let's go over a very basic example to better illustrate how to construct a simple risk parity (equal risk) portfolio. Consider a portfolio of \(N\) assets: \(x_{1}, \ldots, x_N\) where as
-usual the weight of the $i^{th}$ asset is denoted by \(w_{i}\). The \(w_{i}\) form the allocation vector \(\mathbf{w}\). Let us further denote the covariance matrix of the assets as \(\Sigma\). The volatility of the portfolio is then defined as:
+Risk parity allocation is also referred to as equally-weighted risk contributions portfolio method. Equally-weighted risk contributions is not about \emph{having the same volatility}, it is about having each asset contributing in the same way to the portfolio overall volatility. For this we will have to define the contribution of each asset to the portfolio risk. 
+
+Let's go over a very basic example to better illustrate how to construct a simple risk parity portfolio. Consider a portfolio of \(N\) assets: \(x_{1}, \ldots, x_N\) where as
+usual the weight of the $i^{th}$ asset is denoted by \(w_{i}\) and all the \(w_{i}\) form the allocation vector \(\mathbf{w}\). Let us further denote the covariance matrix of the assets as \(\Sigma\). The volatility of the portfolio is then defined as:
 
 \begin{equation} 
 \sigma_p={\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} = \sum_{i=1}^{N}\sigma _{i}\qquad\textrm{with}~\sigma _{i} = w_{i}\cdot \cfrac{\partial\sigma_p}{\partial w_{i}}={\cfrac {w_{i}(\Sigma \mathbf{w})_{i}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}}
@@ -515,54 +509,57 @@ usual the weight of the $i^{th}$ asset is denoted by \(w_{i}\). The \(w_{i}\) fo
 so that \(\sigma _{i}\) can be interpreted as the contribution of the $i^{th}$ asset to the overall risk of the portfolio.
 
 \begin{attention}
-	\subsubsection{Derivation of $\sigma_i$}
-	Expressing explicitly in matrix form the standard deviation of the portfolio we get
-	\[
-	\begin{split}
-	\sigma_p={\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} & =
-	\sqrt{
-		\begin{bmatrix}
-		w_{1} \\
-		w_{2}
-		\end{bmatrix}
-		\begin{bmatrix}
-		\sigma_{11} & \sigma_{21} \\
-		\sigma_{12} & \sigma_{22} 
-		\end{bmatrix}
-		\begin{bmatrix}
-		w_{1} & w_{2} \\
-		\end{bmatrix}
-	}\\
-	&=
-	\sqrt{
-		\begin{bmatrix}
-		w_{1} \\
-		w_{2}
-		\end{bmatrix}
-		\begin{bmatrix}
-		w_{1}\sigma_{11} + w_{2}\sigma_{12} & w_{1}\sigma_{21} + w_{2}\sigma_{22} \\
-		\end{bmatrix}
-	} \\
-	&= \sqrt{
-		w_{1}w_{1}\sigma_{11} + w_{2}w_{1}\sigma_{12} + w_{1}w_{2}\sigma_{21} + w_{2}w_{2}\sigma_{22} }
-	\end{split}
-	\]
-	Now performing for example the derivative with respect to $w_1$ we obtain
-	\[\cfrac{\partial\sigma_p}{\partial w_1} = \cfrac{1}{2}\cdot\cfrac{2\cdot w_1\sigma_{11} + 2\cdot w_{2}\sigma_{21}}{\sigma_p} = \cfrac{w_1\sigma_{11} + w_{2}\sigma_{21}}{\sigma_p} = \cfrac{(\Sigma \mathbf{w})_{1}}{\sigma_p}\]
+\subsubsection{Derivation of $\sigma_i$}
+Expressing explicitly in matrix form the standard deviation of the portfolio we get
+\[
+\begin{split}
+\sigma_p={\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} & =
+\sqrt{
+	\begin{bmatrix}
+	w_{1} \\
+	w_{2}
+	\end{bmatrix}
+	\begin{bmatrix}
+	\sigma_{11} & \sigma_{21} \\
+	\sigma_{12} & \sigma_{22} 
+	\end{bmatrix}
+	\begin{bmatrix}
+	w_{1} & w_{2} \\
+	\end{bmatrix}
+}\\
+&=
+\sqrt{
+	\begin{bmatrix}
+	w_{1} \\
+	w_{2}
+	\end{bmatrix}
+	\begin{bmatrix}
+w_{1}\sigma_{11} + w_{2}\sigma_{12} & w_{1}\sigma_{21} + w_{2}\sigma_{22} \\
+	\end{bmatrix}
+} \\
+&= \sqrt{
+w_{1}w_{1}\sigma_{11} + w_{2}w_{1}\sigma_{12} + w_{1}w_{2}\sigma_{21} + w_{2}w_{2}\sigma_{22} }
+\end{split}
+\]
+Now performing the derivative with respect to $w_1$ we obtain
+\[\cfrac{\partial\sigma_p}{\partial w_1} = \cfrac{1}{2}\cdot\cfrac{2\cdot w_1\sigma_{11} + 2\cdot w_{2}\sigma_{21}}{\sigma_p} = \cfrac{w_1\sigma_{11} + w_{2}\sigma_{21}}{\sigma_p} = \cfrac{(\Sigma \mathbf{w})_{1}}{\sigma_p}\]
 	
-	Summing up $\sum w_i\cdot\cfrac{\partial\sigma_p}{\partial w_i}$ we get back $\sigma_p$
+Summing up $\sum_{i=1}^{N} w_i\cdot\cfrac{\partial\sigma_p}{\partial w_i}$ we get back $\sigma_p$
 \end{attention}
 
 Equal risk contribution then means \(\sigma _{i} =\sigma _{j}\) for all \(i,j\) or equivalently \(\sigma _{i}=\sigma_p/N\). So
 
 \begin{equation}
 \sigma _{i} = \cfrac{\sigma_p}{N}={\cfrac {w_{i}(\Sigma \mathbf{w})_{i}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}}}\implies w_{i} = \frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}
+\label{eq:risk_parity_weights}
 \end{equation}
 Since we want the previous expression to be true for each $i$, the solution for the weights can be found by solving the minimisation problem
 
 \begin{equation} 
 \underset{\mathbf{w}}{\min } \sum _{i=1}^{N}\left[w_{i}-{\frac {\sigma_p^{2}}{(\Sigma \mathbf{w})_{i}N}}\right]^{2} 
 \end{equation}
+\noindent
+where ideally it is required the squared sum of the weights difference to the theoretical values expressed by Eq~\ref{eq:risk_parity_weights} to be 0.
 
 Going back to our data sample let's find out the weights to give us a risk parity portfolio.
 
@@ -617,7 +614,7 @@ Risk contribution for asset 3: 19.992%
 Risk contribution for asset 4: 20.045%
 \end{ioutput}
 
-Figure~\ref{fig:risk_parity} shows the fraction of risk allocated to each asset and the corresponding weight within the portfolio.
+Figure~\ref{fig:risk_parity} shows the fraction of risk allocated to each asset with the corresponding weight within the portfolio.
 
 \begin{figure}[htb]
 	\centering
@@ -629,14 +626,12 @@ Figure~\ref{fig:risk_parity} shows the fraction of risk allocated to each asset 
 \subsection{Risk Budget Allocation}
 \label{risk-budget-allocation}
 
-The same technique can be used if we would like to calculate a portfolio
-with risk budget allocation. In this case we want to associate to each asset a particular level of risk. If we consider the previous equation
+The same technique can be used if we would like to calculate a portfolio with risk budget allocation. In this case we want to associate to each asset a particular level of risk. If we consider the previous equation
 
 \begin{equation} 
 \sigma _{i}=\cfrac{\sigma_p}{N} 
 \end{equation}
-where we set the risk contribution fraction to every asset to \(1/N\);
-now we can simply replace \(1/N\) with the desired fraction of risk (\(f_i\)) for each asset
+where we set every asset risk contribution fraction to \(1/N\); now we can replace \(1/N\) with the desired fraction of risk (\(f_i\)) for each asset
 
 \begin{equation} 
 \sigma _{i}=f_i \cdot \sigma_p 
@@ -698,7 +693,7 @@ Risk contribution for asset 3: 14.993%
 Risk contribution for asset 4: 15.012%
 \end{ioutput}
 
-Figure~\ref{fig:risk_allocation} shows the amount of risk associated to each asset and their weights within the portfolio. 
+Figure~\ref{fig:risk_allocation} shows the amount of risk associated to each asset and its weight within the portfolio. 
 Indeed for each stock we have allocated the desired amount of risk.
 
 \begin{figure}[htb]
@@ -711,7 +706,7 @@ Indeed for each stock we have allocated the desired amount of risk.
 \subsection{Maximum Diversification Portfolio}
 \label{maximum-diversification-portfolio}
 
-Diversification it is most often either pursued in tandem with another objective, such as return maximization, or pursued simply by including more asset classes or adding constraints based on intuition.
+Diversification is most often either pursued in tandem with another objective, such as return maximization, or pursued simply by including more asset classes or adding constraints based on intuition.
 
 But it does not have to be this way and diversification can be pursued explicitly as the sole objective in portfolio construction.
 In a 2008 paper~\cite{bib:diversification}, the diversification ratio $D$ of a portfolio has been defined as
@@ -719,7 +714,7 @@ In a 2008 paper~\cite{bib:diversification}, the diversification ratio $D$ of a p
 \begin{equation}
 D=\cfrac{\mathbf{w^T}\boldsymbol{\sigma}}{\sqrt {\mathbf{w^T}\Sigma \mathbf{w}}} 
 \end{equation}
-where $\boldsymbol{\sigma}$ is the vector of volatilities and $\Sigma$ is the covariance matrix. The denominator represents the volatility of the portfolio and the numerator the weighted average volatility of the assets. More diversification within a portfolio decreases the denominator and leads to a higher diversification ratio.
+where $\boldsymbol{\sigma}$ is the vector of volatilities and $\Sigma$ is the covariance matrix. The denominator represents the portfolio volatility and the numerator the weighted average volatility of the assets. More diversification within a portfolio decreases the denominator and leads to a higher diversification ratio.
 Let's construct a portfolio that maximize this ratio.
 
 \begin{ipython}
@@ -775,8 +770,6 @@ Figure~\ref{fig:max_div} shows how the maximum diversified portfolio compares to
 \label{sec:capm}
 The Capital Asset Pricing Model (CAPM) describes the relationship between expected return of assets and \emph{systematic risk} of the market.
 
-Indeed we can divide a security’s total risk into \emph{unsystematic}, the risk portion peculiar to the company that can be diversified away, and systematic, the nondiversifiable portion that is related to the movement of the stock market and is therefore unavoidable. 
-
 The assumption of CAPM is that investors are risk averse and want to maximize return. This notion implies that investors demand compensation for taking on risk, which in the financial market means that higher-risk securities are priced to yield higher expected returns than lower-risk securities. 
 
 CAPM states that the expected return of an asset is equal to the risk-free return plus a risk premium. 
@@ -802,7 +795,15 @@ Given two sets of measurements $X$ and $y$ the linear regression determines the 
 	y=\beta X + \alpha
 \end{equation}
 by minimizing the sum of the squared differences between the predicted and true $y$ values.
-Figure~\ref{fig:linear_regression} shows an example of regression. 
+Figure~\ref{fig:linear_regression} shows an example of regression.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/linear_regression}
+	\caption{Example of linear regression for the determination of $\beta$.}
+	\label{fig:linear_regression}
+\end{figure}
+ 
 In our case the regressed line estimates the stock returns given the global market returns and in particular 
 
 \begin{equation}
@@ -813,17 +814,10 @@ In CAPM $\beta$ calculation is used to help investors understand whether a stock
 
 If $\beta$ of an individual stock = 1.0, means its price is perfectly correlated with the market, if $\beta < 1.0$, which is referred to as "defensive", indicates the security is theoretically less volatile than the market (provides lower returns, so it is less risky), while if $\beta > 1.0$, or "aggressive", indicates the assets price is more volatile than the market.
 
-Those who use CAPM pick individual stocks or portfolios, and compare them to different indexes. The point is to find stocks that have high $\beta$, and portfolios that have high $\alpha$. High $\beta$ values mean that the stock fares better than index with positive market and performs worse for negative market (contrary low $\beta$ gives lower performance for positive market and "better" returns in negative market), so those stocks have a chance at beating the market. $\alpha$ values above zero mean that your portfolio outperform market whatever it does.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/linear_regression}
-	\caption{Example of linear regression for the determination of $\beta$.}
-	\label{fig:linear_regression}
-\end{figure}
+Those who use CAPM pick individual stocks or portfolios, and compare them to different indexes. The point is to find stocks that have high $\beta$, and portfolios that have high $\alpha$. High $\beta$ values mean that the stock fares better than index with positive market and performs worse for negative market (contrary low $\beta$ gives lower performance for positive market and "better" returns in negative market), so those stocks have a chance at beating the market. $\alpha$ values above zero mean that a portfolio outperforms the market whatever it does.
 
 The relationship between risk and expected return is called the \emph{security market line} (SML). An example of this line is shown in Fig.~\ref{fig:sml}. %As indicated before, the expected return on a security generally equals the risk-free rate plus a risk premium. 
-In CAPM the risk premium is measured as $\beta$ times the expected return on the market minus the risk-free rate. No measure of unsystematic risk appears in the risk premium, of course, for in the world of CAPM diversification has already eliminated it.
+In CAPM the risk premium is measured as $\beta$ times the expected return on the market minus the risk-free rate. No measure of unsystematic risk appears in the risk premium for in the world of CAPM diversification has already eliminated it.
 
 \begin{figure}[htb]
 	\centering
@@ -836,17 +830,18 @@ In the freely competitive financial markets described by CAPM, no security can s
 
 \subsection{Calculate $\beta$ and CAPM for a Stock}
 
-In the following examples historical series of SP500 and some securities are used. They can be gathered with \texttt{ffn}
+In the following examples historical series of SP500 and some securities are used. They can be gathered with \texttt{yfinance}
 
 \begin{ipython}
 import yfinance as yf
 
-proxy = yf.Tickers(['AAPL', 'AMZN', 'BA', 'GOOG', 'IBM', 'MGM', 'T', 'TSLA', '^GSPC'])['Close']
+proxy = yf.Tickers(['AAPL', 'AMZN', 'BA', 'GOOG', 'IBM', 'MGM', 
+                    'T', 'TSLA', '^GSPC'])['Close']
 capm = ffn.get(start='2014-03-27', end='2018-03-27')
 \end{ipython}
 \noindent
 or downloaded with \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/capm.csv}{capm.csv}.
-After an inspection of data, daily and annualized expected returns can be computed.
+After a quick inspection of data, daily and annualized expected returns can be computed.
 
 \begin{ipython}
 import pandas as pd
@@ -892,8 +887,8 @@ ERs = {}
 for i, k in enumerate(df.columns):
     if k == "gspc":
         continue
-    betas[k], alphas[k] = np.polyfit(daily_returns['GSPC][1:],
-    daily_returns[k][1:], 1)
+    betas[k], alphas[k] = np.polyfit(daily_returns['GSPC'][1:],
+                                     daily_returns[k][1:], 1)
     ERs[k] = rf + (betas[k] * (rm-rf))
 
 for k, v in ERs.items():
@@ -910,17 +905,17 @@ T   :  5.9%
 TSLA: 11.9%
 \end{ioutput}
 
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=.8\textwidth]{figures/capm_fit.png}
-	\caption{Linear regression of market return vs stock return for a set of selected stocks. The fit results are also shown in red and the regression parameters are indicated in the legend.}
-	\label{fig:capm_fit}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{figures/capm_fit.png}
+\caption{Linear regression of market return vs stock return for a set of selected stocks. The fit results are also shown in red and the regression parameters are indicated in the legend.}
+\label{fig:capm_fit}
 \end{figure}
 
 \subsection{Calculate $\beta$ and CAPM for a Portfolio}
 
 Now that we have the $\beta$s of each individual stock we can calculate the CAPM for a portfolio made of the same stocks (we assume equal weights for simplicity).
-It is enough indeed to perform a weighted sum of of the expected return according to the model of each stock.
+It is enough indeed to perform a weighted sum of the expected return according to the model of each stock.
 
 \begin{ipython}
 print ("{:.1f}%".format(sum(ERs.values())*1/len(ERs)))
@@ -945,12 +940,12 @@ Moreover, this is a model from the 1960s. Market dynamics were different back th
 Interesting extension of CAPM involves \emph{Bayesian regression}\cite{bib:bayesian_regression} but it will not be discussed here.
 
 \section{Multifactor Models}
-As discussed in the previous Section the Capital Asset Pricing Model (CAPM) treats the market return as the only factor affecting the return of any asset. Here a common generalization of CAPM to multi-factor models of the following form:
+As discussed in the previous Section the Capital Asset Pricing Model (CAPM) treats the market return as the only factor affecting the return of any asset. Here it is described a generalization of CAPM to multi-factor models of the following form:
 
 \begin{equation}
 r=\alpha + \beta_1 f_1 + \beta_2 f_2 +\ldots + \beta_n f_n
 \end{equation}
-where each $f_i$ is a factor, is described.
+where each $f_i$ is a \emph{factor}.
 
 \subsection{Fama-French Three-Factor Model}
 ﻿
@@ -976,12 +971,10 @@ Finally, momentum is another commonly used factor. It captures excess returns of
 
 The application of such models goes along the lines of the CAPM with the only difference being the calculation of a multidimensional regression.
 
-\section{Portfolio Optimization and PCA}
+\section{PCA1 Portfolio}
 \label{portfolio-optimization-and-pca}
 
-In Section~\ref{sec:pca} the Principal Component Analysis (PCA) has been introduced and here a couple of its application to will be described.
-
-In the first example we are going to apply PCA on equity return covariance matrix to construct principal component portfolios because they have some interesting characteristics. This means that the portfolio weights will be based on the eigenvectors of the covariance matrix.
+In Section~\ref{sec:pca} the Principal Component Analysis (PCA) has been introduced and here we are going to apply PCA on equity return covariance matrix to construct principal component portfolios because they have some interesting characteristics. This means that the portfolio weights will be based on the eigenvectors of the covariance matrix.
 
 From the theory we know that the first principal component (PC1) is a factor that captures the maximal amount of variance (i.e. the linear combination of assets that has highest possible variance). The second principal component factor (PC2) is the second most variable portfolio that is orthogonal to the first and so on.
 
@@ -999,7 +992,8 @@ tickers = ["BA","CAT","CVX","CSCO","KO",
            "V","WBA", "WMT", "^DJI"]
 
 proxy = yf.Tickers(tickers)           
-df = proxy.history(start='2014-03-27', end='2021-03-31')['Close'].pct_change().dropna()
+df = proxy.history(start='2014-03-27',
+                   end='2021-03-31')['Close'].pct_change().dropna()
 \end{ipython}
 	
 Since the package returns already daily returns we can directly compute the covariance matrix from them. Also we determine eigenvalues and eigenvectors of this matrix.
@@ -1069,85 +1063,6 @@ From Fig.~\ref{fig:ret_pc1} to~\ref{fig:ret_pc3} it is clear how the PC1 portfol
 \end{figure}
 
 It can be verified that PC1 portfolio still looks like the market also for other time horizon, repeating the same steps using weekly or monthly data.
-
-\subsection{Impact of Covid19}
-Using a similar approach it can be assessed the impact of the Covid19 pandemic on different stocks, clustering together assets that were most/least affected without any prior knowledge of their fundamental.
-This analysis involves the same data used before in the time period between $1^{st}$ of January 2020 and $16^{th}$ of August 2020.
-The analysis goes along the lines of the previous one
-\begin{ipython}
-import yfinance as yf
-tickers = ["BA","CAT","CVX","CSCO","KO",
-           "DOW","XOM","GS","HD","INTC","IBM",
-           "JNJ","JPM","MCD","MRK","MSFT","NKE",
-           "PFE","PG","RTX","TRV","UNH","VZ",
-           "V","WBA", "WMT", "^DJI"]
-
-proxy = yf.Tickers(tickers)           
-df = proxy.history(start='2020-01-02', end='2020-08-16')['Close'].pct_change().dropna()
-\end{ipython}
-\begin{ioutput}
-[*********************100%***********************]  27 of 27 completed
-\end{ioutput}
-
-After downloading data the PCA analysis is performed
-\begin{ipython}
-import numpy as np
-
-equities = df.iloc[:, :-1]
-cov = equities.cov()
-eigVals, eigVecs = np.linalg.eig(cov)
-\end{ipython}
-
-Let's look at the first principal component and select the corresponding stocks that have the best and the worst PCA weights, as shown in Fig.~\ref{fig:pca_covid_neg}.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=.7\textwidth]{figures/pc1_weights_covid}
-	\caption{Ten most negative (top) and least negative (bottom) weights of the PC1 portfolio.}
-	\label{fig:pca_covid_neg}
-\end{figure}
-
-Notice from Figure~\ref{fig:pca_covid_neg} how the most negative stocks are Boing and Chevron, connected to travel and energy sector. This makes sense since Covid19 heavily impacted the traveling business, as well as the energy companies that provide fuels for those business. On the other hand, the least impacted companies are Verizon, Wallmart, Pfizer and Johnson \& Johnson, which belong to sectors boosted during the quarantine measures and the pandemic in general.
-
-In addition we can check the winning portfolio that is long the top 3 companies according to the PCA weights.
-
-\begin{ipython}
-# normalize weights
-norm_eigVecs = abs(eigVecs.T[0])/sum(abs(eigVecs.T[0]))
-
-# market portfolio
-pc_daily_ret = equities.dot(norm_eigVecs)
-pc_cum_ret = pc_daily_ret.cumsum()
-
-# worst portfolio
-worst_idx = np.argsort(eigVecs.T[0])[:3]
-eq_worst = equities.iloc[:, worst_idx]
-worst_eigv = norm_eigVecs[worst_idx]
-worst_ret = eq_worst.dot(worst_eigv).cumsum()
-print ("Worst :", df.columns[worst_idx])
-                 
-# best portfolio         
-best_idx = np.argsort(eigVecs.T[0])[-3:]
-eq_best = equities.iloc[:, best_idx]
-best_eigv = norm_eigVecs[best_idx]
-best_ret = eq_best.dot(best_eigv).cumsum()
-print ("Best :", df.columns[best_idx])
-\end{ipython}
-\begin{ioutput}
-Worst : Index(['BA', 'CVX', 'DOW'], dtype='object')
-Best : Index(['JNJ', 'VZ', 'WMT'], dtype='object')
-\end{ioutput}
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=.7\textwidth]{figures/pc1_weights_covid_returns}
-	\caption{Three most negative and least negative weights portfolios compared to the market portfolio.}
-	\label{fig:pca_covid_return}
-\end{figure}
-
-As shown in Figure~\ref{fig:pca_covid_return}, the resulting portfolio would have performed significantly better than the market, since it invested in companies that actually didn't suffer to much from the pandemic. 
- 
-Note that this portfolio is formed with look-ahead bias, indeed portfolio weights are computed using future dates that were not available at the time of market downturn. The PCA used in this way is therefore a backward looking analytics tool.
 
 \section*{Exercises}
 \input{portfolio_ex_text}

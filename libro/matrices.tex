@@ -852,7 +852,8 @@ y
 \end{bmatrix}
 \]
 
-\subsection{Solving Systems of Equations Using Matrix Inverses}\label{solving-systems-of-equations-using-matrix-inverses}
+\subsection{Solving Systems of Equations Using Matrix Inverses}
+\label{solving-systems-of-equations-using-matrix-inverses}
 
 A system of equations can be readily solved using the concepts of the inverse matrix and matrix multiplication.
 Indeed to solve a system $[A]\boldsymbol{x}=[B]$, for $\boldsymbol{x}$, multiply both sides by the inverse of $[A]$
@@ -1269,6 +1270,85 @@ You could keep only this dimension and have a fairly good representation of the 
 		correspond to the first two principal components.}
 	\label{fig:pca_rotated}
 \end{figure}
+
+\subsection{Impact of Covid19}
+Using PCA analysis it can be assessed the impact of the Covid19 pandemic on different stocks, clustering together assets that were most/least affected without any prior knowledge of their fundamental.
+
+In this analysis we are going to use the equities forming the \emph{Dow Jones 30} index, so the first step is to download their returns with \texttt{yfinance} package (the data availability is from March 2019 to today).
+
+\begin{ipython}
+import yfinance as yf
+
+tickers = ["BA","CAT","CVX","CSCO","KO",
+	       "DOW","XOM","GS","HD","INTC","IBM",
+	       "JNJ","JPM","MCD","MRK","MSFT","NKE",
+	       "PFE","PG","RTX","TRV","UNH","VZ",
+	       "V","WBA", "WMT", "^DJI"]
+	
+proxy = yf.Tickers(tickers)           
+df = proxy.history(start='2020-01-02',
+                   end='2020-08-16')['Close'].pct_change().dropna()
+\end{ipython}
+
+After downloading data the PCA analysis is performed
+\begin{ipython}
+import numpy as np
+	
+equities = df.iloc[:, :-1]
+cov = equities.cov()
+eigVals, eigVecs = np.linalg.eig(cov)
+\end{ipython}
+
+Let's look at the first principal component and select the corresponding stocks that have the best and the worst PCA weights, as shown in Fig.~\ref{fig:pca_covid_neg}.
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=.6\textwidth]{figures/pc1_weights_covid}
+\caption{Ten most negative (top) and least negative (bottom) weights of the PC1 portfolio.}
+\label{fig:pca_covid_neg}
+\end{figure}
+
+Notice from Figure~\ref{fig:pca_covid_neg} how the most negative stocks are Boing and Chevron, connected to travel and energy sector. This makes sense since Covid19 heavily impacted the traveling business, as well as the energy companies that provide fuels for those business. On the other hand, the least impacted companies are Verizon, Wallmart, Pfizer and Johnson \& Johnson, which belong to sectors boosted during the quarantine measures and the pandemic in general.
+
+In addition we can check the winning portfolio that is long the top 3 companies according to the PCA weights.
+
+\begin{ipython}
+# normalize weights
+norm_eigVecs = abs(eigVecs.T[0])/sum(abs(eigVecs.T[0]))
+	
+# market portfolio
+pc_daily_ret = equities.dot(norm_eigVecs)
+pc_cum_ret = pc_daily_ret.cumsum()
+	
+# worst portfolio
+worst_idx = np.argsort(eigVecs.T[0])[:3]
+eq_worst = equities.iloc[:, worst_idx]
+worst_eigv = norm_eigVecs[worst_idx]
+worst_ret = eq_worst.dot(worst_eigv).cumsum()
+print ("Worst :", df.columns[worst_idx])
+	
+# best portfolio         
+best_idx = np.argsort(eigVecs.T[0])[-3:]
+eq_best = equities.iloc[:, best_idx]
+best_eigv = norm_eigVecs[best_idx]
+best_ret = eq_best.dot(best_eigv).cumsum()
+print ("Best :", df.columns[best_idx])
+\end{ipython}
+\begin{ioutput}
+Worst : Index(['BA', 'CVX', 'DOW'], dtype='object')
+Best : Index(['JNJ', 'VZ', 'WMT'], dtype='object')
+\end{ioutput}
+
+As shown in Figure~\ref{fig:pca_covid_return}, the resulting portfolio would have performed significantly better than the market, since it invested in companies that actually didn't suffer to much from the pandemic. 
+
+\begin{figure}[bhtp]
+\centering
+\includegraphics[width=.7\textwidth]{figures/pc1_weights_covid_returns}
+\caption{Three most negative and least negative weights portfolios compared to the market portfolio.}
+\label{fig:pca_covid_return}
+\end{figure}
+
+Note that this portfolio is formed with look-ahead bias, indeed portfolio weights are computed using future dates that were not available at the time of market downturn. The PCA used in this way is therefore a backward looking analytics tool.
 
 \section*{Exercises}
 \input{matrices_ex_text}

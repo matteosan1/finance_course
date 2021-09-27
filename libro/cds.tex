@@ -2,44 +2,41 @@
 
 \section{Credit curves}\label{credit-curves}
 
-Just like a discount curve is a way of representing the underlying interest rates implicit in the market quotes of a collection of real-world interest rate products, \textbf{credit curves} are a way of representing survival probabilities implied by credit default swaps.
+Just like a discount curve is a way of representing the underlying interest rates implicit in the market quotes of a collection of interest rate products, \textbf{credit curves} are a way of representing survival probabilities implied by credit default swaps.
 
-In fact \textbf{Credit default swaps} (\textbf{CDS}) are instruments whose value depends on the likelihood that a given company (the curve's \textbf{issuer}) will suffer a credit event over a given period.
+In fact \textbf{Credit Default Swaps} (\textbf{CDS}) are instruments whose value depends on the likelihood that a given company (the curve's \textbf{issuer}) will suffer a credit event over a given period.
 
 A \textbf{credit event} can be a default, the failure to make payments, the issuer entering into bankruptcy proceedings, or the occurrence of other legal events. The exact definition of what constitutes a credit event depends on a series of factors and is usually defined in some kind of ISDA (International Swaps and Derivatives Association) master agreement.
 
-In any case, we will generically call a credit event a \emph{default}, and talk about \textbf{non-default probabilities} (\textbf{NDP}, or survival probability), i.e.~the probability that the issuer will not suffer a credit event \textbf{before} a given value date (i.e. non-default probability is a cumulative probability).
+In any case, we will generically call a credit event a \emph{default}, and talk about \textbf{non-default probabilities} (\textbf{NDP}, or survival probability) as the probability that the issuer will not suffer a credit event \textbf{before} a given value date (i.e. non-default probability is a cumulative probability).
 
 NDPs are the equivalent for credit curves of discount factors for discount curves. Just like discount curves, credit curves are built by specifying an observation date, a sequence of pillar dates and a sequence of NDPs. 
 
-Finally the \textbf{hazard rate} is the credit curve equivalent of the short rate or overnight rate for discount curves. It represents the instantaneous probability of the issuer defaulting conditioned on it not having defaulted until that moment (in practice we'll calculate it numerically, and therefore it'll be the, \emph{annualized}, conditional probability of the issuer defaulting between the value date and the day after).
-
-Table~\ref{tab:discount_vs_credit} reports the analogies between discount and credit curve.
-
-\begin{table}[hb]
-\begin{center}
-  \begin{tabular}{|| c | c ||}
-    \hline\hline
-    Discount Curve & Credit Curve \\
-    \hline \hline
-    \begin{tabular}{@{}c@{}}underlying rates implicit in \\ market quotes of IR products\end{tabular} &
-    \begin{tabular}{@{}c@{}}default probabilities implied \\ by credit default swaps \end{tabular} \\
-    \hline
-    discount factors & non-default probabilities \\
-    \hline
-    short rate & hazard rate \\
-    \hline\hline  
-  \end{tabular}
-\end{center}
-\caption{List of analogies between discount and credit curves.}
-\label{tab:discount_vs_credit}
-\end{table}
-
-%N.B. the short rate, $r_t$, is the interest rate at which an entity can borrow money for an infinitesimally short period of time from time $t$.
+%Table~\ref{tab:discount_vs_credit} reports the analogies between discount and credit curves.
+%
+%\begin{table}[hb]
+%\begin{center}
+%  \begin{tabular}{|| c | c ||}
+%    \hline\hline
+%    Discount Curve & Credit Curve \\
+%    \hline \hline
+%    \begin{tabular}{@{}c@{}}underlying rates implicit in \\ market quotes of IR products\end{tabular} &
+%    \begin{tabular}{@{}c@{}}default probabilities implied \\ by credit default swaps \end{tabular} \\
+%    \hline
+%    discount factors & non-default probabilities \\
+%    \hline
+%    short rate & hazard rate \\
+%    \hline\hline  
+%  \end{tabular}
+%\end{center}
+%\caption{List of analogies between discount and credit curves.}
+%\label{tab:discount_vs_credit}
+%\end{table}
 
 \subsection{Hazard Rate}\label{hazard-rate}
 
-Hazard rate is often called a \emph{conditional failure rate} since its expression is a direct application of the conditional probability concept.
+The \textbf{hazard rate} is the credit curve equivalent of the short rate for discount curves (the short rate, $r_t$, is the interest rate at which an entity can borrow money for an infinitesimally short period of time from time $t$). It represents the instantaneous probability of the issuer defaulting conditioned on it not having defaulted until that moment. 
+Indeed it is often called a \emph{conditional failure rate} since its expression is a direct application of the conditional probability concept.
 
 Conditional probability answers to the question "how should you update the probability of an event when there is additional information available ?". To derive the general formula let's start with an example.
 
@@ -75,21 +72,23 @@ Going back to the hazard rate ($\lambda$) we can now compute the instantaneous d
 
 %\[\lambda(t) = \cfrac{\mathbb{P}(A\cap B)}{\mathbb{P}(B)} = \cfrac{\cfrac{DP(\tau\in (t, t+dt))}{dt}}{DP(\tau>t)} = \cfrac{\cfrac{d[1-N(t_0, t)]}{dt}}{N(t_0, t)} = -\cfrac{dN(t_0, t)}{dt}\cdot\frac{1}{N(t_0, t)}\]
 \begin{equation}
-\lambda(t) = \cfrac{P(A\cap B)}{P(B)} = \cfrac{\cfrac{DP(t, t+dt)}{dt}}{DP(t, +\infty)} = \cfrac{\cfrac{d[1-N(t_0, t)]}{dt}}{N(t_0, t)} = -\cfrac{dN(t_0, t)}{dt}\cdot\frac{1}{N(t_0, t)}
+\lambda(t) = \cfrac{\cfrac{P(A\cap B)}{dt}}{P(B)} = \cfrac{\cfrac{DP(t, t+dt)}{dt}}{DP(t, +\infty)} = \cfrac{\cfrac{d[1-NDP(t_0, t)]}{dt}}{NDP(t_0, t)} = -\cfrac{dNDP(t_0, t)}{dt}\cdot\frac{1}{NDP(t_0, t)}
 \end{equation}
-where $N$ and $DP$ are survival and default probabilities.
-Also remember that $DP(t_0, t) = 1 - N(t_0, t)$ or that the probability of default at $t$ is equal to 1 minus the non-default probability. Conversely, given the hazard rate, the non-default probability can be determined as:
+where $NDP$ and $DP$ are survival and default probabilities.
+Also remember that $DP(t_0, t) = 1 - NDP(t_0, t)$ or that the probability of default at $t$ is equal to 1 minus the non-default probability. Conversely, given the hazard rate, the NDP can be determined as:
 
 \begin{equation}
 \begin{gathered}
-\lambda(t) = -\cfrac{1}{dt}\cdot\cfrac{dN(t_0, t)}{N(t_0, t)} = -\cfrac{d(\textrm{log}N(t_0, t))}{dt} \implies d(\textrm{log}N(t_0, t)) = -\lambda dt\\
-N(t_0, t) = \mathrm{exp}\left(-\int_{t_0}^{t}\lambda(s) ds\right)
+\lambda(t) = -\cfrac{1}{dt}\cdot\cfrac{dNDP(t_0, t)}{NDP(t_0, t)} = -\cfrac{d(\textrm{log}NDP(t_0, t))}{dt} \implies d(\textrm{log}NDP(t_0, t)) = -\lambda dt\\
+NDP(t_0, t) = \mathrm{exp}\left(-\int_{t_0}^{t}\lambda(s) ds\right)
 \end{gathered}
 \end{equation}
 
+In practice hazard rate will be calculated numerically, and therefore we will consider the \emph{annualized} conditional probability of the issuer defaulting between the value date and the day after.
+
 \subsection{\texttt{CreditCurve} class}
 
-In this Section we develop a \texttt{CreditCurve} class which will be characterized by a list of pillar dates and a corresponding list of non-default probabilities. It has also methods to compute survival probabilities at arbitrary date by interpolation and the hazard rate.
+In this Section we develop a \texttt{CreditCurve} class which will be characterized by a list of pillar dates and a corresponding list of non-default probabilities. It has also methods to compute survival probabilities by interpolation and the hazard rate at arbitrary dates.
   
 \begin{ipython}
 import math
@@ -112,7 +111,11 @@ class CreditCurve:
         h = -1.0 / ndp_1 * (ndp_2 - ndp_1) / delta_t
         return h
 \end{ipython}
-\noindent
+
+\begin{finmarkets}
+Also this class has to be added to the \texttt{finmarkets} module.
+\end{finmarkets}
+
 Let's test the newly created class with some inputs.
 \begin{ipython}
 from datetime import date
@@ -136,7 +139,7 @@ cc.hazard(start_date + relativedelta(years=1))
             
 \section{Credit Default Swaps}\label{credit-deafult-swaps}
 
-Once we have implemented a \texttt{CreditCurve} class which allows us to interpolate survival probabilities and also to calculate the hazard rate at arbitrary dates, we can use it to price \textbf{Credit Default Swaps} (CDSs).
+Once we have implemented a \texttt{CreditCurve} class which allows to interpolate survival probabilities and also to calculate the hazard rate at arbitrary dates, we can use it to price \textbf{Credit Default Swaps} (CDSs).
 
 A Credit Default Swap is a financial agreement that the seller of the CDS will compensate the buyer in the event of a debt default or other credit event. 
 That is, the seller of the CDS insures the buyer against some reference asset defaulting. The buyer of the CDS makes a series of payments (the CDS \emph{spread}) to the seller and, in exchange, may expect to receive a payoff if the asset defaults.
@@ -171,7 +174,7 @@ In the valuation of the premium leg, we'll use the following notation:
 \item
   \(D(d')\) the discount factor between \(d\) and \(d'\);
 \item
-  \(N(d, d')\) the survival probability between \(d\) and \(d'\);
+  \(NDP(d, d')\) the survival probability between \(d\) and \(d'\);
 \item
   \(\tau\) the \emph{random variable} representing the date of the credit event.
 \end{itemize}
@@ -181,14 +184,14 @@ At each payment date \(d_i\), a cash flow of \(F\cdot S\) is paid if and only if
 \begin{equation}
 f_{\textrm{premium}}^i = \mathbb{E}\left[F\times S \times D(d_i) \times \mathbb{1}(\tau > d_i) \right]
 \end{equation}
-where \(\mathbb{1}(\tau > d_i)\) means that the expectation value has to be evaluated when \(\tau > d_i\). 
+where the indicator function \(\mathbb{1}(\tau > d_i)\) means that the expectation value has to be evaluated when \(\tau > d_i\). 
 
 Since the NPV depends on the random variable $\tau$, the estimate of its value needs to be done through an expectation.
-Remembering the definition of expected value~\ref{sec:expected-value}, we can interpret 
-\(F\cdot S\cdot D(d_i)\) as the variables and \(N(d, d_i)\) as the probabilities so the premium leg NPV can be expressed as:
+Remembering the definition of expected value (see Section~\ref{sec:expected-value}), we can interpret 
+\(F\cdot S\cdot D(d_i)\) as the variables and \(NDP(d, d_i)\) as the probabilities so the premium leg NPV can be expressed as:
 
 \begin{equation}
-	\textrm{NPV}_{premium} = F\cdot S \cdot \sum_{i=1}^{n} D(d_i) \cdot N(d, d_i)
+	\textrm{NPV}_{premium} = F\cdot S \cdot \sum_{i=1}^{n} D(d_i) \cdot NDP(d, d_i)
 \end{equation}
 
 \subsubsection{Default leg}\label{default-leg}
@@ -208,17 +211,17 @@ Using the law of total probability, we can break the previous expression down in
 \mathrm{NPV_{default}} &= \mathbb{E}[F(1-R) \times D(\tau) \times \mathbb{1}\{\tau \leq d_n\} ] \\
 &= \sum_{d'=d_0}^{d_n} F(1-R) \cdot D(\tau = d') DP(d, \tau = d') \\
 &= F(1-R) \sum_{d'=d_0}^{d_n} D(d') \left(DP(\tau \geq d') - DP( \tau \geq d'+1) \right) \\
-&= F(1-R) \sum_{d'=d_0}^{d_n} D(d') \left( N(d, d') - N(d, d'+1) \right)
+&= F(1-R) \sum_{d'=d_0}^{d_n} D(d') \left( NDP(d, d') - NDP(d, d'+1) \right)
 \end{split}
 \end{align}
-where the last step holds since $DP(\tau\geq d') = 1 - DP(\tau < d') = 1 - (1-N(d, d')) = N(d, d')$. 
+where the last step holds since $DP(\tau\geq d') = 1 - DP(\tau < d') = 1 - (1-NDP(d, d')) = NDP(d, d')$. 
 Figure~\ref{fig:default_p} illustrates the steps to convert the daily default probability $DP(\tau=d')$.
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/timeline.png}
-	\caption{The probability that a default occurs at a time $\tau = d'+\Delta t$ is equivalent to the default probability at $\tau > d'$ minus the default probability at $\tau>d'+\Delta t$.}
-	\label{fig:default_p}
+\centering
+\includegraphics[width=0.7\textwidth]{figures/timeline.png}
+\caption{The probability that a default occurs at a time $\tau = d'+\Delta t$ is equivalent to the default probability at $\tau > d'$ minus the default probability at $\tau>d'+\Delta t$.}
+\label{fig:default_p}
 \end{figure}
 
 \subsection{\texttt{CreditDefaultSwap} Class}
@@ -301,7 +304,7 @@ cds.npv(dc, credit_curve)
 \end{ioutput}
 	
 \subsection{Break-even Spread}
-The break-even spread of a credit default swap is the value of the fixed rate paid in the premium leg that makes the CDS net present value 0.
+The break-even spread of a credit default swap is the value of the fixed rate paid in the premium leg that makes the CDS net present value equal to 0.
 
 In this Section a new method to compute the break-even spread of a CDS will be added to the \texttt{CreditDefaultSwap} class.
 
@@ -329,15 +332,15 @@ def breakevenRate(self, discount_curve, credit_curve):
 
 A credit rating is a quantified assessment of the creditworthiness of a borrower either in general terms or with respect to a particular debt or financial obligation. A credit rating can be assigned to any entity that seeks to borrow money (e.g. an individual, corporation, state or provincial authority, or sovereign government).
 
-A loan is a essentially a promise and the credit rating determines the likelihood that the borrower will be able to pay back it within the loan agreement terms. A high credit rating indicates a high possibility of paying back the loan in its entirety without any issues; a poor credit rating suggests that the borrower has had trouble paying back loans in the past and might follow the same pattern in the future.
+A loan is a essentially a promise and the credit rating determines the likelihood that the borrower will be able to pay back it within the loan agreement terms. A high credit rating indicates a high possibility of paying back the loan in its entirety without any issue; a poor credit rating suggests that the borrower has had trouble paying back loans in the past and might follow the same pattern in the future.
 
 Individual credit is scored from credit bureaus (e.g. Experian and TransUnion) and it is reported as a number, generally ranging from 300 to 850.
 
-Credit assessment and evaluation for companies and governments instead is generally done by credit rating agencies (e.g. Standard \& Poor's (S\&P), Moody's, or Fitch), which typically assign letter grades to indicate ratings. Standard \& Poor's, for instance, has a credit rating scale ranging from AAA (excellent) to C and D. A debt  instrument with a rating below BB is considered to be a speculative grade or a junk bond, which means it is more likely to default on loans.
+Credit assessment and evaluation for companies and governments instead is generally done by credit rating agencies (e.g. Standard \& Poor's (S\&P), Moody's, or Fitch), which typically assign letter grades to indicate ratings. Standard \& Poor's, for instance, has a credit rating scale ranging from AAA (excellent) to C and D. A debt instrument with a rating below BB is considered to be a speculative grade or a junk bond, which means it is more likely to default on loans.
 
 \subsection{Why Credit Ratings Are Important}\label{why-credit-ratings-are-important}
 
-A borrowing entity will strive to have the highest possible credit rating since it has a major impact on interest rates charged by lenders. Rating agencies, on the other hand, must take a balanced and objective view of the borrower's financial situation and capacity to service/repay the debt.
+A borrowing entity will strive to have the highest possible credit rating since it has a major impact on interest rates charged by lenders. Rating agencies, on the other hand, must take a balanced and objective view of the borrower's financial situation and capacity to repay the debt.
 
 A credit rating not only determines whether or not a borrower will be approved for a loan but also determines the interest rate at which the loan will need to be repaid. Since companies depend on loans for many expenses, being denied a loan could spell disaster, and in any case a high interest rate is much more difficult to pay back.
 Credit ratings also play a large role in a potential investor's determining whether or not to purchase bonds. A poor credit rating is a risky investment; it indicates a larger probability that the company will be unable to make its bond payments.
@@ -354,9 +357,9 @@ The price of a bond issued by a party is directly linked to the credit rating of
 
 Bonds with low ratings, called junk bonds, are sold at lower prices (since riskier) while those with higher ratings, called investment-grade bonds, are sold at higher prices.
 
-Let's see with an example how the default probability can be determined from bond prices. Imagine to have a bond and let \(x\) represent the present value of a bond cash flow stream. To valuate the bond when a default probability is associated to the issuer it is necessary to take each possible value of $x$ (the value of the bond), multiply it by its default probability and sum the results.  In other words the value of the bond should equal the mathematical expectation~\ref{sec:expected-value} of $x$.
+Let's see with an example how the default probability can be determined from bond prices. Imagine to have a bond and let \(x\) represent the present value of its cash flow stream. To valuate the bond when a default probability is associated to the issuer it is necessary to take each possible value of $x$ (the value of the bond), multiply it by the corresponding default probability and sum the results.  In other words the value of the bond should equal the mathematical expectation (see Section~\ref{sec:expected-value}) of $x$.
 
-Consider a bond which pays $F$ at maturity and that the issuer of this bond has a default probability $P$ (the recovery is $R$).What will be the price of this bond ?
+Consider a bond which pays $F$ at maturity and that the issuer of this bond has a default probability $P$ (the recovery is $R$). What will be the price of this bond ?
 
 \begin{equation}
 V_{bond} =
@@ -370,8 +373,9 @@ know if the issuer will default or not we can estimate the bond price as
 \begin{equation}
 V_{bond} = D \cdot R \cdot F \cdot DP ( \tau ) + D \cdot F \cdot ( 1 − DP ( \tau)) = D\cdot F \cdot ( 1 − ( 1 − R ) DP ( \tau ))
 \end{equation}
-
-From the this equation is clear that the higher the default probability the lower the bond price. Conversely, given the market price of the bond we can estimate the issuer default probability.
+\noindent
+where $\tau$ represent the maturity date of the bond.
+From the this equation is clear that the higher the default probability the lower the bond price. Conversely, given the market price of the bond ($V_{bond}$) we can estimate the issuer default probability.
 
 %The probability of a company default can be estimated directly from
 %the prices of its issued bonds. Imagine that the spread $s$
@@ -481,7 +485,8 @@ P-default before next coupon: 4.7\%
 \end{ioutput}
 \end{attention}
 
-\subsection{Implied Probability of Default from CDS}\label{default-probabilities-and-cds}
+\subsection{Implied Probability of Default from CDS}
+\label{default-probabilities-and-cds}
 
 In order to derive default probabilities from credit default swap market quotes we can exploit the \emph{bootstrap technique}. If we consider again the parallelism between discount and credit curves indeed we can follow the same steps applied in Chapter~\ref{sec:swaps-and-bootstrapping} when deriving the discount factors from overnight index swaps.
 
@@ -489,13 +494,13 @@ Let's summarize the procedure:
 \begin{itemize}
 \tightlist
 \item create a CDS contracts for each available market quote;
-\item implement an objective function to minimize the squared sum of the CDS NPVs, the function has to implement also a \texttt{CreditCurve} with the unknown (to be determined survival probabilities) and a list of pillars corresponding to the CDS expiry dates;
+\item implement an objective function to minimize the squared sum of the CDS NPVs, the function has to implement also a \texttt{CreditCurve} with the unknown (to be determined) survival probabilities and a list of pillars corresponding to the CDS expiry dates;
 \item set initial guesses and boundary conditions for the unknown parameters (the first survival probability has to be set to 1 since no default happened !, the others free to move between $[0.01, 1]$ because they are probabilities);
 \item using the \texttt{scipy.optimize.minimize} to find the curve.
 \end{itemize}
 
-As it is clear those are almost exactly the same steps already seen for the discount factors. We will now implement again the bootstrapping from the market quotes saved in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/cds_quotes.xlsx}{cds\_quotes.xlsx} and for the discount curve \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/discount_curve_ch_10.xlsx}{discount\_curve\_ch10.xlsx}.
-So first load the market data and create a discount curve and the swaps with it.
+As it is clear those are almost exactly the same steps already seen for the discount factors. We will now implement the code to apply bootstrapping to the market quotes saved in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/cds_quotes.xlsx}{cds\_quotes.xlsx} and for the discount curve \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/discount_curve_ch_10.xlsx}{discount\_curve\_ch10.xlsx}.
+So first load market data and create a discount curve and the swaps.
 
 \begin{ipython}
 import pandas as pd
@@ -516,7 +521,7 @@ for i in range(len(mq)):
     cdswaps.append(cds)
     pillar_dates.append(cds.payment_dates[-1])
 \end{ipython}
-
+\noindent
 Then the objective function:
 \begin{ipython}
 import numpy as np
@@ -529,13 +534,13 @@ def objective_function(unknown_ndps):
         sum_sq += cds.npv(discount_curve, credit_curve)**2
     return sum_sq
 \end{ipython}
-
+\noindent
 The guess values and the boundaries
 \begin{ipython}
 ndp_guess = [0.01 for _ in range(len(pillar_dates)-1)]
 bounds = [(0.01, 1) for _ in range(len(pillar_dates)-1)]
 \end{ipython}
-
+\noindent
 And finally we can run the minimizer
 \begin{ipython}
 from scipy.optimize import minimize
