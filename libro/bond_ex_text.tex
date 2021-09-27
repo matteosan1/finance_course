@@ -1,110 +1,149 @@
-%\begin{question}
-%Consider two 5\% coupon paying bonds (par value of \euro{100}) with the clean market prices of \euro{99.50} and \euro{98.30} and having maturities of 6 months and 1 year respectively.
-%Determine the spot rate for the 6-month and 1-year bond.  
-%\end{question}
-%
-%\begin{solution}
-%At the end of 6 months the first bond will pay a coupon of \euro{2.5} (= \euro{100} * 5\%/ 2) plus the principal amount (= €100) which sums up to 102.50. To
-%determine the 6M spot rate we can write the following equation, :
-%
-%\[ \cfrac{102.5}{(1 + S_{6M}/2)} = 99.5\qquad\Rightarrow\qquad S_{6M} = 2 \cdot \Big( \cfrac{102.5}{99.5} - 1 \Big) =  6.03 \%\]
-%
-%At the end of another 6 months the second bond will pay a coupon of €2.5
-%(= €100 * 5\% / 2) plus the principal amount (= €100) which sums up to
-%€102.50. The bond is trading at €98.30, therefore, the 1-year spot rate
-%\(S_{1y}\) can be calculated using \(S_{6M}\) as,
-%
-%\[ \cfrac{2.5}{(1+S_{6M}/2)} + \cfrac{102.5}{(1 + S_{1y}/2)^{2}} = 98.30 \]
-%
-%\[ \cfrac{102.5}{(1 + S_{1y}/2)^{2}} = 98.30 - \cfrac{2.5}{(1+0.03015)} \]
-%
-%\[ (2 + S_{1y})^{2} = \cfrac{4\cdot102.5}{98.87317} = 4.276428 \]
-%
-%\[ S_{1y}^{2} + 4\cdot S_{1y} - 0.276428 = 0 \]
-%
-%\[ S_{1y} = -2 \pm \sqrt{4 + 0.276428} =\begin{cases}\text{\sout{-4.06795}} \\ 6.80\%\end{cases} \]
-%
-%\end{solution}
-%
-%\begin{question}
-%A small petroleum company owns two refineries. Refinery 1 costs \$20,000 per day to operate, and it can produce 400 barrels of high-grade oil, 300 barrels of medium-grade oil, and 200 barrels of low-grade oil each day. Refinery 2 is newer and more modern. It costs \$25,000 per day to operate, and it can produce 300 barrels of high-grade oil, 400 barrels of medium-grade oil, and 500 barrels of low-grade oil each day.
-%The company has orders totaling 25,000 barrels of high-grade oil, 27,000 barrels of medium-grade oil, and 30,000 barrels of low-grade oil. How many days should it run each refinery to minimize its costs and still refine enough oil to meet its orders?
-%
-%\noindent\textbf{Hint:} you need to identify the unknown quantities (working days for each refinery) and set the constraints on the production of barrels. The objective is to minimize the costs. If you have multiple constraints you can define a list of dictionaries (one for constraint). Furthermore in this case the constraint is not \emph{equal to} but rather \emph{greater than} so you have to set \texttt{ineq} type.
-%\end{question}
-%
-%\cprotEnv\begin{solution}
-%Let's implement the usual steps for a minimization. In this case our unknown are \texttt{x[0]} and \texttt{x[1]} the working days for each refinery. Then define the objective function with the production costs and three more functions, one for each oil-grade for the constraints.
-%
-%\begin{ipython}
-%from scipy.optimize import minimize
-%
-%def of(x):
-%    return 20000*x[0] + 25000*x[1]
-%
-%def cons1(x):
-%    return 400*x[0] + 300*x[1] - 25000
-%
-%def cons2(x):
-%    return 300*x[0] + 400*x[1] - 27000
-%
-%def cons3(x):
-%    return 200*x[0] + 500*x[1] - 30000
-%
-%cons = [{"type":"ineq", "fun":cons1},
-%        {"type":"ineq", "fun":cons2},
-%        {"type":"ineq", "fun":cons3}]
-%\end{ipython}
-%Set limits and initial values and run the minimizer.
-%\begin{ipython}
-%x0 = [10, 10]
-%bounds = [(0, 100) for _ in range(len(x0))]
-%r = minimize(of, x0, bounds=bounds, constraints=cons)
-%print (r)
-%\end{ipython}
-%\begin{ioutput}
-%     fun: 1750002.070622686
-%     jac: array([20000., 25000.])
-% message: 'Optimization terminated successfully.'
-%    nfev: 8
-%     nit: 6
-%    njev: 2
-%  status: 0
-% success: True
-%       x: array([25.00004033, 50.00005056])
-%\end{ioutput}    
-%So refinery 1 should work 25 days while refinery 2 50 days to minimize the production costs to 1750000 M (see objective function value in the minimization report).
-%\end{solution}
-%
-%\begin{question}
-%Read the OIS market data from \href{https://github.com/matteosan1/finance_course/blob/develop/libro/input_files/ois_data.xlsx}{\texttt{ois\_data.xlsx}} and, using the \texttt{OvernightIndexSwap} class,construct the corresponding swaps.
-%\end{question}
-%
-%\cprotEnv\begin{solution}
-%
-%\begin{ipython}
-%import pandas, datetime
-%from finmarkets import OvernightIndexSwap, generate_swap_dates
-%
-%observation_date = datetime.date.today()
-%df = pandas.read_excel('ois_data.xlsx')
-%
-%market_quotes = {}
-%for i in range(len(df)):
-%    key = df.loc[i, 'months']
-%    value = df.loc[i, 'quote']
-%    market_quotes[key] = value
-%
-%swaps = []
-%for months, rate in market_quotes.items():
-%    swap = OvernightIndexSwap(1e6,
-%        generate_swap_dates(observation_date, months),
-%        0.01 * rate)
-%
-%swaps.append(swap)
-%\end{ipython}
-%\end{solution}
-%
+\begin{question}
+A Treasury bond has a coupon rate of 9\%, a face value of \$1000 and matures 10 years from today. For a treasury bond the interest on the bond is paid in semi-annual installments. The current riskless interest rate is 12\% (compounded semi-annually).
+\begin{enumerate}
+\item Suppose you purchase the Treasury bond described above and immediately thereafter the riskless interest rate falls to 8\%. (compounded semi-annually). What would be the new market price of the bond?
+\item What is your best estimate of what the price would be if the riskless interest rate was 9\% (compoundedsemi-annually) ?
+\end{enumerate}
+\end{question}
+
+\cprotEnv\begin{solution}
+\begin{ipython}
+import numpy as np
+
+N = 1000
+maturity = 10
+coupon = 0.09
+tenor = 0.5
+rates = {i:0.08 for i in range(1, int((maturity/tenor)+1))}
+
+price = 0
+for tau in range(1, int((maturity/tenor)+1)):
+ 	price += N * coupon*tenor / (1+rates[tau]*tenor)**(tau)
+price += N / (1+rates[tau]*tenor)**(tau) 
+
+print ("{:.2f}".format(price))
+\end{ipython}
+\begin{ioutput}
+1067.95
+\end{ioutput}
+
+\begin{ipython}
+rates = {i:0.09 for i in range(1, int((maturity/tenor)+1))}
+	
+price = 0
+for tau in range(1, int((maturity/tenor)+1)):
+	price += N * coupon*tenor / (1+rates[tau]*tenor)**(tau)
+price += N / (1+rates[tau]*tenor)**(tau) 
+	
+print ("{:.2f}".format(price))
+\end{ipython}
+\begin{ioutput}
+1000.00
+\end{ioutput}
+\end{solution}
+
+\begin{question}
+A \$100, 10 year bond was issued 7 years ago at a 10\% annual interest rate. The current interest rate is 9\%.The current price of the bond is 100.917. Use annual, discrete compounding. Calculate the bonds yield to maturity.
+\end{question}
+
+\cprotEnv\begin{solution}
+\begin{ipython}
+from scipy.optimize import brentq
+
+def ytom(y, N, C, P0, maturity_years, tenor=1): 
+    price = 0
+	for p in range(1, int((maturity_years/tenor)+1)):
+		price += C*tenor*N/(1+y*tenor)**p
+	price += N/(1+y*tenor)**p - P0 
+	return price
+
+print (brentq(ytom, -0.3, 1, args=(100, 0.10, 100.917, 3, 1)))
+\end{ipython}
+\begin{ioutput}
+0.09633636680177858
+\end{ioutput}    
+\end{solution}
+
+\begin{question}
+Suppose you are trying to determine the interest rate sensitivity of two bonds. Bond 1 is a 12\% coupon bond with a 7-year maturity and a \$1000 principal. Bond 2 is a ‘zero-coupon’ bond that pays \$1120 after 7 year.The current interest rate is 12\%.
+\begin{enumerate}
+\item Determine the duration of each bond.
+\item If the interest rate increases 100 basis points (100 basis points = 1\%), what will be the capital loss on each bond ?
+\end{enumerate}
+\end{question}
+
+\cprotEnv\begin{solution}
+The first part of the exercise can be solved by applying the definition of duration.
+\begin{ipython}
+def zero_bond_pv(N, r, maturity):
+	return N / (1+r)**(maturity)
+
+def zero_mac_duration(P0, maturity): 
+	return maturity * P0/P0 
+
+def bond_pv(N, C, r, maturity, tenor=1):
+	price = 0
+	for tau in range(1, int((maturity/tenor)+1)):
+		price += N * C*tenor / (1+r*tenor)**(tau)
+	price += N / (1+r*tenor)**(tau)
+	return price
+
+def mac_duration(N, C, y, maturity, tenor=1): 
+	P0 = bond_pv(N, C, y, maturity, tenor)
+	d=0
+	for tau in range(1, int((maturity/tenor)+1)):
+		d += tau*N*C*tenor/(1+y*tenor)**tau/P0
+	d += tau*N/(1+y*tenor)**tau/P0 
+	return P0, d
+
+P0, dur = mac_duration(1000, 0.12, 0.12, 7)
+print ("Bond price: {:.2f}".format(P0))
+print ("Duration: {:.2f}".format(dur))
+
+PZ = zero_bond_pv(1120, 0.12, 7) 
+print ("Zero Bond price: {:.2f}".format(PZ))
+durZ = zero_mac_duration(PZ, 7)
+print ("Zero Duration: {:.2f}".format(durZ))
+\end{ipython}
+\begin{ioutput}
+Bond price: 1000.00
+Duration: 5.11
+Zero Bond price: 506.63
+Zero Duration: 7.00
+\end{ioutput}
+
+For the second part the exact capital losses can be obtained by re-computing the bond prices with the new rate.
+
+\begin{ipython}
+P1 = bond_pv(1000, 0.12, 0.13, 7)
+print ("Bond price: {:.2f}".format(P1))
+print ("Capital loss Bond: {:.3f}%".format(100*(P1-P0)/P0))
+
+PZ1 = zero_bond_pv(1120, 0.13, 7) 
+print ("Bond price: {:.2f}".format(PZ1))
+print ("Capital loss Zero Bond: {:.3f}%".format(100*(PZ1-PZ)/PZ))
+\end{ipython}
+\begin{ioutput}
+Bond price: 955.77
+Capital loss Bond: -4.423%
+Bond price: 476.07
+Capital loss Zero Bond: -6.033%
+\end{ioutput}
+
+An approximate solution instead can be estimated by applying the relation $\Delta P/P = -D\Delta r$.
+\begin{ipython}
+closs1 = -dur*0.01
+print ("Capital loss1: {:.3f}%".format(closs1*100))
+
+closs2 = -durZ*0.01
+print ("Capital loss1: {:.3f}%".format(closs2*100))
+\end{ipython}
+\begin{ioutput}
+Capital loss1: -5.111%
+Capital loss1: -7.000%
+\end{ioutput}
+\end{solution}
+
 %\begin{question}
 %From the \texttt{OvernightIndexSwap} created in the previous example derive a discount curve using the bootstrap method.
 %\end{question}
