@@ -349,13 +349,12 @@ Furthermore we also attempted a simple optimization of the code: in the construc
 
 \begin{ipython}
 import math
-import numpy
+import numpy as np
 from datetime import date
 
 class DiscountCurve:
-    def __init__(self, today, pillar_dates, discount_factors):
-        self.today = today
-        self.pillar_dates = pillar_dates
+    def __init__(self, pillar_dates, discount_factors):
+        self.today = pillar?dates[0]
         self.discount_factors = discount_factors
         self.log_dfs = [math.log(discount_factor) \
             for discount_factor in self.discount_factors]
@@ -365,7 +364,7 @@ class DiscountCurve:
     def df(self, d):
         d_days = (d - self.today).days
         interp_log_df = \
-            numpy.interp(d_days, self.pillar_days, self.log_dfs)
+            np.interp(d_days, self.pillar_days, self.log_dfs)
         return math.exp(interp_log_df)
 \end{ipython}
 
@@ -380,19 +379,21 @@ from datetime import date
 from finmarkets import DiscountCurve
 
 today_date = date(2019, 10, 1)
-pillar_dates = [date(2019, 10, 1), date(2020, 10, 1), date(2021, 10, 1)]
+pillar_dates = [today_date, date(2020, 10, 1), date(2021, 10, 1)]
 discount_factors = [1.0, 0.97, 0.72]
-curve = DiscountCurve(today_date, pillar_dates, discount_factors)
+curve = DiscountCurve(pillar_dates, discount_factors)
+
 d0 = date(2020, 1, 1)
-df0 = curve.df(d0, today_date, pillar_dates, discount_factors)
+df0 = curve.df(d0)
 print (df0)
 \end{ipython}
 \begin{ioutput}
 0.9923728228571693
 \end{ioutput}
+
 \begin{ipython}
 d1 = date(2021, 1, 1)
-df1 = curve.df(d1, today_date, pillar_dates, discount_factors)
+df1 = curve.df(d1)
 print (df1)
 \end{ipython}
 \begin{ioutput}
@@ -481,30 +482,23 @@ We now write a \texttt{ForwardRateCurve} class which, given a set of spot rates,
 \end{finmarkets}
 
 \begin{ipython}
-import numpy
+import numpy as np
 from math import log
 
 class ForwardRateCurve:
-    def __init__(self, today, pillar_dates, rates):
-        self.today = today
-        self.pillar_dates = pillar_dates
+    def __init__(self, pillars, rates):
+        self.start_date = pillars[0]
+        self.pillar_days = [(p-pillars[0]).days/365 for p in pillars]
         self.rates = rates
 
-        self.pillar_days = [(pillar_date - self.today).days
-            for pillar_date in self.pillar_dates]        
-
     def interp_rate(self, d):
-        d_days = (d - self.today).days
-        interpolated_rate = numpy.interp(d_days, self.pillar_days, self.rates)
-        return interpolated_rate, d_days/365
+        d_frac = (d-self.start_date).days/365
+        return d_frac, np.interp(d_frac, self.pillar_days, self.rates)
 
     def forward_rate(self, d1, d2):
-        if d1 == d2:
-            return self.interp_rate(d1)[0]
-        else:
-            r1, d1_days = self.interp_rate(d1)
-            r2, d2_days = self.interp_rate(d2)
-            return ((1+r2*d2_days)/(1+r1*d1_days)-1) / (d2_days - d1_days)
+        d1_frac, r1 = self.interp_rate(d1)
+        d2_frac, r2 = self.interp_rate(d2)
+        return ((1 + r2)**d2_frac / (1 + r1)**d1_frac)*(1/(d2_frac - d1_frac)) - 1
 \end{ipython}
 
 As an example let's compute a forward rate from fake rates.
@@ -512,16 +506,17 @@ As an example let's compute a forward rate from fake rates.
 from datetime import date
 observation_date = date (2020, 1, 1)
 
-pillar_dates = [date(2020, 1, 1), 
-date(2021, 1, 1), 
-date(2022, 8, 1)]
+pillar_dates = [observation_date, 
+                date(2021, 1, 1), 
+                date(2022, 8, 1)]
 rates = [0.05, 0.07, 0.08]
 
-fc = ForwardRateCurve(observation_date, pillar_dates, rates)
-print ("forward rate: {:.3f}".format(fc.forward_rate(date(2021, 1, 1), date(2022, 1, 1))))
+fc = ForwardRateCurve(pillar_dates, rates)
+print ("forward rate: {:.4f}".format(fc.forward_rate(date(2021, 1, 1), 
+                                                     date(2022, 1, 1))))
 \end{ipython}
 \begin{solution}
-forward rate: 0.077
+forward rate: 0.0827
 \end{solution}
 
 \section{Multi-curve Framework}
@@ -632,19 +627,19 @@ eonia_rates = [1.0, 0.97, 0.72]
 pillar_dates_libor = [today, date(2020, 6, 1), date(2020, 12 ,1)] 
 libor = [0.005, 0.01, 0.015]
 
-eonia_curve = DiscountCurve(today, pillar_dates_eonia, eonia_rates) 
-libor_curve = ForwardRateCurve(today, pillar_dates_libor, libor) 
+eonia_curve = DiscountCurve(pillar_dates_eonia, eonia_rates) 
+libor_curve = ForwardRateCurve(pillar_dates_libor, libor) 
 
-npv = eonia_curve.df(t1) * libor_curve.forward_rate(t1, t2)
-r0 = libor_curve.forward_rate(today, t1)
-npv_pre2008 = exp(-r0*(t1-today).days/365) * libor_curve.forward_rate(t1, t2)
+C = eonia_curve.df(t1) * libor_curve.forward_rate(t1, t2)
+t1_frac, r1 = libor_curve.interp_rate(t1)
+C_pre2008 = exp(-r1*t1_frac) * libor_curve.forward_rate(t1, t2)
 
-print ("NPV post 2008: {:.5f}".format(npv))
-print ("NPV pre 2008: {:.5f}".format(npv_pre2008))
+print ("C post 2008: {:.5f}".format(C))
+print ("C pre 2008: {:.5f}".format(C_pre2008))
 \end{ipython}
 \begin{ioutput}
-NPV post 2008: 0.01584
-NPV pre 2008: 0.01593
+C post 2008: 1.00285
+C pre 2008: 1.00846
 \end{ioutput}
 
 \subsection{Transitioning away from LIBOR~\cite{bib:str}}
