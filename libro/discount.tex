@@ -153,7 +153,7 @@ print ("{:.1f} km".format(s))
 103.0 km
 \end{ioutput}
 
-Always interpret critically your results to guess if they make sense or not and avoid mistakes. In the previous example we certainly expected something between 25.75 and 171.7~km (our range ends) furthermore since we are looking for the distance at a time which is almost halfway the interval, the result will be somehow in the middle, around 98.6~km. This is indeed more or less what we have got.
+Always interpret critically your results to guess if they make sense or not and avoid mistakes. In the previous example we certainly expected something between 25.75 and 171.7~km (our range ends) furthermore since we are looking for the distance at a time which is almost halfway the interval, the result will be somehow in the middle, around 100~km. This is indeed more or less what we have got.
 This simple kind of reasoning should be applied every time you have a result to quickly judge it.
 
 \begin{curiosity}
@@ -341,22 +341,26 @@ np.interp(2.5, xp, fp)
 \end{ioutput}
 
 Since discount factors are an essential part for every financial calculation and we will keep using them everywhere, a \texttt{python} class which manages discount factors and curves is develop, using an object oriented approach.
+
+\begin{finmarkets}
 This class, that we name \texttt{DiscountCurve}, should have: as attributes the pillar dates with the corresponding discount factors and at least a method to interpolate discount factors.
+
+Since it is is going to be part of our \texttt{python} financial library, copy the code into \texttt{finmarkets.py} so that you can later reuse it. Also be sure that the code is well documented in its part.	
+\end{finmarkets}
 
 When dealing with discount factors we need to be careful though. \texttt{numpy.interp} only accepts numbers or a list of numbers as argument (i.e. it doesn't automatically convert or interpret dates as numbers and doesn't know how to interpolate them). So we need to do the conversion ourselves before passing any date to the interpolation function. This transformation will be implemented directly in the constructor of the class by replacing each date with the number of days from a reference date ($t_0$).
 
 Furthermore we also attempted a simple optimization of the code: in the constructor we are going to compute also the logarithm of the input discount factors, so that we can save some computation time with respect to doing the log at every call of the interpolation method. 
 
 \begin{ipython}
-import math
+from math import exp, log
 import numpy as np
 from datetime import date
 
 class DiscountCurve:
     def __init__(self, pillar_dates, discount_factors):
-        self.today = pillar?dates[0]
-        self.discount_factors = discount_factors
-        self.log_dfs = [math.log(discount_factor) \
+        self.today = pillar_dates[0]
+        self.log_dfs = [log(discount_factor) \
             for discount_factor in self.discount_factors]
         self.pillar_days = [(pillar_date - self.today).days \
             for pillar_date in self.pillar_dates]
@@ -365,12 +369,8 @@ class DiscountCurve:
         d_days = (d - self.today).days
         interp_log_df = \
             np.interp(d_days, self.pillar_days, self.log_dfs)
-        return math.exp(interp_log_df)
+        return exp(interp_log_df)
 \end{ipython}
-
-\begin{finmarkets}
-This class is going to be the first step in the creation of a \texttt{python} financial library, so copy the code into a separate file called \texttt{finmarkets.py} so that you can later reuse it. Also be sure that the code is well documented in its part.	
-\end{finmarkets}
 
 Assume we have three discount factors, we can now use our new class to create the corresponding discount curve. Then the \texttt{df} method provides discount factors on every date within the interval of the given pillar dates.
 
@@ -440,8 +440,6 @@ plt.show()
 		discount factors with linear scale.}
 	\label{fig:linear_discount_curve}
 \end{figure}
-\noindent
-Discrepancies in the linear plot are most likely due to rounding.
 
 \section{Forward Rates}
 \label{calculating-forward-rates}
@@ -478,7 +476,7 @@ F(T_1, T_2) = r_{1,2} = \frac {1}{T_{2}-T_{1}}(\ln D(0,T_{1})-\ln D(0,T_{2}))
 \end{equation}
 
 \begin{finmarkets}
-We now write a \texttt{ForwardRateCurve} class which, given a set of spot rates, computes forward rates at any arbitrary date. This class has just a method to actually compute the forward rates. Also it goes into the \texttt{finmarkets} module and will be used to define LIBOR curves needed in the rest of these Lectures.
+We now write a \texttt{ForwardRateCurve} class which, given a set of spot rates, computes forward rates at any arbitrary date. This class has two methods: one to interpolate spot rates, another to actually compute the forward rates. Also it goes into the \texttt{finmarkets} module and will be used to define EURIBOR curves needed in the rest of these Lectures.
 \end{finmarkets}
 
 \begin{ipython}
@@ -543,11 +541,11 @@ Still looking at Fig.~\ref{fig:credit_crunch} it is clear how in August 2007 a s
 The existence of such significant basis swap spread reflects the fact that after the crisis interest rate market has been segmented into subareas corresponding to instruments with different underlying rate tenors, characterized by different rate dynamics. 
 
 Traditional single curve based pricing approach ignores these differences. It mixes different underlying rate tenors and incorporates different rate dynamics, eventually leading to inconsistency.
-After the crisis, the market practice has thus evolved to take into account the new market information (e.g. the basis swap spreads, collateralization, etc.), that translate into the additional requirement of homogeneity and funding. The homogeneity requirement means that interest rate derivatives with a given underlying rate tenor must be priced and hedged using vanilla interest rate market instruments with the same underlying. The funding requirement means that the discount rate of any cash flow generated by the derivative must be consistent, by no-arbitrage, with the funding rate associated with that cash flow. 
+%After the crisis, the market practice has thus evolved to take into account the new market information (e.g. the basis swap spreads, collateralization, etc.), that translate into the additional requirement of homogeneity and funding. The homogeneity requirement means that interest rate derivatives with a given underlying rate tenor must be priced and hedged using vanilla interest rate market instruments with the same underlying. The funding requirement means that the discount rate of any cash flow generated by the derivative must be consistent, by no-arbitrage, with the funding rate associated with that cash flow. 
 
 Driven by the crisis, many derivative contracts have been updated to include permissible credit mitigants for a transaction, such as netting and collateralization in cash. Since standard agreements stipulate daily margination on collateral and the cash collateral earns a return at overnight rate, overnight rate becomes a natural choice for the risk-free discount rate or the funding rate. This is referred to as \emph{OIS discounting}.
 
-The large spread between risk free rate and inter-bank lending rate during and after 2008 financial crisis it is not possible anymore to use a single curve for discounting and derivative valuation. The traditional single curve used for both cash flow projection and discounting turned out to be obsolete. The markets have since nearly switched to multi-curve framework. 
+Due to the large spread between risk free rate and inter-bank lending rate during and after 2008 financial crisis it is not possible anymore to use a single curve for discounting and derivative valuation. The traditional single curve used for both cash flow projection and discounting turned out to be obsolete. The markets have since nearly switched to \emph{multi-curve framework}. 
 
 For example, if we want to calculate the net present value (NPV) of a forward 6-month LIBOR coupon, we need to simultaneously use two different discount curves: 
 
@@ -613,7 +611,7 @@ For example, if we want to calculate the net present value (NPV) of a forward 6-
 %            (365.0 / ((d2 - d1).days))
 %\end{ipython}
 
-As an example let's define EONIA and LIBOR curves and compute the net present value of the forward 6-month LIBOR coupon mentioned before.
+As an example let's define EONIA and EURIBOR curves and compute the net present value of the forward 6-month EURIBOR coupon mentioned before.
 
 \begin{ipython}
 from finmarkets import DiscountCurve, ForwardRateCurve
@@ -625,14 +623,14 @@ t2 = date(2020, 10, 1)
 pillar_dates_eonia = [today, date(2021, 1, 1), date(2022, 10 ,1)] 
 eonia_rates = [1.0, 0.97, 0.72]
 pillar_dates_libor = [today, date(2020, 6, 1), date(2020, 12 ,1)] 
-libor = [0.005, 0.01, 0.015]
+euribor = [0.005, 0.01, 0.015]
 
 eonia_curve = DiscountCurve(pillar_dates_eonia, eonia_rates) 
-libor_curve = ForwardRateCurve(pillar_dates_libor, libor) 
+euribor_curve = ForwardRateCurve(pillar_dates_euribor, euribor) 
 
-C = eonia_curve.df(t1) * libor_curve.forward_rate(t1, t2)
-t1_frac, r1 = libor_curve.interp_rate(t1)
-C_pre2008 = exp(-r1*t1_frac) * libor_curve.forward_rate(t1, t2)
+C = eonia_curve.df(t1) * euribor_curve.forward_rate(t1, t2)
+t1_frac, r1 = euribor_curve.interp_rate(t1)
+C_pre2008 = exp(-r1*t1_frac) * euribor_curve.forward_rate(t1, t2)
 
 print ("C post 2008: {:.5f}".format(C))
 print ("C pre 2008: {:.5f}".format(C_pre2008))
