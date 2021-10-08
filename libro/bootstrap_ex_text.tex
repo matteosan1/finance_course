@@ -102,17 +102,12 @@ from finmarkets import OvernightIndexSwap, generate_dates
 observation_date = datetime.date.today()
 df = pandas.read_csv('ois_quotes.csv')
 
-market_quotes = {}
-for i in range(len(df)):
-    key = df.loc[i, 'maturity']
-    value = df.loc[i, 'rate']
-    market_quotes[key] = value
-
 swaps = []
-for months, rate in market_quotes.items():
+for i in len(df):
     swap = OvernightIndexSwap(1e6,
-                              generate_dates(observation_date, months),
-                              0.01 * rate)
+                              generate_dates(observation_date,
+                                             df.loc[i, 'maturity']),
+                              0.01 * df.loc[i, 'rate'])
 	swaps.append(swap)
 \end{ipython}
 \end{solution}
@@ -140,7 +135,7 @@ def objective_function(x):
 
     sum_sq = 0.0
     for swap in swaps:
-        sum_sq += swap.npv(curve) ** 2
+        sum_sq += swap.npv(curve)**2
     return sum_sq
 \end{ipython}
 Set the initial value of the discount factors (\(x_i\)) to 1 with a range of variability \([ 0.01, 10]\), in addition the first element of the list, today's discount factor, will be fixed to 1 (variability \([1, 1]\)).
