@@ -357,133 +357,200 @@ The price of a bond issued by a party is directly linked to the credit rating of
 
 Bonds with low ratings, called junk bonds, are sold at lower prices (since riskier) while those with higher ratings, called investment-grade bonds, are sold at higher prices.
 
-Let's see with an example how the default probability can be determined from bond prices. Imagine to have a bond and let \(x\) represent the present value of its cash flow stream. To valuate the bond when a default probability is associated to the issuer it is necessary to take each possible value of $x$ (the value of the bond), multiply it by the corresponding default probability and sum the results.  In other words the value of the bond should equal the mathematical expectation (see Section~\ref{sec:expected-value}) of $x$.
+\subsubsection{Crude Approximation}
 
-Consider a bond which pays $F$ at maturity and that the issuer of this bond has a default probability $P$ (the recovery is $R$). What will be the price of this bond ?
+The average default intensity can be approximated by considering the spread $s$ between a risky bond yield and the risk-free rate, and $R$ the recovery rate.
+The expected loss due to default can be expressed both in terms of spread and loss given default. 
 
-\begin{equation}
-V_{bond} =
-\begin{cases}
-& D \cdot R \cdot F\quad\textrm{(in case of default of the issuer)}\\
-&D \cdot F\quad\textrm{(in case of no default)}\\
-\end{cases}\end{equation} 
-where \(D\) is the proper discount factor. Since we don't
-know if the issuer will default or not we can estimate the bond price as
+
+Setting the two expressions equal to each other
 
 \begin{equation}
-V_{bond} = D \cdot R \cdot F \cdot DP ( \tau ) + D \cdot F \cdot ( 1 − DP ( \tau)) = D\cdot F \cdot ( 1 − ( 1 − R ) DP ( \tau ))
-\end{equation}
-\noindent
-where $\tau$ represent the maturity date of the bond.
-From the this equation is clear that the higher the default probability the lower the bond price. Conversely, given the market price of the bond ($V_{bond}$) we can estimate the issuer default probability.
-
-%The probability of a company default can be estimated directly from
-%the prices of its issued bonds. Imagine that the spread $s$
-%between a corporate bond over the risk-free rate should compensate for
-%the losses in case of default, so naively:
-%
-%\[\lambda = \frac{s}{1-R}\]
-%where $\lambda$ is the annualised hazard rate and $R$ the recovery rate.
-
-%In a more detailed way let $X$ represents the present value of a bond cash flow stream. When you
-%have a default probability then $X$ becomes a random variable with a range
-%of possible values. The way
-%to value the bond in this case is to take each possible value of $X$, multiply it
-%by its probability and sum the results. In other words the value of the bond
-%should equal the mathematical expectation of $X$.
-
-\begin{attention}
-To generalize, consider the case of a bond with $N$ coupon payments until maturity. Let $S$ be the probability that the bond \emph{survives} from one coupon payment to the next and let $X_i$ ($i$ = 0, 1,\ldots, $N$) be the value of $X$ given that the bond defaults after making its $i$-th coupon payment. The expectation of $X$ can then be expressed as:
-
-\begin{align}
-\begin{split}
-\mathbb{E}(X) &= X_0(1-S) + X_1 S(1-S) + X_2 S^2 (1-S) + X_3 S^3 (1-S) + X_4 S^4 + \ldots \\
-&= X_0 + (X_1 - X_0)S + (X_2 - X_1)S^2 + (X_3 - X_2)S^3 + (X_4 - X_3)S^4 + \ldots
-\end{split}
-\end{align}
-
-Assuming a constant recovery value $R$ the values $X_i$ are:
-
-\begin{align}
-\begin{split}
-X_0 &= RF \\
-X_1 &= (C + RF)\cdot D \\
-X_2 &= C\cdot D + (C + RF)\cdot D^2 \\
-X_3 &= C\cdot D + C\cdot D^2 + (C + RF)\cdot D^3 \\
-X_4 &= C\cdot D + C\cdot D^2 + C\cdot D^3 + (C + F)\cdot D^4 \\
-\cdots 
-\end{split}
-\end{align}
-where $D$ represent the proper discount factor and $F$ the bond face value.
-Substituting into the expectation formula:
-
-\begin{align}
-\begin{split}
-\mathbb{E}(X) &= C((SD) + (SD)^2 + (SD)^3 + (SD)^4) + \\
-&RF(1-S)(1+(SD)+(SD)^2 + (SD)^3) + F(SD)^4 + \ldots
-\end{split}
-\end{align}
-
-It is now easy to write previous equation in a more compact form:
-
-\begin{equation} 
-\mathbb{E}(X) = C \sum_{k=1}^{N}{(SD)^k} + RF(1-S)\sum_{k=1}^{N-1}{(SD)^k} + F(SD)^N 
+s \Delta t \sim \bar{\lambda}\Delta t\cdot(1-R) \implies \bar{\lambda} = \cfrac{s}{(1-R)}
 \end{equation}
 
-Each of the sums in this s formula is a geometric series that can be collapsed into a single term. The formula for collapsing a general geometric series is 
+Imagine for example a bond that yields 150 basis points more than a similar risk-free bond and assume an expected recovery rate of 40\%.
+
+\begin{equation*}
+\bar{\lambda} = \cfrac{0.015}{(1-0.4)} = 2.5\%
+\end{equation*}
+
+\subsubsection{Better Approximation}
+
+To estimate the probability of the default with a higher precision is possible to calculate the expected loss from default in terms of the unconditional default probability $Q$. As before
 
 \begin{equation}
-\sum_{k=0}^N a^k = 1 + a + a^2 + \ldots + a^N = \cfrac{1-a^{N+1}}{1-a} 
+Q = \cfrac{s}{\sum\mathrm{expected\_losses}}
 \end{equation}
-Hence we get:
+where $s$ is now the difference in price between the risky and the risk-free bonds.
 
-\begin{align}
-\begin{split}
-\mathbb{E}(X) &= (CSD) \cfrac{1-(SD)^N}{1-(SD)}+RF(1-S)\cfrac{1-(SD)^N}{1-(SD)} + F(SD)^N \\
-&= \Big(CSD + RF(1-S)\Big)\cfrac{1-(SD)^N}{1-(SD)} + F(SD)^N 
-\end{split}
-\end{align}
+Consider a 5-year corporate bond which provides an annual 6\% coupon (paid semiannually), with an yield of 7\%. Instead the yield of a similar risk-free bond is 5\%. Assume a recovery rate of 40\% and that defaults can happen only immediately before coupon payment dates at times 0.5, 1.5, 2.5, 3.5 and 4.5. 
 
-With $\mathbb{E}(X)$ equal to the price of the bond, this equation can be solved numerically for the survival probability $S$.
+Let's determine the unconditional default probability $Q$ in \texttt{python}.
 
-To get the default probability for the bond, simply subtract the survival probability from 1. The cumulative default probability, or the probability that the bond defaults anytime within the next $k$ coupon periods is $(1 - S^k)$.
+\begin{ipython}
+from math import exp
+import numpy as np
 
-There are several ways to test the formula for logical consistency. First look at the case where the survival probability is zero so that with $S = 0$ the formula reduces to:
+default_dates = [0.5, 1.5, 2.5, 3.5, 4.5]
+R = 0.4
 
-\begin{equation}
-\mathbb{E}(X) = RF
-\end{equation}
-this is logical since when default is immanent the price should just equal the recovery amount. In the case where survival is certain and the risk free rate is zero you have $S = 1$ and $D=1$:
+def bond_price(N, C, y, maturity, tenor):
+    val = 0
+    for i in np.arange(tenor, maturity+tenor, tenor):
+        val += N*C*tenor*exp(-y*i)
+    val += N*exp(-y*i)
+    return val
 
-\begin{equation}
-\mathbb{E}(X) = NC + F 
-\end{equation}
-The price here is equal to the total of the coupon payments plus the face value, as you would expect.
+def expected_loss(N, C, r, maturity, tenor):
+    loss = 0
+    for i in range(len(default_dates)):
+        val = 0
+        for t in np.arange(default_dates[i], maturity+tenor, tenor):
+            val += N*C*tenor*exp(-r*(t-default_dates[i]))
+        val += N * exp(-r*(t-default_dates[i]))
+        val = (val-N*R)*exp(-r*default_dates[i])
+        loss += val
+    return loss
 
-Next an example with a \texttt{python} implementation which uses \texttt{brentq}.
-
-\begin{attpython}
-from scipy.optimize import brentq
-
-C = 0.05 # coupon
-r = 0.03 # risk-free rate
-D = 1/(1+r) # discount factor
-F=100 # bond face value
-R=0.4 # recovery
-N=4 # maturity
-trading_price = 80
-
-def func(x):
-    return C*x*D + R*F*(1-x)*(1-(x*D)**N)/(1-x*D)+F*(x*D)**N
-        -trading_price
-res = brentq(func, 0, 1)
-
-print ("P-default before next coupon: {:.1f}%".format((1-res)*100))
-\end{attpython}
+Pr = bond_price(100, 0.06, 0.07, 5, 0.5)
+Prf = bond_price(100, 0.06, 0.05, 5, 0.5)
+spread = abs(Pr - Prf)
+print ("{:.2f}%".format(spread / expected_loss(100, 0.06, 0.05, 5, 0.5)*100))
+\end{ipython}
 \begin{ioutput}
-P-default before next coupon: 4.7\%
+3.03%
 \end{ioutput}
-\end{attention}
+
+This algorithm can be generalized for example by assuming a constant hazar rate, instead of unconditional probability of default. And by using several bonds with different maturities it could be possible to derive the term structure of the probability of default with an approach similar to the bootstrap method.
+
+%Let's see with an example how the default probability can be determined from bond prices. Imagine to have a bond and let \(x\) represent the present value of its cash flow stream. To valuate the bond when a default probability is associated to the issuer it is necessary to take each possible value of $x$ (the value of the bond), multiply it by the corresponding default probability and sum the results.  In other words the value of the bond should equal the mathematical expectation (see Section~\ref{sec:expected-value}) of $x$.
+%
+%Consider a bond which pays $F$ at maturity and that the issuer of this bond has a default probability $P$ (the recovery is $R$). What will be the price of this bond ?
+%
+%\begin{equation}
+%V_{bond} =
+%\begin{cases}
+%& D \cdot R \cdot F\quad\textrm{(in case of default of the issuer)}\\
+%&D \cdot F\quad\textrm{(in case of no default)}\\
+%\end{cases}\end{equation} 
+%where \(D\) is the proper discount factor. Since we don't
+%know if the issuer will default or not we can estimate the bond price as
+%
+%\begin{equation}
+%V_{bond} = D \cdot R \cdot F \cdot DP ( \tau ) + D \cdot F \cdot ( 1 − DP ( \tau)) = D\cdot F \cdot ( 1 − ( 1 − R ) DP ( \tau ))
+%\end{equation}
+%\noindent
+%where $\tau$ represent the maturity date of the bond.
+%From the this equation is clear that the higher the default probability the lower the bond price. Conversely, given the market price of the bond ($V_{bond}$) we can estimate the issuer default probability.
+%
+%%The probability of a company default can be estimated directly from
+%%the prices of its issued bonds. Imagine that the spread $s$
+%%between a corporate bond over the risk-free rate should compensate for
+%%the losses in case of default, so naively:
+%%
+%%\[\lambda = \frac{s}{1-R}\]
+%%where $\lambda$ is the annualised hazard rate and $R$ the recovery rate.
+%
+%%In a more detailed way let $X$ represents the present value of a bond cash flow stream. When you
+%%have a default probability then $X$ becomes a random variable with a range
+%%of possible values. The way
+%%to value the bond in this case is to take each possible value of $X$, multiply it
+%%by its probability and sum the results. In other words the value of the bond
+%%should equal the mathematical expectation of $X$.
+%
+%\begin{attention}
+%To generalize, consider the case of a bond with $N$ coupon payments until maturity. Let $S$ be the probability that the bond \emph{survives} from one coupon payment to the next and let $X_i$ ($i$ = 0, 1,\ldots, $N$) be the value of $X$ given that the bond defaults after making its $i$-th coupon payment. The expectation of $X$ can then be expressed as:
+%
+%\begin{align}
+%\begin{split}
+%\mathbb{E}(X) &= X_0(1-S) + X_1 S(1-S) + X_2 S^2 (1-S) + X_3 S^3 (1-S) + X_4 S^4 + \ldots \\
+%&= X_0 + (X_1 - X_0)S + (X_2 - X_1)S^2 + (X_3 - X_2)S^3 + (X_4 - X_3)S^4 + \ldots
+%\end{split}
+%\end{align}
+%
+%Assuming a constant recovery value $R$ the values $X_i$ are:
+%
+%\begin{align}
+%\begin{split}
+%X_0 &= RF \\
+%X_1 &= (C + RF)\cdot D \\
+%X_2 &= C\cdot D + (C + RF)\cdot D^2 \\
+%X_3 &= C\cdot D + C\cdot D^2 + (C + RF)\cdot D^3 \\
+%X_4 &= C\cdot D + C\cdot D^2 + C\cdot D^3 + (C + F)\cdot D^4 \\
+%\cdots 
+%\end{split}
+%\end{align}
+%where $D$ represent the proper discount factor and $F$ the bond face value.
+%Substituting into the expectation formula:
+%
+%\begin{align}
+%\begin{split}
+%\mathbb{E}(X) &= C((SD) + (SD)^2 + (SD)^3 + (SD)^4) + \\
+%&RF(1-S)(1+(SD)+(SD)^2 + (SD)^3) + F(SD)^4 + \ldots
+%\end{split}
+%\end{align}
+%
+%It is now easy to write previous equation in a more compact form:
+%
+%\begin{equation} 
+%\mathbb{E}(X) = C \sum_{k=1}^{N}{(SD)^k} + RF(1-S)\sum_{k=1}^{N-1}{(SD)^k} + F(SD)^N 
+%\end{equation}
+%
+%Each of the sums in this s formula is a geometric series that can be collapsed into a single term. The formula for collapsing a general geometric series is 
+%
+%\begin{equation}
+%\sum_{k=0}^N a^k = 1 + a + a^2 + \ldots + a^N = \cfrac{1-a^{N+1}}{1-a} 
+%\end{equation}
+%Hence we get:
+%
+%\begin{align}
+%\begin{split}
+%\mathbb{E}(X) &= (CSD) \cfrac{1-(SD)^N}{1-(SD)}+RF(1-S)\cfrac{1-(SD)^N}{1-(SD)} + F(SD)^N \\
+%&= \Big(CSD + RF(1-S)\Big)\cfrac{1-(SD)^N}{1-(SD)} + F(SD)^N 
+%\end{split}
+%\end{align}
+%
+%With $\mathbb{E}(X)$ equal to the price of the bond, this equation can be solved numerically for the survival probability $S$.
+%
+%To get the default probability for the bond, simply subtract the survival probability from 1. The cumulative default probability, or the probability that the bond defaults anytime within the next $k$ coupon periods is $(1 - S^k)$.
+%
+%There are several ways to test the formula for logical consistency. First look at the case where the survival probability is zero so that with $S = 0$ the formula reduces to:
+%
+%\begin{equation}
+%\mathbb{E}(X) = RF
+%\end{equation}
+%this is logical since when default is immanent the price should just equal the recovery amount. In the case where survival is certain and the risk free rate is zero you have $S = 1$ and $D=1$:
+%
+%\begin{equation}
+%\mathbb{E}(X) = NC + F 
+%\end{equation}
+%The price here is equal to the total of the coupon payments plus the face value, as you would expect.
+%
+%Next an example with a \texttt{python} implementation which uses \texttt{brentq}.
+%
+%\begin{attpython}
+%from scipy.optimize import brentq
+%
+%C = 0.05 # coupon
+%r = 0.03 # risk-free rate
+%D = 1/(1+r) # discount factor
+%F=100 # bond face value
+%R=0.4 # recovery
+%N=4 # maturity
+%trading_price = 80
+%
+%def func(x):
+%    return C*x*D + R*F*(1-x)*(1-(x*D)**N)/(1-x*D)+F*(x*D)**N
+%        -trading_price
+%res = brentq(func, 0, 1)
+%
+%print ("P-default before next coupon: {:.1f}%".format((1-res)*100))
+%\end{attpython}
+%\begin{ioutput}
+%P-default before next coupon: 4.7\%
+%\end{ioutput}
+%\end{attention}
 
 \subsection{Implied Probability of Default from CDS}
 \label{default-probabilities-and-cds}
