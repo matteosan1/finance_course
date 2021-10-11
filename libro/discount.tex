@@ -450,7 +450,7 @@ Contrary the \emph{spot rate} is used by buyers and sellers looking to make an i
 Forward rates are calculated from the spot rate by exploiting the no arbitrage condition which states that investing at rate \(r_1\) for the period \((0, T_1)\) and then \emph{re-investing} at rate \(r_{1,2}\) for the time period \((T_1, T_2)\) is equivalent to invest at rate \(r_2\) for the full time period \((0, T_2)\). Essentially two investors shouldn't be able to earn money from arbitraging between different interest periods. That said:
 
 \begin{equation}
-(1+r_1 T_1)(1+r_{1,2}(T_2 - T_1)) = 1 + r_2 T_2
+(1+r_1 T_1)[1+r_{1,2}(T_2 - T_1)] = 1 + r_2 T_2
 \label{eq:no_arbitrage_r}
 \end{equation}
 Solving for \(r_{1,2}\) leads to
@@ -465,9 +465,13 @@ The same expression in terms of the discount factor of Eq.~\ref{eq:discount_fact
 F(T_1, T_2) = \frac{1}{T_2 - T_1}\Big(\frac{D(0, T_1)}{D(0, T_2)} - 1 \Big)
 \end{equation}
 Considering continuously compounded rates instead Eq.~\ref{eq:no_arbitrage_r} can be written as
-\begin{equation*}
-e^{{(r}_{2}T_{2})}=e^{{(r}_{1}T_{1})}\cdot \ e^{\left(r_{1,2} \left(T_{2}-T_{1}\right)\right)}
-\end{equation*}
+\begin{equation}
+\begin{gathered}
+e^{r_{2}T_{2}}=e^{r_{1}T_{1}}\cdot \ e^{r_{1,2} (T_{2}-T_{1})} \\
+\textrm{log}\left(e^{r_{2}T_{2}}\right)=\textrm{log}\left(e^{r_{1}T_{1}+ r_{1,2} (T_{2}-T_{1})}\right) \\
+r_{2}T_{2}=r_{1}T_{1}+r_{1,2}(T_{2}-T_{1})\implies r_{1,2} = \cfrac{r_2 T_2 - r_1 T_1}{T_2 - T_1} 
+\end{gathered}
+\end{equation}
 and the corresponding expression for the forward rate is
 \begin{equation}
 F(T_1, T_2) = r_{1,2} = \frac {1}{T_{2}-T_{1}}(\ln D(0,T_{1})-\ln D(0,T_{2}))
@@ -496,7 +500,7 @@ class ForwardRateCurve:
     def forward_rate(self, d1, d2):
         d1_frac, r1 = self.interp_rate(d1)
         d2_frac, r2 = self.interp_rate(d2)
-        return ((1 + r2)**d2_frac / (1 + r1)**d1_frac)*(1/(d2_frac - d1_frac)) - 1
+        return (r2*d2_frac - r1*d1_frac)/(d2_frac - d1_frac)
 \end{ipython}
 
 As an example let's compute a forward rate from fake rates.
@@ -614,7 +618,6 @@ For example, if we want to calculate the net present value (NPV) of a forward 6-
 As an example let's define EONIA and EURIBOR curves and compute the net present value of the forward 6-month EURIBOR coupon mentioned before.
 
 \begin{ipython}
-from finmarkets import DiscountCurve, ForwardRateCurve
 from math import exp
 
 today = date (2020, 1, 1)
@@ -622,7 +625,7 @@ t1 = date(2020, 4, 1)
 t2 = date(2020, 10, 1)
 pillar_dates_eonia = [today, date(2021, 1, 1), date(2022, 10 ,1)] 
 eonia_rates = [1.0, 0.97, 0.72]
-pillar_dates_libor = [today, date(2020, 6, 1), date(2020, 12 ,1)] 
+pillar_dates_euribor = [today, date(2020, 6, 1), date(2020, 12 ,1)] 
 euribor = [0.005, 0.01, 0.015]
 
 eonia_curve = DiscountCurve(pillar_dates_eonia, eonia_rates) 
@@ -636,8 +639,8 @@ print ("C post 2008: {:.5f}".format(C))
 print ("C pre 2008: {:.5f}".format(C_pre2008))
 \end{ipython}
 \begin{ioutput}
-C post 2008: 1.00285
-C pre 2008: 1.00846
+C post 2008: 0.01587
+C pre 2008: 0.01596
 \end{ioutput}
 
 \subsection{Transitioning away from LIBOR~\cite{bib:str}}
