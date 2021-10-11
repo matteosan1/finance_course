@@ -5,10 +5,10 @@ from dateutil.relativedelta import relativedelta
 import numpy as np
 
 def d1(S, K, sigma, r, deltaT):
-	return 1/(sigma*sqrt(deltaT))*(log(S/K)+(r+sigma**2/2)*deltaT)
+        return 1/(sigma*sqrt(deltaT))*(log(S/K)+(r+sigma**2/2)*deltaT)
 	
 def d2(S, K, sigma, r, deltaT):
-	return d1(S, K, sigma, r, deltaT) - sigma*sqrt(deltaT)
+        return d1(S, K, sigma, r, deltaT) - sigma*sqrt(deltaT)
 	
 def call(S, K, sigma, r, deltaT):
 	return norm.cdf(d1(S, K, sigma, r, deltaT))*S - K*norm.cdf(d2(S, K, sigma, r, deltaT))*exp(-r*deltaT)
@@ -48,5 +48,5 @@ class ForwardRateCurve:
   def forward_rate(self, d1, d2):
     d1_frac, r1 = self.interpolate(d1)
     d2_frac, r2 = self.interpolate(d2)
-    return ((1 + r2)**d2_frac / (1 + r1)**d1_frac)*(1/(d2_frac - d1_frac)) - 1
-    
+    return (r2*d2_frac - r1*d1_frac)/(d2_frac - d1_frac)
+

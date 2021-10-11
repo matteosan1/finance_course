@@ -236,7 +236,7 @@ mq = pd.read_csv('https://github.com/matteosan1/finance_course/raw/develop/libro
 print (mq.head())
 \end{ipython}
 \begin{ioutput}
- maturity   rate
+   months  quote
 0       1 -0.350
 1       2 -0.347
 2       3 -0.348
@@ -250,7 +250,7 @@ operation and double check the units of rates and quotes. In this case for examp
 \begin{ipython}
 ois = OvernightIndexSwap(1e6,
                          generate_dates(date.today(), 15),
-                         mq['rate'].tolist()[12]*0.01)
+                         mq.loc[mq['months']==15, 'quote']*0.01)
 
 ois.payment_dates[-1]
 \end{ipython}
@@ -329,7 +329,7 @@ As an example assume all rates up to the fourth year have been calculated (they 
 \hline
 1 & 1.00 \% & \euro{100} & 4.00\% \\
 \hline
-2 & 2.00 \% & \euro{100} & 5.03\% \\
+2 & 2.00 \% & \euro{100} & 5.02\% \\
 \hline
 3 & 3.00 \% & \euro{100} & 6.08\% \\
 \hline
@@ -644,22 +644,30 @@ However there shouldn't be such an issue in the application of the bootstrap alg
 
 \subsection{Back to Bootstrapping}
 \label{ois-example}
-The general idea here is to get the discount curve \(\mathcal{C}\) that prices correctly each OIS by minimizing the sum of their NPV squared (the \(f_i\) of Eq.~\ref{eq:bootstrap_as_minimization}):
+
+Here the problem consists of finding the discount curve $\mathcal{C}$ such that it prices as much correctly as possible each OIS by minimizing the sum of the squared NPVs (our $f_i$):
 
 \begin{equation}
-\mathrm{min}_{\mathcal{C}} \Big\{\sum_{i=1}^{n}\mathrm{NPV}(\mathrm{OIS}_i, \mathcal{C})^2\Big\}
+	\mathrm{min}_{\mathcal{C}} \Big\{\sum_{i=1}^{n}\mathrm{NPV}(\mathrm{OIS}_i, \mathcal{C})^2\Big\}
 \end{equation}
 
-The description of the problem we have given above does not specifies any constraint on the number of pillar dates of the discount curve \(\mathcal{C}\) (actually the degrees of freedom in the optimization).
+Remember we are assuming that the market quotes represent the OIS \emph{fair} prices, so their NPV's should be close to 0.
 
-Assuming there are $N$ swap market quotes available, the natural choice is to define the unknown discount curve with the same number of pillar dates. In particular those dates are chosen such that they match the expiry dates of the swaps.
+The previous equation is the objective function to implement, and the algorithm will adjust the unknown discount factors of $\mathcal{C}$ to reach the minimum.
 
-The optimization problem becomes: 
+In the previous examples though, the number of minimization parameters (i.e. the degrees of freedom of the problem) was clear:
+\begin{itemize}
+\item 1 for the can example, the can radius;
+\item 2 for the fence problem, width and height of the field.
+\end{itemize}
+
+A discount curve is characterized by pillar dates ($\mathbf{d}$) and discount factors ($\mathbf{x}$), but we haven't yet identified a constraint on how many points the curve is made of (too many points or too few may prevent us from finding the solution).
+\textbf{In practice, it makes sense to choose the number of degrees of freedom to match the number of market quotes.} In particular it is wise to choose the pillar dates of the discount curve equal to the set of the swap expiry dates.
 
 \begin{equation}
-\mathrm{min}_{\mathbf{x}} \Big\{\sum_{i=1}^{N}\mathrm{NPV}(\mathrm{OIS}_i, \mathcal{C}(\mathbf{d}, \mathbf{x}))^2\Big\}
+ F= \mathrm{min}_{\mathbf{x}} \Big\{\sum_{i=1}^{N}\mathrm{NPV}^2(\mathrm{OIS}_i, \mathcal{C}(\mathbf{d}, \mathbf{x}))\Big\}\qquad (f_i^2 = \mathrm{NPV}^2(\mathrm{OIS}_i, \mathcal{C}(\mathbf{d}, \mathbf{x})))
 \end{equation}
-where \(\mathbf{d}\) is the vector of pillar dates (equal to the expiry dates of the swaps), and \(\mathbf{x}\) represents the vector of discount factors.
+which is the final version of our optimization problem (i.e. finding the minimum of the above expression as a function of $\mathbf{x}$).
 
 First the swaps has to be created according to all the available market quotes
 
@@ -674,11 +682,13 @@ swaps = []
 for i in range(len(mq)):
     swap = OvernightIndexSwap(1e6,
              generate_dates(observation_date,
-                            mq['maturity'].tolist()[i]),
-             0.01 * mq['rate'].tolist()[i])
+                            mq.loc[i, 'months']),
+             0.01 * mq.loc[i, 'quote'])
     swaps.append(swap)
 	pillar_dates.append(swap.payment_dates[-1])
-	
+
+# this last command doesn't matter if swap are originally
+# sorted by maturity	
 pillar_dates = sorted(pillar_dates)
 \end{ipython}
 
