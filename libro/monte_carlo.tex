@@ -317,7 +317,7 @@ from math import sqrt
 
 seed(1)
 in_circle = 0.0
-trials = 10000
+trials = 100000
 for _ in range(trials):
     x1 = random()
     x2 = random()
@@ -328,11 +328,82 @@ for _ in range(trials):
 print ("Approx. pi: {}".format(in_circle/trials*4))
 \end{ipython}
 \begin{ioutput}
-Approx. pi: 3.1416
+Approx. pi: 3.13944
 \end{ioutput}
+
+The lower is the probability we try to estimate with MC the higher has to be the number of simulations. 
+The result precision indeed depends on the number of "successes" and if the success probability is small, many trials are needed. This can be simply checked by playing with the number of simulations in the previous examples. For example we may run an entire set without getting two consecutive kings, nevertheless we cannot conclude there is zero probability of such event.
+
+The only conclusion we can draw is that Monte Carlo simulation is not always the best approach to follow, especially for computationally heavy experiments.
+
+In the following example it is apparent how changing the number of simulations in a single experiment the approximation precision improves. In Fig.~\ref{fig:circle_approx} it is shown graphically the results with 100, 1000, 10000, 100000 and 1000000 simulations.
+
+\begin{ipython}
+from random import random, seed
+from math import sqrt
+import numpy as np
+
+seed(1)
+trials=[100, 1000, 10000, 100000, 1000000]
+for i, t in enumerate(trials):
+    in_circle = 0
+    circ = []
+    squa = []
+    for _ in range(t):
+        x1 = random()-0.5
+        x2 = random()-0.5
+        r = sqrt(pow(x1, 2)+pow(x2, 2))
+
+        if r <= 0.5:
+            in_circle += 1
+            circ.append((x1, x2))
+        else:
+            squa.append((x1, x2))
+    print (in_circle/t*4)
+\end{ipython}
+\begin{ioutput}
+3.12
+3.096
+3.1212
+3.13956
+3.142136
+\end{ioutput}
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/mc_vs_n_experiments}
+\caption{Graphical representation of geometrical approximation of $\pi$. Results are reported for $N = 100, 1000, 10000, 100000, 1000000$ simulations. It is clear how the result improves with $N$.}
+\label{fig:circle_approx}
+\end{figure}
 
 \section{Accuracy of Monte Carlo Simulation}
 \label{sec:confidence_interval}
+
+* Assume you don't know the probability of getting to K from two consecutive draws
+    * what can be concluded from the result of a single MC experiment ?
+    
+   \begin{ipython}
+# define the domain of inputs
+from random import sample, seed
+
+deck = ['A', 'K', 'J', 'Q', '7', '6', '5', '4', '3', '2'] * 4
+
+seed(97)
+def deck_sim(trials):
+    successes = 0.0
+    for _ in range(trials):
+        cards = sample(deck, 2)
+        if cards == ['K', 'K']:
+            successes += 1
+    return successes
+
+trials = 10000
+successes = deck_sim(trials)
+print (successes/trials)
+   \end{ipython}
+\begin{ioutput}
+0.0084
+\end{ioutput}
 
 The central limit  theorem~\cite{bib:central_limit} states that if we have \(Y_1, Y_2,\dots, Y_n\) which are random samples from a distribution \(Y\) with true mean \(\mu\) and variance \(\sigma^{2}\), then with \(n\) sufficiently large,
 
@@ -350,7 +421,7 @@ import numpy as np
 from random import sample, seed
 
 deck = ['A', 'K', 'Q', 'J', '2', '3', '4', '5', '6', '7'] * 4
-experiments = 10000
+experiments = 1000
 trials = 10000
 r = []
 
@@ -363,20 +434,20 @@ for e in range(experiments):
             successes += 1
     r.append(successes/trials)
 
-print ("Mean: {:.4f}".format(np.mean(r)))
-print ("Std : {:.4f}".format(np.std(r)))
+print ("Mean: {:.6f}".format(np.mean(r)))
+print ("Std : {:.6f}".format(np.std(r)))
 \end{ipython}
 \begin{ioutput}
-Mean:  0.0077
-Std :  0.0009
+Mean:  0.007688
+Std :  0.000871
 \end{ioutput}
 
-Looking at Fig.~\ref{fig:repeated_MC} it is clear how increasing the number of experiments the distribution of the results becomes more and more Gaussian-like.
+Looking at Fig.~\ref{fig:repeated_MC} it is clear that the various results are distributed as a Gaussian.
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=1\textwidth]{figures/central_limit}
-	\caption{Evolution of the distribution of $\mu_n$ with the increase of the number of MC experiments (100, 500, 10000).}
+\centering
+\includegraphics[width=1\textwidth]{figures/experiment_distribution}
+\caption{Distribution of the results of 1000 experiments.}
 \label{fig:repeated_MC}
 \end{figure}
 

@@ -68,7 +68,7 @@ Strictly speaking this formula is valid for an EONIA swaps (i.e. for OIS swaps i
 where \(D(d)\) is the discount factor with expiry \(d\). On the other hand we have seen from the forward rate definition (see Section~\ref{calculating-forward-rates}) that
 
 \begin{equation*}
-\prod_{i=0}^{d} (1+r_i) = \underbrace{(1+r_{0,1}\Delta T)\underbrace{(1+r_{1,2}\Delta T)\ldots\underbrace{(1+r_{d-2,d-1}\Delta T)(1+r_{d-1,d}\Delta T)}_{=(1+r_{d-2,d}\Delta T)}}_{=(1+r_{1,d}\Delta T)}}_{=(1+r_{0,d}\Delta T)}
+\prod_{i=0}^{d} (1+r_i\Delta T) = \underbrace{(1+r_{0,1}\Delta T)\underbrace{(1+r_{1,2}\Delta T)\ldots\underbrace{(1+r_{d-2,d-1}\Delta T)(1+r_{d-1,d}\Delta T)}_{=(1+r_{d-2,d}\Delta T)}}_{=(1+r_{1,d}\Delta T)}}_{=(1+r_{0,d}\Delta T)}
 \end{equation*}
 So Eq.~\ref{eq:floating_ois} can be simplified into
 
@@ -232,7 +232,7 @@ import pandas as pd
 from datetime import date
 
 observation_date = date.today()
-mq = pd.read_csv('https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/ois_data.xlsx')
+mq = pd.read_csv('ois_data.xlsx')
 print (mq.head())
 \end{ipython}
 \begin{ioutput}
@@ -269,7 +269,7 @@ The usefulness of bootstrap resides on that using only a few carefully selected 
 
 This algorithm relies on the assumption that market quotes represent the \textbf{fair price} of the contracts so they make their NPVs null (the fair price is an estimate of what a willing buyer would pay a willing seller for a given asset, assuming both have a reasonable knowledge of the asset's worth).
 
-To illustrate bootstrapping let's consider the following example: we have some coupon paying bond (coupon of 4\%, 5\%, 6\%, 7\% and 8\% respectively) with maturities ranging from 1 to 5 years, each having a value of \euro{100} and traded at par. To determine the yield curve proceed as follows:
+To illustrate bootstrapping let's consider the following example: we have some coupon paying bond (yearly coupon of 4\%, 5\%, 6\%, 7\% and 8\% respectively) with maturities ranging from 1 to 5 years, each having a value of \euro{100} and traded at par. To determine the yield curve proceed as follows:
 \begin{enumerate}
 \item at the end of the first year the $1^{st}$ bond will pay a coupon of \euro{4} (= \euro{100} * 4\%) plus the principal (= \euro{100}) which sums up to \euro{104} while the bond is trading at \euro{100}. The implied 1-year spot \emph{fair} rate $S_{1y}$ can be calculated from $\mbox{\euro{100}} = \mbox{\euro{104}} / (1 + S_{1y})$;
 
@@ -661,7 +661,7 @@ In the previous examples though, the number of minimization parameters (i.e. the
 \item 2 for the fence problem, width and height of the field.
 \end{itemize}
 
-A discount curve is characterized by pillar dates ($\mathbf{d}$) and discount factors ($\mathbf{x}$), but we haven't yet identified a constraint on how many points the curve is made of (too many points or too few may prevent us from finding the solution).
+A discount curve is characterized by pillar dates ($\mathbf{d}$) and discount factors ($\mathbf{x}$), but we haven't yet identified a constraint on how many points the curve is made of (too many or too few points may prevent us from finding the solution).
 \textbf{In practice, it makes sense to choose the number of degrees of freedom to match the number of market quotes.} In particular it is wise to choose the pillar dates of the discount curve equal to the set of the swap expiry dates.
 
 \begin{equation}
@@ -797,7 +797,7 @@ curve = DiscountCurve(pillar_dates, dfs)
 d = observation_date + relativedelta(years=40)
 
 print ("40y df: {:.3f}".format(curve.df(d)))
-print ("40y rate: {:.4f}".format(-log(curve.df(d)) / 20))
+print ("40y rate: {:.4f}".format(-log(curve.df(d)) / 40))
 \end{ipython}
 \begin{ioutput}
 40y df: 0.643
