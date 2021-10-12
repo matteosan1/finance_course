@@ -1,14 +1,18 @@
-\chapter{Credit Default Swaps}\label{credit_default_swaps}
+\chapter{Credit Risk}\label{credit_default_swaps}
+
+Credit risk is the possibility of a loss resulting from a borrower's failure to repay a loan or meet contractual obligations. Traditionally, it refers to the risk that a lender may not receive the owed principal and interest, which results in an interruption of cash flows and increased costs for collection. 
+
+Although it's impossible to know exactly who will default on obligations, properly assessing and managing credit risk can lessen the severity of a loss. Interest payments from the borrower or issuer of a debt obligation are a lender's or investor's reward for assuming credit risk.
+
+In this Chapter the definition of credit event is introduced together with the Credit Default Swaps, a new type of instrument whose value depends on the likelihood that a given company will suffer a credit event over a given period.
 
 \section{Credit curves}\label{credit-curves}
 
 Just like a discount curve is a way of representing the underlying interest rates implicit in the market quotes of a collection of interest rate products, \textbf{credit curves} are a way of representing survival probabilities implied by credit default swaps.
 
-In fact \textbf{Credit Default Swaps} (\textbf{CDS}) are instruments whose value depends on the likelihood that a given company (the curve's \textbf{issuer}) will suffer a credit event over a given period.
-
 A \textbf{credit event} can be a default, the failure to make payments, the issuer entering into bankruptcy proceedings, or the occurrence of other legal events. The exact definition of what constitutes a credit event depends on a series of factors and is usually defined in some kind of ISDA (International Swaps and Derivatives Association) master agreement.
 
-In any case, we will generically call a credit event a \emph{default}, and talk about \textbf{non-default probabilities} (\textbf{NDP}, or survival probability) as the probability that the issuer will not suffer a credit event \textbf{before} a given value date (i.e. non-default probability is a cumulative probability).
+In any case, we will generically call a credit event a \emph{default}, and talk about \textbf{non-default probabilities} (NDP, $P_{\textrm{sur}}$, or survival probability) as the probability that the issuer will not suffer a credit event \textbf{before} a given value date (i.e. non-default probability is a cumulative probability).
 
 NDPs are the equivalent for credit curves of discount factors for discount curves. Just like discount curves, credit curves are built by specifying an observation date, a sequence of pillar dates and a sequence of NDPs. 
 
@@ -72,15 +76,15 @@ Going back to the hazard rate ($\lambda$) we can now compute the instantaneous d
 
 %\[\lambda(t) = \cfrac{\mathbb{P}(A\cap B)}{\mathbb{P}(B)} = \cfrac{\cfrac{DP(\tau\in (t, t+dt))}{dt}}{DP(\tau>t)} = \cfrac{\cfrac{d[1-N(t_0, t)]}{dt}}{N(t_0, t)} = -\cfrac{dN(t_0, t)}{dt}\cdot\frac{1}{N(t_0, t)}\]
 \begin{equation}
-\lambda(t) = \cfrac{\cfrac{P(A\cap B)}{dt}}{P(B)} = \cfrac{\cfrac{DP(t, t+dt)}{dt}}{DP(t, +\infty)} = \cfrac{\cfrac{d[1-NDP(t_0, t)]}{dt}}{NDP(t_0, t)} = -\cfrac{dNDP(t_0, t)}{dt}\cdot\frac{1}{NDP(t_0, t)}
+\lambda(t) = \cfrac{\cfrac{P(A\cap B)}{dt}}{P(B)} = \cfrac{\cfrac{P_{\textrm{def}}(t, t+dt)}{dt}}{P_{\textrm{def}}(t, +\infty)} = \cfrac{\cfrac{d[1-P_{\textrm{sur}}(t_0, t)]}{dt}}{P_{\textrm{sur}}(t_0, t)} = -\cfrac{dP_{\textrm{sur}}(t_0, t)}{dt}\cdot\frac{1}{P_{\textrm{sur}}(t_0, t)}
 \end{equation}
-where $NDP$ and $DP$ are survival and default probabilities.
-Also remember that $DP(t_0, t) = 1 - NDP(t_0, t)$ or that the probability of default at $t$ is equal to 1 minus the non-default probability. Conversely, given the hazard rate, the NDP can be determined as:
+where $P_{\textrm{sur}}$ and $P_{\textrm{def}}$ are survival and default probabilities.
+Also remember that $P_{\textrm{def}}(t_0, t) = 1 - P_{\textrm{sur}}(t_0, t)$ or that the probability of default at $t$ is equal to 1 minus the non-default probability. Conversely, given the hazard rate, the survival probability can be determined as:
 
 \begin{equation}
 \begin{gathered}
-\lambda(t) = -\cfrac{1}{dt}\cdot\cfrac{dNDP(t_0, t)}{NDP(t_0, t)} = -\cfrac{d(\textrm{log}NDP(t_0, t))}{dt} \implies d(\textrm{log}NDP(t_0, t)) = -\lambda dt\\
-NDP(t_0, t) = \mathrm{exp}\left(-\int_{t_0}^{t}\lambda(s) ds\right)
+\lambda(t) = -\cfrac{1}{dt}\cdot\cfrac{dP_{\textrm{sur}}(t_0, t)}{P_{\textrm{sur}}(t_0, t)} = -\cfrac{d(\textrm{log}P_{\textrm{sur}}(t_0, t))}{dt} \implies d(\textrm{log}P_{\textrm{sur}}(t_0, t)) = -\lambda dt\\
+P_{\textrm{sur}}(t_0, t) = \mathrm{exp}\left(-\int_{t_0}^{t}\lambda(s) ds\right)
 \end{gathered}
 \end{equation}
 
@@ -88,20 +92,22 @@ In practice hazard rate will be calculated numerically, and therefore we will co
 
 \subsection{\texttt{CreditCurve} class}
 
-In this Section we develop a \texttt{CreditCurve} class which will be characterized by a list of pillar dates and a corresponding list of non-default probabilities. It has also methods to compute survival probabilities by interpolation and the hazard rate at arbitrary dates.
+\begin{finmarkets}
+Develop and add to the \texttt{finmarkets} module a \texttt{CreditCurve} class which will be characterized by a list of pillar dates and the corresponding list of non-default probabilities. It will also have methods to compute survival probabilities by interpolation and the hazard rate at arbitrary dates.
+\end{finmarkets}
   
 \begin{ipython}
-import math
-import numpy
+from numpy import interp
+from dateutil.relativedelta import relativedelta
 
 class CreditCurve:
     def __init__(self, pillar_dates, ndps):
-        self.pillar_dates = pillar_dates
-        self.pillar_days = [(pd - pillar_dates[0]).days for pd in pillar_dates]
+        self.start_date = pillar_dates[0]
+        self.pillar_days = [(pd - self.start_date).days for pd in pillar_dates]
         self.ndps = ndps
-
+    
     def ndp(self, value_date):
-        value_days = (value_date - self.pillar_dates[0]).days
+        value_days = (value_date - self.start_date).days
         return interp(value_days, self.pillar_days, self.ndps)
 
     def hazard(self, value_date):
@@ -111,10 +117,6 @@ class CreditCurve:
         h = -1.0 / ndp_1 * (ndp_2 - ndp_1) / delta_t
         return h
 \end{ipython}
-
-\begin{finmarkets}
-Also this class has to be added to the \texttt{finmarkets} module.
-\end{finmarkets}
 
 Let's test the newly created class with some inputs.
 \begin{ipython}
@@ -174,7 +176,7 @@ In the valuation of the premium leg, we'll use the following notation:
 \item
   \(D(d')\) the discount factor between \(d\) and \(d'\);
 \item
-  \(NDP(d, d')\) the survival probability between \(d\) and \(d'\);
+  $P_{\textrm{sur}}(d, d')$ the survival probability between \(d\) and \(d'\);
 \item
   \(\tau\) the \emph{random variable} representing the date of the credit event.
 \end{itemize}
@@ -188,10 +190,10 @@ where the indicator function \(\mathbb{1}(\tau > d_i)\) means that the expectati
 
 Since the NPV depends on the random variable $\tau$, the estimate of its value needs to be done through an expectation.
 Remembering the definition of expected value (see Section~\ref{sec:expected-value}), we can interpret 
-\(F\cdot S\cdot D(d_i)\) as the variables and \(NDP(d, d_i)\) as the probabilities so the premium leg NPV can be expressed as:
+\(F\cdot S\cdot D(d_i)\) as the variables and $P_{\textrm{sur}}(d, d_i)$ as the probabilities so the premium leg NPV can be expressed as:
 
 \begin{equation}
-	\textrm{NPV}_{premium} = F\cdot S \cdot \sum_{i=1}^{n} D(d_i) \cdot NDP(d, d_i)
+	\textrm{NPV}_{premium} = F\cdot S \cdot \sum_{i=1}^{n} D(d_i) \cdot P_{\textrm{sur}}(d, d_i)
 \end{equation}
 
 \subsubsection{Default leg}\label{default-leg}
@@ -202,31 +204,33 @@ We assume that as soon as a credit event occurs (at a time $\tau$) the LGD is pa
 \mathrm{NPV_{default}} =\mathbb{E}[F(1-R) \times D(\tau) \times \mathbb{1} \{\tau \leq d_n\} ]
 \end{equation}
 
-Also in this case we are dealing with a probabilistic event so the expectation value has to be computed taking into account the payments $F(1-R)\times D(\tau)$ averaged over the default probability space $DP(d, \tau)$. 
+Also in this case we are dealing with a probabilistic event so the expectation value has to be computed taking into account the payments $F(1-R)\times D(\tau)$ averaged over the default probability space $P_{\textrm{def}}(d, \tau)$. 
 
 Using the law of total probability, we can break the previous expression down into the sum of "daily NPVs" calculated as a function of the \emph{daily} default probabilities:
 
 \begin{align}
 \begin{split}
 \mathrm{NPV_{default}} &= \mathbb{E}[F(1-R) \times D(\tau) \times \mathbb{1}\{\tau \leq d_n\} ] \\
-&= \sum_{d'=d_0}^{d_n} F(1-R) \cdot D(\tau = d') DP(d, \tau = d') \\
-&= F(1-R) \sum_{d'=d_0}^{d_n} D(d') \left(DP(\tau \geq d') - DP( \tau \geq d'+1) \right) \\
-&= F(1-R) \sum_{d'=d_0}^{d_n} D(d') \left( NDP(d, d') - NDP(d, d'+1) \right)
+&= \sum_{d'=d_0}^{d_n} F(1-R) \cdot D(\tau = d') P_{\textrm{def}}(d, \tau = d') \\
+&= F(1-R) \sum_{d'=d_0}^{d_n} D(d') \left(P_{\textrm{def}}(\tau \geq d') - P_{\textrm{def}}( \tau \geq d'+1) \right) \\
+&= F(1-R) \sum_{d'=d_0}^{d_n} D(d') \left( P_{\textrm{sur}}(d, d') - P_{\textrm{sur}}(d, d'+1) \right)
 \end{split}
 \end{align}
-where the last step holds since $DP(\tau\geq d') = 1 - DP(\tau < d') = 1 - (1-NDP(d, d')) = NDP(d, d')$. 
-Figure~\ref{fig:default_p} illustrates the steps to convert the daily default probability $DP(\tau=d')$.
+where the last step holds since $P_{\textrm{def}}(\tau\geq d') = 1 - P_{\textrm{def}}(\tau < d') = 1 - (1-P_{\textrm{sur}}(d, d')) = P_{\textrm{sur}}(d, d')$. 
+Figure~\ref{fig:default_p} illustrates the steps to convert the daily default probability $P_{\textrm{def}}(\tau=d')$.
 
 \begin{figure}[htb]
 \centering
 \includegraphics[width=0.7\textwidth]{figures/timeline.png}
-\caption{The probability that a default occurs at a time $\tau = d'+\Delta t$ is equivalent to the default probability at $\tau > d'$ minus the default probability at $\tau>d'+\Delta t$.}
+\caption{The probability that a default occurs at a time $\tau = d+\Delta t$ is equivalent to the default probability at $\tau > d$ minus the default probability at $\tau>d+\Delta t$.}
 \label{fig:default_p}
 \end{figure}
 
 \subsection{\texttt{CreditDefaultSwap} Class}
 
-As for the other kind of contracts we develop also a \texttt{CreditDefaultSwap} class. In this case the class has methods to compute NPVs for the premium and default legs.
+\begin{finmarkets}
+As for the other kind of contracts we develop also a \texttt{CreditDefaultSwap} class. In this case the class has methods to compute NPVs for the premium and default legs. This class has to go into $\tt{finmarkets.py}$.
+\end{finmarkets}
 
 \begin{ipython}
 from finmarkets import generate_dates
@@ -262,19 +266,16 @@ class CreditDefaultSwap:
         return self.npv_default_leg(discount_curve, credit_curve) - \
                self.npv_premium_leg(discount_curve, credit_curve)
 \end{ipython}
-\begin{finmarkets}
-This class has to go into $\tt{finmarkets.py}$.
-\end{finmarkets}
 
-To test the class data contained in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/discount_curve_ch_10.xlsx}{discount\_curve\_ch10.xlsx} is used.
+To test the class data contained in \href{https://github.com/matteosan1/finance_course/blob/develop/libro/input_files/discount_curve.xlsx?raw=true}{discount\_curve.xlsx} is used.
 
 \begin{ipython}
 import pandas as pd
 from datetime import date
 from dateutil.relativedelta import relativedelta
-from finmarkets import DiscountCurve, CreditDefaultSwap, CreditCurve
+from finmarkets import DiscountCurve
 
-dc_data = pd.read_excel("discount_curve_ch10.xlsx")
+dc_data = pd.read_excel("discount_curve.xlsx")
 observation_date = date.today() 
 dc = DiscountCurve(observation_date,
 dc_data['pillars'].dt.date.tolist(),
@@ -283,41 +284,40 @@ credit_curve = CreditCurve([start_date,
                             start_date + relativedelta(months=36)],
                             [1.0, 0.7])
 cds = CreditDefaultSwap(1e6, start_date, 0.03, 3)
-cds.premium_leg_npv(dc, credit_curve)
+cds.npv_premium_leg(dc, credit_curve)
 \end{ipython}
 \begin{ioutput}
-303058.4667954984
+303160.9661537263
 \end{ioutput}
 
 \begin{ipython}
-cds.default_leg_npv(dc, credit_curve)
+cds.npv_default_leg(dc, credit_curve)
 \end{ipython}
 \begin{ioutput}
-180888.9540606495
+180949.18879529936
 \end{ioutput}
 
 \begin{ipython}
 cds.npv(dc, credit_curve)
 \end{ipython}
 \begin{ioutput}
--122169.51273484889
+-122211.77735842692
 \end{ioutput}
 	
 \subsection{Break-even Spread}
 The break-even spread of a credit default swap is the value of the fixed rate paid in the premium leg that makes the CDS net present value equal to 0.
-
-In this Section a new method to compute the break-even spread of a CDS will be added to the \texttt{CreditDefaultSwap} class.
+A new method to compute the break-even spread of a CDS will be added to the \texttt{CreditDefaultSwap} class.
 
 To determine the break-even spread is enough to impose that the NPV of the premium and default legs are equal:
 
 \begin{equation}
-S \cdot\sum_{i=1}^{n} D(d_i) \cdot N(d, d_i)
-= (1-R) \sum_{d'=d_0}^{d_n} D(d') \left( N(d, d') - N(d, d'+1) \right)
+S \cdot\sum_{i=1}^{n} D(d_i) \cdot P_{\textrm{sur}}(d, d_i)
+= (1-R) \sum_{d'=d_0}^{d_n} D(d') \left( P_{\textrm{sur}}(d, d') - P_{\textrm{sur}}(d, d'+1) \right)
 \end{equation}
 solving for $S$ we obtain the wanted spread
 
 \begin{equation}
-S_{\mathrm{breakeven}} = \cfrac{(1-R) \sum_{d'=d_0}^{d_n} D(d') \left( N(d, d') - N(d, d'+1) \right)}{\sum_{i=1}^{n} D(d_i) \cdot N(d, d_i)}
+S_{\mathrm{breakeven}} = \cfrac{(1-R) \sum_{d'=d_0}^{d_n} D(d') \left( P_{\textrm{sur}}(d, d') - P_{\textrm{sur}}(d, d'+1) \right)}{\sum_{i=1}^{n} D(d_i) \cdot P_{\textrm{sur}}(d, d_i)}
 \end{equation}
 The \texttt{python} implementation is relatively easy:
 
@@ -566,15 +566,15 @@ Let's summarize the procedure:
 \item using the \texttt{scipy.optimize.minimize} to find the curve.
 \end{itemize}
 
-As it is clear those are almost exactly the same steps already seen for the discount factors. We will now implement the code to apply bootstrapping to the market quotes saved in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/cds_quotes.xlsx}{cds\_quotes.xlsx} and for the discount curve \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/discount_curve_ch_10.xlsx}{discount\_curve\_ch10.xlsx}.
+As it is clear those are almost exactly the same steps already seen for the discount factors. We will now implement the code to apply bootstrapping to the market quotes saved in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/cds_quotes.xlsx}{cds\_quotes.xlsx} and for the discount curve \href{https://github.com/matteosan1/finance_course/blob/develop/libro/input_files/discount_curve.xlsx?raw=true}{discount\_curve.xlsx}.
 So first load market data and create a discount curve and the swaps.
 
 \begin{ipython}
 import pandas as pd
 from datetime import date
-from finmarkets import CreditDefaultSwap, CreditCurve, DiscountCurve
+from finmarkets import DiscountCurve
 
-dc = pd.read_excel("discount_curve_ch10.xlsx")
+dc = pd.read_excel("discount_curve.xlsx")
 mq = pd.read_excel("cds_quotes.xlsx")
 discount_curve = DiscountCurve(observation_date,
                                dc['pillars'].dt.date.tolist(),
@@ -616,40 +616,40 @@ r = minimize(objective_function, ndp_guess, bounds=bounds)
 print (r)
 \end{ipython}
 \begin{ioutput}
-     fun: 4.733604375827937e-05
-hess_inv: <6x6 LbfgsInvHessProduct with dtype=float64>
-     jac: array([ -8.11922299, -15.78174405,  -1.75544551,  
-                  81.61619176,  65.75333359,  86.74621165])
- message: b'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH'
-    nfev: 154
-     nit: 17
-    njev: 22
-  status: 0
- success: True
-       x: array([0.9080181 , 0.80399122, 0.70870263, 
-                 0.48273696, 0.29640056, 0.08653027])
+      fun: 1.6567237922097584e-05
+ hess_inv: <6x6 LbfgsInvHessProduct with dtype=float64>
+      jac: array([1057.6428894 ,  697.66468945, 2288.37362133, 
+                  3207.19521611, 3960.08247585, 3403.59384113])
+  message: 'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH'
+     nfev: 140
+      nit: 11
+     njev: 20
+   status: 0
+  success: True
+        x: array([0.90794559, 0.80382963, 0.70844196, 0.48031869, 
+                  0.29174604, 0.06689759])
 \end{ioutput}
 
 After the minimization we get the list of non-default probabilities corresponding to the expiry dates of our CDSs.
 
 \begin{ipython}
 x = np.insert(r.x, 0, 1)
-cc = CreditCurve(pillars, x)
-for i in range(len(pillars)):
-    print ("S(t<{}): {:.2f}".format(pillars[i], x[i]))
+cc = CreditCurve(pillar_dates, x)
+for i in range(len(pillar_dates)):
+    print ("S(t<{}): {:.2f}".format(pillar_dates[i], x[i]))
 \end{ipython}
 \begin{ioutput}
-S(t<2020-11-04): 1.00
-S(t<2021-11-04): 0.91
-S(t<2022-11-04): 0.80
-S(t<2023-11-04): 0.71
-S(t<2026-11-04): 0.48
-S(t<2030-11-04): 0.29
-S(t<2040-11-04): 0.09
+S(t<2021-10-12): 1.00
+S(t<2022-10-12): 0.91
+S(t<2023-10-12): 0.80
+S(t<2024-10-12): 0.71
+S(t<2027-10-12): 0.48
+S(t<2031-10-12): 0.29
+S(t<2041-10-12): 0.07
 \end{ioutput}
 
 \section*{Exercises}
-\input{cds_ex_text}
+\input{credit_risk_ex_text}
 
 \begin{thebibliography}{9}
 \bibitem{bib:cds} J. C. Hull, \emph{Options, Futures and Other Derivatives, 7th Ed.}, Credit Derivatives (Ch. 23), Pearson Prentice Hall, 2009

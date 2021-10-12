@@ -1,118 +1,8 @@
-\chapter{Modeling Correlation between Risks}
+\chapter{Credit Derivatives}
 
-In credit derivative valuation and credit risk management, one of the fundamentally important issues is the estimate of default probabilities and their correlations. For this, generally speaking, there are two ways: using historical default data or using mathematical models.
+A credit derivative is a financial contract that allows parties to minimize their exposure to credit risk. Credit derivatives consist of a privately held, negotiable bilateral contract traded over-the-counter (OTC) between two parties in a creditor/debtor relationship. These allow the creditor to effectively transfer some or all of the risk of a debtor defaulting to a third party. This third party accepts the risk in return for payment, known as the premium.
 
-Historical default data has played an important role in the estimate of default probabilities. However, because credit events are rare, there is very limited default data available. Moreover, historical data only reflects the past default pattern and it may not be a proper indicator of the future. This makes the estimate of default probabilities from historical data difficult and inexact. To use this same data to estimate default correlations is even more difficult and inexact.
-
-The market trend now is towards the use of mathematical models that don't rely on historical default data. In Chapter~\ref{credit_default_swaps} we have seen how it is possible to derive default probabilities from market data, here we will see how copula can be used to model their correlations to valuate credit derivatives. 
-
-\section{One Factor Gaussian Copula Model}
-While there are several types of copula function models, the first introduced was the \emph{one-factor Gaussian copula model}. This model is quite simple and has, above all, the advantage that can be solved analytically. In essence the one-factor Gaussian copula, is nothing but a numerical algorithm to generate samples of normally distributed random variables that have a given (Gaussian) pair-wise correlation. 
-
-Consider a portfolio of \(N\) bonds and assume that the marginal default probabilities are known for each issuer. Define:
-
-\begin{itemize}
-	\tightlist
-	\item
-	\(t_i\), the time of default of the \(i^{th}\) company:
-	\item
-	\(Q_i(t)\), the cumulative probability that company \(i\) will default
-	before time \(t\); that is, the probability that \(t_i \le t\).
-\end{itemize}
-
-To generate a one-factor model for the default times (\(t_i\)) we define random
-variables \(X_i\) \((1\le i \le N)\)
-\begin{equation}
-X_i = a_i M + \sqrt{1-a_i^2}Z_i,\qquad i = 1, 2,\ldots, N
-\label{eq:normalized_var}
-\end{equation}
-where \(M\) and the \(Z_i\) are independent zero-mean unit-variance  distributions (hence $X_i$ are also distributed with zero-mean and unit standard-deviation) and \(-1 \le a_i \lt 1\).
-
-Eq.~\ref{eq:normalized_var} defines a correlation structure between the \(X_i\) which are dependent on a single common factor \(M\). The $Z_i$ term is usually called the idiosyncratic component of default. The particular functional form of Eq.~\ref{eq:normalized_var} has been chosen to ensure the desired correlation structure among the $X_i$. Indeed the correlation between \(X_i\) and \(X_j\) is
-
-\begin{equation*}
-\rho(X_i, X_j) = \cfrac{\mathbb{E}[(X_i-\mu_i)(X_j-\mu_j)]}{\sigma_{i}\sigma_{j}} =\mathbb{E}[X_i X_j] = a_i a_j \mathbb{E}[M^2] = a_i a_j
-\end{equation*}
-where we just exploit the definition of $X_i$ and its properties.
-
-%Assume that the $i^{th}$ company has defaulted by the time $t_i$ if $X_i$ is below a threshold value $\bar{x}_i(t_i)$.
-If $F_i$ is the cumulative distribution function of $X_i$, with a percentile to percentile transformation (see Section~\ref{distribution-transformation}) we can map \(X_i\) to \(t_i\), so that $Q_i(t_i) = P(X_i\le x)=F_i(x)$. Therefore a point \(X_i = x\) is transformed to \(t_i = t\) with \(x = F_i^{-1}[Q_i(t)]\) connecting the marginal distribution of the copula model to the default times.
-
-Let's note that, \textbf{conditional} on $M$, the $N$ default events are \textbf{independent}. So we can write
-\begin{equation}
-\begin{split}
-Q_i^{\textrm{corr}}(t_i|M) = P(X_i\le x|M) &= P(a_i M + \sqrt{1-a_i^2}Z_i\le x) =\\
-&= P\left(Z_i\le \cfrac{x-a_i M}{\sqrt{1-a_i^2}}\right)
-=H_i\left(\cfrac{F^{-1}[Q(t_i)]-a_i M}{\sqrt{1-a_i^2}}\right)
-\end{split}
-\label{eq:generic_copula}
-\end{equation}
-where $H_i$ is the cumulative distribution function of the $Z_i$.
-
-Although in principle any distribution could be used for \(M\) and the \(Z\)'s (provided they have zero mean and unit variance), one common choice is to let them be standard normal distributions (resulting in a Gaussian copula).
-So we can rewrite Eq.~\ref{eq:generic_copula} as
-
-\begin{equation}
-Q_i^{\textrm{corr}}(t_i|M) = \Phi\left(\cfrac{\Phi^{-1}[Q(t_i)]-a_i M}{\sqrt{1-a_i^2}}\right)
-\label{eq:gaussian_one_factor_copula}
-\end{equation}
-where $\Phi$ denotes the cumulative distribution function of the standard normal distribution.
-
-If we call $\mathcal{C}(t_1,\ldots,t_N)$ the joint distribution of the default times of the $N$ bonds in the portfolio then
-
-\begin{equation}
-\mathcal{C}(t_1,\ldots,t_N, \rho)=\Phi_{N}(\Phi^{-1}(Q_1(t_1)),\ldots,\Phi^{-1}(Q_N(t_N)), \boldsymbol{\rho})
-\label{eq:gaussian_copula}
-\end{equation}
-where $\boldsymbol{\rho}$ represents the correlation matrix of the default probabilities. Eq.~\ref{eq:gaussian_copula} is the one factor Gaussian copula model (one factor because there is only a random variable, $M$, which determines the correlation between $X_i$).
-
-Clearly different choices of distributions result in different copula models, and in various natures of the default dependence. For example, copulas where the \(M\) have heavy tails generate models where there is a greater likelihood of a clustering of early defaults for several companies.
-
-\subsection{Standard Market Model}\label{standard-market-model}
-
-Consider the following two assumptions are made:
-
-\begin{itemize}
-	\tightlist
-	\item
-	all the companies have the same default intensity (hazard rates), i.e, \(\lambda_i = \lambda\) (which means they all have the same default probabilities $Q_i = Q$);
-	\item
-	the pairwise default correlations are the same, i.e \(a_i = a\); in other words the contribution of the market
-	component $M$ is the same for all the companies and the correlation between any two companies is constant, \(\rho = a^2\).
-\end{itemize}
-
-Under these assumptions, given the market situation \(M = m\), all the companies have the same cumulative default probability \(Q_i^{\textrm{corr}}(t_i|m)=P(X_i < x|m)\). Moreover, for a given value of the market component \(M\), the defaults are mutually independent for all the underlying companies. 
-
-In this case the one factor Gaussian model is also called \emph{Market Standard Model}. Later in this Chapter we will also see how the correlation used in Eq.~\ref{eq:gaussian_one_factor_copula} can be implied from the market quotes of credit derivatives.
-
-Letting \(l(t|m)\) be the total defaults that have occurred by time \(t\) conditional on the market condition \(M = m\), then \(l(t|m)\) follows a binomial distribution (see Appendix~\ref{binomial-distribution}), and the probability of default of $j$ companies can be expressed as
-
-\begin{equation}
-DP(l(t|m) = j) = \cfrac{N!}{j!(N-j)!}(Q_i^{\textrm{corr}}(t_i|m))^j(1-Q_i^{\textrm{corr}}(t_i|m))^{N-j},\qquad  j=0, 1, 2,\ldots,N
-\end{equation}
-
-In general to evaluate any function $g(DP(l(t))$ regardless the parameter $M$ (e.g. an NPV or a fair value which depend on the default probability, remember~\ref{sec:cds_valuation}) is necessary to average according to all the possible values that $M$ can take. The average is performed with an integral which is the weighted sum of $g$ with the probability distribution ($f_M(m)$) of the random variable $M$  
-
-\begin{equation}
-g(DP(l(t) = j)) = \int_{-\infty}^{\infty}{g(DP(l(t|m) = j))\cdot f_M(m)dm}
-\label{eq:gaussian_quadrature}
-\end{equation}
-
-In the general case where the default probabilities of each company are not the same it is possible to determine $DP(l(t|M)=j)$ through an iterative procedure before proceeding with the integration of Eq.~\ref{eq:gaussian_quadrature}. An example of this iterative technique will be shown in Section~\ref{sec:expected_losses}.
-
-\subsection{Extensions of the One Factor Copula Model}
-Many other one-factor model have been tried: t-Student copula, Clayton copula, \ldots In general we can define a new model by simply choosing particular functional forms for $M$ and $Z_i$ in Eq.~\ref{eq:normalized_var} provided they are with zero mean and standard deviation one. 
-
-If instead of the single factor $M$ there are two or more, Eq.~\ref{eq:normalized_var} becomes
-
-\begin{equation}
-X_i = a_1 M_1 + a_2 M_2 + \sqrt{1 - a_1^2 - a^2_2}Z_i
-\end{equation}
-and similarly
-\begin{equation}
-Q^{\textrm{corr}}(t|M_1, M_2) = \Phi\left(\cfrac{\Phi^{-1}[Q(t)]-a_1 M_1 - a_2 M_2}{\sqrt{1 - a_1^2 - a^2_2}}\right)
-\end{equation}
-In terms of computation time, this kind of models are proportionally slower with the increase of the number of factors, since the integration of Eq.~\ref{eq:gaussian_quadrature} has to be carried on each factor of the model.
+Credit default swaps have been already introduced, in this Chapter two more kind of credit derivatives will be presented: Basket CDS and Collateralized debt obligations.
 
 \section{Basket Default Swaps}\label{basket-default-swaps}
 
@@ -250,7 +140,7 @@ basket = BasketDefaultSwaps(1, n_cds, rho, observation_date, 0.01, 5)
 print(basket.breakeven_rate(pillar_dates, Q, dc, ndefaults))
 \end{ipython}
 \begin{ioutput}
-0.0017750563139599736
+0.0017753900471554232
 \end{ioutput}
 
 \section{Collateralized Debt Obligation}\label{collateralized-debt-obligation}
@@ -593,20 +483,9 @@ Tranche 3 ([0.09, 1.0]): 0.00017
 
 As expected the equity tranche has the higher fair value being the riskier, while the senior tranche is the safest hence the one with lower premium.
 
-\section{Complex Correlation Structures and the Financial Crisis}
-\label{complex-correlation-structures-and-the-financial-crisis}
-
-In the derivation of the Gaussian Copula Model we have used the normal distribution. However, we could have used other and more complex copulas as well. For example we might want to assume the correlation is non-symmetric which is useful in finance when correlations become very strong during market crashes and returns very negative.
-
-In fact, Gaussian copulas are said to have played a key role in the 2008 financial crisis as tail-correlations were severely underestimated. Consider a set of mortgages in a CDO: they are clearly correlated, since if one mortgage fails, the likelihood that another failing is increased. In the early 2000s, the banks only knew how to model the marginals of the default rates. Then an (in)famous paper by Li~\cite{bib:copula_li} suggested to use Gaussian copulas to model the correlations between those marginals. Rating agencies relied on this model so heavily, that severely underestimated the risk and gave false ratings\ldots
-
-If you are interested in the argument read this paper~\cite{bib:copula_and_2008} for an excellent description of Gaussian copulas and the Financial Crisis, which argues that different copula choices would not have made a difference but instead the assumed correlation was way too low.
-
 \section*{Exercises}
-\input{correlation_ex_text}
+\input{credit_derivatives_ex_text}
 
 \begin{thebibliography}{9}
 \bibitem{bib:cdo} J. C. Hull, \emph{Options, Futures and Other Derivatives, 7th Ed.}, Credit Derivatives (Ch. 23), Pearson Prentice Hall, 2009
-\bibitem{bib:copula_and_2008} S. Watts, \href{http://samueldwatts.com/wp-content/uploads/2016/08/Watts-Gaussian-Copula_Financial_Crisis.pdf}{\emph{Gaussian Copula and Financial Crisis}} [Online]
-\bibitem{bib:copula_li}D. X. Li, \href{http://www.maths.lth.se/matstat/kurser/fmsn15masm23/default.pdf}{\emph{On Default Correlation: A Copula Function Approach}}, RiskMetrics Group, 2000 [Online]
 \end{thebibliography}
