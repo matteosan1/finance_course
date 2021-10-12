@@ -34,7 +34,6 @@ class DiscountCurve:
     factor = np.interp(d_days, self.pillar_days, self.dfs_log)
     return exp(factor)
 
-
 class ForwardRateCurve:
   def __init__(self, pillars, rates):
     self.start_date = pillars[0]
@@ -50,3 +49,39 @@ class ForwardRateCurve:
     d2_frac, r2 = self.interpolate(d2)
     return (r2*d2_frac - r1*d1_frac)/(d2_frac - d1_frac)
     
+class OvernightIndexSwap:
+    def __init__(self, notional, payment_dates, fixed_rate):
+        self.notional = notional 
+        self.payment_dates = payment_dates
+        self.fixed_rate = fixed_rate
+
+    def npv_floating_leg(self, discount_curve):
+        return self.notional * (discount_curve.df(self.payment_dates[0]) -
+                                discount_curve.df(self.payment_dates[-1]))
+
+    def npv_fixed_leg(self, discount_curve):
+        npv = 0
+        for i in range(1, len(self.payment_dates)):
+            start_date = self.payment_dates[i-1]
+            end_date = self.payment_dates[i]
+            tau = (end_date - start_date).days / 360
+            df = discount_curve.df(end_date)
+            npv = npv + df * tau
+        return self.notional * self.fixed_rate * npv
+
+    def npv(self, discount_curve):
+        float_npv = self.npv_floating_leg(discount_curve)
+        fixed_npv = self.npv_fixed_leg(discount_curve)
+        return float_npv - fixed_npv
+
+    def fair_value_strike(self, discount_curve):
+        den = 0
+        for i in range(1, len(self.payment_dates)):
+            start_date = self.payment_dates[i-1]
+            end_date = self.payment_dates[i]
+            tau = (end_date - start_date).days / 360
+            df = discount_curve.df(end_date)
+            den += df * tau
+            num = (discount_curve.df(self.payment_dates[0]) -
+                discount_curve.df(self.payment_dates[-1]))
+        return num/den

@@ -1,7 +1,7 @@
-\chapter{Interest Rate Swaps and Swaptions}
+\chapter{Interest Rate Derivatives}
 \label{interest-rate-swaps-and-swaptions}
 
-In Chapter~\ref{sec:swaps-and-bootstrapping} we introduced a particular type of swap, the Overnight Index Swap. Here we describe a more general Interest Rate Swap and see how it can underlying a swaption, the analogous of the European options for interest rate market.
+In Chapter~\ref{sec:swaps-and-bootstrapping} we introduced a particular type of swap, the Overnight Index Swap. Here we describe the general Interest Rate Swap and see how it can underlying a swaption, the analogous of the European options for interest rate market.
 
 \section{Interest Rate Swaps}\label{interest-rate-swaps}
 
@@ -127,7 +127,10 @@ print (lc.forward_rate(pricing_date, date(2021, 7, 2)))
 0.010070410958904109
 \end{ioutput}
 
+\begin{finmarkets}
 Now a \texttt{InterestRateSwap} class can be implemented to valuate IRS contracts.
+This class goes into \texttt{finmarkets} financial module to manage Interest Rate Swaps.
+\end{finmarkets}
 
 \begin{ipython}
 class InterestRateSwap:
@@ -137,23 +140,17 @@ class InterestRateSwap:
         self.notional = notional
         self.fixed_rate = fixed_rate
         self.fixed_leg_dates = \
-            generate_swap_dates(start_date, 12 * maturity_years)
+            generate_dates(start_date, 12 * maturity_years)
         self.floating_leg_dates = \
-            generate_swap_dates(start_date, 12 * maturity_years, tenor_months)
+            generate_dates(start_date, 12 * maturity_years, tenor_months)
     
-    def annuity(self, discount_curve, pricing_date=None):
-        if pricing_date is None:
-            pricing_date = self.start_date
+    def annuity(self, discount_curve):
         a = 0
         for i in range(1, len(self.fixed_leg_dates)):
-            if pricing_date > self.fixed_leg_dates[i]:
-                continue
             a += discount_curve.df(self.fixed_leg_dates[i])
         return a
 
-    def swap_rate(self, discount_curve, libor_curve, pricing_date=None):
-        if pricing_date is None:
-            pricing_date = self.start_date
+    def swap_rate(self, discount_curve, libor_curve):
         s = 0
         for j in range(1, len(self.floating_leg_dates)):
             F = libor_curve.forward_rate(pricing_date, self.floating_leg_dates[j-1])
@@ -163,7 +160,7 @@ class InterestRateSwap:
             s += F * tau * P
         return s / self.annuity(discount_curve)
 
-    def npv(self, discount_curve, libor_curve, pricing_date=None):
+    def npv(self, discount_curve, libor_curve):
         if pricing_date is None:
             pricing_date = self.start_date
         S = self.swap_rate(discount_curve, libor_curve, pricing_date)
@@ -171,9 +168,6 @@ class InterestRateSwap:
         return self.notional * (S - self.fixed_rate) * A
 \end{ipython}
 
-\begin{finmarkets}
-This class goes into \texttt{finmarkets} financial module to manage Interest Rate Swaps.
-\end{finmarkets}
 Let's test our class instantiating an IRS with 1~M notional, fixed rate of 5\%, 6 month tenor and a maturity of 4 years; discount and LIBOR curves are the same as before.
 
 \begin{ipython}
@@ -431,7 +425,7 @@ The NPV calculated via the Black-Scholes formula falls well within the confidenc
 so we can assert that the two estimates are in agreement at the 95\% confidence level.
 
 \section*{Exercises}
-\input{irs_ex_text}
+\input{ir_derivatives_ex_text}
 
 \begin{thebibliography}{9}
 \bibitem{bib:black_scholes_swaption} G. West and L. West, \href{http://janroman.dhis.org/finance/Black/IntroToBlack.pdf}{\emph{Introduction to Black's Model for Interest Rate Derivatives}}, Financial Modelling Agency [Online]
