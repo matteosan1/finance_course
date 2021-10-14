@@ -65,21 +65,21 @@ Strictly speaking this formula is valid for an EONIA swaps (i.e. for OIS swaps i
 \begin{equation}
 \mathrm{NPV}_{\mathrm{float}} = \sum_{i=1}^{n}D(d_i)\mathbb{E}[f_{\mathrm{float},~i}]
 \end{equation}
-where \(D(d)\) is the discount factor with expiry \(d\). On the other hand we have seen from the forward rate definition (see Section~\ref{calculating-forward-rates}) that
+where \(D(d)\) is the discount factor with expiry \(d\). Eq.~\ref{eq:floating_ois} can be simplified by using the same no-arbitrage argument exploited in Section~\ref{calculating-forward-rates}. Expanding the product indeed
 
 \begin{equation*}
-\prod_{i=0}^{d} (1+r_i\Delta T) = \underbrace{(1+r_{0,1}\Delta T)\underbrace{(1+r_{1,2}\Delta T)\ldots\underbrace{(1+r_{d-2,d-1}\Delta T)(1+r_{d-1,d}\Delta T)}_{=(1+r_{d-2,d}\Delta T)}}_{=(1+r_{1,d}\Delta T)}}_{=(1+r_{0,d}\Delta T)}
+\prod_{i=d}^{d'} (1+r_i\tau_1) = \underbrace{(1+r_{d,d+1}\tau_1)\underbrace{(1+r_{d+1,d+2}\tau_1)\ldots\underbrace{(1+r_{d'-2,d'-1}\tau_1)(1+r_{d'-1,d'}\tau_1)}_{\textstyle =(1+r_{d'-2,d'}\tau_{d'-2,d')}}}_{\textstyle =(1+r_{d+1,d'}\tau_{d+1, d'})}}_{\textstyle =(1+r_{d,d'}\tau_{d,d'})}
 \end{equation*}
-So Eq.~\ref{eq:floating_ois} can be simplified into
+\noindent
+Using Eq.~\ref{eq:no_arbitrage_r} the resulting expression can be written in terms of spot rates
+$$(1+r_{d,d'}\tau_{d,d'}) = \left(\cfrac{1+r_{0, d'}\tau_{0,d'}}{1+r_{0,d}\tau_{0,d}}\right)$$
 
-\begin{equation}
-\mathbb{E}[f_{\mathrm{float},~i}] = N\cdot\Big(\frac{D_{\mathrm{OIS}}(d_{i-1})}{D_{\mathrm{OIS}}(d_{i})} - 1\Big)
-\end{equation}
-hence
-\begin{equation}
-\mathrm{NPV}_{\mathrm{float}} = N\cdot \sum_{i=1}^{n}D(d_i) \Big(\frac{D_{\mathrm{OIS}}(d_{i-1})}{D_{\mathrm{OIS}}(d_{i})} - 1\Big)
-\end{equation}
-where \(D_{\mathrm{OIS}}(d)\) is the discount factor implied by OIS prices (we will see how to derive it).
+Finally it is useful to put the expectation in terms of discount factors
+$$\mathbb{E}[f_{\mathrm{float},~i}] = N\cdot\Big(\cfrac{D_{\mathrm{OIS}}(0, d_{i-1})}{D_{\mathrm{OIS}}(0, d_{i})} - 1\Big)\qquad \mathrm{where}\ D_{\mathrm{OIS}}(0,d)=\cfrac{1}{1+r_{0,d}\tau_{0,d}}$$
+
+
+$$\mathrm{NPV}_{\mathrm{float}} = N\cdot \sum_{i=1}^{n}D(d_i) \Big(\cfrac{D_{\mathrm{OIS}}(d_{i-1})}{D_{\mathrm{OIS}}(d_{i})} - 1\Big)$$
+
 
 %The correct curve to use for discounting the flows of a collateralized contract, like OIS, is the one associated with the collateral. Since OIS contracts are collateralized with cash, and cash accrues daily interest at the overnight rate, the OIS curve is itself the correct curve with which to discount the flows of an OIS contract ! 
 %From what has been said in Section~\ref{sec:financial-crisis}
@@ -118,14 +118,13 @@ so the NPV of the fixed leg is
 \mathrm{NPV}_{\mathrm{fixed}} = N\cdot K\cdot \sum_{i=1}^{n}D(d_{i})\frac{d_i - d_{i-1}}{360}
 \end{equation}
 
-\subsection{\texttt{OvernightIndexSwap} Class}\label{discount-factor-determination-from-market-quotes}
+%\subsection{\texttt{OvernightIndexSwap} %Class}\label{discount-factor-determination-from-market-quotes}
 
-\textbf{Our ultimate goal is to take a series of Overnight Index Swap quotations, and determine the discount factors implied by their prices.} To do this we will build a class to represent OIS and compute its value, given a particular discount curve. Then we will use this class, put inside a numerical optimizer, to \emph{invert} the relationship that connects NPV and discount curve so that the \emph{implied} discount factors can be determined from OIS market quotes.
+\textbf{Our ultimate goal is to take a series of Overnight Index Swap quotations, and determine the discount factors implied by their prices.} 
 
 \begin{finmarkets}
+To do this we will build a class to represent OIS and compute its value, given a particular discount curve. Then we will use this class, put inside a numerical optimizer, to \emph{invert} the relationship that connects NPV and discount curve so that the \emph{implied} discount factors can be determined from OIS market quotes.
 The \texttt{OvernightIndexSwap} class will have also a method called \texttt{fair\_value\_strike} which takes a discount curve object and returns the fixed rate which would make the OIS net present value (NPV) zero. This is quite easy since it is enough to equal the expressions for the NPV of each swap leg and solve for $K$.
-This class also goes into \texttt{finmarkets.py} library as a useful tool to work with Overnight Index Swaps.
-\end{finmarkets}
 
 \begin{equation}
 \begin{gathered}
@@ -133,6 +132,9 @@ K \sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360} = [D(d_0) - D(d_n)] \\
 K = \cfrac{[D(d_0) - D(d_n)]}{\sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}}
 \end{gathered}
 \end{equation}
+
+This class goes into \texttt{finmarkets.py} library as a useful tool to work with Overnight Index Swaps.
+\end{finmarkets}
 
 \begin{ipython}
 class OvernightIndexSwap:
@@ -488,6 +490,15 @@ print (r)
   success: True
         x: array([3.7449385])
 \end{ioutput}
+
+Printing the result gives us the a lot of information about the minimisation just performed, the most useful are:
+\begin{itemize}
+\item \texttt{func}: the objective function value at the last iteration;
+\item \texttt{message}: the summary message (if it is \texttt{CONVERGENCE} is almost always OK);
+\item \texttt{success}: the name is self explanatory;
+\item \texttt{x}: the vector of unknown parameters that have been optimised.
+\end{itemize}
+
 So to minimize production costs the company should produce cans with a radius of about 3.745~cm (or about 74~mm diameter).
 
 \begin{curiosity}
@@ -543,12 +554,8 @@ Finally we have to impose the budget constraint. This is done by defining a func
 The constraint is passed to the minimizer as a dictionary (or a list  of dictionaries if there are more) which has three keys: \(\tt{type}\), in this case set to \texttt{'eq'} (like equality, since we want to spend all of our available money so the fence has to cost exactly \$700), \texttt{'fun'} which defines the constraint function and \texttt{'args'} which is optional and is set to a tuple whose items are the possible parameters for the constraint function (see Section~\ref{sec:kwargs_args}).
 
 The constraint is then defined as
-
 \begin{equation*}
-\begin{cases}
-\mathrm{fence~cost} = l\cdot\mathrm{side\_cost} + l\cdot\mathrm{side\_cost} + w\cdot\mathrm{up\_cost} + w\cdot\mathrm{down\_cost}\\
 \mathrm{budget} - \mathrm{fence~cost} = \mathrm{budget} - 2\cdot l\cdot\mathrm{side\_cost} - w\cdot(\mathrm{up\_cost} + \mathrm{down\_cost}) = 0
-\end{cases}
 \end{equation*}
 
 \begin{ipython}
@@ -643,31 +650,34 @@ However there shouldn't be such an issue in the application of the bootstrap alg
 \subsection{Back to Bootstrapping}
 \label{ois-example}
 
-Here the problem consists of finding the discount curve $\mathcal{C}$ such that it prices as much correctly as possible each OIS by minimizing the sum of the squared NPVs (our $f_i$):
-
+At the beginning of the Chapter we said that the OIS market quotes represent the \emph{fair} prices (i.e. the price which buyer and seller happily agree to pay for the contract). This means that the OIS NPV's should be close to 0 hence the natural choice for the objective function is
 \begin{equation}
-	\mathrm{min}_{\mathcal{C}} \Big\{\sum_{i=1}^{n}\mathrm{NPV}(\mathrm{OIS}_i, \mathcal{C})^2\Big\}
+\mathrm{Objective Function} =	\sum_{i=1}^{n}\mathrm{NPV}^\mathrm{OIS}_i(\mathcal{C})^2
 \end{equation}
+\noindent 
+so the NPVs are the $f_i$ of Eq.~\ref{eq:bootstrap_as_minimization}.
 
-Remember we are assuming that the market quotes represent the OIS \emph{fair} prices, so their NPV's should be close to 0.
+Once the OIS characteristics (e.g. nominal, maturity\ldots) have been specified the only unknown parameter in the NPV calculation is the discount curve $\mathcal{C}$ (i.e. the minimization algorithm will adjust $\mathcal{C}$ to reach the minimum).
 
-The previous equation is the objective function to implement, and the algorithm will adjust the unknown discount factors of $\mathcal{C}$ to reach the minimum.
-
-In the previous examples though, the number of minimization parameters (i.e. the degrees of freedom of the problem) was clear:
+In the previous examples the number of minimization parameters,  \emph{the degrees of freedom} of the problem, were clear:
 \begin{itemize}
 \item 1 for the can example, the can radius;
 \item 2 for the fence problem, width and height of the field.
 \end{itemize}
 
-A discount curve is characterized by pillar dates ($\mathbf{d}$) and discount factors ($\mathbf{x}$), but we haven't yet identified a constraint on how many points the curve is made of (too many or too few points may prevent us from finding the solution).
-\textbf{In practice, it makes sense to choose the number of degrees of freedom to match the number of market quotes.} In particular it is wise to choose the pillar dates of the discount curve equal to the set of the swap expiry dates.
+A discount curve is characterized by a set of pillar dates ($\mathbf{d}$) and a set of discount factors ($\mathbf{x}$), although it hasn't yet been identified any constraint on how many points the curve has to be made of (too many or too few points may prevent us from finding the solution).
+
+In practice \textbf{it makes sense to choose the degrees of freedom to match the number of market quotes}. In particular it is wise to choose the pillar dates of the discount curve equal to the set of the swap expiry dates, leaving as unknown parameters just the discount factors.
+
+The final version of the optimization problem becomes
 
 \begin{equation}
- F= \mathrm{min}_{\mathbf{x}} \Big\{\sum_{i=1}^{N}\mathrm{NPV}^2(\mathrm{OIS}_i, \mathcal{C}(\mathbf{d}, \mathbf{x}))\Big\}\qquad (f_i^2 = \mathrm{NPV}^2(\mathrm{OIS}_i, \mathcal{C}(\mathbf{d}, \mathbf{x})))
+ \mathrm{min}_{\mathbf{x}} \left\{\sum_{i=1}^{N}\mathrm{NPV}^\mathrm{OIS}_i( \mathcal{C}(\mathbf{x}))^2\right\}
 \end{equation}
-which is the final version of our optimization problem (i.e. finding the minimum of the above expression as a function of $\mathbf{x}$).
+i.e. finding the minimum of the above expression as a function of the discount factors $\mathbf{x}$.
 
-First the swaps has to be created according to all the available market quotes
+\subsection{Bootstrapping of Discount Curve}
+The first to implement is the creation of the swap objects according to all the available market quotes
 
 \begin{ipython}
 from finmarkets import generate_dates
@@ -678,7 +688,7 @@ pillar_dates = [observation_date]
 swaps = []
 
 for i in range(len(mq)):
-    swap = OvernightIndexSwap(1e6,
+    swap = OvernightIndexSwap(1,
              generate_dates(observation_date,
                             mq.loc[i, 'months']),
              0.01 * mq.loc[i, 'quote'])
@@ -695,13 +705,12 @@ Then implement step by step the bootstrapping as described in Section~\ref{sec:b
 \begin{itemize}
 \tightlist
 \item
-  define the objective function: the sum of the squared NPVs of the OIS (today's discount factor is fixed to 1 so it may not be included in the minimization parameters, hence it is added in the function definition). Note that any objective function can have constant additional parameters beside those used in the minimization, the convention assumes that the first parameter of the function must be those to minimize. 
+  define the objective function: the sum of the squared NPVs of the OIS (today's discount factor is fixed to 1 so it may not be included in the minimization parameters). Note that any objective function could have constant additional parameters beside those used in the minimization, the convention assumes that the first parameter of the function must be that used to find the minimum. 
 
 \begin{ipython}
 import numpy as np
 
 def objective_function(x, obs_date, pillars):
-    x = np.insert(x, 0, 1)
     curve = DiscountCurve(pillars, x)
     sum_sq = 0.0
     for swap in swaps:
@@ -710,17 +719,16 @@ def objective_function(x, obs_date, pillars):
 \end{ipython}
 
 \item
-  set the initial value of the discount factors (\(x_i^0\)) to 1 with a
-  range of variability \([ 0.01, 10]\), (again today's discount factor is not considered 
-  in the list, see \texttt{insert} command)
+  set the initial value of the discount factors (\(x_i^0\)) to 1 with a range of variability \([ 0.01, 10]\). Discount factor 0 will be set fixed to 1.
 
 \begin{ipython}
-x0 = [1.0 for i in range(len(pillar_dates)-1)]
-bounds = [(0.01, 10.0) for i in range(len(pillar_dates)-1)]
+x0 = [1.0 for i in range(len(pillar_dates))]
+bounds = [(0.01, 10.0) for i in range(len(pillar_dates))]
+bounds[0] = (1, 1)
 \end{ipython}
 
 \item
-  finally we can launch the minimizer to find the discount factors
+  finally launch the minimizer to find the discount factors
   (\(\mathbf{x}\))
 
 \begin{ipython}
@@ -730,58 +738,47 @@ result = minimize(objective_function, x0, bounds=bounds,
 print (result)
 \end{ipython}
 \begin{ioutput}
-      fun: 0.0006561234813731959
- hess_inv: <30x30 LbfgsInvHessProduct with dtype=float64>
-      jac: array([-1.46749218, -1.52880351, -1.58043371, -1.62444368,
-                  -1.65793781, -1.68430928, -1.69973037, -1.70611237, 
-                  -1.70035125, -1.68091034, -1.64422388, -6.24051456,  
-                   2.15976419,  1.88313032,  1.73861385, -1.39376647,  
-                   3.25043542,  6.29526861,  4.68446978,  0.59831059,
-                  -2.50678569, -2.87296531, -0.35746643,  3.87250114,  
-                   8.63671196, -1.6629543 ,  4.92871632,  2.83505097, 
-                  -1.31891876, -1.77479162])
-  message: b'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH'
-     nfev: 496
-      nit: 9
+      fun: 7.524412227760359e-11
+ hess_inv: <34x34 LbfgsInvHessProduct with dtype=float64>
+      jac: array([ 3.32621854e-05,  2.86254121e-10, -3.41693024e-10, 
+                  -2.00079832e-09, -4.76311694e-09, -8.17657833e-09,
+                  ...
+                   5.53307407e-06,  1.15870053e-07, -6.00554370e-06])
+  message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
+     nfev: 245
+      nit: 5
    status: 0
   success: True
-  x: array([1.00029175, 1.00058832, 1.00088044, 1.00118752,
-  1.00148972, 1.00176787, 1.00207128, 1.00236508, 1.00266885,
-  1.002963  , 1.0032578 , 1.00356136, 1.00444991, 1.00529984,
-  1.00614269, 1.00693073, 1.00907045, 1.00931993, 1.00710124,
-  1.00189872, 0.99379275, 0.98332974, 0.97101001, 0.95723162,
-  0.94267503, 0.9277256 , 0.8831291 , 0.81781096, 0.76554623,
-  0.71988353, 0.64350526, 0.5928188 , 0.54546435])
+        x: array([1.        , 1.00030147, 1.00058831, 1.00089012, 1.00119726,
+                  1.0014702 , 1.00177764, 1.00207127, 1.00237486, 1.00266883,
+                  1.00297278, 1.00326755, 1.00355768, 1.00445928, 1.00530914,
+                  1.00614223, 1.00692722, 1.00906709, 1.00931689, 1.0070987 ,
+                  1.00189684, 0.99379161, 0.98332933, 0.97101021, 0.95723227,
+                  0.94267596, 0.92772621, 0.88312958, 0.81780977, 0.76554631,
+                  0.71988653, 0.64350803, 0.59281895, 0.54546952])
 \end{ioutput}
 \end{itemize}
 
-Printing the result gives us the a lot of information about the minimisation just performed, the most useful are:
-\begin{itemize}
-\item \texttt{func}: the objective function value at the last iteration;
-\item \texttt{message}: the summary message (if it is \texttt{CONVERGENCE} is almost always OK);
-\item \texttt{success}: the name is self explanatory;
-\item \texttt{x}: the vector of unknown parameters that have been optimised.
-\end{itemize}
-
-Another useful check to perform in order to understand if everything went fine, is the comparison of the objective function value at the beginning and at the end of the minimization.
+A useful cross-check to perform to understand if everything went fine, is the comparison of the objective function value at the beginning and at the end of the minimization.
 
 \begin{ipython}
 print ("Initial objective function value ", objective_function(x0))
 print ("Final objective function value ", objective_function(result.x))
 \end{ipython}
 \begin{ioutput}
-Initial objective function value  1399018851176.301
-Final objective function value  0.0006561234813731959
+Initial objective function value 1.0558491183367456
+Final objective function value 7.524412227760359e-11
 \end{ioutput}
-The objective function at the end of the minimisation is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied, the initial value was around $10^{11}$ and now it is $10^{-4}$ so 15 orders of magnitude smaller. This means that with the derived discount curve the NPV's of our OIS won't be identically 0 but so small that can be regarded as they would.
+The objective function at the end of the minimisation is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied: the initial value was around $1$ and now it is $10^{-11}$ so several orders of magnitude smaller. This means that with the derived discount curve the NPV's of our OIS won't be identically 0 but so small that can be regarded as they would.
 
-It can be very useful to also look at some diagnostic plots to check if the minimization was successful. Figure~\ref{fig:minimization_diagnostic} reports on the left the objective function value as a function of discount factor $(x_0)$; clearly we have found a minimum (the orange point represent $x_0$ value at the end of the minimization). On the right instead, the value of the objective function at each iteration is shown, its value is decreasing dramatically (notice that the $y$ axis is drawn in log scale).
+It can be very useful to also look at some diagnostic plots to check if the minimization was successful. Figure~\ref{fig:minimization_diagnostic} reports on the left the objective function value as a function of discount factor $(x_{32})$; clearly we have found a minimum (the sixth point represents the parameter value at the minimization end). On the right instead, the value of the objective function at each iteration is shown: its value is decreasing dramatically (notice that the $y$ axis is drawn in log scale).
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.9\linewidth]{figures/obj_func_diagnostic}
-	\caption{Diagnostic plots for the minimization algorithm. On the left the objective function value as a function of the discount factor $x_1$ (the red point represent $x_0$ value at the end of the minimization), on the right the objective function value as a function of the iteration number.}
-	\label{fig:minimization_diagnostic}
+\centering
+\includegraphics[width=0.45\linewidth]{figures/obj_func_diagnostic1}
+\includegraphics[width=0.45\linewidth]{figures/obj_func_diagnostic2}
+\caption{Diagnostic plots for the minimization algorithm. On the left the objective function value as a function of the discount factor $x_1$ (the red points represent $x_{32}$ values taken during the minimization), on the right the objective function value as a function of the iteration number.}
+\label{fig:minimization_diagnostic}
 \end{figure}
 
 Finally we can create the discount curve implied by the market quotes of our swaps (see Fig.~\ref{fig:discount_curve}) and try to compute some implied rates (remember to add back the first discount factor to the vector of parameters).
@@ -790,7 +787,6 @@ Finally we can create the discount curve implied by the market quotes of our swa
 from math import log
 from dateutil.relativedelta import relativedelta
 
-dfs = np.insert(result.x, 0, 1)
 curve = DiscountCurve(pillar_dates, dfs)
 d = observation_date + relativedelta(years=40)
 
