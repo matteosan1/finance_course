@@ -2,7 +2,7 @@
 
 A credit derivative is a financial contract that allows parties to minimize their exposure to credit risk. Credit derivatives consist of a privately held, negotiable bilateral contract traded over-the-counter (OTC) between two parties in a creditor/debtor relationship. These allow the creditor to effectively transfer some or all of the risk of a debtor defaulting to a third party. This third party accepts the risk in return for payment, known as the premium.
 
-Credit default swaps have been already introduced, in this Chapter two more kind of credit derivatives will be presented: Basket CDS and Collateralized debt obligations.
+Credit default swaps have been already introduced, in this Chapter two more kind of credit derivatives will be presented: Basket Default Swaps and Collateralized Debt Obligations (CDO).
 
 \section{Basket Default Swaps}\label{basket-default-swaps}
 
@@ -10,9 +10,9 @@ A Basket Default Swap is a credit derivative on a portfolio of reference entitie
 
 This kind of contracts are very similar to normal CDS except for the protection they offer. With respect to a basket of reference entities, a first-to-default swap provides insurance for only the first default, a second-to-default swap provides insurance for only the second default, or a nth-to-default swap provides insurance for only the $n^{th}$ default. 
 
-For example, in the last case, the seller does not make any payment to the protection buyer for the first $n-1$ defaulted reference entities, and makes it only for the $n^{th}$ defaulted reference entity. Once there has been this payment the swap terminates.
+For example, in the latter, the seller does not make any payment to the protection buyer for the first $n-1$ defaulted entities, and makes it only for the $n^{th}$. Once there has been this payment the swap terminates.
 
-The cost of protection in nth-to-default basket is obviously dependent on default correlations. Suppose that a basket of 100 reference entities is used to define a 5-year nth-to-default CDS and that each reference entity has a 2\% probability of defaulting during the next 5 years. When the default correlation between the reference entities is zero, the binomial distribution (see Appendix~\ref{binomial-distribution}) shows that the probability of one or more defaults during 5 years is 86.74\% and the probability of ten or more defaults is 0.0034\%.
+The cost of protection in nth-to-default basket is obviously dependent on default correlations. Suppose that a basket of 100 reference entities is used to define a 5-year nth-to-default swap and that each reference entity has a 2\% probability of defaulting during the next 5 years. When the default correlation between the reference entities is zero, the binomial distribution (see Appendix~\ref{binomial-distribution}) shows that the probability of one or more defaults during 5 years is 86.74\% and the probability of ten or more defaults is 0.0034\%.
 
 \begin{ipython}
 from scipy.stats import binom
@@ -26,18 +26,22 @@ P(>=1) : 0.8673804441052471
 P(>=10): 3.441680604299169e-05
 \end{ioutput}
 
-A first-to-default is therefore quite valuable whereas a tenth-to-default CDS is worth almost nothing.
+A first-to-default is therefore quite valuable whereas a tenth-to-default swap is worth almost nothing.
 
 As the default correlation increases the probability of one or more defaults declines but that for ten or more defaults increases. In the limit where default correlations are perfect the probability of one or more defaults equals the probability of ten or more and it is 2\%. This is because in this extreme situation the reference entities are essentially the same: either they all default (with 2\% probability) or none of them default (with 98\% probability). Similarly for the value of the basket default swaps.
 
-\subsection{Basket CDS Valuation under Gaussian Copula Model}
+\subsection{Basket Default Swap Valuation}
 \label{basket-cds-valuation-under-market-standard-model}
 We now present some numerical results for an nth-to-default basket. We assume that principals and expected recovery rates are the same for all underlying reference assets. The valuation procedure is similar to that for a regular CDS where there is only one reference entity.
 
-There the valuation is based on the probability that a default occurred between times \(t_1\) and \(t_2\), see Section~\ref{sec:cds_valuation}. Here instead the valuation will be based on the probability that the $n^{th}$ default happened between times \(t_1\) and \(t_2\): the buyer of protection makes quarterly payments at a
-specified rate until the $n^{th}$ default occurs, in which case the seller pays \(F\cdot(1-R)\), or the end life of the contract is reached. 
+There the valuation was based on the probability that a default occurred between times \(t_1\) and \(t_2\), see Section~\ref{sec:cds_valuation}. Here instead it will rely on the probability that the $n^{th}$ default happened between times \(t_1\) and \(t_2\). The buyer of protection makes quarterly payments at a specified rate until the $n^{th}$ default occurs, in which case the seller pays \(F\cdot(1-R)\), or the end life of the contract is reached. 
 
-In the following we are going to develop a \texttt{BasketDefaultSwap} class that is able to compute the basket NPV and its break-even spread. The idea is:
+\begin{finmarkets}
+In the following we are going to develop a \texttt{BasketDefaultSwap} class that is able to compute the basket NPV and its break-even spread. 
+The class has to go into the module \texttt{finmarkets} to increase its capabilities.
+\end{finmarkets}
+
+Assuming that we are under the assumption of the One Factor Copula model, the strategy is:
 \begin{itemize}
 \item compute the correlated default probability of each name according to 
 \begin{equation}
@@ -45,19 +49,18 @@ Q^{\textrm{corr}}(t|M) = \Phi\left(\cfrac{\Phi^{-1}[Q(t)]-\sqrt{\rho} M}{\sqrt{1
 \end{equation}
 \item compute the probability of having at least $j$ defaults using the binomial distribution
 \begin{equation}
-DP(l(t|m) \ge j) = \sum_{k=j}^{N}\left[  \cfrac{N!}{k!(N-k)!}Q^{\textrm{corr}}(t|M)^k(1-Q^{\textrm{corr}}(t|M))^{N-k}\right]
+P_{\mathrm{def}}(l(t|m) \ge j) = \sum_{k=j}^{N}\left[  \cfrac{N!}{k!(N-k)!}Q^{\textrm{corr}}(t|M)^k(1-Q^{\textrm{corr}}(t|M))^{N-k}\right]
 \end{equation}
-\item create a \textbf{credit curve}, $CC(DP)$ with those probabilities;
-\item re-use the \texttt{CreditDefaultSwap} class methods to compute NPV and break-even rate (with the appropriate discount curve $DC$ and the credit curve determine above), through integration of
+\item create a \textbf{credit curve}, $CC(P_{\mathrm{def}})$ with those probabilities;
+\item re-use the \texttt{CreditDefaultSwap} class to compute NPV and break-even rate (with the appropriate discount curve $DC$ and the credit curve determine above), through integration of
 \begin{equation}
-\mathrm{NPV}(DC, CC(DP)) = \int_{-\infty}^{\infty}{\mathrm{NPV}(DC, CC(DP)) f_M(m)dm} 
+\mathrm{NPV}(DC, CC(P_{\mathrm{def}})) = \int_{-\infty}^{\infty}{\mathrm{NPV}(DC, CC(P_{\mathrm{def}})) f_M(m)dm} 
 \end{equation}
-and similarly for the break-even rate.
 \end{itemize}
 
 Since to valuate a basket default swap we need to perform integrals let's see briefly how it works in \texttt{python}.
 
-To integrate a function \(f\) we can use \(\tt{scipy.integrate.quad}\) which takes in input: the function to integrate, the integration limits and, if needed, optional arguments of the integrand (see Section~\ref{sec:kwargs_args}). Since it is a numerical integration the result will be a tuple with the actual value and the associated error (we will always be interested in the first item only though).
+To integrate a function \(f\) we can use \(\tt{scipy.integrate.quad}\) which takes in input: the function to integrate (the integrand), the integration limits and, if needed, optional arguments for the integrand (see Section~\ref{sec:kwargs_args}). Since it is a numerical integration the result will be a tuple with the actual value and the associated error (we will be interested in the first item only though).
 
 For example imagine to integrate
 \[f(x) = \int_{-2}^{4}(ax^{3} + b)~dx\]
@@ -110,11 +113,7 @@ class BasketDefaultSwaps:
         return s[0]
 \end{ipython}
 
-\begin{finmarkets}
-The \texttt{BasketDefaultSwaps} class has to go into the module \texttt{finmarkets} to increase its capabilities.
-\end{finmarkets}
-
-Consider a 5-year 1st-to-default basket of ten reference entities in the situation where the Gaussian copula correlation is 0.3 and the expected recovery rate, \(R\), is \(40\%\). The term structure of interest rates is assumed to be flat at 5\%. The default probabilities for the ten entities are generated by Poisson processes with constant default intensities (hazard rates), \(\lambda_i=0.01\), so that
+Consider a 5-year 3rd-to-default basket of ten reference entities in the situation where the Gaussian copula correlation is 0.3 and the expected recovery rate, \(R\), is \(40\%\). The term structure of interest rates is assumed to be flat at 5\%. The default probabilities for the ten entities are generated by Poisson processes with constant default intensities, \(\lambda_i=0.01\), so that
 
 \[ Q(t) = 1 - e^{-\lambda t} \]
 
@@ -338,7 +337,7 @@ TL_{t}^{L,U}=\mathrm{max}(\mathrm{min}(\frac{l}{N}\cdot F(1-R), U)-L, 0)
 \end{equation}
 where the only random variable is the number of defaults $l$. We also know that 
 \begin{equation}
-\mathbb{E}[TL_{t}^{L,U}] = \sum_{l=0}^{N}TL_{t}^{L,U}\cdot \int_{-\infty}^{\infty} DP(l(t|M)=j) \phi(M)dM
+\mathbb{E}[TL_{t}^{L,U}] = \sum_{l=0}^{N}TL_{t}^{L,U}\cdot \int_{-\infty}^{\infty} P_{\mathrm{def}}(l(t|M)=j) \phi(M)dM
 \label{eq:etl}
 \end{equation}
 
@@ -367,7 +366,9 @@ As a last consideration we have to notice that all equations shown previously ha
 %
 %A common analogy compares the cash flow from the CDO's portfolio of securities (say mortgage payments from mortgage-backed bonds) to water flowing into cups of the investors where senior tranches were filled first and overflowing cash flowed to junior tranches, then equity tranches. If a large portion of the mortgages enter default, there is insufficient cash flow to fill all these cups and equity tranche investors face the losses first.
 
-The following code implements a \texttt{CollDebtObligation} class.
+\begin{finmarkets}
+Clearly this class too has to go into the \texttt{finmarkets} module. The following code implements a \texttt{CollDebtObligation} class.
+\end{finmarkets}
 
 \begin{ipython}
 from finmarkets import DiscountCurve, CreditCurve, generate_swap_dates
@@ -438,9 +439,6 @@ class CollDebtObligation:
         return num / den
 \end{ipython}
 
-\begin{finmarkets}
-Clearly this class too has to go into the \texttt{finmarkets} module.
-\end{finmarkets}
 Let's test the class with a CDO with 1 year maturity and a reference portfolio of 125 names. Each of them have the same default probabilities, defined through a credit curve (\texttt{cc}) and the correlation is set to 0.3. The risk free rate is flat at 5\%. The tenor has been chosen to 12 months mainly for performance reasons since the computation of the expected losses implies the integration in Equations~\ref{eq:tl} and \ref{eq:etl}, for each name, and for each payment date and this can be quite time consuming.
 Tranches and premiums are defined as follows:
 \begin{itemize}
