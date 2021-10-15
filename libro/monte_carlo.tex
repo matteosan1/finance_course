@@ -1,66 +1,48 @@
 \chapter{Monte Carlo Simulation}
 \label{cap:montecarlo}
 
-The modern version of the Monte Carlo method dates back to the introduction of the first computers and their application during the years 1940-45 with the purpose of computing neutron diffusion in atomic bombs.
+The modern version of the Monte Carlo method dates back to the application of the first computers during the years 1940-45 with the purpose of computing neutron diffusion in atomic bombs.
 
-The Monte Carlo approach was primarily promoted by physics researchers Stanislaw Ulam, Nicholas Metropolis and John von Neumann.
-
-They were well aware of the potential of such techniques but it was only with the first electronic computer, the ENIAC, which was able to solve differential equations at a tremendous so far inconceivable speed, the Monte Carlo method was eventually triggered.
+The Monte Carlo approach was primarily promoted by physics researchers Stanislaw Ulam, Nicholas Metropolis and John von Neumann. They were well aware of the potential of such techniques but it was only with the first electronic computer, the ENIAC, which was able to solve differential equations at a tremendous, and so far inconceivable, speed, that Monte Carlo method was eventually triggered.
 
 The name Monte Carlo refers to a famous casino in Monaco where Ulam's uncle used to indulge his gambling passion. 
 The characteristics of randomness and the repetitive nature of many processes correspond with the games played in a casino. Note that the famous roulette wheel is one of the simplest mechanical devices to generate random variables.
 
-Simulation tools find their application mostly in cases where the inherent complexity of a problem makes the use of other techniques impossible or where no analytically tractable solution with a
-deterministic algorithm is existing. In short, \emph{the Monte Carlo method is a numerical approach which aims for solving mathematical problems by the simulation of random variables}.
-
-Monte Carlo simulations are widely used in many fields: Engineering, Physics, Computational biology, Computer graphics, Applied statistics and Artificial intelligence for games.
+Monte Carlo tools find their application mostly in cases where the inherent complexity of a problem makes the use of other techniques impossible or where no analytically tractable solution exists.
+They are are widely used in many fields: Engineering, Physics, Computational biology, Computer graphics, Applied statistics and Artificial intelligence for games.
 
 It started to be en vogue in financial mathematics in the 1980s, particularly when the theories of the random walk of asset prices came up.
-
-%The modern version of the Monte Carlo method was invented in the late
-%1940s by Stanislaw Ulam, while he was working on nuclear weapon
-%projects at the Los Alamos National Laboratory.
-
-%Monte Carlo methods, or experiments, are a broad class of computational
-%algorithms that rely on repeated random sampling to obtain numerical
-%results; the underlying concept is to use randomness to solve problems
-%that might be deterministic in principle. Monte Carlo methods are mainly
-%used in three problem classes: optimization, numerical integration, and
-%generating draws from a probability distribution.
 
 In this Chapter this very important technique is reviewed and presented beside some applications.
 
 \section{The Algorithm}
 \label{whats-monte-carlo-simulation}
 
-Monte Carlo (MC) methods are used when a closed-form solution for a property being studied cannot be developed (i.e. the probability of varying outcomes cannot be determined because of random variable interference).
+Monte Carlo (MC) methods are used when a closed-form solution for a problem cannot be developed, i.e. the result cannot be determined because of random variable interference.
+In short, \emph{the Monte Carlo method is a numerical approach which aims for solving mathematical problems by the simulation of random variables}.
 
-When faced with significant uncertainty in the process of making a forecast or estimate, rather than just replacing the uncertain variable with a single average number, the Monte Carlo Simulation might prove to be a better solution by using multiple values.
-This is achieved by building models of possible results where any factor that has inherent uncertainty (random variables) is replaced with a range of values (i.e. a probability distribution).
+Indeed each variable of a model that have uncertainty is replaced by a random number sampled from its PDF (this is a clear improvement to just replacing the uncertain variable with a single average number).
+The model is then run and a result is provided. This process is repeated again and again while assigning the variables in question with many different values. Once the simulation is completed, the results are averaged together to provide an estimate or the distribution of possible outcome values is drawn.
 
-A Monte Carlo simulation takes the variables that have uncertainty and assigns them a random value. The model is then run and a result is provided. This process is repeated again and again while assigning the variables in question with many different values. Once the simulation is completed, the results are averaged together to provide an estimate or the distribution of possible outcome values is drawn.
+Note that depending upon the number of uncertainties and their ranges, a Monte Carlo simulation could involve thousands or tens of thousands of recalculations before it is completed.
 
-Note that depending upon the number of uncertainties and the ranges specified for them, a Monte Carlo simulation could involve thousands or tens of thousands of recalculations before it is completed.
-
-A MC method/algorithm then can be described as follows:
+A MC method/algorithm then can be summarized as follows:
 
 \begin{itemize}
-\item  identify the independent and dependent variables and define their domain $\Omega$ of possible inputs (probability distributions for our inputs);
-\item generate random inputs from the domain \(\Omega\);
+\item  identify all the variables of the problem and define their domain $\Omega$ of possible inputs (probability distributions for the inputs);
+\item sample random inputs from the domain \(\Omega\);
 \item compute the model output based on the randomly generated inputs;
-\item repeat the experiment N number of times and aggregate the results.
+\item repeat the experiment $N$ times and aggregate the results.
 \end{itemize}
 
-Imagine to simulate the results of rolling a die: the only variable is the die outcome,  $\Omega =1,2,3,4,5,6$, the outcome probability is a uniform distribution since every result is equiprobable. So the simulation consists of sampling uniform distributed integers between 1 and 6.
-
-In the next Sections we will see each step in the implementation of practical examples.
+Imagine to simulate the results of rolling a die: the only variable is the die outcome, so $\Omega =1,2,3,4,5,6$ and the outcome probability is a uniform distribution (i.e. we are using a fair die and outcomes are equiprobable). Hence the simulation consists of sampling uniform distributed integers between 1 and 6.
 
 \section{Pseudo-Random Numbers}
 \label{pseudo-random-numbers}
 
-The need of generating random inputs during a MC simulation requires large amounts of \emph{random numbers} to be generated, and it was their use that spurred the development of pseudo-random number generators. 
+The need of generating random inputs during a MC simulation requires large amounts of \emph{random numbers} to be generated, and it was their use that spurred the development of \emph{pseudo-random number generators}. 
 
-Nowadays every programming language has libraries that allows to produce huge series of random numbers. These series, which have very large periodicity (e.g. \(2^{19937}\)), are calculated by algorithms that take as input a \emph{seed} which determines them uniquely. This means that choosing the same seed you will produce the same set of numbers every time (which is great for debugging purposes).
+Nowadays every programming language has libraries that allow to produce huge series of random numbers. These series, which have very large periodicity (e.g. \(2^{20000}\)), are calculated by algorithms that take as input a \emph{seed} which determines them uniquely. This means that choosing the same seed will produce the same set of numbers every time (which is great for debugging purposes though).
 
 In \texttt{python} one of the available modules to generate random numbers is \texttt{random} which has, among others, the following useful functions:
 \begin{itemize}
@@ -68,11 +50,9 @@ In \texttt{python} one of the available modules to generate random numbers is \t
 \item
   \texttt{seed}: set the seed of the random number generator;
 \item
-  \texttt{random}: returns a random number between 0 and 1 (with uniform
-  probability);
+  \texttt{random}: returns a random number between 0 and 1 (with uniform probability);
 \item
-  \texttt{randint(min,\ max)}: returns an integer random number between
-  \texttt{min} and \texttt{max} (with uniform probability);
+  \texttt{randint(min,\ max)}: returns an integer random number between \texttt{min} and \texttt{max} (with uniform probability);
 \item
   \texttt{sample(aList,\ k=n)}: samples n elements from the list
   \texttt{aList}.
@@ -80,7 +60,7 @@ In \texttt{python} one of the available modules to generate random numbers is \t
 \noindent
 For a more detailed description check \texttt{help(random)}.
 
-The following example shows an application of these functions beside the effect of  changing the random number generator seed.
+The following example shows an application of these functions beside the effect of changing the random number generator seed.
 
 \begin{ipython}
 import random
@@ -148,9 +128,8 @@ plt.show()
 \label{fig:uniform_dist}
 \end{figure}
     
-Another module that is capable of generating random numbers is \texttt{numpy}. It has similar functionalities to \texttt{random} but in some cases it fits better to our needs.    
-Below an example with \texttt{numpy.random.normal} which allows to throw random numbers according to a normal distribution
-(\(\mathcal{N}(0, 1)\)), its plot is shown in Fig.~\ref{fig:gauss_dist}.
+Another module that will be used to generate random numbers is \texttt{numpy}. It has similar functionalities to \texttt{random} but in some cases it fits better to our needs.    
+Below an example with \texttt{numpy.random.normal} which throws random numbers sampled from a normal distribution (\(\mathcal{N}(0, 1)\)), the resulting distribution is shown in Fig.~\ref{fig:gauss_dist}.
 
 \begin{ipython}
 from numpy.random import normal
@@ -166,9 +145,9 @@ plt.show()
 \end{ipython}
 
 \begin{figure}
-   \centering
-   \includegraphics[width=0.7\textwidth]{figures/standard_normal}
-   \caption{Normal distribution generated with \texttt{numpy.random.normal} function.}
+\centering
+\includegraphics[width=0.7\textwidth]{figures/standard_normal}
+\caption{Normal distribution generated with \texttt{numpy.random.normal} function.}
 \label{fig:gauss_dist}
 \end{figure}
 
@@ -178,12 +157,9 @@ plt.show()
 %
 %The acceptance-rejection method was proposed by von Neumann in 1951 and
 %is used in order to generate random variables that follow a probability
-%density function denoted by \(f(x)\). Since we are occasionally
-%struggling in inverting the CDF that corresponds to our \(f(x)\), the
-%just discussed inverse transform method loses ground and the
-%acceptance-rejection method is applied.
+%density function denoted by \(f(x)\).
 %
-%Given a so called target distribution \(f(x)\), the acceptance-rejection
+%Given a target distribution \(f(x)\), the acceptance-rejection
 %method generates samples according to \(f(x)\) by first of all
 %generating samples from a more suitable distribution \(g(y)\).
 %Afterwards a random subset of these generated samples is rejected
@@ -210,23 +186,23 @@ plt.show()
 %step 1.
 %\end{enumerate}
 
-\section{Practical Examples of Monte Carlo Simulation}
+\section{Monte Carlo Simulation Examples}
 \label{example-of-monte-carlo-simulation}
 
 In this Section we go through some applications of the Monte Carlo method.
 
-\subsection{Probability to draw two kings from a deck}
-Using a frequentist approach, we can calculate the probability of an event as the ratio of the number of favorable outcomes of an experiment (number of successes) and the number of all possible outcomes. 
+\subsection{Probability to Draw Two Kings From a Deck}
+According to the frequentist approach, we can calculate the probability of an event as the ratio of the number of favorable outcomes (number of successes) and the number of all possible outcomes. 
 
-Imagine we would like to determine the probability of drawing two kings from a standard deck of cards. At the beginning we have 40 cards (i.e. the entire deck) with 4 possible kings, so the probability to get a king is $4/40$. Next, assuming we got a king the first time, we are left with 39 cards and 3 kings only, so the probability to get the second king is $3/39$. Since we want both events to happen, the final probability is the product of the two contributions:
+Imagine we would like to determine the probability of drawing consecutively two kings from a deck of cards. At the beginning there are 40 cards (i.e. the entire deck) with 4 possible kings, so the probability to get the first king is $4/40=10\%$. Next, assuming we've got a king the first time, we are left with 39 cards and 3 kings only, so the probability to get the second king is $3/39=7.7\%$. Since we want both events to happen, the final probability is the product of the two:
 
 \begin{equation*}
-P_\textrm{two kings} = \frac{4}{40} \cdot \frac{3}{39} = \frac{1}{130} \approx 0.0077
+P_\textrm{two kings} = \frac{4}{40} \cdot \frac{3}{39} = \frac{1}{130} \approx 0.77\%
 \end{equation*}
 
-Let's now try to estimate the same probability with a MC simulation, following the steps outlined above, and check if we get the same number.
+Let's now try to estimate the same probability with a MC simulation, following the steps outlined above:
 \begin{itemize}
-\item in this case the domain is a deck of cards. So a list with all the possible cards is defined (with the multiplicative operator (\texttt{*}) a list can be repeated many times; in this case, four times once for each suit). The seed is also set to 1 to make the test reproducible.
+\item in this case the domain is a deck of cards. To create a virtual deck we use \texttt{*} operator to the list of all kind of cards to have them for each suit. The seed is set to 1 to make the exercise reproducible.
 
 \begin{ipython}
 from random import sample, choices, seed
@@ -236,7 +212,7 @@ deck = ["A", "2", "3", "4", "5", "6", "7", "J", "Q", "K"] * 4
 \end{ipython}
 
 \item we draw randomly cards with uniform probability since the deck is fair (all cards have the same probability to be drawn). 
-We plan to do 1 million simulations; each time, with the \texttt{sample} function, we pick up two cards from our virtual deck (for debugging purpose the first 10 trials are printed on screen).
+We plan to do one million simulations; each time, with the \texttt{sample} function, we pick up two cards from the virtual deck (for debugging purpose the first ten trials are printed on screen).
 
 \begin{ipython}
 trials = 1000000
@@ -248,14 +224,14 @@ for i in range(trials):
         print (cards)
 \end{ipython}
 
-\item at this point we just need to check if the draw is \texttt{['K', 'K']} and in case increase the counter of successes.
+\item check if the card pair is \texttt{['K', 'K']} and in case increase the counter of successes.
 
 \begin{ipython}
     if cards == ["K", "K"]:
         successes += 1
 \end{ipython}
 
-\item finally we just print successes/trials which is the sought probability.
+\item finally just print \texttt{successes/trials} which is the sought probability.
 
 \begin{ipython}
 print ("The probability to draw two kings is {:.4f}".format(successes/trials))
@@ -275,26 +251,21 @@ print ("The probability to draw two kings is {:.4f}".format(successes/trials))
 The probability to draw two kings is 0.0077
 \end{ioutput}
 \end{itemize}
-The result is in agreement with our theoretical expectations.
-
-Since we relied on a frequentist approach naively we can say that to get a better accuracy we need to run a larger number of simulations. This becomes apparent playing with the number of trials in the above simulation. 
-
-This is also the main reason why, despite its undoubted power, Monte Carlo simulation is not always the best approach to follow.
-Many times indeed the simulation of an experiment requires a lot of computing resources (and time) and it may not be practical to embark into such a large simulation.
+The result is in agreement with the theoretical expectations. A deeper comment about this result in Section~\ref{sec:confidence_interval}.
 
 \subsection{Determine \(\pi\)}
 \label{determine-pi}
 
-Also in this example we know what the result has to look like: \(\pi\approx 3.141592653589793\ldots\) In order to get an estimate through MC simulation of this famous constant a straightforward geometric approach has to be considered. Imagine a circle of diameter \(D\) which is inscribed in a square with side length \(D\), see Fig.~\ref{fig:circle_inscribed}.
+Also in this example we know what the result has to be: \(\pi\approx 3.141592653589793\ldots\) In order to get an estimate through MC simulation of this famous constant a geometric approach can be considered (by the way this very same technique can be used to measure any arbitrary shape). Imagine a circle of diameter \(D\) which is inscribed in a square with side length \(D\), see Fig.~\ref{fig:circle_inscribed}.
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.3\textwidth]{figures/circle_inscribed.jpeg}
-	\caption{A circle of diameter $D$ inscribed in a square.}
-	\label{fig:circle_inscribed}
+\centering
+\includegraphics[width=0.3\textwidth]{figures/circle_inscribed.jpeg}
+\caption{A circle of diameter $D$ inscribed in a square.}
+\label{fig:circle_inscribed}
 \end{figure}
 
-Computing the ratio of the area of the two figures
+Computing the ratio of the two figure areas
 
 \begin{equation}
 \frac{\textrm{Area Circle}}{\textrm{Area Square}} = \frac{\pi D^2/4}{D^2} = \frac{\pi}{4} 
@@ -305,8 +276,7 @@ The algorithm to approximate \(\pi\) should then be
 \begin{itemize}
 \item select 2 random numbers, \(x_1\) and \(x_2\), from the interval
 \([0,D]\); 
-\item determine if the point defined by the ordered pair
-\((x_1, x_2)\) lies within or on the circle, keeping track both of the total number of tested points and of those satisfying the condition \(D \le\sqrt{x_1^2 + x_2^2}\); 
+\item determine if the point defined by the ordered pair \((x_1, x_2)\) lies within or on the circle, keeping track both of the total number of tested points and of those satisfying the condition \(D \le\sqrt{x_1^2 + x_2^2}\); 
 \item approximate the ratio of the areas by the number of points within or on the circle divided by the total number of tested points; 
 \item multiply the approximated area by 4 to get \(\pi\).
 \end{itemize}
@@ -331,10 +301,10 @@ print ("Approx. pi: {}".format(in_circle/trials*4))
 Approx. pi: 3.13944
 \end{ioutput}
 
-The lower is the probability we try to estimate with MC the higher has to be the number of simulations. 
-The result precision indeed depends on the number of "successes" and if the success probability is small, many trials are needed. This can be simply checked by playing with the number of simulations in the previous examples. For example we may run an entire set without getting two consecutive kings, nevertheless we cannot conclude there is zero probability of such event.
+A general consideration that we can make is that the lower is the probability we try to estimate with MC the higher has to be the number of simulations. 
+The result precision indeed depends on the number of "successes" and if the success probability is small, many trials are needed. This can be simply checked by playing with the number of simulations in the previous examples. We may run an entire set without getting two consecutive kings, nevertheless we cannot conclude there is zero probability of such event.
 
-The only conclusion we can draw is that Monte Carlo simulation is not always the best approach to follow, especially for computationally heavy experiments.
+The only conclusion we can draw is that, despite its undoubted power, Monte Carlo simulation is not always the best approach to follow, especially for computationally heavy experiments. Many times indeed the simulation of a single experiment requires a lot of computing resources (and time) and it may not be practical to embark into such a large simulation.
 
 In the following example it is apparent how changing the number of simulations in a single experiment the approximation precision improves. In Fig.~\ref{fig:circle_approx} it is shown graphically the results with 100, 1000, 10000, 100000 and 1000000 simulations.
 
@@ -373,13 +343,14 @@ pi=3.142136 1.0671s
 \label{fig:circle_approx}
 \end{figure}
 
+In this case the simulation is so simple that even in the larger case ($N=1000000$) the program runs for about a second only.
+
 \section{Accuracy of Monte Carlo Simulation}
 \label{sec:confidence_interval}
 
-* Assume you don't know the probability of getting to K from two consecutive draws
-    * what can be concluded from the result of a single MC experiment ?
+Now imagine that you didn't know how much is the probability of getting two consecutive K from a deck of 40 cards. What can be concluded from the result of a single MC experiment ?
     
-   \begin{ipython}
+\begin{ipython}
 # define the domain of inputs
 from random import sample, seed
 
@@ -402,15 +373,16 @@ print (successes/trials)
 0.0084
 \end{ioutput}
 
-The central limit  theorem~\cite{bib:central_limit} states that if we have \(Y_1, Y_2,\dots, Y_n\) which are random samples from a distribution \(Y\) with true mean \(\mu\) and variance \(\sigma^{2}\), then with \(n\) sufficiently large,
+Unfortunately not much, but a famous theorem come to rescue us.
+The central limit theorem~\cite{bib:central_limit} states that if we have \(Y_1, Y_2,\dots, Y_n\) which are $n$ random samples from a distribution \(Y\) with true mean \(\mu\) and variance \(\sigma^{2}\), then with \(n\) sufficiently large,
 
 \begin{equation*} 
 \mu_n = \cfrac{1}{n}\sum_i^n Y_i
 \end{equation*}
 has approximately a normal distribution \(\mathcal{N}(\mu, \sigma^2/n)\).
 
-This means that if one repeats the MC experiment many times (changing the seed of the random number generator) would obtain results normally distributed around the \emph{true} value \(\mu\).
-We can check the central limit theorem by repeating many times the MC experiment with our virtual deck and check how the distribution of $\mu_n$ behaves.
+This means that if one repeats the same MC experiment many times (changing the seed of the random number generator otherwise we are always repeating the \emph{same} experiment) would obtain results normally distributed around the \emph{true} value \(\mu\).
+We can check the central limit theorem by repeating many times the MC experiment with our virtual deck and see how the distribution of $\mu_n$ behaves.
 
 \begin{ipython}
 # define the domain of inputs
@@ -439,7 +411,7 @@ Mean:  0.007688
 Std :  0.000871
 \end{ioutput}
 
-Looking at Fig.~\ref{fig:repeated_MC} it is clear that the various results are distributed as a Gaussian.
+Looking at Fig.~\ref{fig:repeated_MC} it is clear that the various results are distributed as a Gaussian (in this example the distribution is still a bit asymmetric but it will eventually become Gaussian running more simulations).
 
 \begin{figure}[htb]
 \centering
@@ -454,18 +426,18 @@ From the central limit theorem hence:
 \mu_n - \mu \approx \mathcal{N}(0, \sigma^2/n)
 \end{equation}
 
-From the previous equation and remembering the definition of  quantiles~\ref{sec:quantile-function} it is possible to define an interval so that there is a certain probability to find $\mu$ in there. Referring to Fig.~\ref{fig:confidence_interval} we can write:
+From the previous equation and remembering the definition of quantiles~\ref{sec:quantile-function} it is possible to define an interval so that there is a certain probability to find $\mu$ in there. Referring to Fig.~\ref{fig:confidence_interval} we can write:
 
 \begin{equation}
 P\left(\mu_n - \cfrac{1.96\sigma}{\sqrt{n}}\le \mu \le \mu_n + \cfrac{1.96\sigma}{\sqrt{n}}\right) = 0.95
 \end{equation}
-probability which correspond to the shaded pink area.
+(which correspond to the pink area).
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/confidence_interval}
-	\caption{Confidence interval for a MC experiment.}
-	\label{fig:confidence_interval}
+\centering
+\includegraphics[width=0.7\textwidth]{figures/confidence_interval}
+\caption{Confidence interval for a MC experiment.}
+\label{fig:confidence_interval}
 \end{figure}
 
 This interval is called \textbf{95\% confidence interval} because it covers 95\% of the total area under the Gaussian. It can be interpreted like the following: if you repeat many times a simulation, the fraction of calculated confidence intervals that contains the true parameter $\mu$ would tend toward 95\%.
@@ -482,7 +454,7 @@ then the $\alpha$-confidence interval guarantees
 P(\mu - A\sigma \le X \le \mu+ A\sigma) = \alpha 
 \end{equation}
 
-Below an example of how to compute a confidence level in \texttt{python} given a set of fake simulations. Note that the inverse of the Gaussian CDF ($\Phi^{-1}$), used in Equation~\ref{for:A}, is computed with the method \texttt{norm.ppf()} (more details on CDF in Section~\ref{sec:quantile-function}).
+Below an example of how to compute a confidence level in \texttt{python} given a set of simulation results (the inverse of the Gaussian CDF $\Phi^{-1}$, used in Eq.~\ref{for:A}, is computed with the method \texttt{norm.ppf()}, see Section~\ref{sec:quantile-function}).
 
 \begin{ipython}
 import numpy as np
@@ -500,7 +472,7 @@ print ("{:.0f}% confidence int.: {:.3f} +- {:.3f}".format(alpha*100, m, h))
 95% confidence int.: 4.437 +- 0.812
 \end{ioutput}
 
-The confidence interval can be used to assess the accuracy of a Monte Carlo simulation. From what has been said above the uncertainty on our best estimate of $\mu$ is $\sqrt{\cfrac{\sigma^2}{n}}=\cfrac{\sigma}{\sqrt{n}}$ where \(\sigma^2 = \mathrm{Var}(Y)\).
+The confidence interval is used to assess the accuracy of a Monte Carlo simulation. From what has been said above the uncertainty on our best estimate of $\mu$ is $\sqrt{\cfrac{\sigma^2}{n}}=\cfrac{\sigma}{\sqrt{n}}$ where \(\sigma^2 = \mathrm{Var}(Y)\).
 
 While it is obvious that the estimate should get worse with increased variance and better with increased sample size, this equation  gives us the exact scaling. Indeed the uncertainty formula tells us that to get one more decimal digit of accuracy (i.e. an error one tenth as large) requires a 100-fold increase in computation. To get three more digits of accuracy requires one million times as much computation. From that it is clear that Monte Carlo computation is poorly suited for problems that must be answered with high precision.
 
