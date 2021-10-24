@@ -756,8 +756,10 @@ Since the goal was to train a neural network to predict company bankruptcy the m
 \section{Neural net to recognize handwritten digits}
 \label{neural-net-to-recognize-handwritten-digits}
 
-We don't usually appreciate how tough a problem our visual system solve every time we look at something.
-Maybe it is enough to consider that it involves 5 visual cortices containing 140 million neurons each. Anyway the difficulties of visual pattern recognition become apparent if you attempt to write a computer program to recognize digits like those in Fig.~\ref{fig:mnist}.
+Looking at something it is such a common task that is hard to realize the tough work our "visual system" does.
+Maybe it is enough to consider that it involves 5 visual cortices containing 140 million neurons each. 
+
+Anyway the difficulties of visual pattern recognition become apparent if you attempt to write a computer program to recognize digits like those in Fig.~\ref{fig:mnist}.
 
 \begin{figure}[b]
 \centering
@@ -766,25 +768,25 @@ Maybe it is enough to consider that it involves 5 visual cortices containing 140
 \label{fig:mnist}
 \end{figure}
 
-Simple intuition about how we recognize shapes (e.g. a 9 has a loop at the top, and a vertical stroke in the bottom right) turns out to be not so simple to express algorithmically. When you try to make such rules precise, you quickly get lost in a morass of exceptions and caveats and special cases so that it seems hopeless.
+Simple intuition about how we recognize shapes (e.g. a 9 has a loop at the top, and a vertical stroke in the bottom right) turns out to be not so simple to express algorithmically. When you try to make such rules precise, you quickly get lost in a morass of exceptions, caveats, and special cases so that it seems hopeless.
 
-Neural networks approach the problem in a different way. The idea is to take a large number of handwritten digits and then develop a system which can learn from those.
+Neural networks approach the problem in a different way. They take a large number of handwritten digits and develop a system which can learn from those.
 
-By increasing the number of training examples, the network can learn more and more about handwriting, and so improve its accuracy. So while it has been shown just 100 training digits above, we could certainly build a better handwriting recognizer by using thousands or even millions or billions of training examples (\textbf{as we have seen above neural nets are not capable of extrapolating results, hence in general it won't recognize a digit written in some strange way not included in the training sample !!!}).
+By increasing the number of training examples, the network can learn more and more about handwriting, and so improve its accuracy. So while it has been shown just 100 training digits in Fig.~\ref{fig:mnist}, a better handwriting recognizer could be certainly built by using thousands or millions training examples (\textbf{as we have seen above neural nets are not capable of extrapolating results, hence in general it won't recognize a digit written in some strange way not included in the training sample !!!}).
 
-In this example we will use the sample provided with the \texttt{mnist} module. 
-Our program will be based on a different kind of neural network than before, one type specifically designed for image/pattern recognition, the Convolutional Neural Network (CNN). We won't go into the details of its implementation since it is outside the scope of these Lectures but it works essentially by applying on top of an image series of filters (\emph{convolutional layers}) that works as edge detectors. With them it classifies the images according to their relevant features.
+To explore the neural network capabilities the sample provided with the \texttt{mnist} module will be used. 
+The algorithm is based on a different kind of neural network, specifically designed for image/pattern recognition, the Convolutional Neural Network (CNN). We won't go into the details of its implementation since it is outside the scope of these Lectures but it works by applying many filters (\emph{convolutional layers}) on top of an image, each of them working as edge detectors. With them images are classified according to their features.
 
 Convolutional layers prove to be very effective, and stacking them allows to learn low-level features (e.g. lines) and high-order, or more abstract, features, like shapes or specific objects, see Fig.~\ref{fig:conv_filters}.
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=1.\textwidth]{figures/edges.jpg}
-	\caption{Edge detected by different layers of a convolutional neural network.}
-        \label{fig:conv_fitlers}
+\centering
+\includegraphics[width=1.\textwidth]{figures/edges.jpg}
+\caption{Edge detected by different layers of a convolutional neural network.}
+\label{fig:conv_filters}
 \end{figure}
 
-Another important difference with respect to the previous examples is that in this case we are going to solve a classification problem (contrary to before when we were trying to regress a sample). Indeed our NN output won't be a single number but rather a list containing the probabilities that an image belong to each class.
+Also in this case we are going to solve a classification problem. Indeed the NN output won't be a single number but rather a list containing the probabilities that an image belong to each class.
 
 \begin{ipython}
 import numpy as np, mnist
@@ -833,10 +835,10 @@ Epoch 5/5
 \end{ioutput}
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.9\textwidth]{figures/cnn_2d.png}
-	\caption{Graphical representation of the CNN developed to recognize handwritten digits.}
-        \label{fig:cnn2d}
+\centering
+\includegraphics[width=0.9\textwidth]{figures/cnn_2d.png}
+\caption{Graphical representation of the CNN developed to recognize handwritten digits.}
+    \label{fig:cnn2d}
 \end{figure}
 
 \begin{attention}
@@ -846,28 +848,25 @@ Looking closely to the convolutional neural network implementation we can notice
 
 Convolutional layers in a CNN systematically apply filters to input images in order to create feature maps that summarize the main characteristics of the sample.
 
-A limitation of the feature map output of convolutional layers is that they record the precise position of features in the input. This means that small movements in the position of the feature in the input image will result in a different feature map. This can happen with cropping, rotation, shifting, and other minor changes to the input image.
+A limitation of such maps is that they record the precise position of features in the input. This means that small movements in its position will result in a different feature map. This can happen with cropping, rotation, shifting, and other minor changes to the input image.
 
-Imagine a program that look for car plates in pictures taken by a speed radar, cars won't be in the same position in the frame so there may be differences in the classification of similar (but not equal) pictures.
+Imagine a program that looks for car plates in pictures taken by a speed radar: cars won't be in the same position in the frame so there may be differences in the classification of similar (but not equal) pictures.
 
 A common approach to address this problem is called \emph{down sampling}. 
-This is where a lower resolution version of an input signal (e.g. the picture) is created that still contains the large or important structural elements, without the fine detail that may not be as useful to the task.
+This is where a lower resolution version of an input signal (e.g. the picture) is created that still contains the large or important structural elements, without the finer detail that may not be as useful to the task.
 
 Down sampling can be achieved using a pooling layer.
-
-It involves selecting a pooling operation, much like a filter to be applied to feature maps. The size of the pooling operation is smaller than the size of the feature map; specifically, it is almost always 2×2 pixels. This means that the pooling layer will always reduce the size of each feature map by a factor of 2, e.g. each dimension is halved. For example, a pooling layer applied to a feature map of 6×6 (36 pixels) will result in an output pooled feature map of 3×3 (9 pixels).
+It involves selecting kind of a filter to be applied to the feature maps. The pooling operation size is smaller than the feature map; specifically, it is almost always 2×2 pixels. This means that the pooling layer will always reduce the size of each feature map by a factor of 2, e.g. each dimension is halved. For example, a pooling layer applied to a feature map of 6×6 (36 pixels) will result in an output pooled feature map of 3×3 (9 pixels).
 
 The most common pooling operation are:
 \begin{itemize}
-	\tightlist
-	\item Average Pooling: calculate the
-	average value for each patch on the feature map;
-	\item Maximum Pooling (or Max Pooling): calculate the maximum value for each patch of the feature
-	map.
+\tightlist
+\item Average Pooling: calculate the average value for each patch on the feature map;
+\item Maximum Pooling (or Max Pooling): calculate the maximum value for each patch of the feature map.
 \end{itemize}
 \end{attention}
 
-Now let's try to see how well our NN predicts \texttt{mnist} testing digits.
+Let's see how well our NN predicts \texttt{mnist} testing digits.
 
 \begin{ipython}
 trainer.loadModel('digit_training')
@@ -904,7 +903,10 @@ for i, p in enumerate(predictions[8])])
 
 So the second ranked digit is a 6 (which can be confused with a five if the lower loop is almost closed).
 
-To see how well our NN behaves with different kind of digits we will try to check how it works with my calligraphy. Before passing the image to the NN it has to be resized and this is done with an ad-hoc function, \texttt{transform\_image}, which is in the \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/digit_converter.py}{\texttt{digit\_converter.py}} module.
+To see how well our NN behaves with completely different digits we will check its performance with your own calligraphy. 
+
+Open your favourite image editor (e.g. Paint, GIMP,\ldots) and create a black-white 200x200 pixels canvas. With the help of the mouse draw a digit and save it to a png file.
+Before passing the image to the NN it has to be resized and this is done with an ad-hoc function, \texttt{transform\_image}, which can be imported from \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/digit_converter.py}{\texttt{digit\_converter.py}}.
 
 \begin{ipython}
 from digit_converter import transform_image
@@ -926,7 +928,7 @@ Predicted:  [4]
 %: ['0.802']
 ['0.00', '0.00', '0.00', '0.00', '0.80', '0.00', '0.00', '0.20', '0.00', '0.00']
 
-Tesing on custom digits...
+Testing on custom digits...
 Predicted:  [5]
 %: ['0.981']
 ['0.00', '0.00', '0.00', '0.01', '0.00', '0.98', '0.00', '0.01', '0.00', '0.00']
@@ -944,21 +946,19 @@ The handwritten images used in this test are shown in Fig.~\ref{fig:test_images}
 \subsection{Model Calibration cont.}
 \label{model-calibration-cont.}
 
-When the parameters of the model we want to calibrate can be expressed as a function of three variables we can implement a convolutional neural network to work with special images representing our model.
+When a model has just three known parameters a convolutional neural network can be used to calibrate it.
 
-Consider again the Black and Scholes formula for the call options. Assume you need to calibrate the rate \(r\) and the volatity \(\sigma\) at the same time.% A convolutional neural network can be trained using
-%special images which represents \(\mathrm{ttm}, K\) and
-%\(P_\textrm{call}\).
+Consider again the Black-Scholes formula and imagine you need to calibrate: rate $r$ and volatility $\sigma$ at the same time.
 
-A black-white image indeed can be interpreted as a map where each pixel coordinates is a pair (\(\mathrm{ttm}, K)\) and the pixel color, an integer between 0 (black) and 255 (white), represents \(P_\textrm{call}\). As in the previous examples the neural network was classifying the pictures into digits, now it will assign them to classes identified by \(r, \sigma\) pairs.
+A black-white image can be interpreted as a map where each pixel coordinates is a pair ($\mathrm{ttm}, M$) and the pixel color, an integer between 0 (black) and 255 (white), represents \(P_\textrm{call}\). Each picture will be classified by a pair of $r, \sigma$.
 
-The creation of the training sample is a little more complicated now. For convenience we will use also a new format to save data image, \texttt{numpy}. This will be done through the corresponding module simply using the functions \texttt{save} and \texttt{load} to store and retrieve data. The module \texttt{PIL} (pillow) is instead used to visualize the images.
+The creation of the training sample is a little more complicated now. For convenience we will use also a new format to save data image, \texttt{numpy}. This will be done through the corresponding module simply using the functions \texttt{save} and \texttt{load} to store and retrieve data. The module \texttt{PIL} (\texttt{pillow}) is instead used to visualize the images.
 
-First we make the targets.
+First make the targets.
 
 \begin{ipython}
 import numpy as np
-from finmarkets import call
+from finmarkets import call_m
 
 labels = []
 rates = np.arange(0.01, 0.11, 0.001)
@@ -984,7 +984,7 @@ for v in vols:
         price = np.zeros(shape=(20, 20))
         for ik, kv in enumerate(k):
             for it, t in enumerate(ttm):
-                price[ik, it] = call(kv, r, v, t)
+                price[ik, it] = call_m(kv, r, v, t)
                 prices.append(price)
                 # max and min are saved to
                 # normalize our matrices
@@ -1004,7 +1004,7 @@ An example of the 20x20 images that have been created is shown in Fig.~\ref{fig:
 \begin{figure}[htb]
 \centering
 \includegraphics[width=0.45\textwidth]{figures/2d_training_images}
-	\caption{Example of images used to encode calibration information.}
+\caption{Example of images used to encode calibration information.}
 \label{fig:test_images_calib}
 \end{figure}
 \noindent
@@ -1020,7 +1020,7 @@ images = np.load("2d.npy")
 trainer = FinNN("CNN2D")
 trainer.setData(images, labels, test_size=0.2)
 trainer.addConv2DLayer(filters=8, filter_size=10,
-input_shape=(20, 20, 1), activation='relu')
+                       input_shape=(20, 20, 1), activation='relu')
 trainer.addFlatten()
 trainer.addHiddenLayer(neurons=10, activation='relu')
 trainer.addOutputLayer(outputs=2, activation='relu')
@@ -1047,7 +1047,7 @@ Training: 1.1013161047230825e-05
 Test: 1.116331470257137e-05
 \end{ioutput}
 
-At this point the test of the trained CNN consists of presenting the prices of call referring to the same underlying in the pictorial form shown before and in response it will give the risk-free rate and the underlying volatility.
+At this point the test of the trained CNN consists of presenting the prices of call referring to the same underlying in the pictorial form shown before and in response it will give the risk-free rate and the volatility.
 
 \begin{ipython}
 for i in range(5):
@@ -1067,30 +1067,30 @@ for i in range(5):
 In finance \emph{technical analysis} is a security analysis discipline for forecasting the direction of prices through the study of past market data, primarily price and volume. Essentially the analyst looks for particular patterns in the price time series that are believed to develop in a predictable way to take profit of it, Fig.~\ref{fig:tech_ana} shows two of such patterns.
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.4\linewidth]{figures/H_and_s_top_new.jpg}\qquad
-	\includegraphics[width=0.4\linewidth]{figures/Triangle-ascending.jpg}
-	\caption{Examples of patterns in real time series, head and shoulder (left), triangle (right).}
-        \label{fig:tech_ana}
+\centering
+\includegraphics[width=0.4\linewidth]{figures/H_and_s_top_new.jpg}\qquad
+\includegraphics[width=0.4\linewidth]{figures/Triangle-ascending.jpg}
+\caption{Examples of patterns in real time series, head and shoulder (left), triangle (right).}
+    \label{fig:tech_ana}
 \end{figure}
 
-As you may imagine we will try to develop a CNN capable of classifying  features in time series to be used in technical analysis (this is much faster than having somebody looking at thousands of time series by eye).
+We will develop a CNN capable of classifying features in time series to be used in technical analysis (which is much faster than having somebody looking at thousands of time series by eye).
 
 The training sample is made of 21600 time series (1/3 with head and shoulder patter, 1/3 with triangle pattern and 1/3 with no pattern), see Fig~\ref{fig:patterns}. \textbf{To make the training easier the features are quite exaggerated.}
 
 \begin{figure}[htbp]
-	\centering
-	\subfloat[No pattern.\label{}]{%
-		\includegraphics[width=0.5\textwidth]{figures/no_pattern}
-	}
-	\subfloat[Head and shoulder pattern.\label{}]{%
-		\includegraphics[width=0.5\textwidth]{figures/head_and_shoulder}
-	}\\
-	\subfloat[Triangle pattern.\label{}]{%
-		\includegraphics[width=0.5\textwidth]{figures/triangle}
-	}
-	\caption{Examples of time series used in the training of the CNN for technical analysis.}
-	\label{fig:patterns}
+\centering
+\subfloat[No pattern.\label{}]{%
+	\includegraphics[width=0.5\textwidth]{figures/no_pattern}
+}
+\subfloat[Head and shoulder pattern.\label{}]{%
+	\includegraphics[width=0.5\textwidth]{figures/head_and_shoulder}
+}\\
+\subfloat[Triangle pattern.\label{}]{%
+	\includegraphics[width=0.5\textwidth]{figures/triangle}
+}
+\caption{Examples of time series used in the training of the CNN for technical analysis.}
+\label{fig:patterns}
 \end{figure}
 
 \begin{ipython}
@@ -1101,9 +1101,10 @@ train_labels = np.load("training_techana_labels.npy")
 train_images = np.load("training_techana_images.npy")
 trainer = FinNN("CNN1D")
 trainer.setData(train_images, train_labels)
+
 # define the CNN
 trainer.addConv1DInputLayer(filters=80, filter_size=20,
-input_size=(101, 1))
+                            input_size=(101, 1))
 trainer.addConv1DLayer(filters=80, filter_size=15)
 trainer.addMaxPooling1D(3)
 trainer.addConv1DLayer(filters=100, filter_size=10)
@@ -1131,31 +1132,30 @@ Epoch 80/80
 \begin{attention}
 \subsubsection{Dropout}
 
-Large neural nets trained on relatively small datasets can overfit the
-training data.
+Large neural nets trained on relatively small datasets tend to overfit.
 
-In this case the model is learning the statistical noise in the training data, so it results in poor performance when the model is evaluated on new data (e.g. a test dataset).
+In this case the model is learning the statistical noise in the training data, so it results in poor performance when the model is evaluated on new data (e.g. the test dataset).
 
 One approach to reduce overfitting is to fit all possible different neural networks on the same dataset and to average the predictions from each model. This is not feasible in practice, and can be approximated using a small collection of different models, called an ensemble. A problem even with the ensemble approximation is that it requires multiple models to be fit and stored, which can be a challenge if the models are large, requiring days or weeks to train and tune.
 
 \emph{Dropout} is a regularization method that approximates training a large number of neural networks with different architectures in parallel.
 
-During training, some number of layer outputs are randomly ignored or \emph{dropped out}. This has the effect of making the layer look like and be treated like a layer with a different number of nodes and connectivity to the prior layer. In effect, each update to a layer during training is performed with a different "view" of the configured layer.
+During training, some number of layer outputs are randomly ignored or \emph{dropped out}. This has the effect of making the layer look like and treated like a layer with a different number of nodes and connectivity to the prior layer. In effect, each update to a layer during training is performed with a different "view" of the configured layer.
 
 Even if it may seems counter intuitive (better training when switching off nodes) indeed dropout breaks up situations where network layers co-adapt to correct mistakes from prior layers, in turn making the model more robust.
 \end{attention}
 
-The performance test is carried on in simulated real case scenario where a time series is analyzed in real-time in order to predict as soon as possible a particular pattern and take advantage of the prediction.
+The performance test is carried on in "simulated" real case scenario where a time series is analyzed in real-time to foresee as soon as possible a particular pattern and take advantage of the prediction.
 
-To do so it has been presented to the CNN sliding windows of a series to simulate the flowing of the time. So if for example the time series is   made of 100 points (e.g. each point representing a hourly measurement), it has been given in input to the CNN first the points between \([0, 80]\), then \([0, 81]\), \([0, 82]\) and so on to simulate new real time data incoming. 
+To do so it has been presented to the CNN sliding windows of a series to simulate time flowing. If for example the time series is made of 100 points (e.g. each point representing hourly measurements), it has been given in input to the CNN first the points between \([0, 80]\), then \([0, 81]\), \([0, 82]\) and so on to simulate new real time data incoming. 
 
-The goal was to check when the neural network was capable of predicting the incoming pattern. Figure~\ref{fig:frame_simulation} shows the "temporal frames" that have been presented to the CNN.
+The goal is to check when the neural network is recognizing the incoming pattern (the sooner, the better). Figure~\ref{fig:frame_simulation} shows the "temporal frames" that have been presented to the CNN.
 
 \begin{figure}
-	\centering
-	\includegraphics[width=\textwidth]{figures/tech_ana_frames.png}
-	\caption{Ten frames simulating closing price date incoming in real time. The CNN was tested to check if and when it would have been able to detect any pattern in data.}
-	\label{fig:frame_simulation}
+\centering
+\includegraphics[width=\textwidth]{figures/tech_ana_frames}
+\caption{Ten frames simulating closing price date incoming in real time. The CNN was tested to check if and when it would have been able to detect any pattern in data.}
+\label{fig:frame_simulation}
 \end{figure}
 
 \begin{ipython}
@@ -1179,8 +1179,8 @@ for i in range(len(predictions)):
 1 ['0.000', '1.000', '0.000']
 \end{ioutput}
 \noindent
-The arrays in the output represent the likelihood assigned by the CNN to the series for each category at each time interval. So up to $t=4$ the CNN is more than 95\% sure there is no pattern. 
-At $t=5$ the CNN starts to recognize a pattern assigning about 20\% probability to the "head and shoulder" class. For $t\geq 6$ the neural network clearly recognizes the pattern.
+The output represents the likelihood to belong to each category assigned to the input series at each time interval. So up to $t=4$ the CNN is more about 95\% sure there is no pattern (max probability at category 0). 
+At $t=5$ the CNN starts to recognize a pattern assigning about 20\% probability to the "head and shoulder" class. For $t\geq 6$ the neural network clearly recognizes the pattern with a probability close to 100\%.
 	
  
 \begin{thebibliography}{9}
