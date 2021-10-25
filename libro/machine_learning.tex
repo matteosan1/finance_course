@@ -162,26 +162,30 @@ As an example suppose we want to do weather forecasting, so for this, we will us
 
 Neural network training and testing is performed using two modules: \texttt{keras}~\cite{bib:keras} (which in turn is based on a Google open source library called \texttt{tensorflow}~\cite{bib:tensorflow}) and \texttt{scikit-learn}~\cite{bib:scikit} which provide many useful utilities.
 
-In order to hide as much as possible the many little details that have to be set when dealing with NN it has been developed a simple class (\texttt{FinNN}: Financial NN) which relies on \texttt{keras} anyway but should make the whole process easier.
+In order to hide as much as possible the many little details that have to be set when dealing with NN it has been developed a simple class (\texttt{FinNN}) which is a wrapper of \texttt{keras} functionalities and should make the whole process easier.
 \end{attention}
 
 \section{Function approximation}
 \label{function-approximation}
 
-As a first practical example let's try to design an ANN which is capable of learning the functional form underlying a set of data. The implementation of the neural network starts by importing the necessary modules.
+Let's design an ANN which is capable of learning the functional form underlying a set of data. The implementation of the neural network starts by importing the necessary modules.
 
 \begin{ipython}
 from finnn import FinNN
 import numpy as np
 \end{ipython}
 
-Then the training sample is generated with \(x\), \(f(x)\)  input, target output pairs where \(f(x) = x^3 +2\). On the sample a simple transformation is applied in order to have all the inputs and outputs in the \([0, 1]\) range. This is usually done to provide the NN with \emph{normalized} data, in fact it could be fooled by very large or very small numbers giving unstable results.
+The training sample is generated as a two arrays: \(x\) (input), \(f(x)\) (target output) pairs where \(f(x) = x^3 +2\). 
+
+Before embarking into the training the sample undergoes to a simple transformation in order to have all the inputs and outputs in the \([0, 1]\) range. This transformation is called \emph{normalization}, and is done to provide the NN with "equalized" inputs since it could be fooled by very large or very small numbers giving unstable results.
 
 \begin{ipython}
 x = np.array([i for i in np.arange(-2, 2, 0.001)])
 y = np.array([i**3+2 for i in x])
 print("Distribution of original data ", x.min(), x.max(), y.min(), y.max())
+
 trainer = FinNN("ANN")
+# define input and output and fraction of testing sample
 trainer.setData(x, y, test_size=0.2)
 trainer.normalize()
 print("The same data after the normalization ", trainer.x.min(),
@@ -192,17 +196,18 @@ Distribution of original data  -2.0 1.9989999999995596 -6.0 9.98800599899472
 The same data after the normalization  0.0 1.0 0.0 0.9999999999999999
 \end{ioutput}
 
-Next the structure of the neural network has to be defined. 
-Here the problem is quite simple so there is no need to use a complicated architecture: two layers with 15 and 5 neurons respectively and a \texttt{tanh} activation function, see Fig,~\ref{fig:ann_1}. The \texttt{inputs} parameter has to be set to 1 since we have just one single input, the \texttt{x} value.
+Next the neural network structure has to be defined. The case is quite simple so there is no need to use a complicated architecture: two layers with 15 and 5 neurons respectively and a \texttt{tanh} activation function is enough, see Fig,~\ref{fig:ann_1}. The \texttt{inputs} parameter has to be set to 1 since we have just one single input, the \texttt{x} value.
 
 \begin{ipython}
 # design the neural network model
 trainer.addInputLayer(inputs=1, neurons=15, activation='tanh')
 trainer.addHiddenLayer(neurons=5, activation='tanh')
 trainer.addOutputLayer(outputs=1)
+
 # define the loss function (mean squared error)
 # and optimization algorithm (Adam)
 trainer.compileModel(loss='mse', opt='adam')
+
 # fit the model on the training dataset
 trainer.fit(epochs=2000, verbose=1)
 \end{ipython}
@@ -219,15 +224,15 @@ Epoch 2000/2000
 \end{ioutput}
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.9\textwidth]{figures/ann_1.png}
-	\caption{Graphical representation of the ANN used to approximate the function $f(x) = x^3 + 2$.}
-    \label{fig:ann_1}
+\centering
+\includegraphics[width=0.9\textwidth]{figures/ann_1.png}
+\caption{Graphical representation of the ANN used to approximate the function $f(x) = x^3 + 2$.}
+\label{fig:ann_1}
 \end{figure}
 
-The training output provides a counter with the current epoch number beside the estimated loss which is evaluated using the function chosen in the code.
+The output shows a counter with the current epoch number and the loss which is evaluated using the function chosen in the code.
 
-After the training is completed we can evaluate how good it is by computing the loss with the best update of the network weights. This can be done with the \texttt{evaluate()} method
+When the training is completed we can evaluate how good it is by computing the final loss with the best update of the network weights and the entire sample. This can be done with the \texttt{evaluate()} method
 
 \begin{ipython}
 trainer.evaluate()
@@ -242,17 +247,16 @@ Test: 6.47684617433697e-06
 which provides the loss values on training and testing samples.
 A \emph{perfect} prediction would have led to \(\textrm{loss}=0\) so the lower this number the better is our training. 
 
-Clearly the goodness of the model increases with the number of epochs run in the training, since the NN has more chances to learn the features of the input sample. 
-To get an idea of what it is going on in Fig.~\ref{fig:training_vs_epochs} are shown the actual function we want to approximate and different predictions obtained with the same NN trained with various number of epochs (i.e. 5, 100, 800, 5000).
+Model performance improves with the number of epochs in the training, since the NN has more chances to learn the input features. To get an idea of what is going on in Fig.~\ref{fig:training_vs_epochs} are shown the actual function we want to approximate and different predictions obtained with the same NN architecture but various number of epochs (i.e. 5, 100, 800, 5000).
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.9\textwidth]{figures/training_vs_epoch}
-	\caption{Prediction of the target $f(x)$ using different number of epochs in the training (5, 100, 800 and 5000) respectively.}
-	\label{fig:training_vs_epochs}
+\centering
+\includegraphics[width=0.9\textwidth]{figures/training_vs_epoch}
+\caption{Prediction of the target $f(x)$ using different number of epochs in the training (5, 100, 800 and 5000) respectively.}
+\label{fig:training_vs_epochs}
 \end{figure}
 
-It is clear how the agreement improves with higher number of epochs which means that the NN has more opportunities to adapt the weights and reduce the loss against the target values. However, even in the case of 5000 epochs, zooming in it could be possible to see discrepancies not visible at the scale of the plot. On the other hand remember that increasing too much the number of epochs may lead to overfitting. 
+Clearly the agreement improves with the epoch number which means that the NN has more opportunities to adapt the weights and reduce the loss against the target values. Although even in the case of 5000 epochs, zooming in, it could be possible to see discrepancies not visible at the scale of the plot, increasing too much the number of epochs may lead to overfitting. 
 
 To check if this is the case we can compare the loss computed with the training sample to that on the testing sample. If the two numbers are comparable the NN is ok, otherwise if the loss on the training is much smaller than the testing we had overfitting.
 
@@ -265,66 +269,52 @@ In case one need more accuracy and has already incremented too much the number o
 The first financial machine learning application concerns the pricing of european call options: essentially we will create a neural network capable of approximate the famous Black-Scholes pricing formula
 
 \begin{equation} 
-	P_\textrm{call} = F_\textrm{BS}(K, r, \sigma, \mathrm{ttm})
+P_\textrm{call} = F_\textrm{BS}(M, r, \sigma, \mathrm{ttm})
 \end{equation}
 
-Like before the first step consists of generating the training sample this time made of a grid of volatility ($\sigma$)-rate ($r$) pairs (for simplicity we are going to set moneyness ($K$) and time to maturity (ttm) to 1). The target values are the price of a call, computed with the corresponding inputs, using the BS function in \texttt{finmarkets.py}.
-
-\begin{ipython}
-from finmarkets import call
-
-data = []
-rates = np.arange(0.01, 0.11, 0.001)
-sigmas = np.arange(0.1, 0.6, 0.005)
-
-for r in rates:
-for sigma in sigmas:
-call_price = call(1, r, sigma, 1)
-data.append([r, sigma, call_price])
-
-# we transform the list to a numpy array just because
-# an array is more convenient to use later
-data = np.array(data)
-\end{ipython}
-
-Since it takes some time to generate data samples, it is always advisable to save them in a file since we may need to load it many times during the NN development. This can be done with \texttt{pandas}
+Like before, the first step consists of generating the training sample this time made of a grid of volatility ($\sigma$)-rate ($r$) pairs (for simplicity we are going to set moneyness ($M$) and time to maturity (ttm) to 1). The target values are the call price, computed with the corresponding inputs, using the BS function in \texttt{finmarkets.py}.
 
 \begin{ipython}
 import pandas as pd
+from finmarkets import call_m
 
-df = pd.DataFrame()
-df['rate'] = data[:, 0]
-df['vol'] = data[:, 1]
-df['price'] = data[:, 2]
+data = []
+for r in np.arange(0.01, 0.11, 0.001):
+    for sigma in np.arange(0.1, 0.6, 0.005):
+        call_price = call_m(1, r, sigma, 1)
+        data.append({rate:r, "vol":sigma, "price":call_price])
+
+df = pd.DataFrame(data)
 df.to_csv("bs_training_sample.csv")
-
 print (df.describe())
 \end{ipython}
 \begin{ioutput}
-               rate           vol         price
-count  10000.000000  10000.000000  10000.000000
-mean       0.059500      0.347500      0.165274
-std        0.028868      0.144338      0.055387
-min        0.010000      0.100000      0.044852
-25%        0.034750      0.223750      0.119389
-50%        0.059500      0.347500      0.165476
-75%        0.084250      0.471250      0.212097
-max        0.109000      0.595000      0.277071
+	rate           vol         price
+	count  10000.000000  10000.000000  10000.000000
+	mean       0.059500      0.347500      0.165274
+	std        0.028868      0.144338      0.055387
+	min        0.010000      0.100000      0.044852
+	25%        0.034750      0.223750      0.119389
+	50%        0.059500      0.347500      0.165476
+	75%        0.084250      0.471250      0.212097
+	max        0.109000      0.595000      0.277071
 \end{ioutput}
+
+Since it takes some time to generate data samples, it is always advisable to save them in a file since we may need to load it many times during the NN development. 
 
 Following the previous example we will use the \texttt{FinNN} class to develop the NN and also we will \emph{normalize} data to get better results. \textbf{Beware that this time we have TWO input parameters (rate and volatility)}. See Figure~\ref{fig:ann_2} for a graphical representation of the designed ANN.
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.9\textwidth]{figures/ann_2.png}
-	\caption{Graphical representation of the ANN used to approximate the Black and Scholes oprion price function.}
-	\label{fig:ann_2}
+\centering
+\includegraphics[width=0.9\textwidth]{figures/ann_2.png}
+\caption{Graphical representation of the ANN used to approximate the Black and Scholes oprion price function.}
+\label{fig:ann_2}
 \end{figure}
 
 \begin{ipython}
 data = pd.read_csv("bs_training_sample.csv")
-x = data.iloc[:, 1:3].values
-y = data.iloc[:, 3].values
+x = data.loc[:, ['rate', 'vol']].values
+y = data.loc[:, 'price'].values
 
 trainer = FinNN("ANN")
 trainer.setData(x, y, test_size=0.20)
@@ -365,21 +355,21 @@ As you can see the training and testing samples give roughly the same MSE value 
 After the training is completed we can evaluate graphically how good it is, see Fig.~\ref{fig:vol_rate}. 
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/vol_rate}
-	\caption{Mean squared error as a function of volatility and rate for our Black-Scholes function prediction.}
-	\label{fig:vol_rate}
+\centering
+\includegraphics[width=0.7\textwidth]{figures/vol_rate}
+\caption{Mean squared error as a function of volatility and rate for our Black-Scholes function prediction.}
+\label{fig:vol_rate}
 \end{figure}
 
-In general to judge if the level of accuracy of your model is enough for your needs you have to compare the error in a typical use case (remember that if you are using the MSE metric you need to use \(\sqrt{\mathrm{MSE}}\) as the \emph{real} error).
+%In general to judge if the level of accuracy of your model is enough for your needs you have to compare the error in a typical use case (remember that if you are using the MSE metric you need to use \(\sqrt{\mathrm{MSE}}\) as the \emph{real} error).
+%
+%In this example we know that our prices go from 0.04 to 0.28 and the final accuracy is 0.0008. So in the worst case we are able to price our call as \(0.04 \pm 0.0008\), so a 2\% relative error in estimating the call price which is not bad for our study but may be far from ideal for an investment.
 
-In this example we know that our prices go from 0.04 to 0.28 and the final accuracy is 0.0008. So in the worst case we are able to price our call as \(0.04 \pm 0.0008\), so a 2\% relative error in estimating the call price which is not bad for our study but may be far from ideal for an investment.
-
-Let's compare the prediction in a practical case; say we want to know the price of a call (with moneyness 1, so at the money, and time to maturity 1 year) when the risk-free rate is 0.015 and the volatility 0.234:
+Say we want to know the price of a call (with moneyness 1, so at the money, and time to maturity 1 year) when the risk-free rate is 0.015 and the volatility 0.234:
 
 \begin{ipython}
 import numpy as np
-from finmarkets import call
+from finmarkets import call_m
 
 # here we load the trained model
 trainer.loadModel('black_scholes')
@@ -390,7 +380,7 @@ rv = np.array([[0.015, 0.234]])
 
 print ('{} => {:.4f} (expected {:.4f})'.format(rv.tolist(),
                                                trainer.predict(rv)[0][0],
-                                               call(1, rv[0][0], rv[0][1], 1)))
+                                               call_m(1, rv[0][0], rv[0][1], 1)))
 \end{ipython}
 \begin{ioutput}
 [[0.015, 0.234]] => 0.1001 (expected 0.1001)
@@ -415,18 +405,15 @@ print ('{} => {:.4f} (expected {:.4f})'.format(rv.tolist(),
 
 \subsection{Model Calibration}\label{model-calibration}
 
-The function approximation capabilities of a neural network can serve other scopes rather than predicting the function values themselves. Another very useful application is \emph{model calibration} which consists of deriving parameters of a model directly from market values. This is especially convenient to estimate parameters which are otherwise complicated to compute (e.g. there is no analytic formula to get these parameters).
+Whenever you have a model and you want to use to it to solve real problems its parameters have to be \emph{calibrated}. This means that model parameters are derived directly from market values. This is especially convenient to estimate quantities which are otherwise complicated to compute (e.g. there is no analytic formula to get these parameters).
 
-For simplicity let's keep working with the Black-Scholes formula.
-Assume we need to estimate the \emph{implied volatility} of a security in real time. 
-The idea is to train a NN similar to the previous one, where the input now is a list of price, moneyness, rate and time to maturity and the target output is the volatility. Basically we are trying to approximate an inversion of the the BS formula which return the underlying volatility
+Assume we need to estimate the \emph{implied volatility} of a security in real time. The idea is to train a NN similar to the previous one, where the input are now a rate, price pairs and the target output is the volatility. Basically we are trying to approximate an inversion of the BS formula which returns the underlying volatility
 
 \begin{equation} 
-\sigma = F^{-1}_\textrm{BS}(P_\textrm{call}, K, r, \mathrm{ttm})
+\sigma = F^{-1}_\textrm{BS}(P_\textrm{call}, m, r, \mathrm{ttm})
 \end{equation}
 
-In our examples we have never made any assumption on the functional form of the relation we wanted to approximate but we have just relied on the capability of NN to learn from the training dataset. 
-
+In our examples we have never made any assumption on the functional form of the relation we wanted to approximate but we have just relied on the capability of NN to learn from the dataset. 
 So calibration in this case means to determine a parameter of the Black-Scholes formula (the volatility) from the market prices of the options and their characteristics.
 
 \begin{attention}
@@ -435,24 +422,23 @@ So calibration in this case means to determine a parameter of the Black-Scholes 
 
 Historical volatility is the realized volatility of the underlying asset over a previous time period. It is determined by measuring the standard deviation of the underlying asset from the mean during that time period.
 
-In contrast to historical volatility, which looks at actual stock prices in the past, \emph{implied volatility} looks toward the future. Implied volatility is often interpreted as the market's expectation for the future volatility of a stock and can be derived from the price of an option (e.g. from the Black and Scholes formula).
-Specifically, it is the expected future volatility of the stock that is implied by the price of the stock's options.
+In contrast to historical volatility, which looks at actual stock prices in the past, \emph{implied volatility} looks toward the future. It is often interpreted as the market's expectation for the future volatility of a stock and can be derived from the price of an option (e.g. from the Black-Scholes formula). Specifically, it is the expected future volatility of the stock that is implied by the price of the stock's options.
 
-The implied volatility of an asset can also be compared with what it was in the past. If a stock has an implied volatility of 40\% compared with a 20\% implied volatility, say, a month ago, the market now considers the stock to be more volatile particularly going forward.
+%The implied volatility of an asset can also be compared with what it was in the past. If a stock has an implied volatility of 40\% compared with a 20\% implied volatility, say, a month ago, the market now considers the stock to be more volatile particularly going forward.
 
 Volatility shifts as markets go through different regimes. Thus, historical volatility may not be an accurate measure of future volatility. Implied volatility takes into account all information used by market participants to  determine prices in the options market, instead of just past prices.
 
 %In general, if implied volatility is higher than historical volatility it gives some indication that option prices may be high. If implied volatility is below historical volatility, this may mean option prices are discounted and may be “cheap.”
 \end{attention}
 
-To reuse the training sample created before (again we are going to set \(\mathrm{ttm}=1\) and \(K=1\)) now we need to set the input as pairs of rate-price and the output is the target volatility.
+To reuse the training sample created before (again we are going to set \(\mathrm{ttm}=1\) and \(M=1\)) we need to set the input as pairs of rate-price and the output is the target volatility.
 
 \begin{ipython}
 data = pd.read_csv("bs_training_sample.csv")
 df = pd.concat([data.iloc[:, 1:2], data.iloc[:, 3:4]], 1))
 
-x = df.values
-y = data.iloc[:, 1].values
+x = df.loc[:, ['rate', 'price']].values
+y = data.loc[:, 'vol'].values
 
 trainer = FinNN("ANN")
 trainer.setData(x, y, test_size=0.20)
@@ -484,7 +470,7 @@ Training: 2.0318084630162047e-06
 Test: 1.8580968553578714e-06
 \end{ioutput}
 
-Provided our training includes the correct range of market prices of our call we can quickly and easily estimate the implied volatility. For example if the risk-free rate is 2\% and the current price is 0.15 (remember that we are using the BS formula in terms of moneyness)
+Provided our training includes the correct range of call market prices we can quickly estimate the implied volatility. For example if the risk-free rate is 2\% and the current price is 0.15 (remember that we are using the BS formula in terms of moneyness)
 
 \begin{ipython}
 trainer.loadModel('calibration')
@@ -492,7 +478,7 @@ rv = np.array([[0.02, 0.15]])
 
 print ('{} => {:.4f} (expected call price {:.4f})'.format(rv.tolist(),
                                                    trainer.predict(rv)[0][0],
-                                                   call(1, 0.02, 
+                                                   call_m(1, 0.02, 
                                                    trainer.predict(rv)[0][0], 1))
 \end{ipython}
 \begin{ioutput}
@@ -501,38 +487,306 @@ print ('{} => {:.4f} (expected call price {:.4f})'.format(rv.tolist(),
 \noindent
 The expected call price (0.1502) derived using the implied volatility is in excellent agreement we the "market price" (0.15).
 
+\section{Bankruptcy Prediction}
+A company faces bankruptcy when it is unable to pay off its debts. The Taiwan Economic Journal has listed the details of company bankruptcy for the years 1999 to 2009 based on the business regulations of the Taiwan Stock Exchange which is a financial institution with over 900 listed companies. The dataset includes 94 numerical attributes that help understand the possibility of bankruptcy.
+
+This ANN application aims at analyzing the possibility of whether an organization would face bankruptcy. Beside the actual application of machine learning to a classification problem, a couple more concepts are analyzed in this example:
+\begin{itemize}
+\item \emph{imbalanced datasets}: is a situation when there is an unequal distribution of classes in a dataset. It can be solved by either upsampling (i.e. introducing minority class samples) or downsampling (i.e. reducing majority class to match the size of minority class);
+\item finding the best attributes to work with through feature selection (i.e. it will be shown how programaticaly pick the best features).
+\end{itemize}
+
+The input dataset can be downloaded \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/bankruptcy_data.csv}{bankruptcy\_data.csv}
+\begin{ipython}
+import pandas as pd
+	
+data = pd.read_csv("bankruptcy_data.csv")
+pd.options.display.max_columns=100
+pd.options.display.max_rows=10
+pd.set_option('display.float_format', '{:.2f}'.format)
+	
+print (data.head())
+\end{ipython}
+\begin{ioutput}
+Net Worth Turnover Rate (times)  Revenue per person  \
+0                          0.03                0.03   
+1                          0.03                0.01   
+2                          0.01                0.03   
+3                          0.03                0.02   
+4                          0.04                0.06   
+	
+Operating profit per person  Allocation rate per person  \
+0                      0.39                        0.04   
+1                      0.39                        0.01   
+2                      0.38                        0.14   
+3                      0.38                        0.02   
+4                      0.39                        0.02   
+
+Working Capital to Total Assets  Quick Assets/Total Assets  \
+...                        
+\end{ioutput}
+
+Given the very large number of available features it could be useful to remove those which present high correlation with other features.
+
+Two techniques can be used: either perform a principal component analysis on the dataset and keep just the highest ranked feature of the most significant components~\ref{sec:PCA} or compute the correlation matrix of the features, set a threshold and remove all the attributes above this value.
+
+Here the latter will be used, choosing a correlation threshold of $|\rho|\geq 0.95$.
+
+\begin{ipython}
+corr_mat = data.corr()
+corr_mat = corr_mat.iloc[1:, 1:]
+	
+drop_list = {}
+for i in range(len(corr_mat.columns)):
+    for j in range(i):
+        if corr_mat.iloc[i, j] >= 0.95 or corr_mat.iloc[i, j] <= -0.95:
+            if corr_mat.columns[j] not in drop_list:
+                drop_list.setdefault(corr_mat.columns[j], []) \
+                    .append(corr_mat.columns[i])
+
+for d in drop_list:
+    print (d)
+\end{ipython}
+\begin{ioutput}
+ROA(C) before interest and depreciation before interest
+ROA(A) before interest and % after tax
+Operating Gross Margin
+Pre-tax net Interest Rate
+After-tax net Interest Rate
+Net Value Per Share (B)
+Net Value Per Share (A)
+Persistent EPS in the Last Four Seasons
+After-tax Net Profit Growth Rate
+Debt ratio %
+Operating Profit Per Share (Yuan)
+Per Share Net profit before tax (Yuan)
+Current Liabilities/Liability
+Current Liabilities/Equity
+Realized Sales Gross Margin
+Borrowing dependency
+Current Liability to Equity
+\end{ioutput}
+\noindent 
+By analysing \texttt{drop\_list} it is also possible to check where the maximum correlation happens.
+
+These 17 attributes are highly correlated with others in the dataset, therefore they do not bring additional discrimination power to the network and can be safely discarded. To check the effect of removing columns from the dataset it should be compared the performance of the NN with and without the selected attributes, here for simplicity this step will be skipped.
+
+\begin{ipython}
+data = data.drop(drop_list, axis=1)
+y = data['Bankrupt?']
+X = data.drop(['Bankrupt?'], axis=1)
+\end{ipython}
+
+\subsection{Unbalanced Datasets}
+
+\begin{ipython}
+print (data['Bankrupt?'].value_counts())
+\end{ipython}
+\begin{ioutput}
+0    6599
+1     220
+Name: Bankrupt?, dtype: int64
+\end{ioutput}
+
+From the above check it is apparent that the dataset is highly imbalanced. The main problem with imbalanced classification is that there are too few examples of the minority class for a model to effectively learn the decision boundary. In this case it has been decided to reduce the problem by oversampling with the Synthetic Minority Oversampling Technique (SMOT)~\cite{bib:smot}. 
+
+\begin{attention}
+Oversampling could be in principle achieved by simply duplicating samples from the minority class in the training dataset prior to fitting a model. This would balance the class distribution but wouldn't provide any additional information to the model.
+	
+An improvement to this simple strategy is to synthesize new samples from the minority class, a type of data augmentation that can be very effective.
+SMOT algorithm works as follows: a random sample from the minority class is chosen. Then $k$ of the nearest neighbors for that sample are found (typically $k=5$) and one of them is randomly selected. Finally a synthetic sample is created at a randomly selected point between the two samples in feature space.
+Figure~\ref{fig:smote} shows a graphical representation of the algorithm.
+
+This procedure can be used to create as many synthetic samples for the minority class as are required. 
+The approach is effective because new synthetic samples are plausible, that is, are relatively close in feature space to existing samples from the minority class.
+
+A general downside of the approach is that synthetic samples are created without considering the majority class, possibly resulting in ambiguous samples if there is a strong overlap for the classes.
+\end{attention}
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/smote}
+\caption{Graphical representation of the SMOT algorithm.}
+\label{fig:smote}
+\end{figure}
+
+In \texttt{python} SMOT is implemented in \texttt{imblearn.over\_sampling} module.
+
+\begin{ipython}
+from imblearn.over_sampling import SMOTE
+	
+oversample = SMOTE()
+X_sm, y_sm = oversample.fit_resample(X, y)
+print (y_sm.value_counts())
+\end{ipython}
+\begin{ioutput}
+1    6599
+0    6599
+Name: Bankrupt?, dtype: int64
+\end{ioutput}
+
+The last step to prepare the dataset for the analysis is its normalization which is necessary since each column values range very differently.
+
+\begin{ipython}
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+	
+X_train, X_test, y_train, y_test = train_test_split(X_sm, y_sm,
+                                                    test_size=0.2,
+                                                    random_state = 101,
+                                                    stratify = y_sm)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+\end{ipython}
+
+\begin{attention}
+Note that the \texttt{stratify} parameter creates batches of the dataset with the same proportion between the classes. While \texttt{random\_state} set the seeds for the random number generation for simpler debugging.
+\end{attention}
+
+Now we can define the neural network architecture and go on with the training. An early stopping callback has been implemented in order to stop the training in case no significant improvement is observed in the last 50 epochs.
+
+\begin{ipython}
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.callbacks import EarlyStopping
+	
+model = Sequential()
+	
+model.add(Dense(units=77, activation='relu'))
+model.add(Dropout(0.3))
+model.add(Dense(units=77, activation='relu'))
+model.add(Dropout(0.3))
+model.add(Dense(units=1, activation='sigmoid'))
+	
+model.compile(loss='binary_crossentropy', optimizer='adam')
+	
+early_stop = EarlyStopping(monitor='val_loss', 
+                           mode='min', 
+                           verbose=1, 
+                           patience=50)
+	
+model.fit(x=X_train, y=y_train,
+          epochs=600,
+          validation_data=(X_test, y_test), 
+          verbose=1, callbacks=[early_stop])
+\end{ipython}
+\begin{ioutput}
+Epoch 1/600
+330/330 [==============================] - 2s 4ms/step - loss: 0.3348 
+- val_loss: 0.2354
+Epoch 2/600
+330/330 [==============================] - 1s 3ms/step - loss: 0.2318 
+- val_loss: 0.2007
+...
+330/330 [==============================] - 2s 5ms/step - loss: 0.0148 
+- val_loss: 0.0896
+Epoch 00082: early stopping
+\end{ioutput}
+
+\begin{ipython}
+loss = model.history.history['loss']
+val_loss = model.history.history['val_loss']
+\end{ipython}
+
+Figure~\ref{fig:bankruptcy_loss} reports the loss function values, in training and testing samples, versus the epoch number. From the plot it is clear how there is no significant improvement after epoch 30 in the testing sample, that's why the training is stopped early.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\linewidth]{figures/bankruptcy_loss}
+\caption{Loss value as a function of the number of epochs in training and testing sample.}
+\label{fig:bankruptcy_loss}
+\end{figure}
+
+Performance-wise the ANN can be evaluated using the so called \emph{confusion matrix} plot shown in Figure~\ref{fig:confusion_matrix}. This is a matrix that compares the number of actual and predicted events in each category, reporting the true and false predictions. In case of two classes only it becomes:
+
+\begin{equation*}
+	\begin{bmatrix}
+		TP & FP \\
+		FN & TN  
+	\end{bmatrix}
+\end{equation*}
+\noindent
+where $TP$ are the true "positive", $FN$ false "negative" and so on.
+
+\begin{ipython}
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+	
+ann_predictions = (model.predict(X_test) > 0.5).astype("int32")
+	
+cm = confusion_matrix(y_test, ann_predictions)
+cmd_obj = ConfusionMatrixDisplay(cm, display_labels=['No Bankruptcy', 'Bankruptcy'])
+cmd_obj.plot()
+cmd_obj.ax_.set(title='', xlabel='Predicted', ylabel='Actual')
+plt.show()
+\end{ipython}
+\noindent
+From this matrix a number of information can be determined~\cite{bib:sensitivity}:
+
+\makegapedcells\begin{table}[htbp]
+\centering
+\begin{tabular}{|l|c|c|}
+\hline
+Mis-classification (error rate) & $\cfrac{FP+FN}{n}$ & 0.8\% \\
+\hline
+Sensitivity (true positive) & $\cfrac{TP}{FN+TP}$ & 99.9 \% \\
+\hline
+False positive & $\cfrac{FP}{TN+FP}$ & 1.5\% \\
+\hline
+Specificity (true negative) & $\cfrac{TN}{TN+FP}$ &  98.5\% \\
+\hline
+False negative & $\cfrac{FN}{TP+FN}$ & 0.08\% \\
+\hline
+Precision & $\cfrac{TP}{FP+TP}$ & 98.4\% \\ 
+\hline
+Accuracy & $\cfrac{TN+TP}{n}$ & 99.2\% \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.7\linewidth]{figures/confusion_matrix}
+	\caption{Confusion matrix for the evaluation of the ANN to predict bankruptcy events.}
+	\label{fig:confusion_matrix}
+\end{figure}
+
+Since the goal was to train a neural network to predict company bankruptcy the most interesting parameters are the \emph{specificity} which is pretty high (98.5\%) and the \emph{false negative rate} which contrary is very tiny ($\lt 0.1\%$).
+
 \section{Neural net to recognize handwritten digits}
 \label{neural-net-to-recognize-handwritten-digits}
 
-We don't usually appreciate how tough a problem our visual system solve every time we look at something.
-Maybe it is enough to consider that it involves 5 visual cortices containing 140 million neurons each. Anyway the difficulties of visual pattern recognition become apparent if you attempt to write a computer program to recognize digits like those in Fig.~\ref{fig:mnist}.
+Looking at something it is such a common task that is hard to realize the tough work our "visual system" does.
+Maybe it is enough to consider that it involves 5 visual cortices containing 140 million neurons each. 
 
-\begin{figure}[htb]
+Anyway the difficulties of visual pattern recognition become apparent if you attempt to write a computer program to recognize digits like those in Fig.~\ref{fig:mnist}.
+
+\begin{figure}[b]
 \centering
 \includegraphics[width=0.5\textwidth]{figures/mnist_100_digits}
 \caption{MNIST sample of handwritten digits.}
 \label{fig:mnist}
 \end{figure}
 
-Simple intuition about how we recognize shapes (e.g. a 9 has a loop at the top, and a vertical stroke in the bottom right) turns out to be not so simple to express algorithmically. When you try to make such rules precise, you quickly get lost in a morass of exceptions and caveats and special cases so that it seems hopeless.
+Simple intuition about how we recognize shapes (e.g. a 9 has a loop at the top, and a vertical stroke in the bottom right) turns out to be not so simple to express algorithmically. When you try to make such rules precise, you quickly get lost in a morass of exceptions, caveats, and special cases so that it seems hopeless.
 
-Neural networks approach the problem in a different way. The idea is to take a large number of handwritten digits and then develop a system which can learn from those.
+Neural networks approach the problem in a different way. They take a large number of handwritten digits and develop a system which can learn from those.
 
-By increasing the number of training examples, the network can learn more and more about handwriting, and so improve its accuracy. So while it has been shown just 100 training digits above, we could certainly build a better handwriting recognizer by using thousands or even millions or billions of training examples (\textbf{as we have seen above neural nets are not capable of extrapolating results, hence in general it won't recognize a digit written in some strange way not included in the training sample !!!}).
+By increasing the number of training examples, the network can learn more and more about handwriting, and so improve its accuracy. So while it has been shown just 100 training digits in Fig.~\ref{fig:mnist}, a better handwriting recognizer could be certainly built by using thousands or millions training examples (\textbf{as we have seen above neural nets are not capable of extrapolating results, hence in general it won't recognize a digit written in some strange way not included in the training sample !!!}).
 
-In this example we will use the sample provided with the \texttt{mnist} module. 
-Our program will be based on a different kind of neural network than before, one type specifically designed for image/pattern recognition, the Convolutional Neural Network (CNN). We won't go into the details of its implementation since it is outside the scope of these Lectures but it works essentially by applying on top of an image series of filters (\emph{convolutional layers}) that works as edge detectors. With them it classifies the images according to their relevant features.
+To explore the neural network capabilities the sample provided with the \texttt{mnist} module will be used. 
+The algorithm is based on a different kind of neural network, specifically designed for image/pattern recognition, the Convolutional Neural Network (CNN). We won't go into the details of its implementation since it is outside the scope of these Lectures but it works by applying many filters (\emph{convolutional layers}) on top of an image, each of them working as edge detectors. With them images are classified according to their features.
 
 Convolutional layers prove to be very effective, and stacking them allows to learn low-level features (e.g. lines) and high-order, or more abstract, features, like shapes or specific objects, see Fig.~\ref{fig:conv_filters}.
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=1.\textwidth]{figures/edges.jpg}
-	\caption{Edge detected by different layers of a convolutional neural network.}
-        \label{fig:conv_fitlers}
+\centering
+\includegraphics[width=1.\textwidth]{figures/edges.jpg}
+\caption{Edge detected by different layers of a convolutional neural network.}
+\label{fig:conv_filters}
 \end{figure}
 
-Another important difference with respect to the previous examples is that in this case we are going to solve a classification problem (contrary to before when we were trying to regress a sample). Indeed our NN output won't be a single number but rather a list containing the probabilities that an image belong to each class.
+Also in this case we are going to solve a classification problem. Indeed the NN output won't be a single number but rather a list containing the probabilities that an image belong to each class.
 
 \begin{ipython}
 import numpy as np, mnist
@@ -581,10 +835,10 @@ Epoch 5/5
 \end{ioutput}
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.9\textwidth]{figures/cnn_2d.png}
-	\caption{Graphical representation of the CNN developed to recognize handwritten digits.}
-        \label{fig:cnn2d}
+\centering
+\includegraphics[width=0.9\textwidth]{figures/cnn_2d.png}
+\caption{Graphical representation of the CNN developed to recognize handwritten digits.}
+    \label{fig:cnn2d}
 \end{figure}
 
 \begin{attention}
@@ -594,28 +848,25 @@ Looking closely to the convolutional neural network implementation we can notice
 
 Convolutional layers in a CNN systematically apply filters to input images in order to create feature maps that summarize the main characteristics of the sample.
 
-A limitation of the feature map output of convolutional layers is that they record the precise position of features in the input. This means that small movements in the position of the feature in the input image will result in a different feature map. This can happen with cropping, rotation, shifting, and other minor changes to the input image.
+A limitation of such maps is that they record the precise position of features in the input. This means that small movements in its position will result in a different feature map. This can happen with cropping, rotation, shifting, and other minor changes to the input image.
 
-Imagine a program that look for car plates in pictures taken by a speed radar, cars won't be in the same position in the frame so there may be differences in the classification of similar (but not equal) pictures.
+Imagine a program that looks for car plates in pictures taken by a speed radar: cars won't be in the same position in the frame so there may be differences in the classification of similar (but not equal) pictures.
 
 A common approach to address this problem is called \emph{down sampling}. 
-This is where a lower resolution version of an input signal (e.g. the picture) is created that still contains the large or important structural elements, without the fine detail that may not be as useful to the task.
+This is where a lower resolution version of an input signal (e.g. the picture) is created that still contains the large or important structural elements, without the finer detail that may not be as useful to the task.
 
 Down sampling can be achieved using a pooling layer.
-
-It involves selecting a pooling operation, much like a filter to be applied to feature maps. The size of the pooling operation is smaller than the size of the feature map; specifically, it is almost always 2×2 pixels. This means that the pooling layer will always reduce the size of each feature map by a factor of 2, e.g. each dimension is halved. For example, a pooling layer applied to a feature map of 6×6 (36 pixels) will result in an output pooled feature map of 3×3 (9 pixels).
+It involves selecting kind of a filter to be applied to the feature maps. The pooling operation size is smaller than the feature map; specifically, it is almost always 2×2 pixels. This means that the pooling layer will always reduce the size of each feature map by a factor of 2, e.g. each dimension is halved. For example, a pooling layer applied to a feature map of 6×6 (36 pixels) will result in an output pooled feature map of 3×3 (9 pixels).
 
 The most common pooling operation are:
 \begin{itemize}
-	\tightlist
-	\item Average Pooling: calculate the
-	average value for each patch on the feature map;
-	\item Maximum Pooling (or Max Pooling): calculate the maximum value for each patch of the feature
-	map.
+\tightlist
+\item Average Pooling: calculate the average value for each patch on the feature map;
+\item Maximum Pooling (or Max Pooling): calculate the maximum value for each patch of the feature map.
 \end{itemize}
 \end{attention}
 
-Now let's try to see how well our NN predicts \texttt{mnist} testing digits.
+Let's see how well our NN predicts \texttt{mnist} testing digits.
 
 \begin{ipython}
 trainer.loadModel('digit_training')
@@ -652,7 +903,10 @@ for i, p in enumerate(predictions[8])])
 
 So the second ranked digit is a 6 (which can be confused with a five if the lower loop is almost closed).
 
-To see how well our NN behaves with different kind of digits we will try to check how it works with my calligraphy. Before passing the image to the NN it has to be resized and this is done with an ad-hoc function, \texttt{transform\_image}, which is in the \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/digit_converter.py}{\texttt{digit\_converter.py}} module.
+To see how well our NN behaves with completely different digits we will check its performance with your own calligraphy. 
+
+Open your favourite image editor (e.g. Paint, GIMP,\ldots) and create a black-white 200x200 pixels canvas. With the help of the mouse draw a digit and save it to a png file.
+Before passing the image to the NN it has to be resized and this is done with an ad-hoc function, \texttt{transform\_image}, which can be imported from \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/digit_converter.py}{\texttt{digit\_converter.py}}.
 
 \begin{ipython}
 from digit_converter import transform_image
@@ -674,7 +928,7 @@ Predicted:  [4]
 %: ['0.802']
 ['0.00', '0.00', '0.00', '0.00', '0.80', '0.00', '0.00', '0.20', '0.00', '0.00']
 
-Tesing on custom digits...
+Testing on custom digits...
 Predicted:  [5]
 %: ['0.981']
 ['0.00', '0.00', '0.00', '0.01', '0.00', '0.98', '0.00', '0.01', '0.00', '0.00']
@@ -692,21 +946,19 @@ The handwritten images used in this test are shown in Fig.~\ref{fig:test_images}
 \subsection{Model Calibration cont.}
 \label{model-calibration-cont.}
 
-When the parameters of the model we want to calibrate can be expressed as a function of three variables we can implement a convolutional neural network to work with special images representing our model.
+When a model has just three known parameters a convolutional neural network can be used to calibrate it.
 
-Consider again the Black and Scholes formula for the call options. Assume you need to calibrate the rate \(r\) and the volatity \(\sigma\) at the same time.% A convolutional neural network can be trained using
-%special images which represents \(\mathrm{ttm}, K\) and
-%\(P_\textrm{call}\).
+Consider again the Black-Scholes formula and imagine you need to calibrate: rate $r$ and volatility $\sigma$ at the same time.
 
-A black-white image indeed can be interpreted as a map where each pixel coordinates is a pair (\(\mathrm{ttm}, K)\) and the pixel color, an integer between 0 (black) and 255 (white), represents \(P_\textrm{call}\). As in the previous examples the neural network was classifying the pictures into digits, now it will assign them to classes identified by \(r, \sigma\) pairs.
+A black-white image can be interpreted as a map where each pixel coordinates is a pair ($\mathrm{ttm}, M$) and the pixel color, an integer between 0 (black) and 255 (white), represents \(P_\textrm{call}\). Each picture will be classified by a pair of $r, \sigma$.
 
-The creation of the training sample is a little more complicated now. For convenience we will use also a new format to save data image, \texttt{numpy}. This will be done through the corresponding module simply using the functions \texttt{save} and \texttt{load} to store and retrieve data. The module \texttt{PIL} (pillow) is instead used to visualize the images.
+The creation of the training sample is a little more complicated now. For convenience we will use also a new format to save data image, \texttt{numpy}. This will be done through the corresponding module simply using the functions \texttt{save} and \texttt{load} to store and retrieve data. The module \texttt{PIL} (\texttt{pillow}) is instead used to visualize the images.
 
-First we make the targets.
+First make the targets.
 
 \begin{ipython}
 import numpy as np
-from finmarkets import call
+from finmarkets import call_m
 
 labels = []
 rates = np.arange(0.01, 0.11, 0.001)
@@ -732,7 +984,7 @@ for v in vols:
         price = np.zeros(shape=(20, 20))
         for ik, kv in enumerate(k):
             for it, t in enumerate(ttm):
-                price[ik, it] = call(kv, r, v, t)
+                price[ik, it] = call_m(kv, r, v, t)
                 prices.append(price)
                 # max and min are saved to
                 # normalize our matrices
@@ -752,7 +1004,7 @@ An example of the 20x20 images that have been created is shown in Fig.~\ref{fig:
 \begin{figure}[htb]
 \centering
 \includegraphics[width=0.45\textwidth]{figures/2d_training_images}
-	\caption{Example of images used to encode calibration information.}
+\caption{Example of images used to encode calibration information.}
 \label{fig:test_images_calib}
 \end{figure}
 \noindent
@@ -768,7 +1020,7 @@ images = np.load("2d.npy")
 trainer = FinNN("CNN2D")
 trainer.setData(images, labels, test_size=0.2)
 trainer.addConv2DLayer(filters=8, filter_size=10,
-input_shape=(20, 20, 1), activation='relu')
+                       input_shape=(20, 20, 1), activation='relu')
 trainer.addFlatten()
 trainer.addHiddenLayer(neurons=10, activation='relu')
 trainer.addOutputLayer(outputs=2, activation='relu')
@@ -795,7 +1047,7 @@ Training: 1.1013161047230825e-05
 Test: 1.116331470257137e-05
 \end{ioutput}
 
-At this point the test of the trained CNN consists of presenting the prices of call referring to the same underlying in the pictorial form shown before and in response it will give the risk-free rate and the underlying volatility.
+At this point the test of the trained CNN consists of presenting the prices of call referring to the same underlying in the pictorial form shown before and in response it will give the risk-free rate and the volatility.
 
 \begin{ipython}
 for i in range(5):
@@ -815,30 +1067,30 @@ for i in range(5):
 In finance \emph{technical analysis} is a security analysis discipline for forecasting the direction of prices through the study of past market data, primarily price and volume. Essentially the analyst looks for particular patterns in the price time series that are believed to develop in a predictable way to take profit of it, Fig.~\ref{fig:tech_ana} shows two of such patterns.
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.4\linewidth]{figures/H_and_s_top_new.jpg}\qquad
-	\includegraphics[width=0.4\linewidth]{figures/Triangle-ascending.jpg}
-	\caption{Examples of patterns in real time series, head and shoulder (left), triangle (right).}
-        \label{fig:tech_ana}
+\centering
+\includegraphics[width=0.4\linewidth]{figures/H_and_s_top_new.jpg}\qquad
+\includegraphics[width=0.4\linewidth]{figures/Triangle-ascending.jpg}
+\caption{Examples of patterns in real time series, head and shoulder (left), triangle (right).}
+    \label{fig:tech_ana}
 \end{figure}
 
-As you may imagine we will try to develop a CNN capable of classifying  features in time series to be used in technical analysis (this is much faster than having somebody looking at thousands of time series by eye).
+We will develop a CNN capable of classifying features in time series to be used in technical analysis (which is much faster than having somebody looking at thousands of time series by eye).
 
 The training sample is made of 21600 time series (1/3 with head and shoulder patter, 1/3 with triangle pattern and 1/3 with no pattern), see Fig~\ref{fig:patterns}. \textbf{To make the training easier the features are quite exaggerated.}
 
 \begin{figure}[htbp]
-	\centering
-	\subfloat[No pattern.\label{}]{%
-		\includegraphics[width=0.5\textwidth]{figures/no_pattern}
-	}
-	\subfloat[Head and shoulder pattern.\label{}]{%
-		\includegraphics[width=0.5\textwidth]{figures/head_and_shoulder}
-	}\\
-	\subfloat[Triangle pattern.\label{}]{%
-		\includegraphics[width=0.5\textwidth]{figures/triangle}
-	}
-	\caption{Examples of time series used in the training of the CNN for technical analysis.}
-	\label{fig:patterns}
+\centering
+\subfloat[No pattern.\label{}]{%
+	\includegraphics[width=0.5\textwidth]{figures/no_pattern}
+}
+\subfloat[Head and shoulder pattern.\label{}]{%
+	\includegraphics[width=0.5\textwidth]{figures/head_and_shoulder}
+}\\
+\subfloat[Triangle pattern.\label{}]{%
+	\includegraphics[width=0.5\textwidth]{figures/triangle}
+}
+\caption{Examples of time series used in the training of the CNN for technical analysis.}
+\label{fig:patterns}
 \end{figure}
 
 \begin{ipython}
@@ -849,9 +1101,10 @@ train_labels = np.load("training_techana_labels.npy")
 train_images = np.load("training_techana_images.npy")
 trainer = FinNN("CNN1D")
 trainer.setData(train_images, train_labels)
+
 # define the CNN
 trainer.addConv1DInputLayer(filters=80, filter_size=20,
-input_size=(101, 1))
+                            input_size=(101, 1))
 trainer.addConv1DLayer(filters=80, filter_size=15)
 trainer.addMaxPooling1D(3)
 trainer.addConv1DLayer(filters=100, filter_size=10)
@@ -879,31 +1132,30 @@ Epoch 80/80
 \begin{attention}
 \subsubsection{Dropout}
 
-Large neural nets trained on relatively small datasets can overfit the
-training data.
+Large neural nets trained on relatively small datasets tend to overfit.
 
-In this case the model is learning the statistical noise in the training data, so it results in poor performance when the model is evaluated on new data (e.g. a test dataset).
+In this case the model is learning the statistical noise in the training data, so it results in poor performance when the model is evaluated on new data (e.g. the test dataset).
 
 One approach to reduce overfitting is to fit all possible different neural networks on the same dataset and to average the predictions from each model. This is not feasible in practice, and can be approximated using a small collection of different models, called an ensemble. A problem even with the ensemble approximation is that it requires multiple models to be fit and stored, which can be a challenge if the models are large, requiring days or weeks to train and tune.
 
 \emph{Dropout} is a regularization method that approximates training a large number of neural networks with different architectures in parallel.
 
-During training, some number of layer outputs are randomly ignored or \emph{dropped out}. This has the effect of making the layer look like and be treated like a layer with a different number of nodes and connectivity to the prior layer. In effect, each update to a layer during training is performed with a different "view" of the configured layer.
+During training, some number of layer outputs are randomly ignored or \emph{dropped out}. This has the effect of making the layer look like and treated like a layer with a different number of nodes and connectivity to the prior layer. In effect, each update to a layer during training is performed with a different "view" of the configured layer.
 
 Even if it may seems counter intuitive (better training when switching off nodes) indeed dropout breaks up situations where network layers co-adapt to correct mistakes from prior layers, in turn making the model more robust.
 \end{attention}
 
-The performance test is carried on in simulated real case scenario where a time series is analyzed in real-time in order to predict as soon as possible a particular pattern and take advantage of the prediction.
+The performance test is carried on in "simulated" real case scenario where a time series is analyzed in real-time to foresee as soon as possible a particular pattern and take advantage of the prediction.
 
-To do so it has been presented to the CNN sliding windows of a series to simulate the flowing of the time. So if for example the time series is   made of 100 points (e.g. each point representing a hourly measurement), it has been given in input to the CNN first the points between \([0, 80]\), then \([0, 81]\), \([0, 82]\) and so on to simulate new real time data incoming. 
+To do so it has been presented to the CNN sliding windows of a series to simulate time flowing. If for example the time series is made of 100 points (e.g. each point representing hourly measurements), it has been given in input to the CNN first the points between \([0, 80]\), then \([0, 81]\), \([0, 82]\) and so on to simulate new real time data incoming. 
 
-The goal was to check when the neural network was capable of predicting the incoming pattern. Figure~\ref{fig:frame_simulation} shows the "temporal frames" that have been presented to the CNN.
+The goal is to check when the neural network is recognizing the incoming pattern (the sooner, the better). Figure~\ref{fig:frame_simulation} shows the "temporal frames" that have been presented to the CNN.
 
 \begin{figure}
-	\centering
-	\includegraphics[width=\textwidth]{figures/tech_ana_frames.png}
-	\caption{Ten frames simulating closing price date incoming in real time. The CNN was tested to check if and when it would have been able to detect any pattern in data.}
-	\label{fig:frame_simulation}
+\centering
+\includegraphics[width=\textwidth]{figures/tech_ana_frames}
+\caption{Ten frames simulating closing price date incoming in real time. The CNN was tested to check if and when it would have been able to detect any pattern in data.}
+\label{fig:frame_simulation}
 \end{figure}
 
 \begin{ipython}
@@ -927,276 +1179,9 @@ for i in range(len(predictions)):
 1 ['0.000', '1.000', '0.000']
 \end{ioutput}
 \noindent
-The arrays in the output represent the likelihood assigned by the CNN to the series for each category at each time interval. So up to $t=4$ the CNN is more than 95\% sure there is no pattern. 
-At $t=5$ the CNN starts to recognize a pattern assigning about 20\% probability to the "head and shoulder" class. For $t\geq 6$ the neural network clearly recognizes the pattern.
+The output represents the likelihood to belong to each category assigned to the input series at each time interval. So up to $t=4$ the CNN is more about 95\% sure there is no pattern (max probability at category 0). 
+At $t=5$ the CNN starts to recognize a pattern assigning about 20\% probability to the "head and shoulder" class. For $t\geq 6$ the neural network clearly recognizes the pattern with a probability close to 100\%.
 	
-\section{Bankruptcy Prediction}
-A company faces bankruptcy when they are unable to pay off their debts. The Taiwan Economic Journal for the years 1999 to 2009 has listed the details of company bankruptcy based on the business regulations of the Taiwan Stock Exchange which is a financial institution located in Taipei, Taiwan, with over 900 listed companies. The dataset includes 94 numerical attributes that help understand the possibility of bankruptcy.
-
-This interesting and simple application of ANN aims at analyzing the possibility of whether an organization would face bankruptcy. Beside the actual application of machine learning to another classification problem, a couple more concepts are analyzed in this example:
-\begin{itemize}
-\item \emph{imbalanced datasets}: is a situation when there is an unequal distribution of classes in a dataset. It can be solved by either upsampling (i.e. introducing minority class at power with majority class) or downsampling (i.e. reducing majority class to match the size of minority class);
-\item finding the best attributes to work with through feature selection (i.e. it will be shown how programmatically pick the best features).
-\end{itemize}
-
-The input dataset can be downloaded \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/bankrupticy_data.csv}{bankrupticy\_data.csv}
-\begin{ipython}
-import pandas as pd
-
-data = pd.read_csv("bankruptcy_data.csv")
-pd.options.display.max_columns=100
-pd.options.display.max_rows=10
-pd.set_option('display.float_format', '{:.2f}'.format)
-
-print (data.head())
-\end{ipython}
-\begin{ioutput}
-   Net Worth Turnover Rate (times)  Revenue per person  \
-0                             0.03                0.03   
-1                             0.03                0.01   
-2                             0.01                0.03   
-3                             0.03                0.02   
-4                             0.04                0.06   
-
-   Operating profit per person  Allocation rate per person  \
-0                         0.39                        0.04   
-1                         0.39                        0.01   
-2                         0.38                        0.14   
-3                         0.38                        0.02   
-4                         0.39                        0.02   
-
-   Working Capital to Total Assets  Quick Assets/Total Assets  \
-...                        
-\end{ioutput}
-
-Given the very large number of available features it could be useful to remove those which present high correlation with other features.
-
-Two techniques can be used: either perform a principal component analysis on the dataset and keep just the highest ranked feature of the most significant components~\ref{sec:PCA} or compute the correlation matrix of the features, set a threshold and remove all the attributes above this value.
-
-Here the latter will be used, choosing a correlation threshold of $|\rho|\geq 0.95$.
-
-\begin{ipython}
-from sklearn.metrics import ConfusionMatrixDisplay
-
-corr_mat = data.corr()
-corr_mat = corr_mat.iloc[1:, 1:]
-
-drop_list = {}
-for i in range(len(corr_mat.columns)):
-    for j in range(i):
-        if corr_mat.iloc[i, j] >= 0.95 or corr_mat.iloc[i, j] <= -0.95:
-            if corr_mat.columns[j] not in drop_list:
-                drop_list.setdefault(corr_mat.columns[j], []) \
-                         .append(corr_mat.columns[i])
-                
-for d in drop_list:
-    print (d)
-\end{ipython}
-\begin{ioutput}
-ROA(C) before interest and depreciation before interest
-ROA(A) before interest and % after tax
-Operating Gross Margin
-Pre-tax net Interest Rate
-After-tax net Interest Rate
-Net Value Per Share (B)
-Net Value Per Share (A)
-Persistent EPS in the Last Four Seasons
-After-tax Net Profit Growth Rate
-Debt ratio %
-Operating Profit Per Share (Yuan)
-Per Share Net profit before tax (Yuan)
-Current Liabilities/Liability
-Current Liabilities/Equity
-Realized Sales Gross Margin
-Borrowing dependency
-Current Liability to Equity
-\end{ioutput}
-\noindent 
-By analysing the \texttt{drop\_list} dictionary it is also possible to check where the maximum correlation happens.
-
-These 17 attributes are highly correlated with others in the dataset and therefore they do not bring additional discrimination power to the network so can be safely discarded. To check the effect of removing columns from the dataset it should be compared the performance of the NN with and without the selected attributes, here for simplicity this step will be skipped.
-
-\begin{ipython}
-data = data.drop(drop_list, axis=1)
-y = data['Bankrupt?']
-X = data.drop(['Bankrupt?'], axis=1)
-\end{ipython}
-
-\subsection{Unbalanced Datasets}
-
-\begin{ipython}
-print (data['Bankrupt?'].value_counts())
-\end{ipython}
-\begin{ioutput}
-0    6599
-1     220
-Name: Bankrupt?, dtype: int64
-\end{ioutput}
-
-From the above check it is apparent that the dataset is highly imbalanced (i.e. the main problem with imbalanced classification is that there are too few examples of the minority class for a model to effectively learn the decision boundary). In this case it has been decided to reduce the problem by oversampling the dataset with the Synthetic Minority Oversampling Technique (SMOT)~\cite{bib:smot}. 
-
-\begin{attention}
-Oversampling could be in principle achieved by simply duplicating samples from the minority class in the training dataset prior to fitting a model. This would balance the class distribution but wouldn't provide any additional information to the model.
-
-An improvement to this simple strategy is to synthesize new samples from the minority class, a type of data augmentation that can be very effective.
-
-SMOTE works by selecting samples that are close in the feature space, drawing a line between the examples in the feature space and creating a new sample at a point along that line.
-
-Specifically, a random sample from the minority class is first chosen. Then $k$ of the nearest neighbors for that sample are found (typically $k=5$). A randomly selected neighbor is chosen and a synthetic sample is created at a randomly selected point between the two samples in feature space.
-\end{attention}
-
-This procedure can be used to create as many synthetic samples for the minority class as are required. 
-The approach is effective because new synthetic samples are plausible, that is, are relatively close in feature space to existing samples from the minority class.
-
-A general downside of the approach is that synthetic samples are created without considering the majority class, possibly resulting in ambiguous samples if there is a strong overlap for the classes.
-
-In \texttt{python} SMOT algorithm is implemented in \texttt{imblearn.over\_sampling} module.
-
-\begin{ipython}
-from imblearn.over_sampling import SMOTE
-
-oversample = SMOTE()
-X_sm, y_sm = oversample.fit_resample(X, y)
-print (y_sm.value_counts())
-\end{ipython}
-\begin{ioutput}
-1    6599
-0    6599
-Name: Bankrupt?, dtype: int64
-\end{ioutput}
-
-The last step to prepare the dataset for the analysis is its normalization which is necessary since each column values range very differently.
-
-\begin{ipython}
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
-
-X_train, X_test, y_train, y_test = train_test_split(X_sm, y_sm,
-                                                    test_size=0.2,
-                                                    random_state = 101,
-                                                    stratify = y_sm)
-scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
-\end{ipython}
-
-\begin{attention}
-Note that the \texttt{stratify} parameter creates batches of the dataset with the same proportion between the classes. While \texttt{random\_state} set the seeds for the random number generation for simpler debugging.
-\end{attention}
-
-Now we can define the neural network architecture and go on with the training. An early stopping callback has been implemented in order to stop the training in case no improvement is observed in the last 50 epochs.
-
-\begin{ipython}
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout
-from tensorflow.keras.callbacks import EarlyStopping
-
-model = Sequential()
-
-model.add(Dense(units=77, activation='relu'))
-model.add(Dropout(0.3))
-model.add(Dense(units=77, activation='relu'))
-model.add(Dropout(0.3))
-model.add(Dense(units=1, activation='sigmoid'))
-
-model.compile(loss='binary_crossentropy', optimizer='adam')
-
-early_stop = EarlyStopping(monitor='val_loss', 
-                           mode='min', 
-                           verbose=1, 
-                           patience=50)
-
-model.fit(x=X_train,
-          y=y_train,
-          epochs=600,
-          validation_data=(X_test, y_test), 
-          verbose=1,
-          callbacks=[early_stop])
-\end{ipython}
-\begin{ioutput}
-Epoch 1/600
-330/330 [==============================] - 2s 4ms/step - loss: 0.3348 
-- val_loss: 0.2354
-Epoch 2/600
-330/330 [==============================] - 1s 3ms/step - loss: 0.2318 
-- val_loss: 0.2007
-...
-330/330 [==============================] - 2s 5ms/step - loss: 0.0148 
-- val_loss: 0.0896
-Epoch 00082: early stopping
-\end{ioutput}
-
-\begin{ipython}
-loss = model.history.history['loss']
-val_loss = model.history.history['val_loss']
-\end{ipython}
-
-Figure~\ref{fig:bankruptcy_loss} reports the loss function values, in training and testing samples, versus the epoch number. From the plot it is clear how there is no significant improvement after epoch 30 in the testing sample, that's why the training is stopped early.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.7\linewidth]{figures/bankruptcy_loss}
-\caption{Loss value as a function of the number of epochs in training and testing sample.}
-\label{fig:bankruptcy_loss}
-\end{figure}
-
-Performance-wise the ANN can be evaluated using the so called \emph{confusion matrix} plot shown in Figure~\ref{fig:confusion_matrix}. This is a matrix that compares the number of actual and predicted events in each category, reporting the true and false predictions. In case of two classes only it becomes:
-
-\begin{equation*}
-\begin{bmatrix}
-TP & FP \\
-FN & TN  
-\end{bmatrix}
-\end{equation*}
-\noindent
-where $TP$ are the true "positive", $FN$ false "negative" and so on.
-
-\begin{ipython}
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-
-ann_predictions = (model.predict(X_test) > 0.5).astype("int32")
-
-cm = confusion_matrix(y_test, ann_predictions)
-cmd_obj = ConfusionMatrixDisplay(cm, display_labels=['No Bankruptcy', 'Bankruptcy'])
-cmd_obj.plot()
-cmd_obj.ax_.set(
-                title='',
-                xlabel='Predicted',
-                ylabel='Actual')
-plt.show()
-\end{ipython}
-
-From this matrix a number of information can be determined~\cite{bib:sensitivity}:
-
-\makegapedcells\begin{table}[htbp]
-\centering
-\begin{tabular}{|l|c|c|}
-\hline
-Mis-classification (error rate) & $\frac{FP+FN}{n}$ & 0.8\% \\
-\hline
-Sensitivity (true positive) & $\frac{TP}{FN+TP}$ & 99.9 \% \\
-\hline
-False positive & $\frac{FP}{TN+FP}$ & 1.5\% \\
-\hline
-Specificity (true negative) & $\frac{TN}{TN+FP}$ &  98.5\% \\
-\hline
-False negative & $\frac{FN}{TP+FN}$ & 0.08\% \\
-\hline
-Precision & $\frac{TP}{FP+TP}$ & 98.4\% \\ 
-\hline
-Accuracy & $\frac{TN+TP}{n}$ & 99.2\% \\
-\hline
-\end{tabular}
-\end{table}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.7\linewidth]{figures/confusion_matrix}
-\caption{Confusion matrix for the evaluation of the ANN to predict bankruptcy events.}
-\label{fig:confusion_matrix}
-\end{figure}
-
-Since the goal was to train a neural network to predict company bankruptcy the most interesting parameter is the \emph{specificity} which is pretty high (98.5\%) and with a very tiny false negative rate ($\lt 0.1\%$).
  
 \begin{thebibliography}{9}
 \bibitem{bib:deep_learning} I. Goodfellow, Y. Bengio and A. Courville, \href{http://www.deeplearningbook.org}{\emph{Deep Learning}}, MIT Press, 2016
