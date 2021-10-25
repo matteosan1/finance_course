@@ -256,27 +256,27 @@ The result is in agreement with the theoretical expectations. A deeper comment a
 \subsection{Determine \(\pi\)}
 \label{determine-pi}
 
-Also in this example we know what the result has to be: \(\pi\approx 3.141592653589793\ldots\) In order to get an estimate through MC simulation of this famous constant a geometric approach can be considered (by the way this very same technique can be used to measure any arbitrary shape). Imagine a circle of diameter \(D\) which is inscribed in a square with side length \(D\), see Fig.~\ref{fig:circle_inscribed}.
+Also in this example we know what the result has to be: \(\pi\approx 3.141592653589793\ldots\) In order to get an estimate through MC simulation of this famous constant a geometric approach can be considered (by the way this very same technique can be used to measure any arbitrary shape). Imagine a circle of radius \(r\) which is inscribed in a square with side length \(2r\), see Fig.~\ref{fig:circle_inscribed}.
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=0.3\textwidth]{figures/circle_inscribed.jpeg}
-\caption{A circle of diameter $D$ inscribed in a square.}
+\includegraphics[width=0.5\textwidth]{figures/circle_inscribed}
+\caption{A circle of radius $r$ inscribed in a square of side length $2r$.}
 \label{fig:circle_inscribed}
 \end{figure}
 
 Computing the ratio of the two figure areas
 
 \begin{equation}
-\frac{\textrm{Area Circle}}{\textrm{Area Square}} = \frac{\pi D^2/4}{D^2} = \frac{\pi}{4} 
+\frac{\textrm{Area Circle}}{\textrm{Area Square}} = \frac{\pi r^2}{4r^2} = \frac{\pi}{4} 
 \end{equation}
 
 The algorithm to approximate \(\pi\) should then be
 
 \begin{itemize}
 \item select 2 random numbers, \(x_1\) and \(x_2\), from the interval
-\([0,D]\); 
-\item determine if the point defined by the ordered pair \((x_1, x_2)\) lies within or on the circle, keeping track both of the total number of tested points and of those satisfying the condition \(D \le\sqrt{x_1^2 + x_2^2}\); 
+\([-r,r]\); 
+\item determine if the point defined by the ordered pair \((x_1, x_2)\) lies within or on the circle, keeping track both of the total number of tested points and of those satisfying the condition $\sqrt{x_1^2 + x_2^2}\leq r$; 
 \item approximate the ratio of the areas by the number of points within or on the circle divided by the total number of tested points; 
 \item multiply the approximated area by 4 to get \(\pi\).
 \end{itemize}
@@ -285,20 +285,24 @@ The algorithm to approximate \(\pi\) should then be
 from random import random, seed
 from math import sqrt
 
-seed(1)
-in_circle = 0.0
-trials = 100000
-for _ in range(trials):
-    x1 = random()
-    x2 = random()
-    r = sqrt(pow(x1, 2) + pow(x2, 2))
-    if r <= 1:
-        in_circle += 1
+seed(2)
+def simulation(trials):
+  r = 1
+  in_circle = 0.0
+  for _ in range(trials):
+      x1 = -r + random()*2*r
+      x2 = -r + random()*2*r
+      distance = sqrt(x1**2 + x2**2)
+      if distance <= r:
+          in_circle += 1
+  return in_circle 
 
-print ("Approx. pi: {}".format(in_circle/trials*4))
+trials = 10000
+in_circle = simulation(trials)
+print ("Approx. pi: {}".format(in_circle/trials*4))  
 \end{ipython}
 \begin{ioutput}
-Approx. pi: 3.13944
+Approx. pi: 3.15244
 \end{ioutput}
 
 A general consideration that we can make is that the lower is the probability we try to estimate with MC the higher has to be the number of simulations. 
@@ -317,14 +321,7 @@ seed(1)
 trials=[100, 1000, 10000, 100000, 1000000]
 for i, t in enumerate(trials):
     t1 = time.time()
-    in_circle = 0
-    for _ in range(t):
-        x1 = random()-0.5
-        x2 = random()-0.5
-        r = sqrt(pow(x1, 2)+pow(x2, 2))
-
-        if r <= 0.5:
-            in_circle += 1
+    in_circle = simulation(t)
     t2 = time.time() - t1
     print ("pi={:.6f} {:.4f}s".format(in_circle/t*4, t2))
 \end{ipython}
