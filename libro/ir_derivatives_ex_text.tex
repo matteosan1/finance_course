@@ -14,37 +14,46 @@ Calculate the value of this swap for company A.
 \end{solution}
 
 \begin{question}
-Suppouse that the LIBOR Forward rates and the discount curve are those defined in
-\href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/libor_curve.xlsx}{libor\_curve.xlsx} and \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/discount_curve.xlsx}{discount\_curve.xlsx} respectively.
-Determine the value of an option to pay a fixed rate of 4\% and receives LIBOR on a 5 year swap starting in 1 year. Assume the notional is 100 EUR, the exercise date is on October, 30th 2020 and the swap rate volatility is 15\%.
+Suppouse that the EURIBOR Forward rates and the discount curve are those defined in
+\href{https://github.com/matteosan1/finance_course/blob/develop/libro/input_files/euribor_curve.xlsx}{euribor\_curve.xlsx} and \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/discount_curve.xlsx}{discount\_curve.xlsx} respectively.
+Determine the value of an option to pay a fixed rate of 4\% and receives EURIBOR on a 5 year swap starting in 1 year. Assume the notional is 100 EUR, the exercise date is on October, 30th 2020 and the swap rate volatility is 15\%.
 \end{question}
 
 \cprotEnv\begin{solution}
 \begin{ipython}
-from finmarkets import InterestRateSwap
+import pandas as pd
+from finmarkets import InterestRateSwap, ForwardRateCurve
 from datetime import date
 from dateutil.relativedelta import relativedelta
-from curve_data import discount_curve, libor_curve
 from scipy.stats import norm
 import math
 
-pricing_date = date.today()
-start_date = date.today() + relativedelta(years=1)
+pricing_date = date(2020, 10, 30)
+start_date = pricing_date + relativedelta(years=1)
 exercise_date = start_date
 
-irs = InterestRateSwap(start_date, 100, 0.04, 12, 5)
+discount_data = pd.read_excel('discount_curve.xlsx')
+euribor_data = pd.read_excel('euribor_curve.xlsx')
+
+dates = [pricing_date + relativedelta(months=i) for i in discount_data['delta']]
+dc = DiscountCurve(dates, discount_data.loc[:, 'df'])
+
+dates = [pricing_date + relativedelta(months=i) for i in euribor_data['delta']]
+fr = ForwardRateCurve(dates, euribor_data.loc[:, 'rate'])
+
+
+irs = InterestRateSwap(1e6, start_date, 0.04, 6, 5)
 sigma = 0.15
-A = irs.annuity(discount_curve, pricing_date)
-S = irs.swap_rate(discount_curve, libor_curve, pricing_date)
+A = irs.annuity(dc)
+S = irs.swap_rate(dc, fr)
 T = (exercise_date - pricing_date).days / 365
 d1 = (math.log(S/irs.fixed_rate) + 0.5 * sigma**2 * T) / (sigma * T**0.5)
 d2 = (math.log(S/irs.fixed_rate) - 0.5 * sigma**2 * T) / (sigma * T**0.5)
-npv = irs.notional * A * (S * norm.cdf(d1) - irs.fixed_rate * norm.cdf(d2))
+npv = irs.nominal * A * (S * norm.cdf(d1) - irs.fixed_rate * norm.cdf(d2))
 
-print("Swaption NPV: {:.3f} EUR".format(npv))
-\end{ipython}
+print("Swaption NPV: {:.3f} EUR".format(npv))\end{ipython}
 \begin{ioutput}
-Swaption NPV: 13.587 EUR
+Swaption NPV: 312218.049 EUR
 \end{ioutput}
 \end{solution}
 
@@ -62,7 +71,7 @@ import numpy as np
 
 class CurrencySwap:
     def __init__(self, amount_for, amount_dom, r_for, r_dom,
-        fixed_for, fixed_dom, exchg_rate, maturity):
+                 fixed_for, fixed_dom, exchg_rate, maturity):
         self.amount_for = amount_for
         self.amount_dom = amount_dom
         self.r_for = r_for

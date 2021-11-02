@@ -126,3 +126,105 @@ print (success/samples)
 This result can be interpreted graphically by saying that the entries in the "square" $[0, 0.5]$ in the left histogram are about 0.7\% of the total while the entries in the right plot in same "square" are about 4.5\% of the total. 
 \end{solution}
 
+\begin{question}
+Imagine a risk manager which owns two non-investment graded bonds (e.g. rated BB+ and BB respectively). The bonds have been issued by two companies and their default probabilities ($P_{\mathrm{def}}$) are as listed below:
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+Time & $P_{\mathrm{def}}$ Asset 1 & $P_{\mathrm{def}}$ Asset 2 \\
+\hline
+\hline
+1 & 0.065 & 0.238 \\
+2 & 0.081 & 0.152 \\
+3 & 0.072 & 0.113 \\
+4 & 0.064 & 0.092 \\
+5 & 0.059 & 0.072 \\
+\hline
+\end{tabular}
+\end{table}
+
+How can a Gaussian copula be constructed to estimate the joint default probability of these two companies in the next year, assuming a Gaussian default correlation of $\rho_M = 0.4$ ?
+\end{question}
+
+\cprotEnv\begin{solution}
+It is possible to map the cumulative default probabilities of each asset to the standard normal distribution via $F^{-1}[Q(t)]$.
+\texttt{cumsum} can be used to determine $Q(t)$ from the inputs.
+
+\begin{ipython}
+from scipy.stats import norm
+import numpy as np
+
+PDF1 = np.array([0.065, 0.081, 0.072, 0.064, 0.059])
+PDF2 = np.array([0.238, 0.152, 0.113, 0.092, 0.072])
+
+C1 = PDF1.cumsum()
+C2 = PDF2.cumsum()
+
+for c in C1:
+    print ("{:.3f} -> {:.4f}".format(c, norm.ppf(c)))
+print ("")
+for c in C2:
+    print ("{:.3f} -> {:.4f}".format(c, norm.ppf(c)))
+\end{ipython}
+\begin{ioutput}
+0.065 -> -1.5141
+0.146 -> -1.0537
+0.218 -> -0.7790
+0.282 -> -0.5769
+0.341 -> -0.4097
+
+0.238 -> -0.7128
+0.39 -> -0.2793
+0.503 -> 0.0075
+0.595 -> 0.2404
+0.667 -> 0.4316
+\end{ioutput}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+Time & $P_{\mathrm{def}}$ Asset 1 & $Q_{\textrm{BB+}}(t)$ & $F^{-1}[Q_{\textrm{BB+}}(t)]$ & $P_{\mathrm{def}}$ Asset 2 & $Q_{\textrm{BB}}(t)$ & $F^{-1}[Q_{\textrm{BB}}(t)]$\\[5 pt]
+\hline
+\hline
+1 & 0.065 & 0.065 & -1.5141 & 0.238 & 0.238 & -0.7128\\
+2 & 0.081 & 0.146 & -1.0537 & 0.152 & 0.39 & -0.2793\\
+3 & 0.072 & 0.218 & -0.7790 & 0.113 & 0.503 & 0.0075\\
+4 & 0.064 & 0.282 & -0.5769 & 0.092 & 0.595 & 0.2404\\
+5 & 0.059 & 0.341 & -0.4097 & 0.072 & 0.667 & 0.4316\\
+\hline
+\end{tabular}
+\end{table}
+
+At this point we can apply the correlation structure $\rho_M$ of the Gaussian multivariate distribution ($M$) to the transformed marginals $F^{-1}[Q_{\textrm{BB+}}(t)]$ and $F^{-1}[Q_{\textrm{BB}}(t)]$.
+
+The joint probability of both companies defaulting within one year can be calculated as
+
+\begin{equation*}
+Q(t_{\textrm{BB+}}\leq 1 \cap t_{\textrm{BB}}\leq 1) = M(X_{\textrm{BB+}}\leq -1.5141 \cap X_{\textrm{BB}}\leq -0.7128, \rho=0.4)
+\end{equation*}
+
+\begin{ipython}
+from scipy.stats import multivariate_normal
+
+g = multivariate_normal(mean=[0,0],
+                        cov=[[1, 0.4],
+                             [0.4, 1]])
+
+print (g.cdf([-1.5141, -0.7128]))
+\end{ipython}
+\begin{ioutput}
+0.03435364791840133
+\end{ioutput}
+\noindent
+which results to be around 3.4\%. Figure~\ref{fig:copula_no_marginals} shows the joint probability distribution, the number we were looking for is given by the fraction of events delimited by the red lines with respect to the total.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\linewidth]{figures/copula_no_marginals}
+\caption{Multivariate Gaussian probability distribution with correlation $\rho=0.4$. The red lines delimited the area representing the default of the two companies within year one.}
+\label{fig:copula_no_marginals}
+\end{figure}
+\end{solution}
