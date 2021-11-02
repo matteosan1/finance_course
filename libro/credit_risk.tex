@@ -54,23 +54,31 @@ See Figure~\ref{fig:conditional_prob} for a graphical interpretation of conditio
 \end{figure}
 .
 \subsubsection{Hazard Rate Definition}
-We can now compute the instantaneous default probability conditional to no previous default ($\lambda$)
+We can now compute the instantaneous default probability conditional to no previous default ($\lambda$), the \emph{hazard rate}~\cite{bib:hazard}.
 
 %\[\lambda(t) = \cfrac{\mathbb{P}(A\cap B)}{\mathbb{P}(B)} = \cfrac{\cfrac{DP(\tau\in (t, t+dt))}{dt}}{DP(\tau>t)} = \cfrac{\cfrac{d[1-N(t_0, t)]}{dt}}{N(t_0, t)} = -\cfrac{dN(t_0, t)}{dt}\cdot\frac{1}{N(t_0, t)}\]
 \begin{equation}
-\lambda(t) = \cfrac{\cfrac{P_{\textrm{def}}(t, t+dt)}{dt}}{P_{\textrm{def}}(t, +\infty)} = \cfrac{\cfrac{d[1-P_{\textrm{sur}}(t_0, t)]}{dt}}{P_{\textrm{sur}}(t_0, t)} = -\cfrac{dP_{\textrm{sur}}(t_0, t)}{dt}\cdot\frac{1}{P_{\textrm{sur}}(t_0, t)}
+\begin{split}
+\lambda(t)& = \lim_{dt\rightarrow 0} \cfrac{P_{\textrm{def}}(t, t+dt|\tau\gt t)}{dt} = \cfrac{dP_{\textrm{def}}(t)}{P_{\textrm{def}}(t, +\infty)}\cfrac{1}{dt}\\[5 pt] &
+= \cfrac{d(1-P_{\textrm{sur}}(t_0 t))}{P_{\textrm{sur}}(t_0, t)}\cfrac{1}{dt} = -\cfrac{dP_{\textrm{sur}}(t)}{dt}\cfrac{1}{P_{\textrm{sur}}(t_0, t)}
+\end{split}
 \end{equation}
-where $P_{\textrm{sur}}$ and $P_{\textrm{def}}$ are survival and default probabilities.
+where $P_{\textrm{sur}}$ and $P_{\textrm{def}}$ are survival and default probabilities and $\tau$ the occurrency time of the credit event.
 Also remember that $P_{\textrm{def}}(t_0, t) = 1 - P_{\textrm{sur}}(t_0, t)$. Given the hazard rate, the survival probability can be determined as:
+
+%So far we have assumed implicitly that the credit event is bound to occur, so that $dP_{\textrm{sur}}(+\infty)=0$. Given enough time the survival probability goes down to zero. This condition implies that the cumulative hazard must diverge, i.e. we must have Λ(∞)=∞. Intuitively, the event will occur with certainty only if the cumulative risk over a long period is sufficiently high.
 
 \begin{equation}
 \begin{gathered}
-\lambda(t) = -\cfrac{1}{dt}\cdot\cfrac{dP_{\textrm{sur}}(t_0, t)}{P_{\textrm{sur}}(t_0, t)} = -\cfrac{d(\textrm{log}P_{\textrm{sur}}(t_0, t))}{dt} \implies d(\textrm{log}P_{\textrm{sur}}(t_0, t)) = -\lambda dt\\
+\lambda(t) = -\cfrac{1}{dt}\cdot\cfrac{dP_{\textrm{sur}}(t_0, t)}{P_{\textrm{sur}}(t_0, t)} = -\cfrac{d(\textrm{log}P_{\textrm{sur}}(t_0, t))}{dt} \implies d(\textrm{log}P_{\textrm{sur}}(t_0, t)) = -\lambda dt\\[5pt]
 P_{\textrm{sur}}(t_0, t) = \mathrm{exp}\left(-\int_{t_0}^{t}\lambda(s) ds\right)
 \end{gathered}
 \end{equation}
 
 In practice hazard rate will be calculated numerically, and therefore we will consider the \emph{annualized} conditional probability of the issuer defaulting between a date and the next.
+
+\subsubsection{Example}
+The simplest possible survival distribution is obtained by assuming a constant risk over time, so the hazard is $\lambda (t)=\lambda$ for all $t$. The corresponding survival function is $P_{\textrm{sur}}(t_0, t) = e^{−\lambda (t-t_0)}$.
 
 \begin{finmarkets}
 Develop and add to the \texttt{finmarkets} module a \texttt{CreditCurve} class which will be characterized by a list of pillar dates and the corresponding list of non-default probabilities. It will also have methods to compute survival probabilities by interpolation and the hazard rate at arbitrary dates.
@@ -267,41 +275,38 @@ class CreditDefaultSwap:
         return num/den
 \end{ipython}
 
-To test the class data contained in \href{https://github.com/matteosan1/finance_course/blob/develop/libro/input_files/discount_curve.xlsx?raw=true}{discount\_curve.xlsx} is used.
+To test the class data contained in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/discount_curve.xlsx}{discount\_curve.xlsx} is used.
 
 \begin{ipython}
 import pandas as pd
-from datetime import date
-from dateutil.relativedelta import relativedelta
 from finmarkets import DiscountCurve
+from dateutil.relativedelta import relativedelta
+from datetime import date
 
-dc_data = pd.read_excel("discount_curve.xlsx")
-observation_date = date.today() 
-dc = DiscountCurve(observation_date,
-dc_data['pillars'].dt.date.tolist(),
-dc_data['discount_factors'].tolist())
-credit_curve = CreditCurve([start_date,
-                            start_date + relativedelta(months=36)],
+dc_data = pd.read_excel("https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/discount_curve.xlsx")
+pricing_date = date.today() 
+
+dates = [pricing_date + relativedelta(months=i) for i in dc_data['delta']]
+dc = DiscountCurve(dates, dc_data['df'])
+
+credit_curve = CreditCurve([pricing_date,
+                            pricing_date + relativedelta(months=36)],
                             [1.0, 0.7])
-cds = CreditDefaultSwap(1e6, start_date, 0.03, 3)
-cds.npv_premium_leg(dc, credit_curve)
+cds = CreditDefaultSwap(1e6, pricing_date, 0.03, 3)
+
+print ("{:.2f}".format(cds.npv_premium_leg(dc, credit_curve)))
+print ("{:.2f}".format(cds.npv_default_leg(dc, credit_curve)))
 \end{ipython}
 \begin{ioutput}
-303160.9661537263
+303087.78
+180903.30
 \end{ioutput}
 
 \begin{ipython}
-cds.npv_default_leg(dc, credit_curve)
+print ("{:.2f}".format(cds.npv(dc, credit_curve)))
 \end{ipython}
 \begin{ioutput}
-180949.18879529936
-\end{ioutput}
-
-\begin{ipython}
-cds.npv(dc, credit_curve)
-\end{ipython}
-\begin{ioutput}
--122211.77735842692
+-122184.48
 \end{ioutput}
 	
 %\section{Credit Ratings}\label{credit-ratings}
@@ -541,32 +546,29 @@ Let's summarize the procedure:
 \item with \texttt{scipy.optimize.minimize} find the curve.
 \end{itemize}
 
-We now implement the code to bootstrapp for the survival probabilities using the market quotes saved in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/cds_quotes.xlsx}{cds\_quotes.xlsx} and for the discount curve \href{https://github.com/matteosan1/finance_course/blob/develop/libro/input_files/discount_curve.xlsx?raw=true}{discount\_curve.xlsx}.
+We now implement the code to bootstrap for the survival probabilities using the market quotes saved in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/cds_quotes.xlsx}{cds\_quotes.xlsx} and for the discount curve \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/discount_curve.xlsx}{discount\_curve.xlsx}.
 
 So first load market data and create a discount curve and the swaps.
 
 \begin{ipython}
+from scipy.optimize import minimize
 import pandas as pd
-from datetime import date
-from finmarkets import DiscountCurve
 
+pricing_date = date.today()
 dc = pd.read_excel("discount_curve.xlsx")
 mq = pd.read_excel("cds_quotes.xlsx")
-discount_curve = DiscountCurve(dc.loc[:, 'pillars'].dt.date,
-                               dc.loc[:, 'discount_factors'])
+
+dates = [pricing_date + relativedelta(months=i) for i in dc['delta']]
+discount_curve = DiscountCurve(dates, dc['df'])
+
 cdswaps = []
-pillar_dates = [start_date]
+pillar_dates = [pricing_date]
 for i in range(len(mq)):
-    cds = CreditDefaultSwap(1e6, start_date,
-                            mq['quote'].tolist()[i],
-                            mq['months'].tolist()[i]//12)
+    cds = CreditDefaultSwap(1e6, pricing_date,
+                            mq.loc[i, 'quote'],
+                            mq.loc[i, 'months']//12)
     cdswaps.append(cds)
     pillar_dates.append(cds.payment_dates[-1])
-\end{ipython}
-\noindent
-Then the objective function:
-\begin{ipython}
-import numpy as np
 
 def objective_function(unknown_ndps):
     credit_curve = CreditCurve(pillar_dates, unknown_ndps)
@@ -574,43 +576,35 @@ def objective_function(unknown_ndps):
     for cds in cdswaps:
         sum_sq += cds.npv(discount_curve, credit_curve)**2
     return sum_sq
-\end{ipython}
-\noindent
-The guess values and the boundaries
-\begin{ipython}
-ndp_guess = [0.01 for _ in range(len(pillar_dates))]
+
+ndp_guess = [1 for _ in range(len(pillar_dates))]
 bounds = [(0.01, 1) for _ in range(len(pillar_dates))]
-bounds[0] = [(1, 1)]
-\end{ipython}
-\noindent
-and finally run the minimizer
-\begin{ipython}
-from scipy.optimize import minimize
+bounds[0] = (1, 1)
 
 r = minimize(objective_function, ndp_guess, bounds=bounds)
 print (r)
 \end{ipython}
 \begin{ioutput}
-      fun: 1.6567237922097584e-05
- hess_inv: <6x6 LbfgsInvHessProduct with dtype=float64>
-      jac: array([1057.6428894 ,  697.66468945, 2288.37362133, 
-                  3207.19521611, 3960.08247585, 3403.59384113])
-  message: 'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH'
-     nfev: 140
-      nit: 11
-     njev: 20
+      fun: 4.033649375510235e-05
+ hess_inv: <7x7 LbfgsInvHessProduct with dtype=float64>
+      jac: array([ 3.68333637e+04, -4.54225191e+01, -3.67204963e+01,  
+                   6.93941518e+00,  5.33677480e+01,  3.78568243e+01,  
+                   8.41352439e+01])
+  message: b'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH'
+     nfev: 296
+      nit: 18
    status: 0
   success: True
-        x: array([0.90794559, 0.80382963, 0.70844196, 0.48031869, 
-                  0.29174604, 0.06689759])
+        x: array([1.        , 0.90794474, 0.80382715, 0.70843915, 
+                  0.48031939, 0.29174293, 0.06685517])
 \end{ioutput}
 
 After the minimization we get the list of non-default probabilities corresponding to the expiry dates of our CDSs.
 
 \begin{ipython}
-cc = CreditCurve(pillar_dates, x)
+cc = CreditCurve(pillar_dates, r.x)
 for i in range(len(pillar_dates)):
-    print ("S(t<{}): {:.2f}".format(pillar_dates[i], x[i]))
+    print ("S(t<{}): {:.2f}".format(pillar_dates[i], r.x[i]))
 \end{ipython}
 \begin{ioutput}
 S(t<2021-10-12): 1.00
@@ -626,6 +620,7 @@ S(t<2041-10-12): 0.07
 \input{credit_risk_ex_text}
 
 \begin{thebibliography}{9}
+\bibitem{bib:hazard} G. Rodriguez, \href{https://data.princeton.edu/wws509/notes/c7s1}{\emph{Generalized Linear Models}} 
 \bibitem{bib:cds} J. C. Hull, \emph{Options, Futures and Other Derivatives, 7th Ed.}, Credit Derivatives (Ch. 23), Pearson Prentice Hall, 2009
 \bibitem{bib:default_from_bond} J. C. Hull, \emph{Options, Futures and Other Derivatives, 7th Ed.}, Credit Risk (Ch. 22), Pearson Prentice Hall, 2009
 \end{thebibliography}

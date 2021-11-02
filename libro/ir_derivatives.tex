@@ -77,18 +77,20 @@ The NPV of the fixed leg is calculated as follows:
 \mathrm{NPV}_{\mathrm{fixed}}(d, K) = N\cdot K\cdot\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})\end{equation}
 while the NPV of the floating leg is:
 
-\begin{equation}\mathrm{NPV}_{\mathrm{float}}(d) = N\cdot\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360}
+\begin{equation}\mathrm{NPV}_{\mathrm{float}}(d, F) = N\cdot\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360}
 \cdot D(d, d_{i}^{\mathrm{float}})\end{equation}
 
 Therefore the NPV of the swap (seen from the point of view of the counter-party which receives the floating leg) is
 
-\begin{equation}\mathrm{NPV}(d, K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, K)\end{equation}
+\begin{equation}\mathrm{NPV}(d, F, K) = \mathrm{NPV}_{\mathrm{float}}(d, F) - \mathrm{NPV}_{\mathrm{fixed}}(d, K)
+\label{eq:irs_npv}
+\end{equation}
 
 For reasons which will become apparent later, it's actually more convenient to express the NPV of an IRS as a function of the fair value fixed rate $S$ of the IRS, also known as the \textbf{swap rate}, which is the value of $K$ which makes \(\mathrm{NPV}=0\). On the basis of the previous expressions, we can easily calculate $S$ as
 
 \begin{equation}
 \begin{gathered}
-\mathrm{NPV}_{\mathrm{fixed}}(d, S) = \mathrm{NPV}_{\mathrm{float}}(d)\\[5pt]
+\mathrm{NPV}_{\mathrm{fixed}}(d, S) = \mathrm{NPV}_{\mathrm{float}}(d, F)\\[5pt]
 N\cdot S\cdot\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}}) = N\cdot\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360} \cdot D(d, d_{i}^{\mathrm{float}})\\[5pt]
 S=\frac{\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360}
 \cdot D(d, d_{i}^{\mathrm{float}})}{\sum_{i=1}^{n}D(d, d_i^{\mathrm{fixed}})}
@@ -98,10 +100,11 @@ S=\frac{\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cd
 Once we have calculated \(S\), we can express the \(\mathrm{NPV}\) of an IRS as follows:
 
 \begin{equation}
-\begin{split}&\mathrm{NPV}(d, K) = \mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) = \\ 
-&= \underbrace{\mathrm{NPV}_{\mathrm{float}}(d) - \mathrm{NPV}_{\mathrm{fixed}}(d, S)}_{\textstyle\mathrm{=0}} + \mathrm{NPV}_{\mathrm{fixed}}(d, S) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) \\ 
-& = N\cdot(S-K)\cdot\underbrace{\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})}_{\textstyle \mathrm{'annuity'}}
+\begin{split}&\mathrm{NPV}(d, F, K) = \mathrm{NPV}_{\mathrm{float}}(d, F) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) = \\ 
+&= \underbrace{\mathrm{NPV}_{\mathrm{float}}(d, F) - \mathrm{NPV}_{\mathrm{fixed}}(d, S)}_{\textstyle\mathrm{=0}} + \mathrm{NPV}_{\mathrm{fixed}}(d, S) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) \\ 
+& = N\cdot(S-K)\cdot\underbrace{\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})}_{\textstyle \mathrm{annuity}}
 \end{split}
+\label{eq:irs_npv2}
 \end{equation}
 
 \begin{finmarkets}
@@ -126,23 +129,25 @@ class InterestRateSwap:
             a += discount_curve.df(self.fixed_leg_dates[i])
         return a
 
-    def swap_rate(self, discount_curve, euribor_curve):
-        s = 0
-        for j in range(1, len(self.floating_leg_dates)):
-            F = euribor_curve.forward_rate(self.floating_leg_dates[j], self.floating_leg_dates[j-1])
-            tau = (self.floating_leg_dates[j] - \
-                self.floating_leg_dates[j-1]).days / 360 
-            P = discount_curve.df(self.floating_leg_dates[j])
-            s += F * tau * P
-        return s / self.annuity(discount_curve)
-
     def npv(self, discount_curve, euribor_curve):
         S = self.swap_rate(discount_curve, euribor_curve)
         A = self.annuity(discount_curve)
         return self.notional * (S - self.fixed_rate) * A
+
+    def swap_rate(self, discount_curve, euribor_curve):
+        s = 0
+        for j in range(1, len(self.floating_leg_dates)):
+            F = euribor_curve.forward_rate(self.floating_leg_dates[j], \ 
+                                           self.floating_leg_dates[j-1])
+            tau = (self.floating_leg_dates[j] - \
+                   self.floating_leg_dates[j-1]).days / 360 
+            P = discount_curve.df(self.floating_leg_dates[j])
+            s += F * tau * P
+        return s / self.annuity(discount_curve)
 \end{ipython}
 
 For convenience the relevant inputs that will be used later (EURIBOR and discount curve definitions) have been saved in the files  \href{https://github.com/matteosan1/finance_course/blob/develop/libro/input_files/euribor_curve.xlsx?raw=true}{euribor\_curve.xlsx} and \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/discount_curve.xlsx}{discount\_curve.xlsx} respectively.
+In these files the two curves are expressed with factors or rates and time deltas in months with respect to the pricing date.
 
 \begin{ipython}
 import pandas as pd
@@ -150,58 +155,60 @@ from datetime import date
 from finmarkets import DiscountCurve, ForwardRateCurve
 
 pricing_date = date(2020, 10, 20)
+
 discount_data = pd.read_excel('discount_curve.xlsx')
 euribor_data = pd.read_excel('euribor_curve.xlsx')
 
-dc = DiscountCurve(discount_data.loc[:, 'pillars'].dt.date,
-                   discount_data.loc[:, 'discount_factors'])
-                   
-fc = ForwardRateCurve(pricing_date, 
-                      euribor_data.loc[:, 'date'].dt.date,
+dates = [pricing_date + relativedelta(months=i) for i in discount_data['delta']]
+dc = DiscountCurve(dates, discount_data.loc[:, 'df'])
+
+dates = [pricing_date + relativedelta(months=i) for i in euribor_data['delta']]                   
+fc = ForwardRateCurve(dates,
                       euribor_data.loc[:, 'rate'])
 
-print (dc.df(date(2021, 1, 1)))
-print (fc.forward_rate(pricing_date, date(2021, 7, 2)))
+print ("{:.3f}".format(dc.df(date(2022, 1, 1))))
+print ("{:.3f}".format(fc.forward_rate(date(2022, 1, 1), date(2022, 7, 1))))
 \end{ipython}
 \begin{ioutput}
-1.0039420028660369
-0.010070410958904109
+1.004
+0.088
 \end{ioutput}
 
 Let's test our class instantiating an IRS with 1~M notional, fixed rate of 5\%, 6 month tenor and a maturity of 4 years.
 
 \begin{ipython}
-pricing_date = date.today()
-start_date = date.today() + relativedelta(months=1)
+start_date = pricing_date + relativedelta(months=1)
 irs = InterestRateSwap(1e6, start_date, 0.05, 6, 4)
 print ("{:.2f} EUR".format(irs.npv(dc, fc)))
 \end{ipython}
 \begin{ioutput}
--158942.33 EUR
+170152.50 EUR
 \end{ioutput}
 
 \textbf{Can you guess what could be the \textbf{swap rate} given that the NPV obtained above ?}
 
-Since we are looking at this contracts from the point of view of the receiver of the floating leg and that the swap rate is the rate that makes the total NPV equal to 0, the NPV of the fixed leg has to be decreased to balance the value of the floating leg so the swap rate will be lower than the fixed rate of the IRS.
+From Eq.~\ref{eq:irs_npv} and since the actual NPV values is positive it is clear that, the NPV$_{\textrm{fixed}}$ has to be increased with an higher fixed rate to balance the value of NPV$_{\textrm{float}}$.
+Alternatively looking at Eq.~\ref{eq:irs_npv2}, $N$ and the annuity are positive so has to be $S\gt K$ since also the left hand side NPV is positive.  
 
 \begin{ipython}
-print ("{:.5f}".format(irs.swap_rate(dc, fc)))
+swap_rate = irs.swap_rate(dc, fc)
+print ("{:.5f}".format(swap_rate))
 \end{ipython}
 \begin{ioutput}
-0.01055
+0.09223
 \end{ioutput}
     
-To check if we have computed correctly the swap rate we can instantiate a new IRS with fixed rate equal to the just calculated swap rate and print its NPV, it should come very close to 0.
+To check if we have computed correctly the swap rate we can instantiate a new IRS with fixed rate equal to the just calculated swap rate and print its NPV.
 
 \begin{ipython}
-irs2 = InterestRateSwap(1e6, start_date, 0.01055, 6, 4)
+irs2 = InterestRateSwap(1e6, start_date, swap_rate, 6, 4)
 print ("{:.2f} EUR".format(irs2.npv(dc, fc)))
 \end{ipython}
 \begin{ioutput}
-14.84 EUR
+0.0 EUR
 \end{ioutput}
-
-The result is not exactly zero since in the calculation it has been used a rounded version of the swap rate, you can check it by replacing 0.01055 with the exact value coming from the previous evaluation. 
+\noindent
+The result will be as close to zero as the accuracy of the swap rate used in the definition of the new IRS.
    
 \section{Inheritance Again}
 \begin{finmarkets}
@@ -325,15 +332,15 @@ def npvSwaptionBS(irs, sigma, discount_curve, euribor_curve, T):
     return irs.notional * A * (S * norm.cdf(d_plus) - K * norm.cdf(d_minus))
 
 sigma = 0.07
-pricing_date = date(2019, 11, 15)
-exercise_date = start_date
-irs = InterestRateSwap(1e6, start_date, 0.05, 12, 4)
+pricing_date = date(2019, 10, 20)
+exercise_date = pricing_date + relativedelta(years=1)
+irs = InterestRateSwap(1e6, start_date, 0.05, 6, 4)
 T = (exercise_date - pricing_date).days / 365
-npv = npvSwaptionBS()irs, sigma, dc, fc, T)
-print("Swaption NPV with BS: {:.0f} EUR".format(npv))
+price_bs = npvSwaptionBS()irs, sigma, dc, fc, T)
+print("Swaption NPV with BS: {:.2f} EUR".format(price_bs))
 \end{ipython}
 \begin{ioutput}
-Swaption NPV with BS: 88300 EUR
+Swaption NPV with BS: 170152.50 EUR
 \end{ioutput}
 
 \subsubsection{Evaluation through Monte Carlo Simulation}
@@ -354,6 +361,8 @@ To perform the simulation Eq.~\ref{eq:swaption_payoff} can be used:
 \item take the average of these values to get the final estimate.
 \end{itemize}
 
+Using the 95\% confidence interval defined in Sec.~\ref{sec:confidence_interval} it can be checked whether the Monte Carlo estimate of the swaption payoff is in agreement with what computed using the Black-Scholes formula.
+
 \begin{ipython}
 import numpy as np
 from math import exp, sqrt
@@ -371,12 +380,26 @@ for i_scenario in range(n_scenarios):
     swap_npv = irs.notional * max(0,S - irs.fixed_rate) * A
     discounted_payoffs.append(max(0, swap_npv))
 
-npv_mc = np.mean(discounted_payoffs)
-print("Swaption NPV: {:.0f} EUR".format(npv_mc))
+price_mc = np.mean(discounted_payoffs)
+npv_error = 1.96 * np.std(discounted_payoffs)/sqrt(n_scenarios)
+
+print("Swaption NPV: {:.2f} EUR (+/- {:.2f} EUR with 95% confidence)"\
+    .format(npv_mc, npv_error))
 \end{ipython}
 \begin{ioutput}
-Swaption NPV: 88303 EUR
+Swaption NPV: 170291.75 EUR (+/- 168.16 EUR with 95% confidence)
 \end{ioutput}
+
+The NPV calculated via the Black-Scholes formula falls well within the confidence interval of the Monte Carlo simulation:
+
+\begin{itemize}
+\tightlist
+\item
+  Swaption NPV (BS): \euro{170152}
+\item
+  Swaption NPV (MC): \euro{170291} $\pm$ 168
+\end{itemize}
+so we can assert the two estimates are in agreement at the 95\% confidence level.
 
 %Note that this is not \emph{strictly speaking} the correct way of
 %calculating the swaption NPV, the reason being that one should calculate
@@ -389,33 +412,8 @@ Swaption NPV: 88303 EUR
 %\[ DF\cdot \mathrm{max}(0, \mathrm{SwapNPVAtExpiry}) = \mathrm{max}(0, DF \cdot\mathrm{SwapNPVAtExpiry}) \]
 
 \begin{finmarkets}
-Add to \texttt{finmarkets.py} a new class (e.g. \texttt{Swaption}) capable of valuting interest rate swaptions both with Monte Carlo simulation and Black-Scholes formula.
+Add to \texttt{finmarkets.py} a new class (e.g. \texttt{Swaption}) capable of valuing swaptions both with Monte Carlo simulation and Black-Scholes formula.
 \end{finmarkets}
-
-\subsection{Confidence Interval of MC Simulation}
-
-Using the confidence interval~\ref{sec:confidence_interval} it can be checked whether the Monte Carlo estimate of the swaption payoff is in agreement with what computed using the Black-Scholes formula.
-Let's then calculate the 95\% confidence level for the swaption simulation:
-
-\begin{ipython}
-npv_error = 1.96 * np.std(discounted_payoffs)/sqrt(n_scenarios)
-print("Swaption NPV: {:.0f} EUR (+/- {:.0f} EUR with 95% confidence)"\
-    .format(npv_mc, npv_error))
-\end{ipython}
-\begin{ioutput}
-Swaption NPV: 88303 EUR (+/- 17 EUR with 95% confidence)
-\end{ioutput}
-
-The NPV calculated via the Black-Scholes formula falls well within the confidence interval produced by the Monte Carlo simulation:
-
-\begin{itemize}
-\tightlist
-\item
-  Swaption NPV (BS): \euro{88300}
-\item
-  Swaption NPV (MC): \euro{88303} $\pm$ 17
-\end{itemize}
-so we can assert that the two estimates are in agreement at the 95\% confidence level.
 
 \section*{Exercises}
 \input{ir_derivatives_ex_text}
