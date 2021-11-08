@@ -2,17 +2,18 @@
 
 A credit derivative is a financial contract that allows parties to minimize their exposure to credit risk. Credit derivatives consist of a privately held, negotiable bilateral contract traded over-the-counter (OTC) between two parties in a creditor/debtor relationship. These allow the creditor to effectively transfer some or all of the risk of a debtor defaulting to a third party. This third party accepts the risk in return for payment, known as the premium.
 
-Credit default swaps have been already introduced, in this Chapter two more kind of credit derivatives will be presented: Basket Default Swaps and Collateralized Debt Obligations (CDO).
+Credit default swaps have been already introduced in Chapter~\ref{credit-deafult-swaps}, here two more kind of credit derivatives will be presented: Basket Default Swaps and Collateralized Debt Obligations (CDO).
 
-\section{Basket Default Swaps}\label{basket-default-swaps}
+\section{Basket Default Swaps}
+\label{basket-default-swaps}
 
-A Basket Default Swap is a credit derivative on a portfolio of reference entities. The simplest basket default swaps are the so called first-to-default, second-to-default, \ldots, nth-to-default swaps. 
+A Basket Default Swap (BDS) is a credit derivative on a portfolio of reference entities.
 
-This kind of contracts are very similar to normal CDS except for the protection they offer. With respect to a basket of reference entities, a first-to-default swap provides insurance for only the first default, a second-to-default swap provides insurance for only the second default, or a nth-to-default swap provides insurance for only the $n^{th}$ default. 
+This kind of contracts are very similar to normal CDS except for the protection they offer. With respect to a basket of reference entities, a first-to-default BDS provides insurance for only the first default, a second-to-default BDS provides insurance for only the second default, or a nth-to-default BDS provides insurance for only the $n^{th}$ default. 
 
 For example, in the latter, the seller does not make any payment to the protection buyer for the first $n-1$ defaulted entities, and makes it only for the $n^{th}$. Once there has been this payment the swap terminates.
 
-The cost of protection in nth-to-default basket is obviously dependent on default correlations. Suppose that a basket of 100 reference entities is used to define a 5-year nth-to-default swap and that each reference entity has a 2\% probability of defaulting during the next 5 years. When the default correlation between the reference entities is zero, the binomial distribution (see Appendix~\ref{binomial-distribution}) shows that the probability of one or more defaults during 5 years is 86.74\% and the probability of ten or more defaults is 0.0034\%.
+The cost of protection in nth-to-default basket is obviously dependent on default correlations. Suppose that a basket of 100 reference entities is used to define a 5-year nth-to-default swap and that each reference entity has a 2\% probability of defaulting during the next 5 years. When the default correlation between the reference entities is zero (i.e. they are uncorrelated), the binomial distribution (see Appendix~\ref{binomial-distribution}) shows that the probability of one or more defaults during 5 years is 86.74\% and the probability of ten or more defaults is 0.0034\%.
 
 \begin{ipython}
 from scipy.stats import binom
@@ -28,39 +29,39 @@ P(>=10): 3.441680604299169e-05
 
 A first-to-default is therefore quite valuable whereas a tenth-to-default swap is worth almost nothing.
 
-As the default correlation increases the probability of one or more defaults declines but that for ten or more defaults increases. In the limit where default correlations are perfect the probability of one or more defaults equals the probability of ten or more and it is 2\%. This is because in this extreme situation the reference entities are essentially the same: either they all default (with 2\% probability) or none of them default (with 98\% probability). Similarly for the value of the basket default swaps.
+As the default correlation increases the probability of one or more defaults declines but that for ten or more defaults increases too. In the limit where default correlations are perfect the probability of one or more defaults equals the probability of ten or more and it is 2\%. This is because in this extreme situation the reference entities are essentially the same: either they all default (with 2\% probability) or none of them default (with 98\% probability). Similarly for the value of the basket default swaps.
 
 \subsection{Basket Default Swap Valuation}
 \label{basket-cds-valuation-under-market-standard-model}
-We now present some numerical results for an nth-to-default basket. We assume that principals and expected recovery rates are the same for all underlying reference assets. The valuation procedure is similar to that for a regular CDS where there is only one reference entity.
+We now present some numerical results for a nth-to-default basket. We assume that principals and expected recovery rates are the same for all underlying reference assets. 
 
-There the valuation was based on the probability that a default occurred between times \(t_1\) and \(t_2\), see Section~\ref{sec:cds_valuation}. Here instead it will rely on the probability that the $n^{th}$ default happened between times \(t_1\) and \(t_2\). The buyer of protection makes quarterly payments at a specified rate until the $n^{th}$ default occurs, in which case the seller pays \(F\cdot(1-R)\), or the end life of the contract is reached. 
+The valuation procedure is similar to that for a regular CDS. There it was based on the probability that a default occurred between times \(t_1\) and \(t_2\), see Section~\ref{sec:cds_valuation}. Here instead it will rely on the probability that the $n^{th}$ default happened between times \(t_1\) and \(t_2\). The buyer of protection makes quarterly payments at a specified rate until the $n^{th}$ default occurs, in which case the seller pays \(F\cdot(1-R)\), or the end life of the contract is reached. 
 
 \begin{finmarkets}
-In the following we are going to develop a \texttt{BasketDefaultSwap} class that is able to compute the basket NPV and its break-even spread. 
+In the following we develop a \texttt{BasketDefaultSwap} class that is able to compute the basket NPV and its break-even spread. 
 The class has to go into the module \texttt{finmarkets} to increase its capabilities.
 \end{finmarkets}
 
-Assuming that we are under the assumption of the One Factor Copula model, the strategy is:
+Since we are under the assumption of the One Factor Copula model, the strategy is:
 \begin{itemize}
 \item compute the correlated default probability of each name according to 
 \begin{equation}
 Q^{\textrm{corr}}(t|M) = \Phi\left(\cfrac{\Phi^{-1}[Q(t)]-\sqrt{\rho} M}{\sqrt{1-\rho}}\right)
 \end{equation}
-\item compute the probability of having at least $j$ defaults using the binomial distribution
+\item calculate the probability of having at least $j$ defaults using the binomial distribution
 \begin{equation}
 P_{\mathrm{def}}(l(t|m) \ge j) = \sum_{k=j}^{N}\left[  \cfrac{N!}{k!(N-k)!}Q^{\textrm{corr}}(t|M)^k(1-Q^{\textrm{corr}}(t|M))^{N-k}\right]
 \end{equation}
-\item create a \textbf{credit curve}, $CC(P_{\mathrm{def}})$ with those probabilities;
-\item re-use the \texttt{CreditDefaultSwap} class to compute NPV and break-even rate (with the appropriate discount curve $DC$ and the credit curve determine above), through integration of
+\item create a \textbf{credit curve}, $CC(P_{\mathrm{def}})$ according to those probabilities;
+\item re-use the \texttt{CreditDefaultSwap} class to compute NPV and break-even rate with a discount curve $DC$ and the appropriate credit curve determined above, through integration of
 \begin{equation}
 \mathrm{NPV}(DC, CC(P_{\mathrm{def}})) = \int_{-\infty}^{\infty}{\mathrm{NPV}(DC, CC(P_{\mathrm{def}})) f_M(m)dm} 
 \end{equation}
 \end{itemize}
 
-Since to valuate a basket default swap we need to perform integrals let's see briefly how it works in \texttt{python}.
+Since to valuate a basket default swap we need to perform an integration let's see briefly how it works in \texttt{python}.
 
-To integrate a function \(f\) we can use \(\tt{scipy.integrate.quad}\) which takes in input: the function to integrate (the integrand), the integration limits and, if needed, optional arguments for the integrand (see Section~\ref{sec:kwargs_args}). Since it is a numerical integration the result will be a tuple with the actual value and the associated error (we will be interested in the first item only though).
+To integrate a function $f$ we can use \(\tt{scipy.integrate.quad}\) which takes in input: the function to integrate, the integration limits and, if needed, optional arguments for the integrand (see Section~\ref{sec:kwargs_args}). Since it is a numerical integration the result will be a tuple with the actual result and its associated error.
 
 For example imagine to integrate
 \[f(x) = \int_{-2}^{4}(ax^{3} + b)~dx\]
@@ -88,17 +89,17 @@ from numpy import sqrt, exp, inf
 from scipy.integrate import quad
 
 class BasketDefaultSwaps:
-    def __init__(self, notional, names, rho, start_date, spread,
+    def __init__(self, notional, N_names, rho, start_date, spread,
                  maturity, tenor=3, recovery=0.4):
-        self.names = names
+        self.N_names = N_names
         self.rho = rho
         self.cds = CreditDefaultSwap(notional, start_date, spread,
                                      maturity, tenor, recovery)
 
     def one_factor_model(self, M, f, Q_dates, Q, dc, j):
         DP = norm.cdf((norm.ppf(Q) - sqrt(self.rho)*M)/(sqrt(1-self.rho)))
-        b = binom(self.names, DP)
-        S = 1-(1-b.cdf(j-1))
+        b = binom(self.N_names, DP)
+        S = b.cdf(j-1) # 1-(1-b.cdf(j-1))
         cc = CreditCurve(Q_dates, S)
         return f(dc, cc)*norm.pdf(M)
 
@@ -128,10 +129,10 @@ import numpy as np
 n_cds = 10
 rho = 0.3
 l = 0.01
-observation_date = date.today()
-pillar_dates = [observation_date + relativedelta(years=i) for i in range(6)]
+pricing_date = date.today()
+pillar_dates = [pricing_date + relativedelta(years=i) for i in range(6)]
 dfs = [1/(1+0.05)**i for i in range(6)]
-dc = DiscountCurve(observation_date, pillar_dates, dfs)
+dc = DiscountCurve(pillar_dates, dfs)
 Q = [1-np.exp(-(l*t)) for t in range(6)]
 ndefaults = 3
 basket = BasketDefaultSwaps(1, n_cds, rho, observation_date, 0.01, 5)
