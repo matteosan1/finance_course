@@ -577,6 +577,47 @@ orig_X = np.dot(Z, np.linalg.inv(L))
 \label{fig:cholesky_inv}
 \end{figure}
 
+\subsection{t-copula with $\chi^2$ Method}
+
+The t-student copula allows a range of dependence structures depending
+on the $\nu$ parameter (the number of degrees of freedom of the t-student function).
+It is a symmetrical copula and has larger tails than the Gaussian. The following algorithm allows to compute it:
+\begin{itemize}
+\item given the correlation matrix $[\Sigma]$ find its Cholesky decomposition $[L]$;
+\item simulate a n-dimensional vector of normal independent identically distributed variables $Y$;
+\item simulate a $\chi^2$ with $\nu$ degrees of freedom $S$;
+\item calculate $Z = \sqrt{\cfrac{\nu}{S}}\cdot [L] \cdot Y$;
+\item finally, $U = CDF_{t-student(\nu)}(Z)$.
+\end{itemize}
+
+\begin{ipython}
+import numpy as np
+from scipy.stats import chi2, t, multivariate_normal
+
+n_samples = 1000000
+nu = 2
+
+sigma = np.array([[1, 0.1],[0.1, 1]])
+L = np.linalg.cholesky(sigma)
+mv = multivariate_normal(mean=[0, 0], cov=[[1, 0], [0, 1]])
+Y = mv.rvs(size=n_samples)
+Z = Y.dot(L)
+S = chi2(nu).rvs(size=n_samples)
+Z[:, 0] = np.sqrt(nu/S)*Z[:, 0]
+Z[:, 1] = np.sqrt(nu/S)*Z[:, 1]
+
+U = t(nu).cdf(Z)
+\end{ipython}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.45\textwidth]{figures/t-copula_2d}
+\quad
+\includegraphics[width=0.5\textwidth]{figures/t-copula_3d}
+\caption{Graphical representations of the t-copula, 2D on the left, 3D on the right.}
+\label{fig:t-copula}
+\end{figure}
+
 \subsection{Copula Types}
 There are numerous types of copula but two are the main classes: one-factor and two-factor copulas.
 
