@@ -7,13 +7,13 @@
 The \emph{Value at Risk} (VaR) of a portfolio is used when it is required to know to a certain confidence level how much will be the maximum loss in the next $N$ days. By definition it is a function of two parameters: the time horizon (i.e. $N$ days) and the confidence level. 
 It can be interpreted as the loss level over a certain time horizon that has a probability of only \((100 - X)\%\) of being exceeded. 
 
-Mathematically the VaR is the loss corresponding to the \((100-X)\textrm{th}\) percentile of the portfolio change in value distribution over the next $N$ days (e.g. in Figure~\ref{fig:var_loss} the graphical representation of the VaR assuming a normal distribution for the changes in value is shown, with $N=1$ and $X=95$).
+Mathematically the VaR is the loss corresponding to the \((100-X)\textrm{th}\) percentile of the portfolio change in value distribution ($\Delta P$)over the next $N$ days (e.g. in Figure~\ref{fig:var_loss} the graphical representation of the VaR, with $N=1$ and $X=95$, is shown; in the example a normal distribution for the changes in value is assumed).
 
 \begin{figure}[htb]
 \centering
-  \includegraphics[width=0.6\linewidth]{figures/95_var.png}
-  \caption{Example of 95\% VaR on the distribution of changes in value.}
-  \label{fig:var_loss}
+\includegraphics[width=0.6\linewidth]{figures/95_var.png}
+\caption{Example of 95\% VaR on the distribution of changes in value.}
+\label{fig:var_loss}
 \end{figure}
     
 VaR is useful to summarize all the information about the risk of a portfolio in one single number, but this can also be considered its main limitation as it implies too much simplification of such a complex task.
@@ -24,53 +24,52 @@ Concerning the time horizon parameter it is usually set to $N=1$ since it is not
 \textrm{N-day VaR} = \textrm{1-day VaR}\cdot \sqrt{N}
 \label{eq:var_horizon}
 \end{equation}
-This relation is true only if the portfolio changes in value over the considered period of time have independent and identical normal distributions with zero mean, otherwise it is just an approximation.
+This relation is true only if $\Delta P$ over the considered period of time has independent and identical normal distributions with zero mean, otherwise it is just an approximation.
 
 \section{How to Estimate the VaR}
 \label{how-to-estimate-the-var}
 
-In the proposed examples historical series of Apple and Netflix are used also it has been assumed to have a portfolio made of \textbf{60\% of AAPL and 40\% NFLX stocks}.
+Throughout this Chapter, in the proposed examples, the historical series of Apple (AAPL) and Netflix (NFLX) are used also it is assumed to have a portfolio made of \textbf{60\% of AAPL and 40\% NFLX stocks}.
  
-You can download the dateset with \texttt{yfinance} but you need some massaging to rearrange a bit the dataframe or check out \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/historical_data.csv}{historical\_data.csv} as in the following code.
+You can download the dateset with \texttt{yfinance} (but you need some simple massaging to rearrange a bit the dataframe) or check out \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/historical_data.csv}{historical\_data.csv} as in the following code.
 
 \begin{ipython}
 import pandas as pd
 
-df = pd.read_csv('historical_data.csv', index_col='Date')	
+df = pd.read_csv('historical_data.csv')	
 print (df.head())
 \end{ipython}
 \begin{ioutput}
-                 aapl       nflx
-Date
-2014-01-02  17.598297  51.831429
-2014-01-03  17.211735  51.871429
-2014-01-06  17.305593  51.367142
-2014-01-07  17.181829  48.500000
-2014-01-08  17.290642  48.712856
+         Date      aapl      nflx
+0  2010-01-04  6.553025  7.640000
+1  2010-01-05  6.564356  7.358571
+2  2010-01-06  6.459940  7.617143
+3  2010-01-07  6.447998  7.485714
+4  2010-01-08  6.490867  7.614286
 \end{ioutput}
 \noindent
-In the following we are going to add a new column with the daily return to the dataframe.
+In the following we are going to add a new column with the daily log-returns to the dataframe (where it has been used the equivalence $r_{log} = \log(1+r_{arithm})$).
 
 \begin{ipython}
 import numpy as np
 
 w = np.array([0.6, 0.4])
-df['aapl_rets'] = df['aapl'].pct_change()
-df['nflx_rets'] = df['nflx'].pct_change()
+df['aapl_rets'] = np.log1p(df['aapl'].pct_change())
+df['nflx_rets'] = np.log1p(df['nflx'].pct_change())
 
 print (df.head())
 \end{ipython}
 \begin{ioutput}
-                 aapl       nflx  aapl_rets  nflx_rets
-Date                                                  
-2014-01-02  17.542171  51.831429        NaN        NaN
-2014-01-03  17.156841  51.871429  -0.021966   0.000772
-2014-01-06  17.250401  51.367142   0.005453  -0.009722
-2014-01-07  17.127035  48.500000  -0.007151  -0.055817
-2014-01-08  17.235500  48.712856   0.006333   0.004389
+         Date      aapl      nflx  aapl_rets  nflx_rets
+0  2010-01-04  6.553025  7.640000        NaN        NaN
+1  2010-01-05  6.564356  7.358571   0.001728  -0.037532
+2  2010-01-06  6.459940  7.617143  -0.016034   0.034536
+3  2010-01-07  6.447998  7.485714  -0.001850  -0.017405
+4  2010-01-08  6.490867  7.614286   0.006626   0.017030
 \end{ioutput}
+Note that \textrm{numpy.log1p} calculates $\log(1 + x)$, and the first return value is \texttt{NaN} since no previous price is available.
 
-The portfolio value $P_i$ is determined by the \emph{scalar product} between the invested amount (the weights $w_i$) and the asset prices ($v_i$), i.e. $\sum_{i} w_i \cdot v_i$. In \texttt{python}, when using \texttt{numpy.array} for weights and values, it is indicated with the method \texttt{.dot}. For more information about scalar product, vector and matrices see Chapter~\ref{sec:matrices}.
+The portfolio value $\Pi$ is determined by the \emph{scalar product} between the invested amount in a stock (the weight $w_i$) and the asset price ($v_i$), i.e. $\Pi = \sum_{i} w_i \cdot v_i$. In \texttt{python}, when using \texttt{numpy.array} for weights and values, the scalar product is indicated with the method \texttt{.dot}. For more information on scalar product, vector and matrices see Chapter~\ref{sec:matrices}.
 
 \subsection{Historical Simulation}
 \label{historical-simulation}
@@ -78,53 +77,70 @@ The portfolio value $P_i$ is determined by the \emph{scalar product} between the
 To estimate the VaR from historical series, we need to collect the necessary market variables (i.e. the asset prices) over a quite long period in the past.
 
 The historical sequence of daily price variations will provide different scenarios to be applied to today's asset prices. 
-The daily evolution of the portfolio can be simulated by rescaling each asset value (e.g. \(v_1(t), v_2(t)\)) according to their variations between in two consecutive days \(i\) and \(i-1\)
+The daily evolution of the portfolio can be simulated by rescaling each asset value (e.g. \(v_1(t), v_2(t)\)) according to their variations between two consecutive days \(i\) and \(i-1\) in the past
 
 \begin{equation}
 P_i(t_n+1) = \left(w_1 \cdot v_1(t_n)\cfrac{(v_1(t_i)-v_1(t_{i-1}))}{v_1(t_{i-1})} + w_2\cdot  v_2(t_n)\cfrac{(v_2(t_i)-v_2(t_{i-1}))}{v_2(t_{i-1})}\right)
 \end{equation}
 
-With the set of portfolio values the distribution of portfolio change in value (\(\Delta P\)) can be computed, and the VaR estimate will be the $(100 - X)\%$ percentile of this distribution. 
+With the set of portfolio values the distribution of $\Delta P$ can be computed, and the VaR estimate will be the $(100 - X)\%$ percentile of this distribution. 
 
 Clearly such kind of simulation heavily relies on the assumption that past behaviors are indicative of what might happen in the future, that's why it is important that out historical series was as large as possible.
-
 
 %At each simulation the portfolio value $P_i$ is determined by the \emph{scalar product} between the invested amount (the weights $w_i$) and the price of each portfolio component ($p_i$), i.e. $\sum_{i} w_i \cdot p_i$. In \texttt{python} it is indicated with the method \texttt{.dot}. For more information about scalar product, vector and matrices see Chapter~\ref{sec:matrices}.
 
 %Finally the distribution of possible changes in the portfolio value \(P_i\) is drawn and the VaR computed by taking the appropriate percentile.
-Figure~\ref{fig:hist_var} shows the resulting VaR. The calculation is carried out in two complementary ways: expliciting all the for loops and, more compactly, using \texttt{numpy.array}.
+Figure~\ref{fig:hist_var} shows the resulting VaR. The calculation is carried out in two complementary ways: expliciting all the for loops, and, more compactly, using \texttt{numpy.array} (\texttt{pandas} columns are actually \texttt{numpy.array}).
 
 \begin{ipython}
 import numpy as np
 
-rets = []
-for idx in df.index[1:]:
-rets.append(w[0]*df['aapl_rets'].iloc[idx] + w[1]*df['nflx_rets'].iloc[idx])
-
 portfolio_price = w[0] * df['aapl'].iloc[-1] + w[1] * df['nflx'].iloc[-1]
-hist_var = portfolio_price*np.percentile(rets, 5)
+rets = []
+for idx in df.index[1:-1]:
+    rets.append(portfolio_price*(w[0]*df['aapl_rets'].iloc[idx] + 
+                                 w[1]*df['nflx_rets'].iloc[idx]))
 
+hist_var = np.percentile(rets, 5)
 print ('Historical VAR is {:.3f}'.format(hist_var))
 \end{ipython}
 \begin{ioutput}
-Historical VAR is -3.350
+Historical VAR is -10.042
 \end{ioutput}
 
 \begin{ipython}
-rets = df[['aapl_rets', 'nflx_rets']].iloc[1:].dot(w)
 portfolio_price = df[['aapl','nflx']].iloc[-1].dot(w)
-hist_var = portfolio_price*np.percentile(rets, 5)
-	
+rets = portfolio_price*df[['aapl_rets', 'nflx_rets']].iloc[1:-1].dot(w)
+hist_var = np.percentile(rets, 5)
+
 print ('Historical VAR is {:.3f}'.format(hist_var))
 \end{ipython}
 \begin{ioutput}
-Historical VAR is -3.350
+Historical VAR is -10.042
 \end{ioutput}
+
+A cross-check of the VaR calculation can be done by fitting the histogram with a distribution from which the 5\% percentile can be extracted.
+
+\begin{ipython}
+from scipy.stats import norm, t
+
+t_params = t.fit(rets) 
+g_params = norm.fit(rets)
+
+print (t(*t_params).ppf(0.05))
+print (norm(*g_params).ppf(0.05))
+\end{ipython}
+\begin{ioutput}
+-9.276320158087836
+-10.341559875882806
+\end{ioutput}
+
+In this case a t-student and a normal Gaussian have been used and the resulting quantiles are in decent agreement with the historical estimate.
 
 \begin{figure}[htb]
 \centering
 \includegraphics[width=0.7\textwidth]{figures/historical_var}
-\caption{Distribution of the changes of values estimated from historical data. The red line shows the 99\% VaR.}
+\caption{Distribution of the changes of values estimated from historical data. The red line shows the 99\% VaR. The distribution has also been fitted with a Gaussian and a t-student and the results are shown with the dashed lines.}
 \label{fig:hist_var}
 \end{figure}
 
@@ -157,8 +173,12 @@ Historical VAR is -3.350
 
 A very useful alternative to the historical approach is to use Monte Carlo simulation to generate the probability distribution for $\Delta P$. 
 
-Imagine we need to compute the 1-day VaR of our portfolio. The simulation can be done either generating random returns from a distribution with mean and standard deviation obtained from the historical data of each stock, or by evolving the asset prices in one day, for example using a geometric Brownian motion.
-
+Imagine we need to compute the 1-day VaR of our portfolio. The simulation can be done either:
+\begin{itemize}
+	\tightlist
+	\item generating random returns from a distribution with mean and standard deviation obtained from the historical data of each stock;
+	\item by evolving the asset prices in one day, for example using a geometric Brownian motion.
+\end{itemize}
 Let's start from the first case, computing mean and standard deviation from the historical dataset, then we will sample various simulated returns from a multivariate Gaussian with such mean and variance. One useful aspect of this method is that other distributions than Gaussian could be used. 
 
 Once we have the distribution of returns the VaR can be computed as usual; the result is shown in Fig.~\ref{fig:mc1_var}.
@@ -173,12 +193,12 @@ mvnorm = multivariate_normal(mean=mean, cov=cov)
 np.random.seed(1)
 sim_returns = mvnorm.rvs(10000)
 p_returns = sim_returns.dot(w)
-mc_var = portfolio_price * np.percentile(p_returns, 5)
+mc_var1 = portfolio_price * np.percentile(p_returns, 5)
 
-print('Simulated VAR is {:.3f}'.format(mc_var))
+print('Simulated VAR is {:.3f}'.format(mc_var1))
 \end{ipython}
 \begin{ioutput}
-Simulated VAR is -3.439
+Simulated VAR is -10.217
 \end{ioutput}
 
 \begin{figure}[htb]
@@ -204,11 +224,11 @@ for exp in range(trials):
          np.sqrt(cov.iloc[1, 1]*T)*normal())
     dP.append(portfolio_price - s)
 
-mc_var = np.percentile(dP, 5)
-print('Simulated VAR is {:.5f}'.format(mc_var))
+mc_var2 = np.percentile(dP, 5)
+print('Simulated VAR is {:.5f}'.format(mc_var2))
 \end{ipython}
 \begin{ioutput}
-Simulated VAR is -5.67443
+Simulated VAR is -14.52881
 \end{ioutput}
 
 \begin{figure}[htb]
@@ -249,6 +269,19 @@ So about seven thousand years as stated before.
 
 Another important check that could be done is the \emph{back testing} which consists of assessing how well the VaR estimate would have performed in the past. Basically it has to be tested how often the daily loss exceeded the N-days X\% VaR just computed. If it happens on about (100-X)\% of the times we can be confident that our estimate is correct. Clearly back-testing makes sense only if VaR has been estimated on an independet historical sample with respect to that used in the test.
 
+\begin{ipython}
+	
+df['P'] = df[['aapl', 'nflx']].iloc[:-1].dot(w)
+df['dP'] = np.log1p(df['P'].pct_change())*df['P']
+
+print ((df['dP'] < mc_var1).sum()/len(df))
+\end{ipython}
+\begin{ioutput}
+0.007035175879396985
+\end{ioutput}
+
+In this example the VaR estimate is exceeded in less than 1\% of the cases so it passed the test.
+
 \section{Credit VaR}
 \label{credit-var-cr-var}
 
@@ -267,8 +300,10 @@ L_{\tau, \hat{T}} = (1 - R) \cdot \textrm{EE}(\tau)
 \end{equation}
 where \(\hat{T}\) is the risk horizon and $L$ is non-zero only in scenarios of early counter-party default. 
 
-Given the above definitions we can express the Credit VaR as the X-quantile of $L_{\tau, \hat{T}}$.
+Given the above definitions we can express the Credit VaR as the (100-X)-quantile of $L_{\tau, \hat{T}}$.
 With respect to the Value at Risk, the time horizon is usually set to one year and the percentile to $99.9^{th}$, so it returns the loss that is exceeded only in 1 case out of 1000. 
+
+Note that in this case quantile has to be computed on the "positive" tail of the loss distribution.
 
 Credit VaR is actually either the difference of the percentile from the mean, or the percentile itself. There is more than one possible definition, anyway we  will use the latter.
 
@@ -300,7 +335,7 @@ from scipy.stats import uniform
 
 bonds = 20
 DP = 0.08
-FV = [100 for _ in range(20)]
+FV = 100
 R = 0.4
 r = 0.01
 
@@ -313,10 +348,8 @@ losses = []
 for _ in range(scenarios):
     loss = 0
     unif = uniform.rvs(size=bonds)
-    for i in range(bonds):
-        if unif[i] < DP:
-            loss += (1 - R)*FV[i]*df
-    losses.append(loss)
+    n_defaults = (unif<DP).sum()
+    losses.append(ndefaults*(1 - R)*FV*df)
 
 print (np.percentile(losses, [99.9]))
 \end{ipython}
@@ -340,16 +373,16 @@ Binomial distribution for $n=20$ and $p=0.08$. Notice the similarities between t
 \begin{ipython}
 from scipy.stats import binom
 
-bi = binom(20, 0.08)
+bi = binom(bonds, DP)
 q = bi.ppf(0.999)
 
-print ((1 - R)*FV[i]*df*q)
+print ((1 - R)*FV*df*q)
 \end{ipython}
 \begin{ioutput}
 356.4179401497005
 \end{ioutput}
 
-Indeed the two results are the same, since in the first place we have made a MC simulation of a binomial distribution.
+Indeed the two results are the same, eventually in the first place we have made a MC simulation of a binomial distribution.
 
 \subsection{Credit VaR and One Factor Copula Model}
 Consider a portfolio made of similar assets. As an approximation assume that the probability of default is the same for each counter-party and that the correlation between each pair is the same and equal to $\rho$. Under these assumption the One Factor Copula model can be used to describe the default correlations (see Eq.~\ref{eq:gaussian_one_factor_copula}
@@ -402,7 +435,7 @@ Cr-VaR: 5130000
 The 1-year 99.9\% Credit VaR is therefore \euro{5.13} million.
 
 \subsection{CreditMetrics}
-Another popular approach to compute Credti VaR is \emph{CreditMetrics}. It involves estimating a probability distribution of credit losses by carrying out Monte Carlo simulations of the counter-party credit rating changes.
+Another popular approach to estimate Credit VaR is \emph{CreditMetrics}. It involves computing a probability distribution of credit losses by carrying out Monte Carlo simulations of the counter-party credit rating changes.
 
 Imagine we would like to determine the probability distribution of losses over 1-year period. On each simulation, we are going to determine the credit rating of each counter-party using the estimated probability of migration between one rate to another (or to default). Since the portfolio value depends on its asset ratings we can determine the eventual losses. 
 
@@ -516,7 +549,7 @@ Another problem with deciding the transition matrix is that maybe it is not appr
 \section{Credit Valuation Adjustment}
 \label{credit-valuation-adjustment}
 
-Suppose you have a portfolio of derivatives. If the counter-party defaults and the present value of the portfolio at default is positive to the surviving party (you), then the actual gain is only given by the recovery fraction of the value. If however the present value is negative to you, you have to pay it in full to the liquidators of the defaulted entity.
+Suppouse you have a portfolio of derivatives. If a counter-party defaults and the present value of the portfolio at default is positive to the surviving party (you), then the actual gain is only given by the recovery fraction of the value. If however the present value is negative to you, you have to pay it in full to the liquidators of the defaulted entity.
 
 This behaviour creates an asymmetry which can be corrected by changing the definition of the deal value as the value without counter-party risk minus a positive adjustment, called \emph{Credit Valuation Adjustment} (CVA).
 
@@ -539,9 +572,9 @@ It is important to note the difference between Credit VaR and CVA. While the for
 
 \subsection{Debit Valuation Adjustment}
 
-The adjustment seen from the point of view of our counter-party is positive, and is called Debit Valuation Adjustment, DVA. It is positive because the early default of the client itself would imply a discount on the its payment obligations, and this means a gain. So the client marks an adjustment over the risk free price by adding the positive amount called DVA. 
+The adjustment seen from the point of view of our counter-party is positive, and is called Debit Valuation Adjustment, DVA. It is positive because the early default of the client itself would imply a discount on its payment obligations, and this means a gain. So the client marks an adjustment over the risk free price by adding the positive amount called DVA. 
 
-When both parties have the possibility to default, they consistently include both defaults into the valuation. So they will mark a positive CVA to be subtracted and a positive DVA to be added to the default risk free price of the deal. The CVA of one party will be the DVA of the other one and vice versa.
+When both parties have non-null default probabilities, they consistently include both defaults into the valuation. So they will mark a positive CVA to be subtracted and a positive DVA to be added to the default risk free price of the deal. The CVA of one party will be the DVA of the other one and vice versa.
 
 \[
 \textrm{price}=\textrm{default risk free price + DVA - CVA}
@@ -564,14 +597,14 @@ so that both parties agree on the price, or, we could say, there is money conser
 
 \subsection{CVA Computation}
 
-The computation of the CVA is easily carried on with Monte Carlo simulation. 
-First compute the portfolio value at each time point for each MC scenario. Then calculate the CVA using either Eq.~\ref{eq:cva} or its discrete form in Eq.~\ref{eq:cva_discrete}. Finally average the CVA of all the scenarios to get the estimate.
+The computation of the CVA is carried on with Monte Carlo simulation. 
+First calculate the portfolio value at each time point for each MC scenario. Then estimate the CVA using either Eq.~\ref{eq:cva} or its discrete form in Eq.~\ref{eq:cva_discrete}. Finally average the CVA of all the scenarios to get its value.
 
 In case of zero coupon bonds the computation of the CVA can be further simplified. Indeed in this case the investor exposure is equal to the bond face value, so it is enough to loop through each day from the pricing date to the bond maturity and compute the CVA using Eq.~\ref{eq:cva_discrete}.
 
 Imagine a 3-years zero coupon bond with a face value of $FV=$~\euro{100}. The bond issuer has the following default probabilities 10\%, 20\% and 30\% for 1, 2 and 3 years respectively and the recovery rate is 40\%. The risk free rate is instead 3\% flat. 
 
-To compute the CVA we need to first define a discount curve and the issuer credit curve. Then we perform a daily loop to sum up all the contributions to the CVA and finally set the price of the bond to the default-risk-free price minus the CVA.
+To calculate the CVA we need to first define a discount curve and the issuer credit curve. Then we perform a daily loop to sum up all the contributions to the CVA and finally set the price of the bond to the default-risk-free price minus the CVA.
 
 \begin{ipython}
 from dateutil.relativedelta import relativedelta
