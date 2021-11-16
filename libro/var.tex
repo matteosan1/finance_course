@@ -7,7 +7,7 @@
 The \emph{Value at Risk} (VaR) of a portfolio is used when it is required to know to a certain confidence level how much will be the maximum loss in the next $N$ days. By definition it is a function of two parameters: the time horizon (i.e. $N$ days) and the confidence level. 
 It can be interpreted as the loss level over a certain time horizon that has a probability of only \((100 - X)\%\) of being exceeded. 
 
-Mathematically the VaR is the loss corresponding to the \((100-X)\textrm{th}\) percentile of the portfolio change in value distribution ($\Delta P$)over the next $N$ days (e.g. in Figure~\ref{fig:var_loss} the graphical representation of the VaR, with $N=1$ and $X=95$, is shown; in the example a normal distribution for the changes in value is assumed).
+Mathematically the VaR is the loss corresponding to the \((100-X)\textrm{th}\) percentile of the portfolio change in value distribution ($\Delta\Pi$) over the next $N$ days (e.g. in Figure~\ref{fig:var_loss} the graphical representation of the VaR, with $N=1$ and $X=95$, is shown; in the example a normal distribution for the changes in value is assumed).
 
 \begin{figure}[htb]
 \centering
@@ -24,7 +24,7 @@ Concerning the time horizon parameter it is usually set to $N=1$ since it is not
 \textrm{N-day VaR} = \textrm{1-day VaR}\cdot \sqrt{N}
 \label{eq:var_horizon}
 \end{equation}
-This relation is true only if $\Delta P$ over the considered period of time has independent and identical normal distributions with zero mean, otherwise it is just an approximation.
+This relation is true only if $\Delta\Pi$ over the considered period of time has independent and identical normal distributions with zero mean, otherwise it is just an approximation.
 
 \section{How to Estimate the VaR}
 \label{how-to-estimate-the-var}
@@ -80,10 +80,10 @@ The historical sequence of daily price variations will provide different scenari
 The daily evolution of the portfolio can be simulated by rescaling each asset value (e.g. \(v_1(t), v_2(t)\)) according to their variations between two consecutive days \(i\) and \(i-1\) in the past
 
 \begin{equation}
-P_i(t_n+1) = \left(w_1 \cdot v_1(t_n)\cfrac{(v_1(t_i)-v_1(t_{i-1}))}{v_1(t_{i-1})} + w_2\cdot  v_2(t_n)\cfrac{(v_2(t_i)-v_2(t_{i-1}))}{v_2(t_{i-1})}\right)
+\Delta\Pi(t_{n+1}) = \left(w_1 \cdot v_1(t_n)\cfrac{(v_1(t_i)-v_1(t_{i-1}))}{v_1(t_{i-1})} + w_2\cdot  v_2(t_n)\cfrac{(v_2(t_i)-v_2(t_{i-1}))}{v_2(t_{i-1})}\right)
 \end{equation}
 
-With the set of portfolio values the distribution of $\Delta P$ can be computed, and the VaR estimate will be the $(100 - X)\%$ percentile of this distribution. 
+With the set of portfolio values the distribution of $\Delta\Pi$ can be computed, and the VaR estimate will be the $(100 - X)\%$ percentile of this distribution. 
 
 Clearly such kind of simulation heavily relies on the assumption that past behaviors are indicative of what might happen in the future, that's why it is important that out historical series was as large as possible.
 
@@ -95,28 +95,26 @@ Figure~\ref{fig:hist_var} shows the resulting VaR. The calculation is carried ou
 \begin{ipython}
 import numpy as np
 
-portfolio_price = w[0] * df['aapl'].iloc[-1] + w[1] * df['nflx'].iloc[-1]
 rets = []
-for idx in df.index[1:-1]:
-    rets.append(portfolio_price*(w[0]*df['aapl_rets'].iloc[idx] + 
-                                 w[1]*df['nflx_rets'].iloc[idx]))
+for i in range(1, len(df)-1):
+    rets.append(w[0]*df.iloc[i]['aapl_rets']*df.iloc[-1]['aapl'] + 
+                w[1]*df.iloc[i]['nflx_rets']*df.iloc[-1]['nflx'])
 
 hist_var = np.percentile(rets, 5)
-print ('Historical VAR is {:.3f}'.format(hist_var))
+print('Historical VAR is {:.3f}'.format(hist_var))
 \end{ipython}
 \begin{ioutput}
-Historical VAR is -10.042
+Historical VAR is -12.368
 \end{ioutput}
 
 \begin{ipython}
-portfolio_price = df[['aapl','nflx']].iloc[-1].dot(w)
-rets = portfolio_price*df[['aapl_rets', 'nflx_rets']].iloc[1:-1].dot(w)
-hist_var = np.percentile(rets, 5)
+scaled = df[['aapl_rets', 'nflx_rets']].iloc[1:-1]*df[['aapl', 'nflx']].iloc[-1].values
+rets2 = scaled.dot(w)
 
-print ('Historical VAR is {:.3f}'.format(hist_var))
+print('Historical VAR is {:.3f}'.format(np.percentile(rets2, 5)))
 \end{ipython}
 \begin{ioutput}
-Historical VAR is -10.042
+Historical VAR is -12.368
 \end{ioutput}
 
 A cross-check of the VaR calculation can be done by fitting the histogram with a distribution from which the 5\% percentile can be extracted.
@@ -127,15 +125,15 @@ from scipy.stats import norm, t
 t_params = t.fit(rets) 
 g_params = norm.fit(rets)
 
-print (t(*t_params).ppf(0.05))
-print (norm(*g_params).ppf(0.05))
+print ("VaR from t-student fit", round(t(*t_params).ppf(0.05), 3))
+print ("VaR from Gaussian fit ",round(norm(*g_params).ppf(0.05), 3))
 \end{ipython}
 \begin{ioutput}
--9.276320158087836
--10.341559875882806
+VaR from t-student fit -12.061
+VaR from Gaussian fit  -14.092
 \end{ioutput}
 
-In this case a t-student and a normal Gaussian have been used and the resulting quantiles are in decent agreement with the historical estimate.
+In this case a t-student and a normal Gaussian have been tried and the former resulting quantiles are in good agreement with the historical estimate.
 
 \begin{figure}[htb]
 \centering
@@ -171,7 +169,7 @@ In this case a t-student and a normal Gaussian have been used and the resulting 
 \subsection{Monte Carlo Simulation}
 \label{monte-carlo-simulation}
 
-A very useful alternative to the historical approach is to use Monte Carlo simulation to generate the probability distribution for $\Delta P$. 
+A very useful alternative to the historical approach is to use Monte Carlo simulation to generate the probability distribution for $\Delta\Pi$. 
 
 Imagine we need to compute the 1-day VaR of our portfolio. The simulation can be done either:
 \begin{itemize}
@@ -191,14 +189,16 @@ cov = df[['aapl_rets', 'nflx_rets']].iloc[1:].cov()
 mvnorm = multivariate_normal(mean=mean, cov=cov)
 
 np.random.seed(1)
-sim_returns = mvnorm.rvs(10000)
+n_sims = 100000
+sim_var_returns = mvnorm.rvs(n_sims)
+sim_returns = sim_var_returns*df[['aapl', 'nflx']].iloc[-1].values
 p_returns = sim_returns.dot(w)
-mc_var1 = portfolio_price * np.percentile(p_returns, 5)
+mc_var = np.percentile(p_returns, 5)
 
-print('Simulated VAR is {:.3f}'.format(mc_var1))
+print('Simulated VAR is {:.3f}'.format(mc_var))
 \end{ipython}
 \begin{ioutput}
-Simulated VAR is -10.217
+Simulated VAR is -13.679
 \end{ioutput}
 
 \begin{figure}[htb]
@@ -215,9 +215,8 @@ from numpy.random import normal, seed
 
 T = 1
 dP = []
+seed(1)
 for exp in range(trials):
-	seed(exp)
-
     s = w[0]*df['aapl'].iloc[-1]*np.exp((mean.iloc[0] - 0.5*cov.iloc[0, 0])*T + 
         np.sqrt(cov.iloc[0, 0]*T)*normal())
     s += w[1]*df['nflx'].iloc[-1]*np.exp((mean.iloc[1] - 0.5*cov.iloc[1, 1])*T + 
@@ -225,10 +224,10 @@ for exp in range(trials):
     dP.append(portfolio_price - s)
 
 mc_var2 = np.percentile(dP, 5)
-print('Simulated VAR is {:.5f}'.format(mc_var2))
+print('Simulated VAR is {:.3f}'.format(mc_var2))
 \end{ipython}
 \begin{ioutput}
-Simulated VAR is -14.52881
+Simulated VAR is -14.726
 \end{ioutput}
 
 \begin{figure}[htb]
@@ -238,7 +237,7 @@ Simulated VAR is -14.52881
 \label{fig:mc2_var}
 \end{figure}
 
-The large difference with the previous estimates is most likely due to the different shape of the $\Delta P$ distribution tails.
+The large difference with the previous estimates is most likely due to the different shape of the $\Delta\P$ distribution tails.
 
 \subsection{Stress and Back Testing}
 \label{stress-testing-and-back-testing}
@@ -274,10 +273,10 @@ Another important check that could be done is the \emph{back testing} which cons
 df['P'] = df[['aapl', 'nflx']].iloc[:-1].dot(w)
 df['dP'] = np.log1p(df['P'].pct_change())*df['P']
 
-print ((df['dP'] < mc_var1).sum()/len(df))
+print ((df['dP'] < mc_var).sum()/len(df))
 \end{ipython}
 \begin{ioutput}
-0.007035175879396985
+0.0023450586264656616
 \end{ioutput}
 
 In this example the VaR estimate is exceeded in less than 1\% of the cases so it passed the test.
