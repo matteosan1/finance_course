@@ -1,6 +1,6 @@
 \begin{question}
 Given the historical series of three stock prices in the file
-\(\href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/historical.csv}{\textrm{historical.csv}}\)
+$\href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/historical.csv}{\textrm{historical.csv}}$
 compute the 1-day 95\% VaR for a portfolio consisting of 40 FOX shares, 35 ABC shares and 25 CBS shares. 
 Today's price is the last entry of the series.
 
@@ -11,43 +11,33 @@ in the series.
 \cprotEnv\begin{solution}
 \begin{ipython}
 import pandas as pd
-from scipy.stats import norm
+import numpy as np
 
-df = pd.read_csv("historical.csv")
-fox = df[df['ticker']=='FOX'].copy()
-cbs = df[df['ticker']=='CBS'].copy()
-abc = df[df['ticker']=='ABC'].copy()
-fox['rets'] = fox['adj_close']/fox['adj_close'].shift(1) - 1
-cbs['rets'] = cbs['adj_close']/cbs['adj_close'].shift(1) - 1
-abc['rets'] = abc['adj_close']/abc['adj_close'].shift(1) - 1
-
-print (fox.head())
+df = pd.read_csv("https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/historical.csv")
+df['FOX_RETS'] = np.log1p(df['FOX'].pct_change())
+df['CBS_RETS'] = np.log1p(df['CBS'].pct_change())
+df['ABC_RETS'] = np.log1p(df['ABC'].pct_change())
 \end{ipython}
 \begin{ioutput}
-None      date ticker adj_close      rets
-0 0 2018-03-27    FOX     36.08       NaN
-1 1 2018-03-26    FOX     36.58  0.013858
-2 2 2018-03-23    FOX     35.45 -0.030891
-3 3 2018-03-22    FOX     36.18  0.020592
-4 4 2018-03-21    FOX     36.30  0.003317
+         date    FOX    CBS    ABC  FOX_RETS  CBS_RETS  ABC_RETS
+0  2018-03-27  36.08  52.35  84.01       NaN       NaN       NaN
+1  2018-03-26  36.58  51.69  84.95  0.013763 -0.012688  0.011127
+2  2018-03-23  35.45  49.27  84.03 -0.031378 -0.047949 -0.010889
+3  2018-03-22  36.18  50.26  85.00  0.020383  0.019894  0.011477
+4  2018-03-21  36.30  50.87  89.50  0.003311  0.012064  0.051587
 \end{ioutput}
 \begin{ipython}
 w = np.array([0.4, 0.35, 0.25])
-rets = []
-for i in range(1, len(abc)):
-    ret = [fox.iloc[i]['rets'], abc.iloc[i]['rets'],
-           cbs.iloc[i]['rets']]
-    if np.NaN in ret:
-        continue
-    rets.append(w[0]*ret[0] + w[1]*ret[1] + w[2] * ret[2])
 
-current_price = [fox.iloc[-1]['adj_close'],
-                 abc.iloc[-1]['adj_close'],
-                 cbs.iloc[-1]['adj_close']]
-portfolio_price = w.dot(current_price)
-hist_var = portfolio_price*np.percentile(rets, 1)
-print ('Historical VAR is {:.3f}'.format(hist_var))
-\end{ipython}
+df = df.dropna()
+dP = []
+current_value = df[['FOX', 'ABC', 'CBS']].iloc[-1].values
+for i in range(len(df)):
+    variation = (current_value * df[['FOX_RETS', 'ABC_RETS', 'CBS_RETS']].iloc[i])
+    dP.append(variation.dot(w))
+
+hist_var = np.percentile(dP, 1)
+print ('Historical VaR is  {:.3f}'.format(hist_var))\end{ipython}
 \begin{ioutput}
 Historical VAR is -1.385
 \end{ioutput}
