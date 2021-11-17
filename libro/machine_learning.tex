@@ -1178,7 +1178,152 @@ for i in range(len(predictions)):
 \noindent
 The output represents the likelihood that the time series  belong to any category at give times. Up to $t=4$ the CNN is more about 95\% sure there is no pattern (max probability at category 0). 
 At $t=5$ the CNN starts to recognize a pattern assigning about 20\% probability to the "head and shoulders" class. For $t\geq 6$ the neural network recognizes the pattern with a probability close to 100\%.
-	
+
+\section{Unsupervised Learning}
+    
+Unsupervised learning is a type of machine learning in which the algorithm is not provided with any pre-assigned labels or scores for the training data.As a result, unsupervised learning algorithms must first self-discover any naturally occurring patterns in that training data set. 
+    
+Common examples include \emph{clustering}, where the algorithm automatically groups its training examples into categories with similar features, and principal component analysis~\ref{sec:pca}, where the algorithm finds ways to compress the training data set by identifying which features are most useful for discriminating between different training examples, and discarding the rest. 
+    
+\subsection{k-Means Algorithm}
+    
+k-means clustering is a method of vector quantization that aims to partition (split) $n$ observations into $k$ clusters in which each observation belongs to the cluster with the nearest mean (cluster centers or cluster centroid), serving as a prototype of the cluster. 
+    
+Given a set of observations $(x_1, x_2, \ldots, x_n)$, where each observation is a $d$-dimensional real vector, the algorithm divided the $n$ observations into $k$ $(\leq n)$ sets $S = \{S_1, S_2, \ldots, S_k\}$ so as to minimize the within-cluster sum of squares (WCSS) (i.e. variance). Formally, the objective is to find:
+    
+\begin{equation}
+\underset {\mathbf {S}}{\operatorname {arg\,min} } \sum _{i=1}^{k}\sum _{\mathbf {x} \in S_{i}}\left\|\mathbf {x} -{\boldsymbol {\mu }}_{i}\right\|^{2}
+\end{equation}
+where $μ_i$ is the mean of points in $S_i$. 
+    
+\subsubsection{Example}
+This example consists of clustering a dataset that contains information of all the stocks that compose the SP500 Index. 
+    
+The input dataset, fetched from Yahoo Finance and stored in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/k\_mean.csv}{k\_mean.csv}, consists of the daily closing prices of each share within the interval 2018-09-20, 2021-09-20.
+    
+The goal of the project is to find similarities amongst companies in terms of return and volatility. To do this, the k-means clustering algorithm will produce labels that assign each company to different clusters.
+ 
+The first step consists in loading the inputs and then produce a new \texttt{DataFrame} with annualized returns and volatilities for each stock. 
+ 
+\begin{ipython}
+import pandas as pd
+ 
+df = pd.read_csv("k_mean.csv", index_col='Date')
+ 
+returns = df.pct_change().mean() * 252
+std = df.pct_change().std() * np.sqrt(252)
+ 
+ret_var = pd.concat([returns, std], axis = 1).dropna()
+ret_var.columns = ["Returns","Standard Deviation"]
+print (ret_var.head())
+\end{ipython}
+\begin{ioutput}
+       Returns  Standard Deviation
+MMM  -0.188903            0.261649
+ABT   0.235801            0.232519
+ABBV -0.159596            0.304667
+ABMD -0.543486            0.526830
+ACN   0.152511            0.212579
+\end{ioutput}
+
+\subsection{Elbow Curve}
+ 
+In order to determine the optimal number of clusters $k$ for our dataset, we will fit different models of the k-means algorithm while varying the $k$ parameter in the range 2 to 14. For each model we calculate the Sum Squared Error (SSE) by using the \texttt{.inertia\_\_} method of the fitted model (inertia tells how far away the points within a cluster are. The smaller the inertia value the better).
+ 
+Each pair of values ($k$, SSE) will help to construct the \emph{Elbow Curve} which can be used to determine the optimal value for $k$. 
+ 
+Using the "elbow" or "knee" of a curve as a cutoff point is a common heuristic in mathematical optimization to choose a point where diminishing returns are no longer worth the additional cost. In clustering, this means one should choose a number of clusters so that adding another cluster doesn't give much better modeling of the data.
+ 
+The intuition is that increasing the number of clusters will naturally improve the fit (explain more of the variation) since there are more parameters (more clusters) to use, but at some point this becomes over-fitting, and the elbow reflects this. 
+ 
+In practice there may not be a sharp elbow, and as a heuristic method, such an "elbow" cannot always be unambiguously identified.
+
+The k-means method is implemented in the \texttt{sklearn.cluster.KMeans} class.
+
+\begin{ipython} 
+from sklearn.cluster import KMeans
+ 
+X =  ret_var.values 
+sse = []
+for k in range(2, 15):
+    kmeans = KMeans(n_clusters = k)
+    kmeans.fit(X)
+   
+    sse.append(kmeans.inertia_) 
+\end{ipython}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.7\textwidth]{figures/elbow_curve}
+\caption{The eblow curve for the studied example.}
+\label{fig:elbow_curve}
+\end{figure}
+ 
+The resulting graph of Fig.~\ref{fig:elbow_curve} shows that the optimal value of $k$ is 5.
+
+\begin{ipython} 
+kmeans = KMeans(n_clusters = 5).fit(X)
+centroids = kmeans.cluster_centers_
+\end{ipython}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.7\textwidth]{figures/k_means_5}
+\caption{The clustering results with the parameter $k$ equal to 5.}
+\label{fig:K_means_5}
+\end{figure}
+ 
+Fig.~\ref{fig:elbow_curve} shows also the presence of outliers as only one point is on the upper right side of the graph. This outlier form its own cluster. In order to have a better categorization of the stocks within the SP500 index, we would remove those stocks and fit the model another time.
+This is done by finding the stock with the highest standard deviation value and dropping the corresponding columnn.
+ 
+\begin{ipython}
+stdOrder = ret_var.sort_values('Standard Deviation', ascending=False)
+first_symbol = stdOrder.index[0]
+ret_var.drop(first_symbol, inplace=True)
+\end{ipython}
+Then we can fit the dataset again, Fig.~\ref{fig:k_means_noout} reports the result.
+
+\begin{ipython}
+X = ret_var.values
+kmeans = KMeans(n_clusters = 5).fit(X)
+centroids = kmeans.cluster_centers_
+\end{ipython}
+ 
+\begin{figure}
+\centering
+\includegraphics[width=0.7\textwidth]{figures/k_means_noout}
+\caption{The clustering results after the outliers removal.}
+\label{fig:K_means_noout}
+\end{figure}
+  
+Finally we will assign to each stock it correspondent number of cluster(1,2,3,4,and 5) and make a \texttt{DataFrame} with this information. Having the information of cluster number for each stock, we can create a diversified portfolio in the long term, between stocks from different clusters.
+
+\begin{ipython} 
+stocks = pd.DataFrame(ret_var.index) # the dataframe structure allow concatenation
+cluster_labels = pd.DataFrame(kmeans.labels_)
+stockClusters = pd.concat([stocks, cluster_labels],axis = 1)
+stockClusters.columns = ['Symbol','Cluster']
+\end{ipython}
+ 
+As an example the following are the stocks belonging to cluster number 0.
+
+\begin{ipython} 
+print (stockClusters.loc[stockClusters['Cluster'] == 0, 'Symbol'])
+\end{ipython}
+\begin{ioutput}
+6      ADBE
+7       AMD
+11        A
+14      ALK
+20      ALL
+       ... 
+465    VRTX
+466     VFC
+483     WDC
+493     XYL
+496     ZBH
+Name: Symbol, Length: 145, dtype: object
+\end{ioutput}
  
 \begin{thebibliography}{9}
 \bibitem{bib:deep_learning} I. Goodfellow, Y. Bengio and A. Courville, \href{http://www.deeplearningbook.org}{\emph{Deep Learning}}, MIT Press, 2016
