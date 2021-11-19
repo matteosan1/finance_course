@@ -22,12 +22,12 @@ CHD 	0.149289
 COST 	0.165491
 CTRE 	0.099866
 ENTR 	0.611855
-HI 	    0.162094
+HI      0.162094
 LDOS 	0.226562
 TDS 	0.081294
 TMUS 	0.313158
 UEC 	0.102048
-WM 	    0.189474
+WM      0.189474
 dtype: float64
 
           CHD     COST      CTRE      ENTR       HI     LDOS       TDS
@@ -41,18 +41,7 @@ TDS  0.011440 0.011564  0.015634 -0.008187 0.019070 0.018032  0.078266
 TMUS 0.009991 0.008667  0.012142  0.020659 0.017274 0.015900  0.030212
 UEC  0.009134 0.011193  0.002861  0.174809 0.034460 0.025498  0.024209
 WM   0.007536 0.008773  0.010322  0.006651 0.011621 0.011010  0.011077
-
-         TMUS      UEC       WM
-CHD  0.009991 0.009134 0.007536
-COST 0.008667 0.011193 0.008773
-CTRE 0.012142 0.002861 0.010322
-ENTR 0.020659 0.174809 0.006651
-HI   0.017274 0.034460 0.011621
-LDOS 0.015900 0.025498 0.011010
-TDS  0.030212 0.024209 0.011077
-TMUS 0.126895 0.024575 0.011563
-UEC  0.024575 0.497870 0.014853
-WM   0.011563 0.014853 0.019869
+...
 \end{ioutput}
 \begin{ipython}
 import numpy as np
@@ -61,15 +50,15 @@ from scipy.optimize import minimize
 def sum_weights(w):
     return np.sum(w) - 1
 
-def markowitz(w, cov):
-    return np.sqrt(np.dot(w.T, np.dot(cov, w)))
+def risk(w, cov):
+    return np.sqrt(w.T.dot(cov.dot(w)))
 
 num_assets = 10
 constraints = ({'type': 'eq', 'fun': sum_weights},)
 bounds = tuple((0, 1) for asset in range(num_assets))
 weights = [1./num_assets for _ in range(num_assets)]
-opts = minimize(markowitz, weights, args=(covariance,),
-    bounds=bounds, constraints=constraints)
+opts = minimize(risk, weights, args=(covariance,),
+                bounds=bounds, constraints=constraints)
 
 print (opts)
 \end{ipython}
@@ -151,11 +140,11 @@ The client is not yet satisfied and decides to move to a risk parity portfolio. 
 \cprotEnv \begin{solution}
 \begin{ipython}
 def risk_parity(w, cov):
-    variance = np.dot(w.T, np.dot(cov, w))
+    variance = w.T.dot(cov.dot(w))
     sum = 0 
     N = len(w)
     for i in range(N):
-        sum += (w[i] - (variance/(N*np.dot(cov, w)[i])))**2
+        sum += (w[i] - (variance/(N*(cov.dot(w))[i])))**2
     return sum
 
 args = (covariance,)
@@ -163,7 +152,7 @@ constraints = ({'type': 'eq', 'fun': sum_weights})
 bounds = tuple((0, 1) for asset in range(num_assets))
 weights = [1./num_assets for _ in range(num_assets)]
 opts = minimize(risk_parity, weights, args=(covariance,),
-    bounds=bounds, constraints=constraints)
+                bounds=bounds, constraints=constraints)
 
 print (opts)
 \end{ipython}
@@ -185,13 +174,13 @@ success: True
 \begin{ipython}
 sigma_i = []
 for i in range(num_assets):
-    std = np.sqrt(np.dot(opts.x.T, np.dot(covariance, opts.x)))
-    a = opts.x[i]*np.dot(covariance, opts.x)[i]
+    std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
+    a = opts.x[i]*covariance.dot(opts.x)[i]
     sigma_i.append(a/std)
 
 for i in range(num_assets):
     print ("Risk contribution for asset {}: {:.3f}%"
-        .format(i, sigma_i[i]/sum(sigma_i)*100))
+           .format(i, sigma_i[i]/sum(sigma_i)*100))
 \end{ipython}
 \begin{ioutput}
 Risk contribution for asset 0: 9.986%

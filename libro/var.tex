@@ -4,7 +4,7 @@
 \section{VaR}
 \label{value-at-risk}
 
-The \emph{Value at Risk} (VaR) of a portfolio is used when it is required to know to a certain confidence level how much will be the maximum loss in the next $N$ days. By definition it is a function of two parameters: the time horizon (i.e. $N$ days) and the confidence level. 
+The \emph{Value at Risk} (VaR) of a portfolio is used when it is required to know to a certain confidence level how much will be the maximum loss in the next $N$ days. By definition it is a function of two parameters: the time horizon (i.e. $N$ days usually set to 1) and the confidence level (usually 95\%). 
 It can be interpreted as the loss level over a certain time horizon that has a probability of only \((100 - X)\%\) of being exceeded. 
 
 Mathematically the VaR is the loss corresponding to the \((100-X)\textrm{th}\) percentile of the portfolio change in value distribution ($\Delta\Pi$) over the next $N$ days (e.g. in Figure~\ref{fig:var_loss} the graphical representation of the VaR, with $N=1$ and $X=95$, is shown; in the example a normal distribution for the changes in value is assumed).
@@ -48,7 +48,7 @@ print (df.head())
 4  2010-01-08  6.490867  7.614286
 \end{ioutput}
 \noindent
-In the following we are going to add a new column with the daily log-returns to the dataframe (where it has been used the equivalence $r_{log} = \log(1+r_{arithm})$).
+In the following we are going to add a new column with the daily log-returns to the dataframe (where it has been used the equivalence $r_{log} = \log(1+r_{arithm})$). For small variations $r_{log}$ and $r_{arithm}$ are numerically equivalent.
 
 \begin{ipython}
 import numpy as np
@@ -69,7 +69,25 @@ print (df.head())
 \end{ioutput}
 Note that \textrm{numpy.log1p} calculates $\log(1 + x)$, and the first return value is \texttt{NaN} since no previous price is available.
 
-The portfolio value $\Pi$ is determined by the \emph{scalar product} between the invested amount in a stock (the weight $w_i$) and the asset price ($v_i$), i.e. $\Pi = \sum_{i} w_i \cdot v_i$. In \texttt{python}, when using \texttt{numpy.array} for weights and values, the scalar product is indicated with the method \texttt{.dot}. For more information on scalar product, vector and matrices see Chapter~\ref{sec:matrices}.
+The portfolio value $\Pi$ is determined by the \emph{scalar product} between the invested amount in a stock (the weight $w_i$) and the asset price ($v_i$), i.e. $\Pi = \sum_{i} w_i \cdot v_i$. In \texttt{python}, when using \texttt{numpy.array} for weights and values, the scalar product is indicated with the method \texttt{.dot}.
+To multiply vectors (and matrices) by index, i.e. without the final sum of the products, it can be used the \texttt{*} operator.
+
+\begin{equation*}
+\begin{bmatrix}
+w_1 \\
+w_2 \\
+\end{bmatrix}
+\begin{bmatrix}
+x_{11} & x_{12}\\
+x_{21} & x_{22}
+\end{bmatrix}=
+\begin{bmatrix}
+w_1*x_{11} & w_2*x_{12}\\
+w_1*x_{21} & w_2*x_{22}\\
+\end{bmatrix}
+\end{equation*}
+
+For more information on scalar product, vector and matrices see Chapter~\ref{sec:matrices}.
 
 \subsection{Historical Simulation}
 \label{historical-simulation}
@@ -93,28 +111,26 @@ Clearly such kind of simulation heavily relies on the assumption that past behav
 Figure~\ref{fig:hist_var} shows the resulting VaR. The calculation is carried out in two complementary ways: expliciting all the for loops, and, more compactly, using \texttt{numpy.array} (\texttt{pandas} columns are actually \texttt{numpy.array}).
 
 \begin{ipython}
-import numpy as np
-
-rets = []
+dP = []
 for i in range(1, len(df)-1):
-    rets.append(w[0]*df.iloc[i]['aapl_rets']*df.iloc[-1]['aapl'] + 
-                w[1]*df.iloc[i]['nflx_rets']*df.iloc[-1]['nflx'])
+    dP.append(w[0]*df.iloc[i]['aapl_rets']*df.iloc[-1]['aapl'] + 
+              w[1]*df.iloc[i]['nflx_rets']*df.iloc[-1]['nflx'])
 
-hist_var = np.percentile(rets, 5)
-print('Historical VAR is {:.3f}'.format(hist_var))
+hist_var = np.percentile(dP, 3)
+print('Historical VaR is {:.3f}'.format(hist_var))
 \end{ipython}
 \begin{ioutput}
-Historical VAR is -12.368
+Historical VaR is -12.368
 \end{ioutput}
 
 \begin{ipython}
-scaled = df[['aapl_rets', 'nflx_rets']].iloc[1:-1]*df[['aapl', 'nflx']].iloc[-1].values
-rets2 = scaled.dot(w)
+today_price = df[['aapl', 'nflx']].iloc[-1].values
+dP2 = (df[['aapl_rets', 'nflx_rets']].iloc[1:-1]*today_price).dot(w)
 
-print('Historical VAR is {:.3f}'.format(np.percentile(rets2, 5)))
+print('Historical VaR is {:.3f}'.format(np.percentile(dP2, 3)))
 \end{ipython}
 \begin{ioutput}
-Historical VAR is -12.368
+Historical VaR is -12.368
 \end{ioutput}
 
 A cross-check of the VaR calculation can be done by fitting the histogram with a distribution from which the 5\% percentile can be extracted.
@@ -122,8 +138,8 @@ A cross-check of the VaR calculation can be done by fitting the histogram with a
 \begin{ipython}
 from scipy.stats import norm, t
 
-t_params = t.fit(rets) 
-g_params = norm.fit(rets)
+t_params = t.fit(dP) 
+g_params = norm.fit(dP)
 
 print ("VaR from t-student fit", round(t(*t_params).ppf(0.05), 3))
 print ("VaR from Gaussian fit ",round(norm(*g_params).ppf(0.05), 3))
@@ -133,7 +149,7 @@ VaR from t-student fit -12.061
 VaR from Gaussian fit  -14.092
 \end{ioutput}
 
-In this case a t-student and a normal Gaussian have been tried and the former resulting quantiles are in good agreement with the historical estimate.
+In this case a t-student and a normal Gaussian have been tried and the quantile of the former is in excellent agreement with the historical estimate.
 
 \begin{figure}[htb]
 \centering
@@ -173,9 +189,9 @@ A very useful alternative to the historical approach is to use Monte Carlo simul
 
 Imagine we need to compute the 1-day VaR of our portfolio. The simulation can be done either:
 \begin{itemize}
-	\tightlist
-	\item generating random returns from a distribution with mean and standard deviation obtained from the historical data of each stock;
-	\item by evolving the asset prices in one day, for example using a geometric Brownian motion.
+\tightlist
+\item generating random returns from a distribution with mean and standard deviation obtained from the historical data of each stock;
+\item by evolving the asset prices in one day, for example using a geometric Brownian motion.
 \end{itemize}
 Let's start from the first case, computing mean and standard deviation from the historical dataset, then we will sample various simulated returns from a multivariate Gaussian with such mean and variance. One useful aspect of this method is that other distributions than Gaussian could be used. 
 
@@ -185,21 +201,23 @@ Once we have the distribution of returns the VaR can be computed as usual; the r
 from scipy.stats import multivariate_normal
 
 mean = df[['aapl_rets', 'nflx_rets']].iloc[1:].mean()
+print (mean)
 cov = df[['aapl_rets', 'nflx_rets']].iloc[1:].cov()
-mvnorm = multivariate_normal(mean=mean, cov=cov)
+print (cov)
+mv = multivariate_normal(mean=mean, cov=cov)
 
 np.random.seed(1)
-n_sims = 100000
-sim_var_returns = mvnorm.rvs(n_sims)
-sim_returns = sim_var_returns*df[['aapl', 'nflx']].iloc[-1].values
-p_returns = sim_returns.dot(w)
-mc_var = np.percentile(p_returns, 5)
+x = mv.rvs(size=100000)
+dP = (x*df[['aapl', 'nflx']].iloc[-1].values).dot(w)
+mc_var = np.percentile(dP, 3)
 
-print('Simulated VAR is {:.3f}'.format(mc_var))
+print('Simulated VaR is {:.3f}'.format(mc_var))
 \end{ipython}
 \begin{ioutput}
-Simulated VAR is -13.679
+Simulated VaR is -14.006
 \end{ioutput}
+
+Assuming Gaussian returns gives indeed a VaR in good agreement with the previous estimate based on the Gaussian fit.
 
 \begin{figure}[htb]
 \centering
@@ -213,21 +231,20 @@ This result can be compared to the VaR estimate determined with a simulation of 
 \begin{ipython}
 from numpy.random import normal, seed
 
+portfolio_value = df[['aapl', 'nflx']].iloc[-1].dot(w)
 T = 1
 dP = []
 seed(1)
-for exp in range(trials):
-    s = w[0]*df['aapl'].iloc[-1]*np.exp((mean.iloc[0] - 0.5*cov.iloc[0, 0])*T + 
-        np.sqrt(cov.iloc[0, 0]*T)*normal())
-    s += w[1]*df['nflx'].iloc[-1]*np.exp((mean.iloc[1] - 0.5*cov.iloc[1, 1])*T + 
-         np.sqrt(cov.iloc[1, 1]*T)*normal())
-    dP.append(portfolio_price - s)
+for _ in range(100000):
+  P1 = df.iloc[-1]['aapl']*np.exp((mean[0]-0.5*cov.iloc[0, 0])*T + np.sqrt(cov.iloc[0, 0]*T)*normal())
+  P2 = df.iloc[-1]['nflx']*np.exp((mean[1]-0.5*cov.iloc[1, 1])*T + np.sqrt(cov.iloc[1, 1]*T)*normal())
+  dP.append(w[0]*P1 + w[1]*P2 - portfolio_value)
 
 mc_var2 = np.percentile(dP, 5)
-print('Simulated VAR is {:.3f}'.format(mc_var2))
+print('Simulated VaR is {:.3f}'.format(mc_var2))
 \end{ipython}
 \begin{ioutput}
-Simulated VAR is -14.726
+Simulated VaR is -14.726
 \end{ioutput}
 
 \begin{figure}[htb]
@@ -237,7 +254,7 @@ Simulated VAR is -14.726
 \label{fig:mc2_var}
 \end{figure}
 
-The large difference with the previous estimates is most likely due to the different shape of the $\Delta\P$ distribution tails.
+The large difference with the previous estimates is most likely due to the different shape of the $\Delta\Pi$ distribution tails.
 
 \subsection{Stress and Back Testing}
 \label{stress-testing-and-back-testing}
@@ -269,7 +286,6 @@ So about seven thousand years as stated before.
 Another important check that could be done is the \emph{back testing} which consists of assessing how well the VaR estimate would have performed in the past. Basically it has to be tested how often the daily loss exceeded the N-days X\% VaR just computed. If it happens on about (100-X)\% of the times we can be confident that our estimate is correct. Clearly back-testing makes sense only if VaR has been estimated on an independet historical sample with respect to that used in the test.
 
 \begin{ipython}
-	
 df['P'] = df[['aapl', 'nflx']].iloc[:-1].dot(w)
 df['dP'] = np.log1p(df['P'].pct_change())*df['P']
 
@@ -343,14 +359,13 @@ df = np.exp(-r)
 
 np.random.seed(2)
 scenarios = 10000
-losses = []
+L = []
 for _ in range(scenarios):
-    loss = 0
-    unif = uniform.rvs(size=bonds)
-    n_defaults = (unif<DP).sum()
-    losses.append(ndefaults*(1 - R)*FV*df)
+    u = uniform.rvs(size=bonds)
+    n_defaults = (u<DP).sum()
+    L.append(ndefaults*(1 - R)*FV*df)
 
-print (np.percentile(losses, [99.9]))
+print (np.percentile(L, [99.9]))
 \end{ipython}
 \begin{ioutput}
 [356.41794015]
@@ -397,10 +412,10 @@ Since there are $n$ counter-parties with the same default probability $\mathcal{
 Since $M$ is distributed according to a standard Gaussian we can be $X\%$ certain that its value will be \emph{greater} than $\hat{m} = \Phi^{-1}(1-X)=-\Phi^{-1}(X)$, where the equality holds due to the symmetry of the Gaussian distribution (see Figure~\ref{fig:certain_for_X}).
 
 \begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/certain_for_X}
-	\caption{$X\%$ probability to get an higher value a threshold for a normally distributed random variable.}
-	\label{fig:certain_for_X}
+\centering
+\includegraphics[width=0.7\textwidth]{figures/certain_for_X}
+\caption{$X\%$ probability to get an higher value a threshold for a normally distributed random variable.}
+\label{fig:certain_for_X}
 \end{figure} 
 
 Once the time $T$ has been chosen the only random variable appearing in the conditional default probability expression of Eq.~\ref{eq:conditional_default_prob} is $M$, therefore we can be $X\%$ certain that the percentage of defaults over $T$ years on a large portfolio will be \textbf{less} than $V(X,T)$ where
@@ -441,26 +456,26 @@ Imagine we would like to determine the probability distribution of losses over 1
 As an example consider Table~\ref{tab:credit_ratings} which shows the percentage probability of a bond moving from one category to another during a 1-year period.
 
 \begin{table}[htb]
-	\centering
-	\begin{tabular}{|l|c|c|c|c|c|c|c|c|}
-	\hline
-	Initial rating & AAA & AA & A & BBB & BB & B & CCC & default \\
-	\hline
-	\hline
-	AAA & 90.81 & 8.33 & 0.68 & 0.06 & 0.08 & 0.02 & 0.01& 0.01 \\ 
-	\hline
-	AA & 0.70 & 90.65 & 7.79 & 0.64 & 0.06 & 0.13 & 0.02 & 0.01 \\ 
-	\hline
-	A & 0.09 & 2.27 & 91.05 & 5.52 & 0.74 & 0.26 & 0.01 & 0.06 \\ 
-	\hline
-	BBB & 0.02 & 0.33 & 5.95 & 85.93 & 5.30 & 1.17 & 1.12 & 0.18 \\
-	\hline
-	BB & 0.03 & 0.14 & 0.67 & 7.73 & 80.53 & 8.84 & 1.00 & 1.06 \\
-	\hline
-	B & 0.01 & 0.11 & 0.24 & 0.43 & 6.48 & 83.46 & 4.07 & 5.20 \\
-	\hline
-	CCC & 0.21 & 0 & 0.22 & 1.30 & 2.38 & 11.24 & 64.86 & 19.79 \\		
-	\hline
+\centering
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|}
+\hline
+Initial rating & AAA & AA & A & BBB & BB & B & CCC & default \\
+\hline
+\hline
+AAA & 90.81 & 8.33 & 0.68 & 0.06 & 0.08 & 0.02 & 0.01& 0.01 \\ 
+\hline
+AA & 0.70 & 90.65 & 7.79 & 0.64 & 0.06 & 0.13 & 0.02 & 0.01 \\ 
+\hline
+A & 0.09 & 2.27 & 91.05 & 5.52 & 0.74 & 0.26 & 0.01 & 0.06 \\ 
+\hline
+BBB & 0.02 & 0.33 & 5.95 & 85.93 & 5.30 & 1.17 & 1.12 & 0.18 \\
+\hline
+BB & 0.03 & 0.14 & 0.67 & 7.73 & 80.53 & 8.84 & 1.00 & 1.06 \\
+\hline
+B & 0.01 & 0.11 & 0.24 & 0.43 & 6.48 & 83.46 & 4.07 & 5.20 \\
+\hline
+CCC & 0.21 & 0 & 0.22 & 1.30 & 2.38 & 11.24 & 64.86 & 19.79 \\		
+\hline
 \end{tabular}
 \caption{Example of table with transition probabilities (in percent) between different credit rating categories.}
 \label{tab:credit_ratings}
