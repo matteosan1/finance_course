@@ -136,37 +136,41 @@ As an example suppose we want to do weather forecasting. The model is trained on
 
 Neural network training and testing is performed using two modules: \texttt{keras}~\cite{bib:keras} (which in turn is based on a Google open source library called \texttt{tensorflow}~\cite{bib:tensorflow}) and \texttt{scikit-learn}~\cite{bib:scikit} which provide many useful utilities.
 
-In order to hide as much as possible the many little subtleties of a NN implementation it has been developed a class (\texttt{FinNN}) which is a wrapper for \texttt{keras} functionalities and should make the whole process easier.
+%In order to hide as much as possible the many little subtleties of a NN implementation it has been developed a class (\texttt{FinNN}) which is a wrapper for \texttt{keras} functionalities and should make the whole process easier.
 \end{attention}
 
 \section{Function approximation}
 \label{function-approximation}
 
-Let's design an ANN which is capable of learning the functional form underlying a set of data. The implementation of the neural network starts by importing the necessary modules.
-
-\begin{ipython}
-from finnn import FinNN
-import numpy as np
-\end{ipython}
+Let's design an ANN which is capable of learning the functional form underlying a set of data. 
 
 The training sample is generated as a two columns array: \(x\) (input), \(f(x)\) (target output) where \(f(x) = x^3 +2\). 
 
 Before embarking into the training the sample undergoes to a simple transformation in order to have all the inputs and outputs in the \([0, 1]\) range. This transformation is called \emph{normalization}, and is done to provide the NN with "equalized" inputs since it could be fooled by very large or small numbers giving unstable results.
 
 \begin{ipython}
-x = np.array([i for i in np.arange(-2, 2, 0.001)])
-y = np.array([i**3+2 for i in x])
-print("Distribution of original data ", x.min(), x.max(), y.min(), y.max())
-
-trainer = FinNN("ANN")
-# define input and output and fraction of testing sample
-trainer.setData(x, y, test_size=0.2)
-trainer.normalize()
-print("The same data after the normalization ", trainer.x.min(),
-       trainer.x.max(), trainer.y.min(), trainer.y.max())
+import numpy as np
+X = np.array([(i, i**3+2) for i in np.arange(-2, 2.001, 0.001)])
+print("Distribution of original data ", X[:, 0].min(), X[:, 0].max(), 
+X[:, 1].min(), X[:, 1].max())
 \end{ipython}
 \begin{ioutput}
-Distribution of original data  -2.0 1.9989999999995596 -6.0 9.98800599899472
+Distribution of original data  -2.0 1.9999999999995595 -6.0 9.999999999994714
+\end{ioutput}
+
+\begin{ipython}
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+
+scale = MinMaxScaler()
+X = scale.fit_transform(X)
+
+print("The same data after the normalization ", X[:, 0].min(), X[:, 0].max(), 
+X[:, 1].min(), X[:, 1].max())
+
+X, X_test = train_test_split(X, test_size=0.2)
+\end{ipython}
+\begin{ioutput}
 The same data after the normalization  0.0 1.0 0.0 0.9999999999999999
 \end{ioutput}
 
@@ -188,17 +192,18 @@ In the following we will use complex networks just for illustration, but no atte
 Here two layers with 15 and 5 neurons respectively and a \texttt{tanh} activation function are used, see Fig,~\ref{fig:ann_1}. The \texttt{inputs} parameter has to be set to 1 since we have just one single input, the \texttt{x} value.
 
 \begin{ipython}
-# design the neural network model
-trainer.addInputLayer(inputs=1, neurons=15, activation='tanh')
-trainer.addHiddenLayer(neurons=5, activation='tanh')
-trainer.addOutputLayer(outputs=1)
+from keras.models import Sequential
+from keras.layers import Dense
 
-# define the loss function (mean squared error)
-# and optimization algorithm (Adam)
-trainer.compileModel(loss='mse', opt='adam')
+x = X[:, 0]
+y = X[:, 1]
+model = Sequential()
+model.add(Dense(15, input_dim=1, activation='tanh'))
+model.add(Dense(5, activation='tanh'))
+model.add(Dense(1, activation='tanh'))
 
-# fit the model on the training dataset
-trainer.fit(epochs=2000, verbose=1)
+model.compile(loss='mse', optimizer='adam')
+model.fit(x, y, epochs=2000, verbose=1)
 \end{ipython}
 \begin{ioutput}
 Epoch 1/2000
@@ -207,9 +212,10 @@ Epoch 2/2000
 3200/3200 [==============================] - 0s 6us/step - loss: 0.1498
 ...
 Epoch 1999/2000
-3200/3200 [==============================] - 0s 18us/step - loss: 8.7152e-06
+33/33 [==============================] - 0s 3ms/step - loss: 2.4495e-04
 Epoch 2000/2000
-3200/3200 [==============================] - 0s 17us/step - loss: 5.9604e-06
+33/33 [==============================] - 0s 2ms/step - loss: 2.6787e-04
+<keras.callbacks.History at 0x7efd9847df50>
 \end{ioutput}
 
 \begin{figure}[htb]
@@ -225,17 +231,21 @@ When the training is completed we can evaluate how good it is. \textbf{Usually p
 This can be done with the \texttt{evaluate()} method
 
 \begin{ipython}
-trainer.evaluate()
+eval1 = model.evaluate(x, y)
+print('Training: {}'.format(eval1))
+
+eval2 = model.evaluate(X_test[:, 0], X_test[:, 1])
+print('Test: {}'.format(eval2))
 \end{ipython}
 \begin{ioutput}
-3200/3200 [==============================] - 0s 83us/step
-Training: 6.1983578859781115e-06
-800/800 [==============================] - 0s 52us/step
-Test: 6.47684617433697e-06
+33/33 [==============================] - 0s 1ms/step - loss: 2.5985e-04
+Training: 0.0002598531427793205
+9/9 [==============================] - 0s 2ms/step - loss: 2.3215e-04
+Test: 0.00023214663087856025
 \end{ioutput}
 \noindent
 
-A \emph{perfect} prediction would have led to \(\textrm{loss}=0\) so the lower this number the better is our training. 
+A \emph{perfect} prediction would have led to \(\textrm{loss}=0\) so the lower these numbers the better is our training. 
 
 Model performance improves with the number of epochs in the training, since the NN has more chances to learn the input features. To get an idea of what is going on in Fig.~\ref{fig:training_vs_epochs} are shown the actual function we want to approximate and different predictions obtained with the same NN architecture but various number of epochs (i.e. 5, 100, 800, 5000) in the training.
 
@@ -257,7 +267,7 @@ To check for overfitting it is required to split the available sample in at leas
 %This makes sure that you don’t overfit the model. Using the validation set to choose the best model is a form of data leakage (or “cheating”) to get to pick the result that produced the best test score out of hundreds of them. Data leakage happens when information outside the training data set is used in the model.
 %In this case, our testing and validation set are the same, since we have a smaller sample size.
 
-Looking at the output of the \texttt{evaluate()} call we can compare the loss computed with the training sample to that on the testing sample. If the two numbers are comparable the NN is ok, otherwise if the loss on the training is much smaller than the testing we had overfitting.
+Looking at the output of the \texttt{evaluate()} calls we can compare the loss computed with the training sample to that on the testing sample. If the two numbers are comparable the NN is ok, otherwise if the loss on the training is much smaller than the testing we had overfitting.
 In our example since the two numbers are in good agreement we can be confident that there hasn't been overtraining.
 
 In case one would need more accuracy and had already incremented too much the number of epochs could either increase the training sample size or change the NN architecture.
@@ -279,13 +289,12 @@ from finmarkets import call_m
 
 data = []
 for r in np.arange(0.01, 0.11, 0.001):
-    for sigma in np.arange(0.1, 0.6, 0.005):
-        call_price = call_m(1, r, sigma, 1)
-        data.append({rate:r, "vol":sigma, "price":call_price])
+for sigma in np.arange(0.1, 0.6, 0.005):
+temp = {'rate':r, 'vol':sigma, 'price':call_m(1, sigma, r, 1)}
+data.append(temp)
 
 df = pd.DataFrame(data)
 df.to_csv("bs_training_sample.csv")
-print (df.describe())
 \end{ipython}
 \begin{ioutput}
 	rate           vol         price
@@ -311,43 +320,55 @@ Since it takes some time to generate data samples, it is always advisable to sav
 \end{figure}
 
 \begin{ipython}
-data = pd.read_csv("bs_training_sample.csv")
-x = data.loc[:, ['rate', 'vol']].values
-y = data.loc[:, 'price'].values
+X = scale_X.fit_transform(df[['rate', 'vol']])
+Y = scale_Y.fit_transform(df[['price']])
+	
+X, X_test, Y, Y_test = train_test_split(X, Y, test_size=0.2)
 
-trainer = FinNN("ANN")
-trainer.setData(x, y, test_size=0.20)
-trainer.normalize()
-trainer.addInputLayer(inputs=2, neurons=20, activation='relu')
-trainer.addHiddenLayer(neurons=8, activation='relu')
-trainer.addOutputLayer(outputs=1)
+model = Sequential()
+model.add(Dense(20, input_dim=2, activation='relu'))
+model.add(Dense(8, activation='relu'))
+model.add(Dense(1, activation='relu'))
 
-trainer.compileModel(loss='mse', opt='adam')
-trainer.fit(epochs=3000, batch_size=500, verbose=1)
+model.compile(loss='mse', optimizer='adam')
+model.fit(X, Y, epochs=1500, verbose=1)
 \end{ipython}
 \begin{ioutput}
-Epoch 1/3000
-8000/8000 [==============================] - 0s 16us/step - loss: 0.3216
-Epoch 2/3000
-8000/8000 [==============================] - 0s 4us/step - loss: 0.2620
+Epoch 1/1500
+250/250 [==============================] - 1s 1ms/step - loss: 0.0583
+Epoch 2/1500
+250/250 [==============================] - 0s 1ms/step - loss: 0.0042
 ...
-Epoch 2999/3000
-8000/8000 [==============================] - 0s 4us/step - loss: 3.7983e-07
-Epoch 3000/3000
-8000/8000 [==============================] - 0s 3us/step - loss: 3.6476e-07
+Epoch 1499/1500
+250/250 [==============================] - 0s 2ms/step - loss: 4.5252e-07
+Epoch 1500/1500
+250/250 [==============================] - 0s 2ms/step - loss: 4.8000e-07
+<keras.callbacks.History at 0x7efd8c4dd7d0>
 \end{ioutput}
+
 \begin{ipython}
-trainer.evaluate()
+import joblib
+
+eval1 = model.evaluate(X, Y)
+print('Training: {}'.format(eval1))
+
+eval2 = model.evaluate(X_test, Y_test)
+print('Test: {}'.format(eval2))
 
 # when the training takes some time it is useful
-# to save the model weights in a file to use it later on
-trainer.saveModel('black_scholes')
+# to save the model weights and the scalers in files to use them later
+job_name = 'bs_model'
+model.save(job_name)
+joblib.dump(scale_X, job_name + "_x_scaler.save")
+joblib.dump(scale_Y, job_name + "_y_scaler.save")
 \end{ipython}
 \begin{ioutput}
-8000/8000 [==============================] - 0s 52us/step
-Training: 5.567638540924235e-07
-2000/2000 [==============================] - 0s 44us/step
-Test: 5.582978365055169e-07
+250/250 [==============================] - 0s 1ms/step - loss: 5.9946e-07
+Training: 5.994579055368376e-07
+63/63 [==============================] - 0s 2ms/step - loss: 6.0690e-07
+Test: 6.06896833232895e-07
+INFO:tensorflow:Assets written to: bs_model/assets
+['bs_model_y_scaler.save']
 \end{ioutput}
 
 As you can see the training and testing samples give roughly the same loss value so we can be reasonably sure that there hasn't been \emph{overfitting}.
@@ -365,37 +386,45 @@ Say we want to know the price of an at the money, 1 year call when the risk-free
 \begin{ipython}
 import numpy as np
 from finmarkets import call_m
+from keras.models import load_model
 
 # here we load the trained model
-trainer.loadModel('black_scholes')
+model = load_model(job_name)
+scale_X = joblib.load(job_name + "_x_scaler.save")
+scale_Y = joblib.load(job_name + "_y_scaler.save")
 
-# this is our input vector
 rv = np.array([[0.015, 0.234]])
-# here we compare the predection with the BS call price
+X = scale_X.transform(rv)
+call_price = call_m(1, rv[0][1], rv[0][0], 1)
+prediction = model.predict(X)
+prediction = scale_Y.inverse_transform(prediction)[0][0]
 
+print ('{} => {:.4f} (expected {:.4f})'.format(rv.tolist(), prediction, call_price))
 print ('{} => {:.4f} (expected {:.4f})'.format(rv.tolist(),
-                                               trainer.predict(rv)[0][0],
-                                               call_m(1, rv[0][0], rv[0][1], 1)))
+                                               prediction,
+                                               call_price))
 \end{ipython}
 \begin{ioutput}
-[[0.015, 0.234]] => 0.1001 (expected 0.1001)
+[[0.015, 0.234]] => 0.0999 (expected 0.1001)
 \end{ioutput}
 
 It is very important to remember that a \textbf{NN cannot extrapolate}.
 Indeed if you try to predict the price of a call from rate and volatility outside the training \emph{phase space} (i.e. with values that aren't in the intervals used in the training), say \(r = 0.22\) and \(\sigma = 0.01\)\ldots{}
 
 \begin{ipython}
-# this is our input vector
-rv = np.array([[0.22, 0.01]])
+X = scale_X.transform(rv)
+call_price = call_m(1, rv[0][1], rv[0][0], 1)
+prediction = model.predict(X)
+prediction = scale_Y.inverse_transform(prediction)[0][0]
 
-# here we compare the predection with the BS call price
+print ('{} => {:.4f} (expected {:.4f})'.format(rv.tolist(), prediction, call_price))
 
 print ('{} => {:.4f} (expected {:.4f})'.format(rv.tolist(),
-                                        trainer.predict(rv)[0][0],
-                                        call(1, rv[0][0], rv[0][1], 1)))
+                                               prediction,
+                                               call_price))
 \end{ipython}
 \begin{ioutput}
-[[0.22, 0.01]] => 0.1628 (expected 0.1975)
+[[0.22, 0.01]] => 0.1583 (expected 0.1975)
 \end{ioutput}
 
 \subsection{Model Calibration}\label{model-calibration}
@@ -417,7 +446,7 @@ Volatility shifts as market goes through different regimes. Thus, historical vol
 Assume we need to estimate the \emph{implied volatility} of a security in real time. It is enough to train a NN similar to the previous one to approximate an inversion of the BS formula which returns the underlying volatility
 
 \begin{equation} 
-	\sigma = F^{-1}_\textrm{BS}(P_\textrm{call}, m, r, \mathrm{ttm})
+\sigma = F^{-1}_\textrm{BS}(P_\textrm{call}, m, r, \mathrm{ttm})
 \end{equation}
 
 In this case calibration means to determine a Black-Scholes formula parameter (the volatility) from the market prices of the options and their characteristics.
@@ -427,24 +456,23 @@ Indeed we have never made any assumption on the functional form of the relation 
 This is very convenient to estimate quantities which are otherwise complicated to compute (e.g. there is no analytic formula to get these parameters).
  
 \begin{ipython}
-data = pd.read_csv("bs_training_sample.csv")
-df = pd.concat([data.iloc[:, 1:2], data.iloc[:, 3:4]], 1))
+import pandas as pd
 
-x = df.loc[:, ['rate', 'price']].values
-y = data.loc[:, 'vol'].values
+df = pd.read_csv("bs_training_sample.csv")
+scale_X = MinMaxScaler()
+scale_Y = MinMaxScaler()
+X = scale_X.fit_transform(df[['rate', 'price']])
+Y = scale_Y.fit_transform(df[['vol']])
 
-trainer = FinNN("ANN")
-trainer.setData(x, y, test_size=0.20)
-trainer.normalize()
-trainer.addInputLayer(inputs=2, neurons=20, activation='relu')
-trainer.addHiddenLayer(neurons=8, activation='relu')
-trainer.addOutputLayer(outputs=1)
+X, X_test, Y, Y_test = train_test_split(X, Y, test_size=0.2)
 
-trainer.compileModel(loss='mse', opt='adam')
-trainer.fit(epochs=2000, verbose=1)
+model = Sequential()
+model.add(Dense(20, input_dim=2, activation='relu'))
+model.add(Dense(8, activation='relu'))
+model.add(Dense(1, activation='relu'))
 
-trainer.evaluate()
-trainer.saveModel("calibration")
+model.compile(loss='mse', optimizer='adam')
+model.fit(X, Y, epochs=1500, verbose=1)
 \end{ipython}
 \begin{ioutput}
 Epoch 1/2000
@@ -452,33 +480,55 @@ Epoch 1/2000
 Epoch 2/2000
 8000/8000 [==============================] - 0s 4us/step - loss: 0.1052
 ...
-Epoch 1999/2000
-8000/8000 [==============================] - 0s 10us/step - loss: 1.9519e-06
-Epoch 2000/2000
-8000/8000 [==============================] - 0s 10us/step - loss: 1.9708e-06
-
-8000/8000 [==============================] - 0s 61us/step
-Training: 2.0318084630162047e-06
-2000/2000 [==============================] - 0s 48us/step
-Test: 1.8580968553578714e-06
+Epoch 1499/1500
+250/250 [==============================] - 0s 2ms/step - loss: 3.8106e-07
+Epoch 1500/1500
+250/250 [==============================] - 0s 2ms/step - loss: 3.1316e-07
+<keras.callbacks.History at 0x7efd8c5dea10>
 \end{ioutput}
 
 Provided our training includes the correct call market price range we can estimate the implied volatility. For example if the risk-free rate is 2\% and the current price is 0.15 
 
 \begin{ipython}
-trainer.loadModel('calibration')
-rv = np.array([[0.02, 0.15]])
+eval1 = model.evaluate(X, Y)
+print('Training: {}'.format(eval1))
 
-print ('{} => {:.4f} (expected call price {:.4f})'.format(rv.tolist(),
-                                                   trainer.predict(rv)[0][0],
-                                                   call_m(1, 0.02, 
-                                                   trainer.predict(rv)[0][0], 1))
+eval2 = model.evaluate(X_test, Y_test)
+print('Test: {}'.format(eval2))
+
+job_name = 'calibration_model'
+model.save(job_name)
+joblib.dump(scale_X, job_name + "_x_scaler.save")
+joblib.dump(scale_Y, job_name + "_y_scaler.save")
 \end{ipython}
 \begin{ioutput}
-[[0.02, 0.15]] => 0.3565 (expected call price 0.1502)
+250/250 [==============================] - 0s 1ms/step - loss: 2.8773e-07
+Training: 2.8773044391527947e-07
+63/63 [==============================] - 0s 2ms/step - loss: 2.9526e-07
+Test: 2.9526071898544615e-07
+INFO:tensorflow:Assets written to: calibration_model/assets
+['calibration_model_y_scaler.save']
+\end{ioutput}
+
+\begin{ipython}
+job_name = 'calibration_model'
+model = load_model(job_name)
+scale_X = joblib.load(job_name + "_x_scaler.save")
+scale_Y = joblib.load(job_name + "_y_scaler.save")
+
+rv = np.array([[0.02, 0.15]])
+prediction = model.predict(scale_X.transform(rv))
+volatility = scale_Y.inverse_transform(prediction)[0][0]
+
+print ('{} => {:.4f} (expected call price {:.4f})'.format(rv.tolist(), 
+                                                          volatility, 
+                                                          call_m(1, volatility, 0.02, 1)))
+\end{ipython}
+\begin{ioutput}
+[[0.02, 0.15]] => 0.3557 (expected call price 0.1499)
 \end{ioutput}
 \noindent
-The expected call price (0.1502) derived using the implied volatility is in excellent agreement we the "market price" (0.15).
+The expected call price (0.1499) derived using the implied volatility is in excellent agreement we the "market price" (0.15).
 
 \section{Bankruptcy Prediction}
 A company faces bankruptcy when it is unable to pay off its debts. The Taiwan Economic Journal has listed the details of company bankruptcy for the years 1999 to 2009 based on the business regulations of the Taiwan Stock Exchange which is a financial institution with over 900 listed companies. The dataset includes 94 numerical attributes that help understand the possibility of bankruptcy.
@@ -623,12 +673,11 @@ The last step to prepare the dataset for the analysis is its normalization which
 \begin{ipython}
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-	
-X_train, X_test, y_train, y_test = train_test_split(X_sm, y_sm,
-                                                    test_size=0.2)
+
 scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+X_sm = scaler.fit_transform(X_sm)
+
+X_train, X_test, y_train, y_test = train_test_split(X_sm, y_sm, test_size=0.2)
 \end{ipython}
 
 %\begin{attention}
@@ -640,8 +689,7 @@ Now we can define the neural network architecture and go on with the training. A
 In computer programming, a callback is any executable code that is passed as an argument to other code; that other code is expected to execute at a given time.
 
 \begin{ipython}
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout
+from tensorflow.keras.layers import Dropout
 from tensorflow.keras.callbacks import EarlyStopping
 	
 model = Sequential()
@@ -672,9 +720,12 @@ Epoch 2/600
 330/330 [==============================] - 1s 3ms/step - loss: 0.2318 
 - val_loss: 0.2007
 ...
-330/330 [==============================] - 2s 5ms/step - loss: 0.0148 
-- val_loss: 0.0896
-Epoch 00082: early stopping
+Epoch 176/600
+330/330 [==============================] - 1s 3ms/step - loss: 0.0142 - val_loss: 0.0670
+Epoch 177/600
+330/330 [==============================] - 1s 2ms/step - loss: 0.0069 - val_loss: 0.0640
+Epoch 00177: early stopping
+<keras.callbacks.History at 0x7f07928fd150>
 \end{ioutput}
 
 \begin{ipython}
@@ -694,10 +745,10 @@ Figure~\ref{fig:bankruptcy_loss} reports the loss function values, in training a
 Performance-wise the ANN can be evaluated using the so called \emph{confusion matrix} plot shown in Figure~\ref{fig:confusion_matrix}. This is a matrix that compares the number of actual and predicted events in each category, reporting true and false predictions. In case of two classes it becomes:
 
 \begin{equation*}
-	\begin{bmatrix}
-		TP & FP \\
-		FN & TN  
-	\end{bmatrix}
+\begin{bmatrix}
+	TP & FP \\
+	FN & TN  
+\end{bmatrix}
 \end{equation*}
 \noindent
 where $TP$ are the true "positive", $FN$ false "negative" and so on.
@@ -776,59 +827,45 @@ Stacking convolutional layers prove to be very effective, and allows to learn bo
 \label{fig:conv_filters}
 \end{figure}
 
-The CNN output won't be a single number but rather a list containing the probabilities that an image belongs to each class.
+The CNN output won't be a single number but rather a list containing the probabilities that an image belongs to each class. Next we define the CNN architecture, see Fig.~\ref{fig:cnn2d}.
 
 \begin{ipython}
 import numpy as np, mnist
-from finnn import FinNN
+from keras.models import Sequential
+from keras.layers import Dense, Conv2D, MaxPooling2D, Flatten
+from tensorflow.keras.utils import to_categorical
 
-# the actual
-train_images = mnist.train_images()
-# the target
-train_labels = mnist.train_labels() # (it is a 0, 1, 2...)
+train_images = mnist.train_images() 
+train_labels = mnist.train_labels() 
 
-# no test_size option means not split the sample
-# in training and testing sets
-# (MNIST has already dont it for us)
+model = Sequential()
+model.add(Conv2D(8, kernel_size=3, input_shape=(28, 28, 1)))
+model.add(MaxPooling2D(pool_size=2))
+model.add(Flatten())
+model.add(Dense(10, activation="softmax"))
 
-trainer = FinNN("CNN2D")
-trainer.setData(train_images, train_labels)
-\end{ipython}
-\noindent
-Next we define the CNN architecture, see Fig.~\ref{fig:cnn2d}.
-
-\begin{ipython}
-# define our convolutional NN
-# we decide to apply 8 filters to the images
-# each with 3x3 pixels size
-# the input images have 28x28 pixels size instead
-trainer.addConv2DLayer(filters=8, filter_size=3, input_shape=(28, 28, 1))
-trainer.addMaxPooling2D(2)
-trainer.addFlatten()
-trainer.addCNNOutputLayer(outputs=10)
-
-trainer.compileModel(loss='categorical_crossentropy', opt='adam')
-trainer.fit(epochs=5, verbose=1)
-trainer.saveModel('digit_training')
+model.compile(loss='categorical_crossentropy', optimizer='adam')
+model.fit(train_images, to_categorical(train_labels), epochs=5, verbose=1)
 \end{ipython}
 \begin{ioutput}
 Epoch 1/5
-59999/59999 [==============================] - 13s 210us/step - loss: 2.1711
+1875/1875 [==============================] - 19s 10ms/step - loss: 2.0868
 Epoch 2/5
-59999/59999 [==============================] - 12s 201us/step - loss: 0.3964
+1875/1875 [==============================] - 18s 10ms/step - loss: 0.3320
 Epoch 3/5
-59999/59999 [==============================] - 12s 199us/step - loss: 0.2655
+1875/1875 [==============================] - 18s 10ms/step - loss: 0.2153
 Epoch 4/5
-59999/59999 [==============================] - 12s 198us/step - loss: 0.2244
+1875/1875 [==============================] - 18s 10ms/step - loss: 0.1891
 Epoch 5/5
-59999/59999 [==============================] - 12s 196us/step - loss: 0.1910
+1875/1875 [==============================] - 18s 10ms/step - loss: 0.1799
+<keras.callbacks.History at 0x7f07b05d0350>
 \end{ioutput}
 
 \begin{figure}[htb]
 \centering
 \includegraphics[width=0.9\textwidth]{figures/cnn_2d.png}
 \caption{Graphical representation of the CNN developed to recognize handwritten digits.}
-    \label{fig:cnn2d}
+\label{fig:cnn2d}
 \end{figure}
 
 \begin{attention}
@@ -859,39 +896,34 @@ The most common pooling operation are:
 Let's see how well our NN predicts \texttt{mnist} testing digits.
 
 \begin{ipython}
-trainer.loadModel('digit_training')
-# testing with mnist test sample
 test_images = mnist.test_images()
 test_labels = mnist.test_labels()
-trainer.setTestData(test_images, test_labels)
-predictions = trainer.predict(trainer.x_test[:10])
+
+predictions = model.predict(test_images[:10])
 
 print ("Tesing on MNIST digits...")
-print("Predicted: ", np.argmax(predictions, axis=1))
-print("Truth:", test_labels[:10])
-print("highest prob.:", ["{:.3f}".format(p[np.argmax(p)]) for p in predictions])
+print("Predicted: ", np.argmax(predictions, axis=1)) 
+print("Truth:     ", test_labels[:10])
 \end{ipython}
 \begin{ioutput}
 Tesing on MNIST digits...
-Predicted:  [7 2 1 0 4 1 4 4 5 9]
+Predicted:  [7 2 1 0 4 1 4 4 6 9]
 Truth: [7 2 1 0 4 1 4 9 5 9]
-highest prob.: ['1.000', '1.000', '1.000', '1.000', '1.000', '0.999', 
-'0.970', '0.900', '0.841', '0.999']
 \end{ioutput}
 
 Since the last but one digit has lower probability let's check the returned list to see which other number have non-zero probability.
 
 \begin{ipython}
-for i, p in enumerate(predictions[8])])
+for i, p in enumerate(predictions[-2])])
     print("9th digit:", ["dig {}: {:.3f}".format(i, p)
 \end{ipython}
 \begin{ioutput}
-9th digit: ['dig 0: 0.000', 'dig 1: 0.000', 'dig 2: 0.000', 'dig 3: 0.000', 
-'dig 4: 0.000', 'dig 5: 0.841', 'dig 6: 0.159', 'dig 7: 0.000', 
-'dig 8: 0.000', 'dig 9: 0.000']
+9th digit: ['dig 0: 0.0000', 'dig 1: 0.0000', 'dig 2: 0.0000', 'dig 3: 0.0000', 
+            'dig 4: 0.0000', 'dig 5: 0.0001', 'dig 6: 0.9999', 'dig 7: 0.0000', 
+            'dig 8: 0.0000', 'dig 9: 0.0000']
 \end{ioutput}
 
-So the second ranked digit is a 6 (which can be confused with a five if the lower loop is almost closed).
+%So the second ranked digit is a 6 (which can be confused with a five if the lower loop is almost closed).
 
 The NN performance can be checked using your own calligraphy. 
 
@@ -905,7 +937,7 @@ filenames = ['four.png', 'five.png']
 for f in filenames:
     test_images = np.array(transform_image(f))
 test_images = np.expand_dims(test_images, axis=3)
-predict = trainer.predict(test_images)
+predict = model.predict(test_images)
 
 print ("Tesing on custom digits...")
 print ("Predicted: ", np.argmax(predict, axis=1))
@@ -1087,27 +1119,26 @@ The training sample is made of 21600 time series (1/3 with head and shoulder pat
 
 \begin{ipython}
 import numpy as np
-from finnn import FinNN
+from keras.models import Sequential
+from keras.layers import Dense, Conv1D, Dropout, MaxPooling1D, GlobalAveragePooling1D
+from tensorflow.keras.utils import to_categorical
 
-train_labels = np.load("training_techana_labels.npy")
-train_images = np.load("training_techana_images.npy")
-trainer = FinNN("CNN1D")
-trainer.setData(train_images, train_labels)
+train_labels = np.load("/content/drive/MyDrive/finance_course/2021/lesson9/training_techana_labels.npy")
+train_images = np.load("/content/drive/MyDrive/finance_course/2021/lesson9/training_techana_images.npy")
 
-# define the CNN
-trainer.addConv1DInputLayer(filters=80, filter_size=20,
-                            input_size=(101, 1))
-trainer.addConv1DLayer(filters=80, filter_size=15)
-trainer.addMaxPooling1D(3)
-trainer.addConv1DLayer(filters=100, filter_size=10)
-trainer.addConv1DLayer(filters=100, filter_size=5)
-trainer.addGlobalAveragePooling1D()
-trainer.addDropout(0.5)
-trainer.addCNNOutputLayer(outputs=3)
+model = Sequential()
+model.add(Conv1D(filters=80, kernel_size=20, 
+activation='relu', input_shape=(101, 1)))
+model.add(Conv1D(filters=80, kernel_size=15, activation='relu')) 
+model.add(MaxPooling1D(3))
+model.add(Conv1D(filters=100, kernel_size=10, activation='relu'))
+model.add(Conv1D(filters=100, kernel_size=5, activation='relu'))
+model.add(GlobalAveragePooling1D())
+model.add(Dropout(0.5))
+model.add(Dense(3, activation='softmax'))
 
-trainer.compileModel(loss='categorical_crossentropy', opt='adam')
-trainer.fit(epochs=80)
-trainer.saveModel('techana')
+model.compile(loss='categorical_crossentropy', optimizer='adam')
+self.model.fit(train_images, to_categorical(train_labels), epochs=80)
 \end{ipython}
 \begin{ioutput}
 Epoch 1/80
@@ -1116,9 +1147,9 @@ Epoch 2/80
 - 23s 1ms/step - loss: 0.5421
 ...
 Epoch 79/80
-- 23s - loss: 0.0737
+- 26s 39ms/step - loss: 0.0699
 Epoch 80/80
-- 23s - loss: 0.0692
+- 27s 40ms/step - loss: 0.0584
 \end{ioutput}
 
 \begin{attention}
@@ -1157,8 +1188,8 @@ Figure~\ref{fig:frame_simulation} shows the "temporal frames" that have been pre
 
 \begin{ipython}
 test_images = np.load("testing_techana_frames.npy")
-trainer.loadModel("techana")
-predictions = trainer.predict(test_images)
+#model.loadModel("techana")
+predictions = model.predict(test_images)
 
 for i in range(len(predictions)):
     print (np.argmax(predictions[i]), ["{:.3f}".format(p) for p in predictions[i]])
