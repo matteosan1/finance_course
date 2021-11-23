@@ -11,7 +11,7 @@ Some notations that will be used later are
 \item
   portfolio expected return: 
   \begin{equation} 
-  	\mathbb{E}(R_{p}) = \sum _{i}w_{i} \mathbb{E}(R_{i}) = \mathbf{w}^T \mathbb{E}(\mathbf{R})=
+  	\mathbb{E}(R_{p}) = \sum _{i}w_{i} \mathbb{E}(R_{i}) = \mathbf{w}\cdot \mathbb{E}(\mathbf{R}) = \mathbf{w}^T \mathbb{E}(\mathbf{R})=
       \begin{bmatrix}
       w_1 \\ 
       w_2 \\ 
@@ -287,7 +287,7 @@ where \(w_f\) is the relative allocation to the risk-free asset.
 The calculation of this portfolio risk is simple because the standard deviation of the Treasury bill is 0\%. Thus
 
 \begin{equation*} 
-	\sigma_p = (1-w_f)\cdot \sigma_r 
+\sigma_p = (1-w_f)\cdot \sigma_r 
 \end{equation*}
 In this simple example, if an investor invested 100\% into the risk-free asset (\(w_f=1\)), the expected return would be 3\% and the risk of the portfolio would be 0\%. Otherwise, investing 100\% into the stock (\(w_f=0\)) would give an investor an expected return of 10\% and a portfolio risk of 20\%. If the investor allocated 25\% to the risk-free asset and 75\% to the risky asset, the portfolio expected return and risk calculations would be
 
@@ -297,31 +297,37 @@ In this simple example, if an investor invested 100\% into the risk-free asset (
 \noindent
 If you plot these three points they lay on a line.
 
-If we added a risk-free asset, with an expected return of 10\%, to the five risky ones considered so far we could repeat the Markowitz minimisation to determine the efficient frontier of the resulting portfolio. Notice how the objective function is almost the same as before, while the target return constraint now includes the risk-free asset.
+If we added a risk-free asset, with an expected return of 10\%, to the five risky ones considered so far we could repeat the Markowitz minimisation to determine the efficient frontier of the resulting portfolio. 
 
 \begin{ipython}
 num_assets = 6
+returns_rf = np.append(returns.values, 0.10)
+cov_rf = np.column_stack((covariances.values, np.array([0, 0, 0, 0, 0])))
+cov_rf = np.row_stack((cov_rf, np.array([0, 0, 0, 0, 0, 0])))
+print (cov_rf)
 
-def risk_with_rf(w, cov):
-    return w[:-1].T.dot(cov.dot(w[:-1]))
-
-def efficient_frontier_with_rf(w, asset_returns, target_return, risk_free):
-    portfolio_return = asset_returns.dot(w[:-1]) + risk_free*w[5]
-    return (portfolio_return - target_return)
-
-rf_asset_return = 0.10
 result_rf = []
-bounds = tuple((0, 1) for asset in range(num_assets))
-for t_return in np.arange(0.10, 0.45, 0.01):
-    constraints = ({'type': 'eq', 'fun': efficient_frontier_with_rf,
-	            'args':(returns, t_return, rf_asset_return)},
-                   {'type': 'eq', 'fun': sum_weights})
-    weights = [1./num_assets for _ in range(num_assets)]
-    opts = minimize(risk_with_rf, weights, args=(covariance),
-                    bounds=bounds, constraints=constraints)
-    result_rf.append((np.sqrt(opts.x[:-1].T.dot(covariance.dot(opts.x[:-1]))),
-                      returns.dot(opts.x[:-1])+opts.x[5]*rf_asset_return))
+
+for t_ret in np.arange(0.1, 0.4, 0.01):
+    weights = [1/n_assets for _ in range(num_assets)]
+    bounds = [(0, 1) for _ in range(num_assets)]
+    constraints = [{'type':'eq', 'fun':sum_weights},
+                   {'type':'eq', 'fun':target_return, 'args':(returns_rf, t_ret)}]
+
+    opts = minimize(risk, weights, bounds=bounds, 
+                    constraints=constraints, args=(cov_rf))
+
+    result_rf.append((np.sqrt(risk(opts.x, covariance)),
+                      returns.dot(opts.x)))
 \end{ipython}
+\begin{ioutput}
+[[0.05190222 0.02503721 0.02573699 0.02245413 0.02775968 0.        ]
+ [0.02503721 0.08583929 0.04102487 0.03950122 0.04841167 0.        ]
+ [0.02573699 0.04102487 0.06955025 0.03612685 0.04452847 0.        ]
+ [0.02245413 0.03950122 0.03612685 0.05179662 0.04038995 0.        ]
+ [0.02775968 0.04841167 0.04452847 0.04038995 0.17829826 0.        ]
+ [0.         0.         0.         0.         0.         0.        ]]
+\end{ioutput}
 
 \begin{figure}[htb]
 \centering
@@ -400,19 +406,18 @@ Let's compute the Sharpe portofolio with our sample.
 
 \begin{ipython}
 num_assets = 5
-rf_asset_return = 0.10
+rf_return = 0.10
 
-def negativeSharpeRatio(w, asset_returns, rf_asset_return, cov):
-    p_ret = asset_returns.dot(w)
-    p_var = np.sqrt(w.T.dot(cov.dot(w)))
-    ratio = -(p_ret - rf_asset_return) / p_var
-    return ratio
+def negativeSharpeRatio(w, asset_returns, cov, r0):
+    Rp = asset_returns.dot(w)
+    sigma = np.sqrt(w.T.dot(cov.dot(w)))
+    return -(Rp - r0) / sigma
 
 constraints = ({'type': 'eq', 'fun': sum_weights})
 bounds = tuple((0, 1) for asset in range(num_assets))
 weights = [1./num_assets for _ in range(num_assets)]
 opts = minimize(negativeSharpeRatio, weights,
-                args=(returns, rf_asset_return, covariance),
+                args=(returns, covariance, rf_return),
                 bounds=bounds, constraints=constraints)
 print (opts)
 print ("Sharpe ratio: ", -opts.fun)
@@ -433,7 +438,7 @@ success: True
 Sharpe ratio:  1.2577787922793253
 \end{ioutput}
 
-Figure~\ref{fig:sharpe_ratio} shows the optimization results. Notice that in general the relative proportions of the stocks are the same as in the previous case where we explicitly included a risk free asset (0.12, 0.54, 0., 0., 0.33).
+Figure~\ref{fig:sharpe_ratio} shows the optimization results. Notice that in general the relative proportions of the stocks are the same as in the previous case (at the same level of return) where we explicitly included a risk free asset (0.12, 0.54, 0., 0., 0.33).
 
 \begin{figure}[htb]
 \centering

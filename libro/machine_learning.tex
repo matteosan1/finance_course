@@ -155,7 +155,7 @@ print("Distribution of original data ", X[:, 0].min(), X[:, 0].max(),
 X[:, 1].min(), X[:, 1].max())
 \end{ipython}
 \begin{ioutput}
-Distribution of original data  -2.0 1.9999999999995595 -6.0 9.999999999994714
+Distribution of original data  -2.0 1.999999999995595 -6.0 9.99999999994714
 \end{ioutput}
 
 \begin{ipython}
@@ -372,16 +372,25 @@ INFO:tensorflow:Assets written to: bs_model/assets
 \end{ioutput}
 
 As you can see the training and testing samples give roughly the same loss value so we can be reasonably sure that there hasn't been \emph{overfitting}.
-After the training is completed we can evaluate graphically how good it is by plotting the difference between predicted and actual output as a function of the input parameters, see Fig.~\ref{fig:vol_rate}. 
+After the training is completed we can evaluate graphically how good it is by plotting the difference between predicted and actual output as a function of the input parameters, see Figure~\ref{fig:vol_rate}. 
+The gibbous structure of the relative error distribution, shown by Fig.~\ref{subfig:rel_err}, most likely can be flatten out with longer (most precise) training. The large peak in the low rate/volatility region is instead due to the decreasing price of the call; the absolute error (see Fig.~\ref{subfig:abs_err}) is indeed quite flat in that region and the decreasing price (it actually tends to zero (see Fig.~\ref{subfig:shape}) boosts the relative error.
 
-\begin{figure}[htb]
+\begin{figure}[!htp]
 \centering
-\includegraphics[width=0.7\textwidth]{figures/vol_rate}
-\caption{Mean squared error as a function of volatility and rate for our Black-Scholes function prediction.}
+\subfloat[Black-Scholes price (at-the-money call). \label{subfig:shape}]{%
+	\includegraphics[width=0.7\textwidth]{figures/bs_shape}
+	}\\[30pt]
+\subfloat[Relative error between predicted and actual price. \label{subfig:rel_err}]{%
+	\includegraphics[width=0.5\textwidth]{figures/vol_rate}
+	}
+\subfloat[Absolute errror between predicted and actual price. \label{subfig:abs_err}]{%
+    \includegraphics[width=0.5\textwidth]{figures/vol_rate_abs_err}
+	}
+\caption{Neural network performance.}
 \label{fig:vol_rate}
 \end{figure}
 
-Say we want to know the price of an at the money, 1 year call when the risk-free rate is 0.015 and the underlying volatility 0.234:
+Say we want to know the price of an at-the-money, 1 year call when the risk-free rate is 0.015 and the underlying volatility 0.234:
 
 \begin{ipython}
 import numpy as np
@@ -522,7 +531,8 @@ volatility = scale_Y.inverse_transform(prediction)[0][0]
 
 print ('{} => {:.4f} (expected call price {:.4f})'.format(rv.tolist(), 
                                                           volatility, 
-                                                          call_m(1, volatility, 0.02, 1)))
+                                                          call_m(1, volatility, 
+                                                                 0.02, 1)))
 \end{ipython}
 \begin{ioutput}
 [[0.02, 0.15]] => 0.3557 (expected call price 0.1499)
@@ -721,9 +731,11 @@ Epoch 2/600
 - val_loss: 0.2007
 ...
 Epoch 176/600
-330/330 [==============================] - 1s 3ms/step - loss: 0.0142 - val_loss: 0.0670
+330/330 [==============================] - 1s 3ms/step - loss: 0.0142 
+- val_loss: 0.0670
 Epoch 177/600
-330/330 [==============================] - 1s 2ms/step - loss: 0.0069 - val_loss: 0.0640
+330/330 [==============================] - 1s 2ms/step - loss: 0.0069 
+- val_loss: 0.0640
 Epoch 00177: early stopping
 <keras.callbacks.History at 0x7f07928fd150>
 \end{ioutput}
@@ -1101,6 +1113,8 @@ In finance \emph{technical analysis} is a discipline for forecasting the directi
 We will develop a CNN capable of classifying features in time series to be used in technical analysis (which is much faster than having somebody looking at thousands of time series by eye).
 
 The training sample is made of 21600 time series (1/3 with head and shoulder patter, 1/3 with triangle pattern and 1/3 with no pattern), see Fig~\ref{fig:patterns}. \textbf{To make the training easier the features are quite exaggerated.}
+Images and the corresponding labels for training are stored in \href{https://drive.google.com/file/d/1lx8l6MQCfBtzjdVK-qvwDxzP3Eh5eONR/view?usp=sharing}{training\_techana\_labels.npy} and
+\href{https://drive.google.com/file/d/1Vt4XJfDu6FiPGAKuEu-2m4MMCgBjY_eN/view?usp=sharing}{training\_techana\_images.npy}
 
 \begin{figure}[htbp]
 \centering
@@ -1123,8 +1137,8 @@ from keras.models import Sequential
 from keras.layers import Dense, Conv1D, Dropout, MaxPooling1D, GlobalAveragePooling1D
 from tensorflow.keras.utils import to_categorical
 
-train_labels = np.load("/content/drive/MyDrive/finance_course/2021/lesson9/training_techana_labels.npy")
-train_images = np.load("/content/drive/MyDrive/finance_course/2021/lesson9/training_techana_images.npy")
+train_labels = np.load("training_techana_labels.npy")
+train_images = np.load("training_techana_images.npy")
 
 model = Sequential()
 model.add(Conv1D(filters=80, kernel_size=20, 
@@ -1177,7 +1191,7 @@ The simulation is carried on presenting to the CNN sliding time windows
 	\item at $t_3$ between \([2, 82]\) and so on.
 \end{itemize}
 
-Figure~\ref{fig:frame_simulation} shows the "temporal frames" that have been presented to the CNN.
+Figure~\ref{fig:frame_simulation} shows the "temporal frames" that have been presented to the CNN and which are stored in \href{https://drive.google.com/file/d/1924W_OiOYmFQ53sCirG-k3FyekgUl9Wr/view?usp=sharing}{testing\_techana\_frames.npy}.
 
 \begin{figure}
 \centering
@@ -1282,6 +1296,8 @@ for k in range(2, 15):
    
     sse.append(kmeans.inertia_) 
 \end{ipython}
+ 
+The resulting graph of Fig.~\ref{fig:elbow_curve} shows that the optimal value of $k$ is 5.
 
 \begin{figure}
 \centering
@@ -1289,8 +1305,6 @@ for k in range(2, 15):
 \caption{The eblow curve for the studied example.}
 \label{fig:elbow_curve}
 \end{figure}
- 
-The resulting graph of Fig.~\ref{fig:elbow_curve} shows that the optimal value of $k$ is 5.
 
 \begin{ipython} 
 kmeans = KMeans(n_clusters = 5).fit(X)
@@ -1324,13 +1338,13 @@ centroids = kmeans.cluster_centers_
 \centering
 \includegraphics[width=0.7\textwidth]{figures/k_means_noout}
 \caption{The clustering results after the outliers removal. The black crosses show each cluster centroid.}
-\label{fig:K_means_noout}
+\label{fig:k_means_noout}
 \end{figure}
   
 Finally we will assign to each stock it correspondent number of cluster (1, 2, 3, 4,and 5) and make a \texttt{DataFrame} with this information. Having the information of cluster number for each stock, we can create a diversified portfolio in the long term, between stocks from different clusters.
 
 \begin{ipython} 
-stocks = pd.DataFrame(ret_var.index) # the dataframe structure allow concatenation
+stocks = pd.DataFrame(ret_var.index)
 cluster_labels = pd.DataFrame(kmeans.labels_)
 stockClusters = pd.concat([stocks, cluster_labels],axis = 1)
 stockClusters.columns = ['Symbol','Cluster']
