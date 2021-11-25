@@ -1,16 +1,21 @@
 \chapter{Machine Learning Applications}
 \label{ch:neural-network-apps}
 
+In this Chapter we are going to review some application of machine learning algorithms to financial problems.
+
 \section{Black-Scholes Call Option Price}
 \label{black-scholes-call-options}
 
-The first financial machine learning application concerns European call options pricing: we will implement a neural network capable of approximate the Black-Scholes pricing formula
+Neural networks can be used to approximate the Black-Scholes pricing formula for European options
 
 \begin{equation} 
 P_\textrm{call} = F_\textrm{BS}(M, r, \sigma, \mathrm{ttm})
+\label{eq:bs_moneyness}
 \end{equation}
 
-The first step consists of generating the training sample, made of volatility ($\sigma$)-rate ($r$) pairs (for simplicity we set moneyness ($M = S/K$ ) and time to maturity (ttm) to 1). The target value is the call price, computed using the BS formula.
+Eq.~\ref{eq:bs_moneyness} has been expressed as a function of the moneyness ($M = S/K$) and in order to reduce the needed number of parameters $M$ and time to maturity (ttm) will be set to 1 (i.e. we are considering at-the-money call options, expriing in 1 year). The training sample consists of rate-volatility pairs ($\sigma -r$), and the corresponding call price (computed using the BS formula) as target output.
+
+At first sight this could be seen as a useless exercise, since $F_\textrm{BS}$ is well known. In reality if we trained the NN using real market data the model would approximate the \emph{actual} relation between option characteristics and its price, including possible deviations from the simple Black-Scholes formula which cannot be analytically determined.
 
 \begin{ipython}
 import pandas as pd
@@ -36,21 +41,21 @@ df.to_csv("bs_training_sample.csv")
 	max        0.109000      0.595000      0.277071
 \end{ioutput}
 
-\textbf{Beware that this time we have TWO input parameters (rate and volatility)}. See Figure~\ref{fig:ann_2} for a graphical representation of the designed ANN.
+See Figure~\ref{fig:ann_2} for a graphical representation of the designed ANN, again no hyperparameters optimization has been attempted.
 
 \begin{figure}[htb]
 \centering
 \includegraphics[width=0.9\textwidth]{figures/ann_2.png}
-\caption{Graphical representation of the ANN used to approximate the Black and Scholes oprion price function.}
+\caption{Graphical representation of the ANN used to approximate the Black and Scholes option price function.}
 \label{fig:ann_2}
 \end{figure}
 
 \begin{ipython}
-X_scaled = scale_X.fit_transform(df[['rate', 'vol']])
+X_scaled = scale_X.fit_transform(df[['vol', 'rate']])
 Y_scaled = scale_Y.fit_transform(df[['price']])
 	
 X_train, X_test, Y_train, Y_test = train_test_split(X_scaled, 
-                                                    Y_train, test_size=0.2)
+                                                    Y_scaled, test_size=0.2)
 
 model = Sequential()
 model.add(Dense(20, input_dim=2, activation='relu'))
@@ -74,18 +79,11 @@ Epoch 1500/1500
 \end{ioutput}
 
 \begin{ipython}
-import joblib
-
 eval1 = model.evaluate(X_train, Y_train)
 print('Training: {}'.format(eval1))
 
 eval2 = model.evaluate(X_test, Y_test)
 print('Test: {}'.format(eval2))
-
-job_name = 'bs_model'
-model.save(job_name)
-joblib.dump(scale_X, job_name + "_x_scaler.save")
-joblib.dump(scale_Y, job_name + "_y_scaler.save")
 \end{ipython}
 \begin{ioutput}
 250/250 [==============================] - 0s 1ms/step - loss: 5.9946e-07
@@ -97,8 +95,8 @@ INFO:tensorflow:Assets written to: bs_model/assets
 \end{ioutput}
 
 As you can see the training and testing samples give roughly the same loss value so we can be reasonably sure that there hasn't been \emph{overfitting}.
-After the training is completed we can evaluate graphically how good it is by plotting the difference between predicted and actual output as a function of the input parameters, see Figure~\ref{fig:vol_rate}. 
-The gibbous structure of the relative error distribution, shown by Fig.~\ref{subfig:rel_err}, most likely can be flatten out with longer (most precise) training. The large peak in the low rate/volatility region is instead due to the decreasing price of the call; the absolute error (see Fig.~\ref{subfig:abs_err}) is indeed quite flat in that region and the decreasing price (it actually tends to zero (see Fig.~\ref{subfig:shape}) boosts the relative error.
+After we can evaluate graphically how good is the training by plotting the difference between predicted and target output as a function of the input parameters, see Figure~\ref{fig:vol_rate}. 
+The gibbous structure of the relative error distribution, shown by Fig.~\ref{subfig:rel_err}, most likely can be flatten out with longer (hence more precise) training. The large peak in the low rate/volatility region is instead due to the decreasing price of the call: the absolute error (see Fig.~\ref{subfig:abs_err}) is quite flat in that region and the decreasing price (it actually tends to zero there, see Fig.~\ref{subfig:shape}) boosts the relative error.
 
 \begin{figure}[!htp]
 \centering
@@ -115,44 +113,61 @@ The gibbous structure of the relative error distribution, shown by Fig.~\ref{sub
 \label{fig:vol_rate}
 \end{figure}
 
-Say we want to know the price of an at-the-money, 1 year call when the risk-free rate is 0.015 and the underlying volatility 0.234:
+When you are satisfied by the results don't forget to save the model and the scalers for later usage.
+
+\begin{ipython}
+import joblib
+
+eval1 = model.evaluate(X_train, Y_train)
+print('Training: {}'.format(eval1))
+
+eval2 = model.evaluate(X_test, Y_test)
+print('Test: {}'.format(eval2))
+
+job_name = 'bs_model'
+model.save(job_name)
+joblib.dump(scale_X, job_name + "_x_scaler.save")
+joblib.dump(scale_Y, job_name + "_y_scaler.save")
+\end{ipython}
+
+\subsection{Option Price Estimate}
+Say we want to know the price of an at-the-money, 1 year call when the risk-free rate is 0.015 and the underlying volatility 0.234. Before feeding the inputs into the neural network we need to transform them using the same scalers used before the training, otherwise the range of the inputs is not interpreted correctly by the model. Similarly the result of the prediction has to undergo the inverse transformation applied for the training to the output in order to have the actual option price.
 
 \begin{ipython}
 import numpy as np
 from finmarkets import call_m
 from keras.models import load_model
 
-# here we load the trained model
 model = load_model(job_name)
 scale_X = joblib.load(job_name + "_x_scaler.save")
 scale_Y = joblib.load(job_name + "_y_scaler.save")
 
-rv = np.array([[0.015, 0.234]])
-X = scale_X.transform(rv)
-call_price = call_m(1, rv[0][1], rv[0][0], 1)
-prediction = model.predict(X)
+vr = np.array([[0.234, 0.015]])
+prediction = model.predict(scale_X.transform(vr))
 prediction = scale_Y.inverse_transform(prediction)[0][0]
+call_price = call_m(1, vr[0][0], vr[0][1], 1)
 
-print ('{} => {:.4f} (expected {:.4f})'.format(rv.tolist(), prediction, call_price))
+print ('{} => {:.4f} (expected {:.4f})'.format(vr.tolist(), prediction, call_price))
 \end{ipython}
 \begin{ioutput}
-[[0.015, 0.234]] => 0.0999 (expected 0.1001)
+[[0.234, 0.015]] => 0.0999 (expected 0.1001)
 \end{ioutput}
 
-It is very important to remember that a \textbf{NN cannot extrapolate}.
-Indeed if you try to predict the price of a call from rate and volatility outside the training \emph{phase space} (i.e. with values that aren't in the intervals used in the training), say \(r = 0.22\) and \(\sigma = 0.01\)\ldots{}
+It is very important to remark that a \textbf{NN cannot extrapolate}. Indeed if you try to predict the price of an option from rate and volatility outside the training \emph{phase space} (i.e. with values that aren't in the intervals used in the training), say $r = 0.22$ and $\sigma = 0.01$
 
 \begin{ipython}
-X = scale_X.transform(rv)
-prediction = model.predict(X)
+vr = np.array([[0.22, 0.01]])
+prediction = model.predict(scale_X.transform(vr))
 prediction = scale_Y.inverse_transform(prediction)[0][0]
-call_price = call_m(1, rv[0][1], rv[0][0], 1)
+call_price = call_m(1, vr[0][0], vr[0][1], 1)
 
-print ('{} => {:.4f} (expected {:.4f})'.format(rv.tolist(), prediction, call_price))
+print ('{} => {:.4f} (expected {:.4f})'.format(vr.tolist(), prediction, call_price))
 \end{ipython}
 \begin{ioutput}
 [[0.22, 0.01]] => 0.1583 (expected 0.1975)
 \end{ioutput}
+
+So in this case the NN prediction is completely wrong.
 
 \section{Model Calibration}\label{model-calibration}
 
@@ -165,24 +180,21 @@ To use a certain model to solve real-world problems it is necessary to \emph{cal
 \emph{Historical volatility} is the realized volatility of an asset over a previous time period. It is determined by measuring the standard deviation of its price during that time period.
 	
 \emph{Implied volatility} is the expected future volatility of an asset that is implied by the current price of market products involving it.
-In contrast to historical volatility, which looks at prices in the past, it looks toward the future and is often interpreted as the market's expectation for the future volatility of an asset.
+In contrast to historical volatility, which looks at prices in the past, implied volatility looks toward the future and is often interpreted as the market's expectation for the future volatility of an asset.
 	
-Volatility shifts as market goes through different regimes. Thus, historical volatility may not be an accurate estimate of future. Implied volatility instead takes into account all information used by market participants to determine market prices and can give indications on the future behaviour.
+Volatility shifts as market goes through different regimes, thus, historical volatility may not be an accurate estimate of future. Implied volatility instead takes into account all information used by market participants to determine the prices and can give indications on the future behaviour.
 \end{attention}
 
-Assume we need to estimate the \emph{implied volatility} of a security in real time. For such a task is enough to train a NN similar to the previous one which is designed to approximate the following function
+Assume we need to estimate the \emph{implied volatility} of a security and that we don't know any analytic expression for it. We could train a neural network to approximate this unknown function, which is the inversion of the Black-Scholes formula returning the volatility given the option price
 
 \begin{equation} 
 \sigma = F^{-1}_\textrm{BS}(P_\textrm{call}, m, r, \mathrm{ttm})
 \end{equation}
-\noindent
-which is the inversion of the BS formula returning the volatility given the option price.
 
-In this case calibration means to determine a Black-Scholes formula parameter (the volatility) from the market prices of the options and their characteristics.
+In this case calibration means to determine one of the Black-Scholes formula parameter (the volatility) from the market prices of the options and their characteristics.
 
-The training sample created before can be re-used by swapping the dataframe columns to have in input rate and price and as target the output the volatility. 
-Indeed we have never made any assumption on the functional form of the expression to approximate but just relied on the capability of NN to learn from the dataset.
-This is very convenient to estimate quantities which are otherwise complicated to compute (i.e. there is no analytic formula to get these parameters).
+The training sample created before can be used this time by swapping its columns to have in input rate and option price and as the target output the volatility. Indeed we have never made any assumption on the functional form of the expression to approximate but just relied on the capability of NN to learn from the dataset, so this should be enough.
+This is very convenient to estimate quantities which are otherwise complicated to compute (i.e. there is no analytic formula to determine them).
  
 \begin{ipython}
 import pandas as pd
@@ -203,6 +215,12 @@ model.add(Dense(1, activation='relu'))
 
 model.compile(loss='mse', optimizer='adam')
 model.fit(X_train, Y_train, epochs=1500, verbose=1)
+
+eval1 = model.evaluate(X_train, Y_train)
+print('Training: {}'.format(eval1))
+
+eval2 = model.evaluate(X_test, Y_test)
+print('Test: {}'.format(eval2))
 \end{ipython}
 \begin{ioutput}
 Epoch 1/2000
@@ -215,18 +233,7 @@ Epoch 1499/1500
 Epoch 1500/1500
 250/250 [==============================] - 0s 2ms/step - loss: 3.1316e-07
 <keras.callbacks.History at 0x7efd8c5dea10>
-\end{ioutput}
 
-Provided our training includes the correct call market price range we can estimate the implied volatility. For example if the risk-free rate is 2\% and the current price is 0.15 
-
-\begin{ipython}
-eval1 = model.evaluate(X_train, Y_train)
-print('Training: {}'.format(eval1))
-
-eval2 = model.evaluate(X_test, Y_test)
-print('Test: {}'.format(eval2))
-\end{ipython}
-\begin{ioutput}
 250/250 [==============================] - 0s 1ms/step - loss: 2.8773e-07
 Training: 2.8773044391527947e-07
 63/63 [==============================] - 0s 2ms/step - loss: 2.9526e-07
@@ -235,12 +242,14 @@ INFO:tensorflow:Assets written to: calibration_model/assets
 ['calibration_model_y_scaler.save']
 \end{ioutput}
 
+We can now estimate the implied volatility assuming a risk-free rate of 2\% and the current option price equal to 0.15 
+
 \begin{ipython}
-rv = np.array([[0.02, 0.15]])
-prediction = model.predict(scale_X.transform(rv))
+rp = np.array([[0.02, 0.15]])
+prediction = model.predict(scale_X.transform(rp))
 volatility = scale_Y.inverse_transform(prediction)[0][0]
 
-print ('{} => {:.4f} (expected call price {:.4f})'.format(rv.tolist(), 
+print ('{} => {:.4f} (expected call price {:.4f})'.format(rp.tolist(), 
                                                           volatility, 
                                                           call_m(1, volatility, 
                                                                  0.02, 1)))
@@ -249,14 +258,15 @@ print ('{} => {:.4f} (expected call price {:.4f})'.format(rv.tolist(),
 [[0.02, 0.15]] => 0.3557 (expected call price 0.1499)
 \end{ioutput}
 \noindent
-The expected call price (0.1499) derived using the implied volatility is in excellent agreement we the "market price" (0.15).
+The expected call price derived using the estimated implied volatility (0.1499) is in excellent agreement we the market price (0.15).
 
 \section{Bankruptcy Prediction}
-A company faces bankruptcy when it is unable to pay off its debts. The Taiwan Economic Journal has listed the details of company bankruptcy for the years 1999 to 2009 based on the business regulations of the Taiwan Stock Exchange which is a financial institution with over 900 listed companies. The dataset includes 94 numerical attributes that help understand the possibility of bankruptcy.
+A company faces bankruptcy when it is unable to pay off its debts. The Taiwan Economic Journal has listed the details of company bankruptcy for the years between 1999 to 2009 based on the business regulations of the Taiwan Stock Exchange which is a local financial institution. The dataset includes 94 numerical attributes that help understand the possibility of bankruptcy.
 
-This ANN application aims at analyzing the possibility of whether an organization would face bankruptcy. Beside that a couple more concepts are analyzed in this example:
+This NN application aims at analyzing the possibility of whether an organization would face bankruptcy. This is a typical classification problem and the model output will be a number representing the probability of default of a given company.
+Beside that a couple more concepts are analyzed in this example:
 \begin{itemize}
-\item \emph{imbalanced datasets}: is a situation when there is an unequal distribution of classes in a dataset. It can be solved by either upsampling (i.e. introducing minority class samples) or downsampling (i.e. reducing majority class to match the size of minority class);
+\item \emph{imbalanced datasets}: is a situation when there is an unequal distribution of classes in a dataset. It can be solved by either up-sampling (i.e. introducing minority class samples) or down-sampling (i.e. reducing majority class to match the size of minority class);
 \item finding the best attributes to work with through feature selection (i.e. it will be shown how programatically pick the best features).
 \end{itemize}
 
@@ -264,11 +274,7 @@ The input dataset can be downloaded from \href{https://raw.githubusercontent.com
 \begin{ipython}
 import pandas as pd
 	
-data = pd.read_csv("bankruptcy_data.csv")
-pd.options.display.max_columns=100
-pd.options.display.max_rows=10
-pd.set_option('display.float_format', '{:.2f}'.format)
-	
+data = pd.read_csv("bankruptcy_data.csv")	
 print (data.head())
 \end{ipython}
 \begin{ioutput}
@@ -290,9 +296,9 @@ Working Capital to Total Assets  Quick Assets/Total Assets  \
 ...                        
 \end{ioutput}
 
-Given the very large number of available features it could be useful to remove those which present high correlation with other features and therefore cannot bring much improvement to NN performance.
+Given the very large number of available features it could be useful to remove those which present high correlation with other features in the set (i.e. are redundant) and therefore cannot bring much improvement to the NN performance.
 
-Two techniques can be used: either perform a principal component analysis on the dataset and just keep the highest ranked feature of the most significant components~\ref{sec:PCA} or compute the correlation matrix of the features, set a threshold and remove all the attributes above this value.
+Two techniques can be used: either perform a principal component analysis on the dataset and just keep the highest ranked features of the most significant component~\ref{sec:PCA} or compute the correlation matrix of the features, set a threshold, and remove all the attributes above this value.
 
 Here the latter method is used, choosing a correlation threshold of $|\rho|\geq 0.95$.
 
@@ -308,7 +314,7 @@ for i in range(len(corr_mat.columns)):
                 drop_list.setdefault(corr_mat.columns[j], []) \
                     .append(corr_mat.columns[i])
 
-for d in drop_list:
+for d in drop_list.keys():
     print (d)
 \end{ipython}
 \begin{ioutput}
@@ -331,9 +337,9 @@ Borrowing dependency
 Current Liability to Equity
 \end{ioutput}
 \noindent 
-By analysing \texttt{drop\_list} it can be checked where the maximum correlation happens.
+By analysing \texttt{drop\_list} it could also be checked where the maximum correlation happens.
 
-Those 17 attributes are highly correlated with others in the dataset, therefore they do not bring additional discrimination power to the network and can be safely discarded. To check the effect of removing columns from the dataset it should be compared the performance of the NN with and without the selected attributes, here for simplicity this step will be skipped.
+Those 17 attributes are highly correlated with others in the dataset, therefore they do not bring additional discrimination power to the network and can be safely discarded. To check the effect of removing columns from a dataset NN performance should be compared with and without the selected attributes. Here for simplicity this step will be skipped assuming there is an improvement.
 
 \begin{ipython}
 data = data.drop(drop_list, axis=1)
@@ -352,17 +358,19 @@ print (data['Bankrupt?'].value_counts())
 Name: Bankrupt?, dtype: int64
 \end{ioutput}
 
-From the above check it is apparent that the dataset is highly imbalanced. The main problem with imbalanced classification is that there are too few examples of the minority class for a model to effectively learn the decision boundary. In this case it has been decided to reduce the problem by oversampling with the Synthetic Minority Oversampling Technique (SMOT)~\cite{bib:smot}. 
+From the above check it is apparent that the dataset is highly imbalanced (i.e. large majority of companies didn't default). The main problem with imbalanced classification is that there are too few examples of the minority class for a model to effectively learn the decision boundary. 
+
+To patch this issue it has been decided to apply an oversampling method called Synthetic Minority Oversampling Technique (SMOT)~\cite{bib:smot}. 
 
 \begin{attention}
 Oversampling could be in principle achieved by simply duplicating samples from the minority class in the training dataset prior to fitting a model. This would balance the class distribution but wouldn't provide any additional information to the model since it is merely a duplication of the existing information.
 	
-An improvement to this trivial strategy is to synthesize new samples from the minority class, a type of data augmentation that can be very effective.
-SMOT algorithm works as follows: a random sample from the minority class is chosen. Then $k$ of the nearest neighbors for that sample are found (typically $k=5$) and one of them is randomly selected. Finally a synthetic sample is created at a randomly chosen point between the two samples still in the feature space.
-Figure~\ref{fig:smote} shows a graphical representation of the algorithm.
+An improvement with respect to this trivial strategy is to synthesize new samples from the minority class, a type of data augmentation that can be very effective.
 
-This procedure can be used to create as many synthetic samples for the minority class as are required. 
-The approach is effective because new synthetic samples are plausible, that is, are relatively close in feature space to existing samples from the minority class.
+SMOT algorithm works as follows: a random sample $x$ from the minority class is chosen. Then $k$ of the nearest neighbors of $x$ are found (typically $k=5$) and one of them is randomly selected. Finally a synthetic sample is created at a random point in the feature space between the two samples.
+Figure~\ref{fig:smote} shows an example of the algorithm.
+
+This procedure can be used to create as many synthetic samples for the minority class as required. The approach is effective because new synthetic samples are plausible, that is, are relatively close in feature space to existing samples from the minority class.
 
 A general downside of the approach is that synthetic samples are created without considering the majority class, possibly resulting in ambiguous samples if there is a strong overlap for the classes.
 \end{attention}
@@ -389,7 +397,7 @@ print (y_sm.value_counts())
 Name: Bankrupt?, dtype: int64
 \end{ioutput}
 
-The last step to prepare the dataset for the analysis is its normalization which is necessary since each column ranges very differently.
+The last step to prepare the dataset for the analysis is its normalization which is necessary since each feature column ranges very differently.
 
 \begin{ipython}
 from sklearn.preprocessing import StandardScaler
@@ -401,10 +409,6 @@ X_sm = scaler.fit_transform(X_sm)
 X_train, X_test, y_train, y_test = train_test_split(X_sm, y_sm, test_size=0.2)
 \end{ipython}
 
-%\begin{attention}
-%Note that the \texttt{stratify} parameter creates batches of the dataset with the same proportion between the classes. While \texttt{random\_state} set the seeds for the random number generation for simpler debugging.
-%\end{attention}
-
 Now we can define the neural network architecture and go on with the training. An early stopping \emph{callback} has been implemented in order to stop the training in case no significant improvement is observed in the last 50 epochs in terms of loss reduction.
 
 In computer programming, a callback is any executable code that is passed as an argument to other code; that other code is expected to execute at a given time.
@@ -415,11 +419,11 @@ from tensorflow.keras.callbacks import EarlyStopping
 	
 model = Sequential()
 	
-model.add(Dense(units=77, activation='relu'))
+model.add(Dense(77, activation='relu'))
 model.add(Dropout(0.3))
-model.add(Dense(units=77, activation='relu'))
+model.add(Dense(77, activation='relu'))
 model.add(Dropout(0.3))
-model.add(Dense(units=1, activation='sigmoid'))
+model.add(Dense(1, activation='sigmoid'))
 	
 model.compile(loss='binary_crossentropy', optimizer='adam')
 	
@@ -428,10 +432,13 @@ early_stop = EarlyStopping(monitor='val_loss',
                            verbose=1, 
                            patience=50)
 	
-model.fit(x=X_train, y=y_train,
+model.fit(X_train, y_train,
           epochs=600,
           validation_data=(X_test, y_test), 
           verbose=1, callbacks=[early_stop])
+          
+loss = model.history.history['loss']
+val_loss = model.history.history['val_loss']
 \end{ipython}
 \begin{ioutput}
 Epoch 1/600
@@ -451,10 +458,8 @@ Epoch 00177: early stopping
 <keras.callbacks.History at 0x7f07928fd150>
 \end{ioutput}
 
-
 \begin{attention}
 \subsubsection{Dropout}
-
 Large neural nets trained on relatively small datasets tend to overfit.
 
 In this case the model is learning the statistical noise in the training data, so it results in poor performance when the model is evaluated on new data (e.g. the test dataset).
@@ -468,11 +473,6 @@ During training, some number of layer outputs are randomly ignored or \emph{drop
 Even if it may seems counter intuitive (better training when switching off nodes) indeed dropout breaks up situations where network layers co-adapt to correct mistakes from prior layers, in turn making the model more robust.
 \end{attention}
 
-\begin{ipython}
-loss = model.history.history['loss']
-val_loss = model.history.history['val_loss']
-\end{ipython}
-
 Figure~\ref{fig:bankruptcy_loss} reports the loss function values, in training and testing samples, versus the epoch number. From the plot it is clear how there is no significant improvement after epoch 30 in the testing sample, that's why the training is stopped early.
 
 \begin{figure}[htbp]
@@ -482,7 +482,7 @@ Figure~\ref{fig:bankruptcy_loss} reports the loss function values, in training a
 \label{fig:bankruptcy_loss}
 \end{figure}
 
-Performance-wise the ANN can be evaluated using the so called \emph{confusion matrix} plot shown in Figure~\ref{fig:confusion_matrix}. This is a matrix that compares the number of actual and predicted events in each category, reporting true and false predictions. In case of two classes it becomes:
+Performance-wise a classification NN can be evaluated using the so called \emph{confusion matrix} plot shown in Figure~\ref{fig:confusion_matrix}. This is a matrix that compares the number of actual and predicted events in each category, reporting true and false predictions. In case of only two classes it becomes:
 
 \begin{equation*}
 \begin{bmatrix}
@@ -491,14 +491,14 @@ Performance-wise the ANN can be evaluated using the so called \emph{confusion ma
 \end{bmatrix}
 \end{equation*}
 \noindent
-where $TP$ are the true "positive", $FN$ false "negative" and so on.
+where $TP$ is the number of true "positive", $FN$ that of false "negative" and so on.
 
 \begin{ipython}
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 	
-ann_predictions = (model.predict(X_test) > 0.5).astype("int32")
+predictions = (model.predict(X_test) > 0.5).astype("int32")
 	
-cm = confusion_matrix(y_test, ann_predictions)
+cm = confusion_matrix(y_test, predictions)
 cmd_obj = ConfusionMatrixDisplay(cm, display_labels=['No Bankruptcy', 'Bankruptcy'])
 cmd_obj.plot()
 cmd_obj.ax_.set(title='', xlabel='Predicted', ylabel='Actual')
@@ -539,7 +539,7 @@ Since the goal was to train a neural network to predict company bankruptcy the m
 
 %\section{Model Calibration cont.}
 %\label{model-calibration-cont.}
-%
+
 %When a model has just three known parameters a convolutional neural network can be used to calibrate it.
 %
 %Consider again the Black-Scholes formula and imagine you need to calibrate: rate $r$ and volatility $\sigma$ at the same time.
@@ -658,7 +658,7 @@ Since the goal was to train a neural network to predict company bankruptcy the m
 \section{Technical Analysis}
 \label{technical-analysis}
 
-In finance \emph{technical analysis} is a discipline for forecasting the direction of prices through the study of past market data, primarily price and volume. The analyst looks for particular patterns in the price time series that are \emph{believed} to develop in a predictable way. Fig.~\ref{fig:tech_ana} shows two of such patterns.
+In finance \emph{technical analysis} is a discipline for forecasting the direction of prices through the study of past market data, primarily price and volume. The analysts look for particular patterns in the price series that are \emph{believed} to develop in a predictable way. Fig.~\ref{fig:tech_ana} shows two of such patterns.
 
 \begin{figure}[htb]
 \centering
@@ -668,10 +668,11 @@ In finance \emph{technical analysis} is a discipline for forecasting the directi
 \label{fig:tech_ana}
 \end{figure}
 
-We will develop a CNN capable of classifying features in time series to be used in technical analysis (which is much faster than having somebody looking at thousands of time series by eye).
+We will develop a (1D) CNN capable of classifying features in time series to be used in technical analysis (which is much faster than having somebody looking at thousands of time series by eye).
 
-The training sample is made of 21600 time series (1/3 with head and shoulder patter, 1/3 with triangle pattern and 1/3 with no pattern), see Fig~\ref{fig:patterns}. \textbf{To make the training easier the features are quite exaggerated.}
-Images and the corresponding labels for training are stored in \href{https://drive.google.com/file/d/1lx8l6MQCfBtzjdVK-qvwDxzP3Eh5eONR/view?usp=sharing}{training\_techana\_labels.npy} and
+The training sample is made of 21600 time series (1/3 with head and shoulder patter, 1/3 with triangle pattern and 1/3 with no pattern), for an example see Fig~\ref{fig:patterns}. Notice that to make the training easier plot features are quite exaggerated.
+
+Images and corresponding labels are stored in \href{https://drive.google.com/file/d/1lx8l6MQCfBtzjdVK-qvwDxzP3Eh5eONR/view?usp=sharing}{training\_techana\_labels.npy} and
 \href{https://drive.google.com/file/d/1Vt4XJfDu6FiPGAKuEu-2m4MMCgBjY_eN/view?usp=sharing}{training\_techana\_images.npy}
 
 \begin{figure}[htbp]
@@ -724,13 +725,13 @@ Epoch 80/80
 - 27s 40ms/step - loss: 0.0584
 \end{ioutput}
 
-The NN performance are checked simulating a real case scenario where a time series is analyzed in "real-time" with the goal of recognizing any incoming pattern (the sooner, the better). 
+CNN performance are checked by simulating incoming data in "real-time" as in a real case scenario . The goal is to recognize any pattern as soon as possible. 
 
-The simulation is carried on presenting to the CNN sliding time windows
+The simulation is carried on presenting to the CNN sliding time windows of the time series
 \begin{itemize}
-	\item at $t_1$ the input is represented by the time series point between \([0, 80]\);
-	\item at $t_2$ by the points between \([1, 81]\);
-	\item at $t_3$ between \([2, 82]\) and so on.
+	\item at $t_1$ the input is represented by the points between $[0, 80]$;
+	\item at $t_2$ by the points between $[1, 81]$;
+	\item at $t_3$ between $[2, 82]$ and so on.
 \end{itemize}
 
 Figure~\ref{fig:frame_simulation} shows the "temporal frames" that have been presented to the CNN and which are stored in \href{https://drive.google.com/file/d/1924W_OiOYmFQ53sCirG-k3FyekgUl9Wr/view?usp=sharing}{testing\_techana\_frames.npy}.
@@ -738,13 +739,12 @@ Figure~\ref{fig:frame_simulation} shows the "temporal frames" that have been pre
 \begin{figure}
 \centering
 \includegraphics[width=\textwidth]{figures/tech_ana_frames}
-\caption{Ten frames simulating closing price data incoming in real time. The CNN was tested to check if and when it would have been able to detect any pattern in data.}
+\caption{Ten frames simulating price data incoming in real time. The CNN was tested to check if and when it would have been able to detect any pattern in it.}
 \label{fig:frame_simulation}
 \end{figure}
 
 \begin{ipython}
 test_images = np.load("testing_techana_frames.npy")
-#model.loadModel("techana")
 predictions = model.predict(test_images)
 
 for i in range(len(predictions)):
@@ -763,20 +763,20 @@ for i in range(len(predictions)):
 1 ['0.000', '1.000', '0.000']
 \end{ioutput}
 \noindent
-The output represents the likelihood that the time series  belong to any category at give times. Up to $t=4$ the CNN is more about 95\% sure there is no pattern (max probability at category 0). 
-At $t=5$ the CNN starts to recognize a pattern assigning about 20\% probability to the "head and shoulders" class. For $t\geq 6$ the neural network recognizes the pattern with a probability close to 100\%.
+The output represents the likelihood that the time series belongs to any category at each time. Up to $t=4$ the CNN is about 95\% sure that there is no pattern (max probability at category 0). 
+At $t=5$ the CNN starts recognizing a pattern assigning about 20\% probability to the "head and shoulders" class. For $t\geq 6$ the neural network is about 100\% sure of the pattern.
 
 \section{Unsupervised Learning}
     
-Unsupervised learning is a type of machine learning in which the algorithm is not provided with any pre-assigned labels or scores for the training data.As a result, unsupervised learning algorithms must first self-discover any naturally occurring patterns in that training data set. 
+Unsupervised learning is a type of machine learning in which the algorithm is not provided with any pre-assigned labels or scores for the training data. As a result, unsupervised learning algorithms must self-discover any naturally occurring pattern in that training data set. 
     
-Common examples include \emph{clustering}, where the algorithm automatically groups its training examples into categories with similar features, and principal component analysis~\ref{sec:pca}, where the algorithm finds ways to compress the training data set by identifying which features are most useful for discriminating between different training examples, and discarding the rest. 
+Quite common examples of unsupervised learning are \emph{clustering}, where the algorithm automatically groups the training examples into categories with similar features, and \emph{principal component analysis}~\ref{sec:pca}, where the algorithm finds ways to compress the training data set by identifying which features are most useful for discriminating between different training examples, and discarding the rest. 
     
 \subsection{k-Means Algorithm}
     
-k-means clustering~\cite{bib:k-means} is a method of vector quantization that aims to partition (split) $n$ observations into $k$ clusters in which each observation belongs to the cluster with the nearest mean (cluster centers or cluster centroid), serving as a prototype of the cluster. 
+k-means clustering~\cite{bib:k-means} is a method of vector quantization that aims to partition (split) $n$ observations into $k$ clusters in which each observation belongs to the cluster with the nearest "mean" (cluster centers or cluster centroid). 
     
-Given a set of observations $(x_1, x_2, \ldots, x_n)$, where each observation is a $d$-dimensional real vector, the algorithm divided the $n$ observations into $k$ $(\leq n)$ sets $S = \{S_1, S_2, \ldots, S_k\}$ so as to minimize the within-cluster sum of squares (i.e. variance). Formally, the objective is to find:
+Given a set of observations $(x_1, x_2, \ldots, x_n)$, where each one is a $d$-dimensional vector, the algorithm divides the $n$ observations into $k \leq n$ sets $S = \{S_1, S_2, \ldots, S_k\}$ such to minimize the within-cluster sum of squares (i.e. variance). Formally, the objective is to find:
     
 \begin{equation}
 \underset {\mathbf {S}}{\operatorname {arg\,min} } \sum _{i=1}^{k}\sum _{\mathbf {x} \in S_{i}}\left\|\mathbf {x} -{\boldsymbol {\mu }}_{i}\right\|^{2}
@@ -786,21 +786,22 @@ where $μ_i$ is the mean of points in $S_i$.
 \subsubsection{Example}
 This example consists of clustering a dataset that contains information of all the stocks that compose the SP500 Index. 
     
-The input dataset, fetched from Yahoo Finance and stored in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/k\_mean.csv}{k\_mean.csv}, consists of the daily closing prices of each share within the interval 2018-09-20, 2021-09-20.
+The input dataset, fetched from Yahoo Finance and stored in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/k\_mean.csv}{k\_mean.csv}, is made of the daily closing prices of each share within the interval 2018-09-20, 2021-09-20.
     
-The goal of the project is to find similarities among companies in terms of return and volatility. To do this, the k-means clustering algorithm will produce labels that assign each company to different clusters.
+The goal of this study is to find similarities among companies in terms of return and volatility. To do this, the k-means clustering algorithm will assign a label, representing the clusters, to each company.
  
-The first step consists in loading the inputs and then produce a new \texttt{DataFrame} with annualized returns and volatilities for each stock. 
+The first step is loading the inputs (from \href{https://github.com/matteosan1/finance_course/blob/develop/libro/input_files/k_mean.csv?raw=true}{k\_mean.csv}) and produce a new \texttt{DataFrame} with annualized returns and volatilities for each stock. 
  
 \begin{ipython}
 import pandas as pd
  
 df = pd.read_csv("k_mean.csv", index_col='Date')
  
-returns = df.pct_change().mean() * 252
-std = df.pct_change().std() * np.sqrt(252)
+returns = df.pct_change().mean()*252
+std = df.pct_change().std()*np.sqrt(252)
  
-ret_var = pd.concat([returns, std], axis = 1).dropna()
+ret_var = pd.concat([returns, std], axis=1)
+ret_var = ret_var.dropna()
 ret_var.columns = ["Returns","Standard Deviation"]
 print (ret_var.head())
 \end{ipython}
@@ -815,14 +816,13 @@ ACN   0.152511            0.212579
 
 \subsection{Elbow Curve}
  
-In order to determine the optimal number of clusters $k$ for our dataset, we will fit different models of the k-means algorithm while varying the $k$ parameter in the range 2 to 14. For each model we calculate the Sum Squared Error (SSE) by using the \texttt{.inertia\_\_} method of the fitted model (inertia tells how far away the points within a cluster are. The smaller the inertia value the better).
+In order to determine the optimal number of clusters $k$ to look for in our dataset, we will fit different models of the k-means algorithm while varying the $k$ parameter in the range $[2, 14]$. For each model we calculate the Sum Squared Error (SSE) by using the \texttt{.inertia\_\_} method of model. "Inertia" tells how far away the points within a cluster are, the smaller the inertia the better.
  
 Each pair of values ($k$, SSE) will help to construct the \emph{Elbow Curve}~\cite{bib:elbow_curve} which can be used to determine the optimal value for $k$. 
  
 Using the "elbow" or "knee" of a curve as a cutoff point is a common heuristic in mathematical optimization to choose a point where diminishing returns are no longer worth the additional cost. In clustering, this means one should choose a number of clusters so that adding another cluster doesn't give much better modeling of the data.
  
 The intuition is that increasing the number of clusters will naturally improve the fit (explain more of the variation) since there are more parameters (more clusters) to use, but at some point this becomes over-fitting, and the elbow reflects this. 
- 
 In practice there may not be a sharp elbow, and as a heuristic method, such an "elbow" cannot always be unambiguously identified.
 
 The k-means method is implemented in the \texttt{sklearn.cluster.KMeans} class.
@@ -833,7 +833,7 @@ from sklearn.cluster import KMeans
 X =  ret_var.values 
 sse = []
 for k in range(2, 15):
-    kmeans = KMeans(n_clusters = k)
+    kmeans = KMeans(n_clusters=k)
     kmeans.fit(X)
    
     sse.append(kmeans.inertia_) 
@@ -849,7 +849,7 @@ The resulting graph of Fig.~\ref{fig:elbow_curve} shows that the optimal value o
 \end{figure}
 
 \begin{ipython} 
-kmeans = KMeans(n_clusters = 5).fit(X)
+kmeans = KMeans(n_clusters=5).fit(X)
 centroids = kmeans.cluster_centers_
 \end{ipython}
 
@@ -872,7 +872,7 @@ Then we can fit the dataset again, Fig.~\ref{fig:k_means_noout} reports the resu
 
 \begin{ipython}
 X = ret_var.values
-kmeans = KMeans(n_clusters = 5).fit(X)
+kmeans = KMeans(n_clusters=5).fit(X)
 centroids = kmeans.cluster_centers_
 \end{ipython}
  
@@ -883,19 +883,19 @@ centroids = kmeans.cluster_centers_
 \label{fig:k_means_noout}
 \end{figure}
   
-Finally we will assign to each stock it correspondent number of cluster (1, 2, 3, 4,and 5) and make a \texttt{DataFrame} with this information. Having the information of cluster number for each stock, we can create a diversified portfolio in the long term, between stocks from different clusters.
+Finally we will assign to each stock its label (1, 2, 3, 4,and 5) and make a \texttt{DataFrame} with this information. Having the information of cluster number for each stock, we can create a diversified portfolio in the long term, between stocks from different clusters.
 
 \begin{ipython} 
 stocks = pd.DataFrame(ret_var.index)
 cluster_labels = pd.DataFrame(kmeans.labels_)
-stockClusters = pd.concat([stocks, cluster_labels],axis = 1)
-stockClusters.columns = ['Symbol','Cluster']
+stockClusters = pd.concat([stocks, cluster_labels], axis=1)
+stockClusters.columns = ['Symbol', 'Cluster']
 \end{ipython}
  
 As an example the following are the stocks belonging to cluster number 0.
 
 \begin{ipython} 
-print (stockClusters.loc[stockClusters['Cluster'] == 0, 'Symbol'])
+print (stockClusters.loc[stockClusters['Cluster']==0, 'Symbol'])
 \end{ipython}
 \begin{ioutput}
 6      ADBE
@@ -916,7 +916,7 @@ Name: Symbol, Length: 145, dtype: object
 
 K-means algorithm can also be used in Natural Language Processing (NLP)~\cite{bib:nlp} which is a subfield of artificial intelligence concerned with the interactions between computers and human language, in particular copes with the analysis of large amounts of natural language data.
 
-In there words (or sentences) are transformed into a set of numbers which then can be clustered together with k-means methods for a sentiment analysis.
+In there words (or sentences) are transformed into a set of numbers which then can be clustered together with k-means methods for a sentiment analysis of the text.
  
 \begin{thebibliography}{9}
 \bibitem{bib:smot}Nitesh Chawla, et al., \emph{SMOTE: Synthetic Minority Over-sampling Technique.}, 2012
