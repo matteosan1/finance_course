@@ -54,7 +54,7 @@ cds_to_price = [{'nominal': 5000000, 'maturity':"18m", 'spread': 0.02},
                 {'nominal': 5000000, 'maturity':"184m", 'spread': 0.02},
                 {'nominal': 5000000, 'maturity':"210m", 'spread': 0.02}]
 
-cc = loadObj("prova.pkl")
+cc = loadObj("credit_curve.pkl")
 dc = loadObj("discount_curve.pkl")
 npv_cds_to_price = []
 for quote in cds_to_price:
