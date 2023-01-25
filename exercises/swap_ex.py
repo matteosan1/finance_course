@@ -32,7 +32,7 @@ r = minimize(of, x0, bounds=bounds, constraints=cons)
 print (r)
 
 obs_date = date.today()
-df = pd.read_csv('https://raw.githubusercontent.com/matteosan1/finance_course/develop/input_files/ois_quotes.csv')
+df = pd.read_csv('https://raw.githubusercontent.com/matteosan1/finance_course/master/input_files/ois_quotes.csv')
 swaps = []
 
 for i in range(len(df)):
