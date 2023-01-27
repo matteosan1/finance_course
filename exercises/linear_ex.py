@@ -7,13 +7,12 @@ closing.drop(columns='DJI', inplace=True)
 
 print (DJI.head())
 
-#DJI.index = DJI.index.strftime('%Y-%m-%d')
 model = sm.OLS(DJI[DJI.index <='2020-07-31'], closing[closing.index <='2020-07-31']).fit()
 print (model.summary())
 
 selected_columns = list(model.pvalues[model.pvalues<0.05].index)
-model_small = sm.OLS(DJI[:'2020-07-31'],
-closing[selected_columns][:'2020-07-31']).fit()
+model_small = sm.OLS(DJI[DJI.index <= '2020-07-31'],
+closing[selected_columns][closing.index <= '2020-07-31']).fit()
 print (model_small.summary())
 
 residuals = DJI-model_small.predict(closing[selected_columns])

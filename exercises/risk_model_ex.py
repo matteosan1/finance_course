@@ -29,8 +29,8 @@ print (x_b)
 
 
 from scipy.stats import lognorm, multivariate_normal, norm
-import numpy
-numpy.random.seed(1)
+import numpy as np
+np.random.seed(1)
 samples = 1000000
 l1_uncorr = lognorm(0.5).rvs(size=samples)
 l2_uncorr = lognorm(0.5).rvs(size=samples)
@@ -52,10 +52,12 @@ plt.show()
 default_6m = lognorm(0.5).cdf(.5)
 print(default_6m**2)
 
-success = 0.0
-for i in range(samples):
-    if max(x_corr[i]) < default_6m:
-        success += 1
+#success = 0.0
+#for i in range(samples):
+#    if max(x_corr[i]) < default_6m:
+#        success += 1
+
+success = len(x_corr[np.max(x_corr, axis=1) < default_6m])
 print (success/samples)
 
 

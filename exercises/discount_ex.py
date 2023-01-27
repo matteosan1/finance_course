@@ -25,44 +25,41 @@ for year in range(11):
 print ("future value: {:.1f}".format(fv))
 
 ######################
+from datetime import date
+from finmarkets import DiscountCurve
+import pandas as pd
 
-today = date(2020, 10, 15)
-dates = [date(2021, 1, 15), date(2021, 4, 15), date(2021, 7, 15),
-         date(2021, 10, 15), date(2022, 10, 15), date(2023, 10, 15),
-         date(2024, 10, 15), date(2025, 10, 15), date(2026, 10, 15),
-         date(2027, 10, 15), date(2028, 10, 15), date(2029, 10, 15),
-         date(2030, 10, 15), date(2031, 10, 15), date(2032, 10, 15),
-         date(2033, 10, 15), date(2034, 10, 15), date(2035, 10, 15),
-         date(2036, 10, 15), date(2037, 10, 15), date(2038, 10, 15),
-         date(2039, 10, 15), date(2040, 10, 15), date(2041, 10, 15),
-         date(2042, 10, 15), date(2043, 10, 15), date(2044, 10, 15),
-         date(2045, 10, 15), date(2046, 10, 15), date(2047, 10, 15),
-         date(2048, 10, 15), date(2049, 10, 15), date(2050, 10, 15)]
-yields = [-0.652548, -0.687966, -0.718319, -0.744011, -0.807362,
-          -0.822144, -0.803715, -0.763496, -0.709892, -0.649001,
-          -0.585169, -0.521425, -0.459808, -0.401628, -0.347657,
-          -0.298283, -0.253620, -0.213593, -0.178005, -0.146578,
-          -0.118993, -0.094911, -0.073989, -0.055896, -0.040317,
-          -0.026957, -0.015546, -0.005840, 0.002383, 0.009320,
-          0.015145, 0.020013, 0.024059]
+df = pd.read_csv("https://raw.githubusercontent.com/matteosan1/finance_course/develop/input_files/exercise_8.43.csv")
+print (df.head())
 
-df_dates = [date(2025, 4, 15), date(2031, 4, 15)]
+obs_date = date.today()
+df_dates = [obs_date + relativedelta(months=66),
+            obs_date + relativedelta(months=126)]
 
-num_dates = [(d-today).days for d in dates]
-target = (today+relativedelta(months=18)-today).days
-print (np.interp(target, num_dates, yields))
+num_dates = [(d.date()-obs_date).days for d in pd.to_datetime(df['dates'])]
+target = (obs_date+relativedelta(months=18)-obs_date).days
+print (np.interp(target, num_dates, df['yields']))
 
 ######################
 
 dfs = []
+dates = [d.date() for d in pd.to_datetime(df['dates'])]
 for i, d in enumerate(dates):
-    dfs.append(np.exp(-yields[i]/100*((d-today).days/365)))
-dc = DiscountCurve(dates[0], dates[1:], dfs[1:])
-print (dc.df(date(2025, 4, 15)))
-print (dc.df(date(2031, 4, 15)))
+    dfs.append(np.exp(-df['yields'][i]/100*((d-obs_date).days/365)))
+dc = DiscountCurve(obs_date, dates[1:], dfs[1:])
+print (dc.df(df_dates[0]))
+print (dc.df(df_dates[1]))
 
 ######################
+import pandas as pd
+from finmarkets import ForwardRateCurve
 
-fc = ForwardRateCurve(dates[0], dates, yields)
-print ("{:.4f}%".format(fc.forward_rate(date(2021, 10, 15),
-                                        date(2031, 10, 15))/100))
+from datetime import date
+from dateutil.relativedelta import relativedelta
+
+df = pd.read_csv("https://raw.githubusercontent.com/matteosan1/finance_course/master/input_files/exercise_8.43.csv")
+obs_date = date.today()
+
+fc = ForwardRateCurve(obs_date, dates, df['yields'])
+print ("{:.4f}%".format(fc.forward_rate(obs_date + relativedelta(years=1),
+                                        obs_date + relativedelta(years=11))/100))

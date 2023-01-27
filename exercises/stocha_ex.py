@@ -38,7 +38,7 @@ sigma = 0.17
 T = 1
 K = 105
 values = []
-for sim in range(1, 10000):
+for sim in range(1, 100):
     seed(sim)
     payoff = []
     for i in range(sim):
