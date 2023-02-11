@@ -1,0 +1,136 @@
+\begin{question}
+Assume that company A has agreed to pay a 6-month LIBOR and receive a fixed interest rate of 5.6\% per year (with interest payable every six months) from the face value of 100 million EUR. Swap is 1.5 years to expire. The interest rates for 6, 12 and 18 months are: 10\%, 10.5\% and 11\% respectively. Assume that interest rates are continuously compounded. The 6-month LIBOR is currently 10.2\%. 
+
+Calculate the value of this swap for company A.
+\end{question}
+
+\cprotEnv\begin{solution}
+\begin{ipython}
+import pandas as pd
+from finmarkets import InterestRateSwap, ForwardRateCurve, DiscountCurve
+from datetime import date
+from dateutil.relativedelta import relativedelta
+
+fixed_rate = 0.056
+tenor_fix = "6m"
+tenor_float = "6m"
+N = 100e6
+obs_date = date.today()
+start_date = obs_date 
+discount_data = pd.read_excel('discount_curve.xlsx')
+dates = [obs_date + relativedelta(months=i) for i in discount_data['months']]
+dc = DiscountCurve(obs_date, dates, discount_data.loc[:, 'dfs'])
+
+dates = [obs_date + relativedelta(months=i) for i in [0, 6, 12, 18]]
+fr = ForwardRateCurve(obs_date, dates, [0.102, 0.10, 0.105, 0.11])
+
+irs = InterestRateSwap(N, start_date, "18m", fixed_rate, tenor_float, tenor_fix)
+print ("IRS NPV: {:.2f} EUR".format(-irs.npv(dc, fr)))
+\end{ipython}
+\begin{ioutput}
+IRS NPV: 84577.81 EUR
+\end{ioutput}
+\end{solution}
+
+\begin{question}
+Suppouse that the IBOR forward rates and the discount curve are those defined in
+\href{https://github.com/matteosan1/finance_course/raw/master/input_files/euribor_curve.xlsx}{euribor\_curve.xlsx} and \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_curve.xlsx}{discount\_curve.xlsx} respectively.
+Determine the value of an option to pay a fixed rate of 4\% and receives IBOR on a 5 year swap starting in 1 year. Assume the notional is 100 EUR, the exercise date is in one year from now and the swap rate volatility is 15\%.
+\end{question}
+
+\cprotEnv\begin{solution}
+\begin{ipython}
+import pandas as pd
+from finmarkets import InterestRateSwaption, ForwardRateCurve, DiscountCurve
+from datetime import date
+from dateutil.relativedelta import relativedelta
+
+obs_date = date.today()
+start_date = obs_date + relativedelta(years=1)
+exercise_date = start_date
+discount_data = pd.read_excel('discount_curve.xlsx')
+euribor_data = pd.read_excel('euribor_curve.xlsx')
+
+
+dates = [obs_date + relativedelta(months=i) for i in discount_data['months']]
+dc = DiscountCurve(obs_date, dates, discount_data.loc[:, 'dfs'])
+
+dates = [obs_date + relativedelta(months=i) for i in euribor_data['months']]
+fr = ForwardRateCurve(obs_date, dates, euribor_data['rates'])
+
+sigma = 0.15
+rate = 0.04
+swaption = InterestRateSwaption(1e6, start_date, exercise_date,
+                                "5y", sigma, rate, "6m")
+print("Swaption NPV: {:.0f} EUR".format(swaption.payoffBS(obs_date, dc, fr)))
+\end{ipython}
+\begin{ioutput}
+Swaption NPV: 16496600 EUR
+\end{ioutput}
+\end{solution}
+
+%\begin{question}
+%A \emph{currency swap}, sometimes referred to as a cross-currency swap, involves the exchange of interest—and sometimes of principal—in one currency for the same in another currency. Interest payments are exchanged at fixed dates through the life of the contract. 
+%
+%Assume that yield curves in Japan and in the US are flat. The interest rate in Japan is equal to 4\% per annum, and in the US to 9\% per annum (with continuous compounding). A financial institution takes position in a swap contract, under which it receives 5\% on an annual basis of the amount denominated in yen and pays 8\% per annum of the amount denominated in dollars. These amounts are respectively 10 million USD and 1200 million yen. The contract is valid for 3 years and the current exchange rate is 110 USDJPY. What is the value of this currency swap?
+%
+%\textbf{Hint:} write a \texttt{CurrencySwap} class in order to valuate the swap.
+%\end{question}
+%
+%\cprotEnv\begin{solution}
+%\begin{ipython}
+%import numpy as np
+%
+%class CurrencySwap:
+%    def __init__(self, amount_for, amount_dom, r_for, r_dom,
+%                 fixed_for, fixed_dom, exchg_rate, maturity):
+%        self.amount_for = amount_for
+%        self.amount_dom = amount_dom
+%        self.r_for = r_for
+%        self.r_dom = r_dom
+%        self.fixed_for = fixed_for
+%        self.fixed_dom = fixed_dom
+%        self.exchg_rate = exchg_rate # for/dom
+%        self.maturity = maturity
+%
+%    def foreign_npv(self):
+%        b_f = 0
+%        for t in range(1, maturity+1):
+%            b_f += np.exp(-self.r_for*t)*self.fixed_for*self.amount_for
+%        b_f += np.exp(-self.r_for*t)*self.amount_for
+%        return b_f
+%
+%    def domestic_npv(self):
+%        b_d = 0
+%        for t in range(1, maturity+1):
+%            b_d += np.exp(-self.r_dom*t)*self.fixed_dom*self.amount_dom
+%        b_d += np.exp(-self.r_dom*t)*self.amount_dom
+%        return b_d
+%
+%    def value_dom(self):
+%        return self.foreign_npv()/self.exchg_rate - self.domestic_npv()
+%
+%    def value_for(self):
+%        return self.domestic_npv()*self.exchg_rate - self.foreign_npv() 
+%\end{ipython}
+%\noindent
+%\begin{ipython}
+%rf = 0.04
+%rd = 0.09
+%kf = 0.05
+%kd = 0.08
+%Nf = 1200e6
+%Nd = 10e6
+%S = 110
+%
+%cs = CurrencySwap(Nf, Nd, rf, rd, kf, kd, S)
+%print ("Domestic Value: {:.0f} USD".format(cs.value_dom()))
+%print ("Foreign Value: {:.0f} yen".format(cs.value_for()))
+%\end{ipython}
+%\begin{ioutput}
+%Domestic Value: 1542996 USD
+%Foreign Value: -169729535 yen
+%\end{ioutput}
+%
+%The swap value for the financial institution is about 1.54 million USD. If the institution paid in yen and received cash flows in dollars, the swap value would be around -1697 million yen.
+%\end{solution}

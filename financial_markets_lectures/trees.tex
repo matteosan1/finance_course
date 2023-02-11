@@ -1,0 +1,118 @@
+\chapter{Binomial Trees}
+
+%Though most of us are familiar with stocks on the stock market, we may not be quite as familiar with
+%the derivatives that are traded on similar markets. One such derivative is called an “option”. Options
+%are, essentially, the right to buy or sell a stock at a given price. These two types of options are known as
+%“call” and “put” options, respectively. For instance, I can buy a CALL option for AAPL (Apple) with
+%a strike price of $430.30 dollars and an expiration date of next Wednesday; this means that at any time
+%before next Wednesday, I can buy an AAPL stock at that price, regardless of what the price of the stock
+%(the spot price) currently is. If by next Wednesday the price has risen to $450, then I can buy for $430.30
+%and sell for $450, thus earning myself a hefty profit. A PUT option is similar, but instead of being a bet
+%on rising value, it is a bet on falling value, and allows you to sell a stock for a price higher than the spot
+%price. Options are an incredibly fundamental derivatives, with many traders using exclusively options for
+%their activities. With this in mind, a question arises very naturally: given some option, how much should
+%I be willing to pay in order to buy this option? Is the Apple CALL I described previously worth $1, or
+%$10? If Apple rising to $450 is very likely, then obviously the call must be more expensive, since it nets
+%a profit of almost $20. However, if there is no chance whatsoever that Apple will rise above $430.30, the
+%option is near-worthless.
+
+\section{Pricing Options via the Binomial Model}
+
+One algorithm for pricing options is known as the \emph{Binomial Options Pricing Model} (BOPM for
+short). It assumes that the daily continuous growth rates for the underlying stock are normally distributed
+around zero (the mean is $\alpha = 0$) with some variance $\sigma^2$. 
+
+Although these assumptions are not quite true, they are close enough to the truth in certain circumstances to be useful. Next, we assume that the stock price is a discrete-time process with some timestep $\Delta t$, and that at
+each timestep the stock price goes up by a factor of $u$ or goes down by a factor of $d = 1/u$ (since going up
+by a factor of $u$ is an increase, we enforce that $u \geq 1$ and thus $d \in [0, 1]$). 
+These two factors come from the assumption that the price is an It$\hat{o}$ process with an zero drift. Therefore, we can compute the two factors from the volatility of the underlying stock, and let
+
+\begin{equation}
+\begin{gathered}
+u = e^{\sigma\sqrt{\Delta t}}\\
+d = e^{-\sigma\sqrt{\Delta t}}
+\end{gathered}
+\end{equation}
+where $\sigma$ is the volatility and $\sqrt{\Delta t}$ is a time-adjustment factor to scale the volatility by the time step duration.
+
+Once we have computed $u$ and $d$, we can, starting at time $t = 0$, compute the possible stock prices
+at times $t = k\Delta t$ for all $k$ starting from zero and going to the expiration date of the option. We can build
+a tree with one node for each possible stock price at each time step, starting from $t = 0$ and $S = S_0$. The
+next time step $t = \Delta t$ will then have two nodes, one for $uS_0$ and one for $dS_0$. The time step afterwards
+for $t = 2\Delta t$ will have four nodes equal to $u^2 S_0$, $udS_0$, $duS_0$, and $d^2 S_0$. 
+However, note that $ud = du = 1$, which means that we can collapse the internal nodes into one (that's justify our choice for $d$). Therefore, at time $t = k\Delta t$, there will be a total of $k + 1$ nodes, because you will have prices equal to $u^i d^{(k−i)} S_0$ for every $i \in \{0, 1,\dots , k\}$.
+
+\subsection{Model Implementation}
+The ultimate goal of the binomial options pricing model is to compute the price of the option at
+each node in this tree, eventually computing the value at the root of the tree. 
+
+We begin by computing the value at the leaves, which is easy to compute, since it is simply the exercise value.
+If we let $K$ be the strike price of the option and let $S_n$ be the value of the stock at the given node, then
+the price at the given node will be
+
+\begin{equation}
+	\begin{gathered}
+C = \textrm{max} (0, Sn − K)\quad \textrm{(for a call option)}
+P = \textrm{max} (0, K − Sn)\quad \textrm{(for a put option)}
+	\end{gathered}
+\end{equation}
+
+If the call or put options are unprofitable, they will simply be allowed to expire without exercising, and
+thus will have a price of zero (will be a worthless option). You can verify these for a call option by noting
+that if the stock price is greater than the strike price, $S_n − K$ is positive, so if it is a call option you would
+be able to buy the asset for $K$ and then sell it for $S_n$, thus earning $S_n − K$ in profit.
+
+In order to proceed further, we need a method of computing the option price at the internal nodes
+of the binomial model tree. For each internal node, we compute the “binomial value”, which is the time decayed expected future payoff of the option. This is entirely logical, as if the option has an expected
+price of $\mathbb{E}[P]$ in a time step of $\Delta t$, the current price is simply equal to the backwards-discounted price of $e^{−r∆\Delta t}\mathbb{E}[P]$, where $r$ is the risk free discount rate. 
+The expected value for future option price can be computed by examining the nodes closer to the leaves; 
+if we are at some stock price $S_i$, then the two possibilities for price evolution are $u_Si$ and $dS_i$, 
+and since those are farther down the tree, we have already computed the options prices for these nodes. 
+
+Therefore, the expected value of options price in one time step is given by 
+\begin{equation}
+\mathbb{E}[P] = pC_{up} + (1 − p)C_{down}
+\end{equation}
+where $C_{up}$ and $C_{down}$ are the options prices for the nodes corresponding to the stock price going up or down in the time step and $p$ is the probability of the stock price going up. 
+
+In choosing the probability $p$ to use, we wish that $X \approx \textrm{Binom}(n, p)$ simulates the random 
+geometric Brownian motion of a stock with percentage volatility $\sigma$ and percentage drift $\mu$.
+This probability comes out to be 
+
+\begin{equation}
+	p =\cfrac{e^{r\Delta t}−d}{u−d}	
+\end{equation}
+This is known as the binomial value of the node and is a recurrence relation for computing the binomial value
+of an internal node given the options price of its children farther down the tree. Since we have a separate
+method of computing the prices of the leaves, we can then compute the binomial value of any node in the
+tree.
+
+Note that though it may be tempting to say that the binomial value is the options price, this may
+not be the case; in American style options (the type described at the start of this post), every node also
+has the option of exercising the option, so the options price is the maximum of the binomial value and
+2
+the profit garnered by exercising the option at that point in time. The profit may be assessed in exactly
+the same manner as the computation for the leaves, with two cases, one for call and one for put options.
+However, there exist European style options, where early exercise is not an option, so the binomial value
+is the options price; similarly, there exist Bermudan style options, where early exercise is only an option
+at some nodes, and only at those nodes do you choose the maximum of the potential profit and the
+binomial value. This demonstrates the flexibility of the binomial options pricing model, and concludes
+the description of the separate pieces Binomial Options Pricing Model algorithm. 
+
+
+\tikzstyle{bag} = [text width=2em, text centered]
+\tikzstyle{end} = []
+\begin{tikzpicture}[sloped]
+	\node (a) at ( 0,0) [bag] {$\$ A$};
+	\node (b) at ( 4,-1.5) [bag] {B};
+	\node (c) at ( 4,1.5) [bag] {C};
+	\node (d) at ( 8,-3) [bag] {D};
+	\node (e) at ( 8,0) [bag] {E};
+	\node (f) at ( 8,3) [bag] {F};
+	\draw [->] (a) to node [below] {$(1-p)$} (b);
+	\draw [->] (a) to node [above] {$P$} (c);
+	\draw [->] (c) to node [below] {$P^2$} (f);
+	\draw [->] (c) to node [above] {$(1-p)p$} (e);
+	\draw [->] (b) to node [below] {$(1-p)p$} (e);
+	\draw [->] (b) to node [above] {$(1-p)^2$} (d);
+\end{tikzpicture}

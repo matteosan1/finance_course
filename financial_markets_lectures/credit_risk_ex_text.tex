@@ -1,0 +1,82 @@
+\cprotEnv\begin{question}
+Applying the bootstrap technique derive the issuer credit curve of the following CDS market quotes
+\href{https://github.com/matteosan1/finance_course/raw/master/input_files/exercise_14.65.xlsx}{exercise\_14.65.xlsx}.
+The discount curve to be used can be downloaded from  \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_curve.xlsx}{discount\_curve.xlsx}:
+\end{question}
+
+\cprotEnv\begin{solution}
+
+Both the discount and credit curves have been saved to file using the \texttt{saveObj} utility of \texttt{finmarkets} such that they can be used in the next exercise.
+
+\begin{ipython}
+import pandas as pd
+from finmarkets import generate_dates, CreditDefaultSwap
+from finmarkets import CreditCurve, DiscountCurve, saveObj
+from datetime import date
+from scipy.optimize import minimize
+
+obs_date = date.today()
+cds_quotes = pd.read_excel('exercise_14.65.xlsx')
+discount_data = pd.read_excel('discount_curve.xlsx')
+dates = [obs_date + relativedelta(months=i) for i in discount_data['months']]
+dc = DiscountCurve(obs_date, dates, discount_data.loc[:, 'dfs'])
+
+cds_dates = []
+creditdefaultswaps = []
+for q in range(len(cds_quotes)):
+    creditdefswap = CreditDefaultSwap(1, obs_date, 
+                                      cds_quotes['maturity'].iloc[q], 
+                                      cds_quotes['spread'].iloc[q])
+    creditdefaultswaps.append(creditdefswap)
+    cds_dates.append(creditdefswap.payment_dates[-1])
+    
+def obj_function(unknown_ndps, obs_date, cds_dates, dc):
+    curve_c = CreditCurve(obs_date, cds_dates, unknown_ndps)
+    sum_sq = 0.0
+    for cds in creditdefaultswaps:
+        sum_sq += cds.npv(dc, curve_c) ** 2
+    return sum_sq
+
+x0_guess = [0.001 for i in range(len(creditdefaultswaps))]
+bounds_credit_curve = [(0.01, 1) for i in range(len(creditdefaultswaps))]
+results = minimize(obj_function, x0_guess, bounds=bounds_credit_curve,
+                   args=(obs_date, cds_dates, dc))
+print (results.x)
+credit_curve = CreditCurve(obs_date, cds_dates, results.x)
+saveObj("credit_curve.pkl", credit_curve)
+saveObj("discount_curve.pkl", dc)
+\end{ipython}
+\begin{ioutput}
+[0.90641296 0.80370758 0.70836204 0.49555918 0.29156774 0.06680166]
+\end{ioutput}
+\end{solution}
+
+\cprotEnv\begin{question}
+Using the \texttt{Credit\ Curve} and \texttt{DiscountCurve} found in the previous question price the CDS defined in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/exercise_14.66.xlsx}{exercise\_14.66.xlsx}.
+\end{question}
+
+\cprotEnv\begin{solution}
+\begin{ipython}
+import pandas
+from finmarkets import CreditDefaultSwap, CreditCurve, DiscountCurve, loadObj
+from datetime import date
+
+obs_date = date.today()
+cds_to_price = pd.read_excel('exercise_14.66.xlsx')
+cc = loadObj("credit_curve.pkl")
+dc = loadObj("discount_curve.pkl")
+npv_cds_to_price = []
+for q in range(len(cds_to_price)):
+    cds = CreditDefaultSwap(cds_to_price['nominal'].iloc[q], 
+                            obs_date,
+                            cds_to_price['maturity'].iloc[q], 
+                            cds_to_price['spread'].iloc[q])
+    npv_cds_to_price.append(round(cds.npv(dc, cc), 2))
+print (npv_cds_to_price)
+\end{ipython}
+\begin{ioutput}
+[-116830.83, -137319.91, -158270.54, 
+-162685.25, -217167.88, -238611.07, 
+-313501.27, -326567.29, -298467.30]
+\end{ioutput}
+\end{solution}

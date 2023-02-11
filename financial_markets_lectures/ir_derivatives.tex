@@ -1,0 +1,436 @@
+\chapter{Interest Rate Derivatives}
+\label{interest-rate-swaps-and-swaptions}
+
+In Chapter~\ref{sec:swaps-and-bootstrapping} we introduced the Overnight Index Swap, a particular type of swap. Here we describe the general Interest Rate Swap contract and see how it can underlie a Swaption, the analogous of the European options for interest rate market.
+
+\section{Interest Rate Swaps}\label{interest-rate-swaps}
+
+Interest rate swaps (IRS) consist of two legs. The floating leg pays the reference index fixing at a frequency equal to the floating rate tenor, so for example an IRS on a 3-month EURIBOR will pay a floating coupon every three months.
+The fixed leg pays a predetermined cash flow at annual frequency, regardless of the underlying floating rate tenor (for simplicity we will only consider swaps with maturities which are multiples of 1 year).
+
+The contract parameters are:
+
+\begin{itemize}
+\tightlist
+\item start date $d_0$;
+\item notional $N$;
+\item fixed rate $K$;
+\item floating rate tenor (months);
+\item maturity (years).
+\end{itemize}
+
+%\begin{finmarkets}
+%Before going into the details of the IRS valuation, we need to modify the \texttt{generate\_dates} function in \texttt{finmarkets} module to compute the payment dates for both the fixed and floating legs. 
+%The modification consists in the addition of a new input parameter, the \emph{tenor}, which was previously fixed to 12 months.
+%
+%Setting the default value of \texttt{tenor\_months} to 12 allows the new function to be \emph{backward-compatible}, meaning that old code based on its previous version will keep working, being written on the assumption of a fixed tenor of twelve months. 
+%\end{finmarkets}
+%
+%\begin{ipython}
+%from datetime import date
+%from dateutil.relativedelta import relativedelta
+%
+%def generate_dates(start_date, n_months, tenor_months=12):
+%    dates = []
+%    for n in range(0, n_months, tenor_months):
+%        dates.append(start_date + relativedelta(months=n))
+%    dates.append(start_date + relativedelta(months=n_months))
+%    return dates
+%    
+%generate_dates(date.today(), 16, 3)
+%\end{ipython}
+%\begin{ioutput}
+%[datetime.date(2020, 10, 15),
+% datetime.date(2021, 1, 15),
+% datetime.date(2021, 4, 15),
+% datetime.date(2021, 7, 15),
+% datetime.date(2021, 10, 15),
+% datetime.date(2022, 1, 15),
+% datetime.date(2022, 2, 15)]
+%\end{ioutput}
+%       
+%Using this function and the contract parameters we will be able to determine a sequence of payment dates for each leg of the IRS.
+
+\subsection{IRS Valuation}
+\label{irs-valuation}
+Let $d_0^{\mathrm{fixed}},...,d_p^{\mathrm{fixed}}$ be the fixed leg payment dates and $d_0^{\mathrm{float}},...,d_p^{\mathrm{float}}$ be the floating leg payment dates and let's use the following notation:
+
+\begin{itemize}
+\tightlist
+\item $d$ the pricing date;
+\item $D(d, d')$ the discount factor observed in date $d$ for the value date $d'$;
+\item $F(d, d', d'')$ the forward rate observed in date $d$ for the period $[d', d'']$;
+\item the tenor is $\tau = d' - d$.
+\end{itemize}
+The NPV of the fixed leg is calculated as follows:
+
+\begin{equation}
+\mathrm{NPV}_{\mathrm{fixed}}(d, K) = N\cdot K\cdot\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})
+\end{equation}
+while the NPV of the floating leg is:
+
+\begin{equation}
+\mathrm{NPV}_{\mathrm{float}}(d, F) = N\cdot\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360}
+\cdot D(d, d_{i}^{\mathrm{float}})
+\end{equation}
+
+Therefore the NPV of the swap (seen from the point of view of the counter-party which receives the floating leg) is
+
+\begin{equation}
+\mathrm{NPV}(d, F, K) = \mathrm{NPV}_{\mathrm{float}}(d, F) - \mathrm{NPV}_{\mathrm{fixed}}(d, K)
+\label{eq:irs_npv}
+\end{equation}
+
+For reasons which will become apparent later, it's actually more convenient to express the NPV of an IRS as a function of the fair value fixed rate $S$ of the IRS, also known as the \textbf{swap rate}, which is the value of $K$ which makes $\mathrm{NPV}=0$. On the basis of the previous expressions, we can easily calculate $S$ as
+
+\begin{equation}
+\begin{gathered}
+\mathrm{NPV}_{\mathrm{fixed}}(d, S) = \mathrm{NPV}_{\mathrm{float}}(d, F)\\[5pt]
+N\cdot S\cdot\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}}) = N\cdot\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360} \cdot D(d, d_{i}^{\mathrm{float}})\\[5pt]
+S=\frac{\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cdot \frac{d_{j}^{\mathrm{float}}-d_{j-1}^{\mathrm{float}}}{360}
+\cdot D(d, d_{i}^{\mathrm{float}})}{\sum_{i=1}^{n}D(d, d_i^{\mathrm{fixed}})}
+\end{gathered}
+\end{equation}
+
+Once we have calculated $S$, we can express the $\mathrm{NPV}$ of an IRS as follows:
+
+\begin{equation}
+\begin{split}&\mathrm{NPV}(d, F, K) = \mathrm{NPV}_{\mathrm{float}}(d, F) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) = \\ 
+&= \underbrace{\mathrm{NPV}_{\mathrm{float}}(d, F) - \mathrm{NPV}_{\mathrm{fixed}}(d, S)}_{\textstyle\mathrm{=0}} + \mathrm{NPV}_{\mathrm{fixed}}(d, S) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) \\ 
+& = N\cdot(S-K)\cdot\underbrace{\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})}_{\textstyle \mathrm{annuity}}
+\end{split}
+\label{eq:irs_npv2}
+\end{equation}
+
+\begin{finmarkets}
+Now we analyze the \texttt{InterestRateSwap} class which allows to valuate IRS contracts. Its attributes are all the parameters described above to define an Interest Rate Swap, also it has methods to compute the annuity, the swap rate and the NPV of the contract. 
+\end{finmarkets}
+
+\begin{ipython}
+class InterestRateSwap:
+    def __init__(self, nominal, start_date, maturity, fixed_rate, tenor):
+        self.nominal = nominal
+        self.fixed_rate = fixed_rate
+        self.fixed_leg_dates = generate_dates(start_date, maturity)
+        self.floating_leg_dates = generate_dates(start_date, maturity, tenor)
+
+    def annuity(self, dc):
+        a = 0
+        for i in range(1, len(self.fixed_leg_dates)):
+            a += dc.df(self.fixed_leg_dates[i])
+        return a
+
+    def npv(self, dc, fc):
+        S = self.swap_rate(dc, fc)
+        A = self.annuity(dc)
+        return self.nominal * (S - self.fixed_rate) * A
+
+    def swap_rate(self, discount_curve, euribor_curve):
+        num = 0
+        for j in range(1, len(self.floating_leg_dates)):
+            F = fc.forward_rate(self.floating_leg_dates[j], 
+                                self.floating_leg_dates[j-1])
+            tau = (self.floating_leg_dates[j] - \ 
+                   self.floating_leg_dates[j-1]).days / 360
+            D = dc.df(self.floating_leg_dates[j])
+            num += F * tau * D
+        return self.num(dc, fc) / self.annuity(dc)
+\end{ipython}
+
+For convenience the relevant inputs that will be used later (forward rate and discount curve definitions) have been saved in the files  \href{https://github.com/matteosan1/finance_course/raw/master/input_files/euribor_curve.xlsx}{euribor\_curve.xlsx} and \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{discount\_factors\_2022-10-05.xlsx} respectively.
+In these files the two curves are expressed with factors or rates and time deltas in months with respect to the observation date.
+
+\begin{ipython}
+import pandas as pd
+from datetime import date
+from finmarkets import DiscountCurve, ForwardRateCurve
+
+obs_date = date.today()
+
+discount_data = pd.read_excel('discount_factors_2022-10-05.xlsx')
+euribor_data = pd.read_excel('euribor_curve.xlsx')
+
+
+dates = [obs_date + relativedelta(months=i) for i in discount_data['months']]
+dc = DiscountCurve(obs_date, dates, discount_data.loc[:, 'dfs'])
+
+dates = [obs_date + relativedelta(months=i) for i in euribor_data['months']]
+fr = ForwardRateCurve(obs_date, dates, euribor_data.loc[:, 'rates']*0.01)
+
+print ("{:.3f}".format(dc.df(obs_date + relativedelta(months=15))))
+print ("{:.3f}".format(fc.forward_rate(obs_date + relativedelta(months=15), 
+                                       obs_date + relativedelta(months=22))))
+\end{ipython}
+\begin{ioutput}
+0.972
+0.026
+\end{ioutput}
+
+Let's test our class instantiating an IRS with 1~M notional, fixed rate of 5\%, 6 months tenor and a maturity of 4 years.
+
+\begin{ipython}
+start_date = obs_date + relativedelta(months=1)
+irs = InterestRateSwap(1e6, start_date, "4y", 0.023, "3m")
+print ("{:.2f} EUR".format(irs.npv(dc, fc)))
+\end{ipython}
+\begin{ioutput}
+32809.34 EUR
+\end{ioutput}
+
+\textbf{Can you guess what could be the \textbf{swap rate} given that the NPV obtained above ?}
+
+From Eq.~\ref{eq:irs_npv} and since the actual NPV values is positive it is clear that, the NPV$_{\textrm{fixed}}$ has to be increased with an higher fixed rate to balance the value of NPV$_{\textrm{float}}$.
+Alternatively looking at Eq.~\ref{eq:irs_npv2}, $N$ and the annuity are positive so has to be $S> K$ since also the left hand side NPV is positive.  
+
+\begin{ipython}
+swap_rate = irs.swap_rate(dc, fc)
+print ("{:.5f}".format(swap_rate))
+\end{ipython}
+\begin{ioutput}
+0.0317290031093413
+\end{ioutput}
+    
+To check if we have computed correctly the swap rate we can instantiate a new IRS with fixed rate equal to the just calculated swap rate and print its NPV.
+
+\begin{ipython}
+irs2 = InterestRateSwap(1e6, start_date, "4y", 0.023, "3m")
+print ("{:.2f} EUR".format(irs2.npv(dc, fc)))
+\end{ipython}
+\begin{ioutput}
+0.0 EUR
+\end{ioutput}
+\noindent
+The result will be as close to zero as the accuracy of the swap rate used in the definition of the new IRS.
+   
+\section{Inheritance Again}
+\begin{finmarkets}
+Now that we have introduced two kinds of swap we can try to make an alternative implementation of their classes, this time using inheritance.
+
+The base (or parent) class will be \texttt{GenericSwap} and it will implement just a constructor with the attributes given by the basic characteristics of a swap: notional, maturity, tenor and rate of the fixed leg.
+\end{finmarkets}
+
+\begin{ipython}
+from finmarkets import generate_dates
+
+class Swap:
+    def __init__(self, start_date, notional, rate_l1, rate_l2, 
+                 tenor_months_l1, tenor_months_l2, maturity_years):
+        self.notional = notional
+        self.rate_l1 = rate_l1
+        self.rate_l2 = rate_l2
+        self.dates_l1 = generate_dates(start_date, 12 * maturity_years, 
+                                       tenor_months_l1)
+        self.dates_l2 = generate_dates(start_date, 12 * maturity_years, 
+                                       tenor_months_l2)
+
+    def npv_l1(self, dc):
+        val = 0
+        for j in range(1, len(self.dates_l1)):
+            F = self.rate_l1.forward_rate(self.dates_l1[j], self.dates_l1[j-1])
+            tau = (self.dates_l1[j] - self.dates_l1[j-1]).days / 360
+            P = dc.df(self.dates_l1[j])
+            val += F * tau * P
+        return val
+
+    def npv_l2(self, dc):
+        val = 0
+        for i in range(1, len(self.dates_l2)):
+            tau = (self.dates_l2[i] - self.dates_2[i - 1]).days / 360
+            val += dc.df(self.dates_l2[i]) * tau
+        return self.notional * self.rate_l2 * val
+
+    def npv(self, dc):
+        return self.npv_l1(dc) - self.npv_l2(dc)
+
+class OvernightIndexSwap(Swap):
+    def npv_l1(self, dc):
+        return self.notional * (dc.df(self.dates_l1[0]) - dc.df(self.dates_l1[-1]))
+
+class InterestRateSwap(Swap):
+    def annuity(self, dc):
+        a = 0
+        for i in range(1, len(self.dates_l2)):
+            a += dc.df(self.dates_l1[i])
+        return a
+
+    def swap_rate(self, dc):
+        num = self.npv_l1(dc)
+        return num / self.annuity(dc)
+
+    def npv(self, dc):
+        S = self.swap_rate(dc)
+        A = self.annuity(dc)
+        return self.notional * (S - self.rate_l2) * A
+\end{ipython}
+\begin{finmarkets}
+This is just an example. Actually may be an overkill to use inheritance here, since there is not much code to share between the classes (the implementation of the NPV calculation is different in each of them). Anyway this is a practical application to show how it works.
+\end{finmarkets}
+
+\section{Swaptions}
+\label{interest-rate-swaptions}
+
+Swaptions are the equivalent of European options for the interest rate markets. They give the option holder the right but not the obligation to enter into an interest rate swap at a predetermined fixed rate at the exercise date $d_{ex}$.
+
+Clearly the option holder will only choose to do this if the NPV of the underlying swap at $d_{ex}$ is positive. Looking at the expression of the IRS NPV in terms of the swap rate $S$ therefore, we can see that the payoff of the swaption is
+
+\begin{equation}
+\mathrm{payoff} = N\cdot \mathrm{max}(0, S(d_{\mathrm{ex}}) - K)\cdot\sum D(d, d_i^{\mathrm{fixed}})
+\label{eq:swaption_payoff}
+\end{equation}
+
+The primary risk with a swaption occurs after you have exercised your right and proceeded with the swap. If the interest rate movements were different to your expectations, the swap might have the opposite effect to what you were trying to achieve with the transaction. In case you can however reverse or terminate the swap although you may be required to pay the bank for the residual value of the swap.
+
+It is also important to note, that if interest rates do not rise above the swaption strike on the exercise date, you have not obtained any benefit from the premium paid for the swaption purchase (the premium is the cost of obtaining protection against a rise in interest rates).
+
+\subsection{Swaption Evaluation}
+
+In order to evaluate the swaption payoff the key issue is to estimate $S(d_{\mathrm{ex}})$ and it will be done with two alternative approaches.
+
+\subsubsection{Evaluation through Black-Scholes Formula}
+\label{evaluation-through-black-scholes-formula}
+
+In this case, to evaluate the swaption NPV, we are going to use (but not to derive) a generalization of the Black-Scholes formula
+
+\begin{equation}
+\mathrm{payoff} = N\cdot A\cdot [S \Phi(d_+) - K\Phi(d_-)]
+\end{equation}
+where $\Phi$ represents the cumulative distribution function of the normal distribution and
+
+\begin{equation}
+\begin{gathered}
+d_{\pm} = \frac{\mathrm{log}(\frac{S}{K}) \pm \frac{1}{2}\sigma^{2}T}{\sigma\sqrt{T}}\qquad(\sigma~\textrm{is the volatility of the swap rate})\\
+A = \sum_{i=1}^{p}D(d, d_{i}^{\mathrm{fixed}})\qquad\mathrm{(annuity})
+\end{gathered}
+\end{equation}
+
+\begin{finmarkets}
+The \texttt{finmarkets} module has a class, \texttt{InterestRateSwaption}, capable of valuing swaptions both with Monte Carlo simulation and Black-Scholes formula. As usual its attributes are the parameters needed to define the swaption itself and the underlying IR swap. First we are going to review the method to compute the NPV with the analytic closed form given by the Black-Scholes formula. It is quite simple since it just takes as input the pricing date and the discount and forward curves needed to evaluate $d_{\pm}$, the annuity and other underlying related quantities are computed through the relevant InterestRateSwap methods instead.
+\end{finmarkets}
+
+\begin{ipython}
+import numpy as np
+from scipy.stats import norm 
+from finmarkets import InterestRateSwap
+
+class InterestRateSwaption:
+    def __init__(self, nominal, start_date, exercise_date, maturity,
+                 volatility, fixed_rate, tenor):
+        self.irs = InterestRateSwap(nominal, start_date, maturity, fixed_rate, tenor)
+        self.exercise_date = exercise_date
+        self.sigma = volatility
+        
+    def payoffBS(self, obs_date, dc, fc):
+        T = (self.exercise_date - obs_date).days/365
+        N = self.irs.nominal
+        K = self.irs.fixed_rate
+        S = self.irs.swap_rate(dc, fc)
+        A = self.irs.annuity(dc)
+        dp = (np.log(S/K) + 0.5*self.sigma**2*T)/(self.sigma*np.sqrt(T))
+        dm = (np.log(S/K) - 0.5*self.sigma**2*T)/(self.sigma*np.sqrt(T))
+        return N*A*(S*norm.cdf(dp)-K*norm.cdf(dm))
+\end{ipython}
+
+As an example let's consider a swaption whose underlying 6M-IRS has a notional of 1~M, fixed rate of 5\%, and a maturity of 4 years. In addition we assume a volatility associated to the swap rate of 7\%.
+
+\begin{ipython}
+obs_date = date.today()
+start_date = obs_date + relativedelta(years=1)
+exercise_date = start_date
+volatility = 0.15
+swaption = InterestRateSwaption(1e6, start_date, exercise_date, "4y",
+                                volatility, 0.023, "3m")
+price_bs = swaption.payoffBS(obs_date, dc, fr)
+print ("{:.2f} EUR".format(price_bs))
+\end{ipython}
+\begin{ioutput}
+33598.66 EUR
+\end{ioutput}
+
+\subsubsection{Evaluation through Monte Carlo Simulation}
+\label{evaluation-through-monte-carlo-simulation}
+
+In this second case we start from the current swap rate $S(d)$ evaluated at the pricing date $d$ and assume that it follows a log-normal stochastic process with zero drift, i.e. its distribution at $d_{\mathrm{ex}}$ (exercise date) is 
+
+\begin{equation*}
+S(d_{\mathrm{ex}}) = S(d)\mathrm{exp}(-\frac{1}{2}\sigma^{2}T+\sigma Z\sqrt{T})
+\end{equation*}
+\noindent
+where $Z\approx\mathcal{N}(0,1)$. %This assumption is not correct since we know that interest rate follows different processes, but it is ok for illustrative purposes. 
+
+\begin{finmarkets}
+The \texttt{InterestRateSwaption} class is extended with another method to calculare the NPV using MC simulation.
+The algorithm works as follows
+
+\begin{itemize}
+\tightlist
+\item sample the normal distribution $\mathcal{N}(0, 1)$ to calculate a large number of scenarios for $S(d_{\mathrm{ex}})$;
+\item evaluate the underlying swap's NPV at the expiry date, and consequently the swaption's payoff, for each scenario;
+\item take the average of these values to get the final estimate.
+\end{itemize}
+\end{finmarkets}
+
+\begin{ipython}
+import numpy as np
+from numpy.random import normal, seed
+from scipy.stats import norm 
+
+class InterestRateSwaption:
+    ...
+    def payoffMC(self, obs_date, dc, fr):
+        T = (self.exercise_date - obs_date).days/365
+        n_scenarios = 100000
+        payoffs = []
+        S0 = self.irs.swap_rate(dc, fr)
+        for _ in range(n_scenarios):
+            S = S0 * np.exp(-self.sigma**2/2*T + \
+                            self.sigma*np.random.normal()*np.sqrt(T))
+            payoff = self.irs.nominal*max(0, S - \
+                                          self.irs.fixed_rate)*self.irs.annuity(dc)
+            payoffs.append(payoff)
+        payoff = np.mean(payoffs)
+        interval = 1.96*np.std(payoffs)/np.sqrt(n_scenarios)
+        return payoff, interval
+\end{ipython}
+
+Using the 95\% confidence interval defined in Sec.~\ref{sec:confidence_interval} it can be checked whether the Monte Carlo estimate of the swaption payoff is in agreement with what computed using the Black-Scholes formula.
+
+\begin{ipython}
+seed(1)
+swaption = InterestRateSwaption(1e6, start_date, exercise_date, "4y",
+                                volatility, 0.023, "3m")
+price_mc, interval = swaption.payoffMC(obs_date, dc, fr)
+print ("MC: {:.2f} +- {:.2f} EUR".format(price_mc, interval))
+
+price_bs = swaption.payoffBS(obs_date, dc, fr)
+print ("BS: {:.2f} EUR".format(price_bs))
+\end{ipython}
+\begin{ioutput}
+MC: 33687.63 +- 109.33 EUR
+BS: 33598.66 EUR
+\end{ioutput}
+
+The NPV calculated via the Black-Scholes formula falls well within the confidence interval of the Monte Carlo simulation:
+
+\begin{itemize}
+\tightlist
+\item Swaption NPV (BS): 33598 EUR
+\item Swaption NPV (MC): 33687 $\pm$ 109 EUR
+\end{itemize}
+so we can assert the two estimates are in agreement at the 95\% confidence level.
+
+%Note that this is not \emph{strictly speaking} the correct way of
+%calculating the swaption NPV, the reason being that one should calculate
+%the swap NPV at the expiry date of the swaption, apply the payoff
+%function max(0, \ldots{}) and \emph{then} discount from the expiry date
+%to today.
+%
+%However, it's simpler to calculate it as above and it doesn't make any
+%difference for the result, since
+%\[ DF\cdot \mathrm{max}(0, \mathrm{SwapNPVAtExpiry}) = \mathrm{max}(0, DF \cdot\mathrm{SwapNPVAtExpiry}) \]
+
+\section*{Exercises}
+\input{ir_derivatives_ex_text}
+
+\begin{thebibliography}{9}
+\bibitem{bib:black_scholes_swaption} G. West and L. West, \href{http://janroman.dhis.org/finance/Black/IntroToBlack.pdf}{\emph{Introduction to Black's Model for Interest Rate Derivatives}}, Financial Modelling Agency [Online]
+\end{thebibliography}
