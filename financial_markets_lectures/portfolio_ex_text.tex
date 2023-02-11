@@ -1,0 +1,269 @@
+\begin{question}
+One of the approaches to finding the optimal point on the efficient frontier for a given investor is to maximize the investor's utility ($U$). This is a measure of how much benefit investors obtain from portfolio performance. Utility is a measure of relative satisfaction that an investor derives from different portfolios. Utility is a function of the portfolio expected return, the portfolio variance and a measure of risk aversion
+
+\begin{equation*}
+U = \mathbb{E}(R_{p}) - \frac{1}{2}A\sigma^2
+\end{equation*}
+where $U$ = utility, $\mathbb{E}(R)$ = portfolio expected return, $A$ = risk aversion coefficient and $\sigma^2$ = portfolio variance.
+In determining the risk aversion ($A$), we measure the marginal reward an investor needs in order to take on more risk. A risk-averse investor will need a high margin reward for taking on more risk. The utility equation shows the following:
+\begin{itemize}
+\tightlist
+\item $U$ can be positive or negative, i.e. it is unbounded;
+\item high returns add to utility;
+\item high variance reduces utility;
+\item $U$ does not measure satisfaction but can be used to rank portfolios.
+\end{itemize}
+
+The risk aversion coefficient, $A$, ranges between 1 and 10 (1 for the aggressive investor, 4 for the moderate investor, and 10 for the risk-averse investor.
+
+Given the historical series in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/share_price.csv}{share\_prices.csv} find the best portfolio for aggressive, moderate and risk-averse investors.
+
+\end{question}
+
+\cprotEnv \begin{solution}
+\begin{ipython}
+import pandas as pd
+df = pd.read_csv("share_prices.csv", index_col='Date')
+daily_returns = df.pct_change()
+returns = daily_returns.mean()*252
+covariance = daily_returns.cov()*252
+
+print (returns)
+print (covariance)
+\end{ipython}
+\begin{ioutput}
+CHD     0.062666
+COST    0.247429
+CTRE    0.165151
+ENTR    0.002445
+HI      0.223906
+LDOS    0.075464
+TDS    -0.003953
+TMUS    0.283815
+UEC     0.999521
+WM      0.163298
+dtype: float64
+
+           CHD     COST       CTRE      ENTR        HI      LDOS       TDS
+CHD   0.067815  0.036114  0.016454  0.022583  0.022301  0.029738  0.032921   
+COST  0.036114  0.073004  0.031599  0.049279  0.034606  0.034481  0.034043   
+CTRE  0.016454  0.031599  0.313706  0.074262  0.136719  0.068927  0.088424   
+ENTR  0.022583  0.049279  0.074262  0.113892  0.062266  0.043155  0.040843   
+HI    0.022301  0.034606  0.136719  0.062266  0.202751  0.068284  0.097420   
+LDOS  0.029738  0.034481  0.068927  0.043155  0.068284  0.110635  0.059296   
+TDS   0.032921  0.034043  0.088424  0.040843  0.097420  0.059296  0.185842   
+TMUS  0.026069  0.042121  0.073199  0.055806  0.057519  0.046704  0.068516   
+UEC   0.045100  0.099269  0.164647  0.147985  0.165341  0.096700  0.143037   
+WM    0.034987  0.034676  0.049294  0.034555  0.057760  0.047310  0.048338   
+...
+\end{ioutput}
+\begin{ipython}
+import numpy as np
+from scipy.optimize import minimize
+
+def sum_weights(w): 
+    return np.sum(w) - 1
+
+def utility(w, returns, cov, risk_aversion):
+    return -(returns.dot(w) - 0.5*w.T.dot(cov.dot(w))*risk_aversion)
+
+num_assets = 10
+constraints = [{'type': 'eq', 'fun': sum_weights},] 
+bounds = tuple((0, 1) for _ in range(num_assets))
+weights = [1./num_assets for _ in range(num_assets)]
+
+for risk_aversion in (1, 4, 10):
+  opts = minimize(utility, weights, args=(returns, covariance, risk_aversion),
+                bounds=bounds, constraints=constraints)
+  for i, c in enumerate(df.columns):
+    print ("{} {:.1f}".format(c, opts.x[i]*100), end=" ")
+  print()
+  print ("Expected return: {:.3f}".format(opts.x.dot(returns)))
+  print ("Variance: {:.3f}".format(opts.x.T.dot(covariance.dot(opts.x))))
+\end{ipython}
+\begin{ioutput}
+# aggressive
+CHD 0.0 COST 0.0 CTRE 0.0 ENTR 0.0 HI 0.0 LDOS 0.0 TDS 0.0 TMUS 12.8 UEC 87.2 WM 0.0 
+Expected return: 0.908
+Variance: 0.734
+
+# moderate
+CHD 0.0 COST 47.2 CTRE 0.0 ENTR 0.0 HI 0.0 LDOS 0.0 TDS 0.0 TMUS 33.1 UEC 18.3 WM 1.4 
+Expected return: 0.396
+Variance: 0.104
+
+# risk averse
+CHD 7.1 COST 40.2 CTRE 0.0 ENTR 0.0 HI 1.3 LDOS 0.0 TDS 0.0 TMUS 22.7 UEC 4.1 WM 24.6 
+Expected return: 0.252
+Variance: 0.055
+\end{ioutput}
+\end{solution}
+
+\begin{question}
+Your are portfolio manager and one of your clients is asking to design her investment in order to reduce at the minimum the risk. Her position involves these shares: 'TMUS', 'TDS', 'ENTR', 'UEC', 'WM', 'CTRE', 'LDOS', 'COST', 'CHD', 'HI'.
+Find the weights corresponding to each asset.
+
+\noindent\textbf{Hint:} the historical series of the corresponding companies are stored in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/share_price.csv}{share\_prices.csv}.
+
+\end{question}
+
+\cprotEnv \begin{solution}
+\begin{ipython}
+import pandas as pd
+df = pd.read_csv("share_prices.csv", index_col='Date')
+
+daily_returns = df.pct_change()
+returns = daily_returns.mean()*252
+covariance = daily_returns.cov()*252
+\end{ipython}
+\begin{ipython}
+import numpy as np
+from scipy.optimize import minimize
+
+def sum_weights(w):
+    return np.sum(w) - 1
+
+def min_risk(w, cov):
+    return np.sqrt(w.T.dot(cov.dot(w)))
+
+num_assets = 10
+constraints = ({'type': 'eq', 'fun': sum_weights},)
+bounds = tuple((0, 1) for asset in range(num_assets))
+weights = [1./num_assets for _ in range(num_assets)]
+opts = minimize(min_risk, weights, args=(covariance,),
+                bounds=bounds, constraints=constraints)
+
+print (opts)
+\end{ipython}
+\begin{ioutput}
+     fun: 0.20887087318996655
+     jac: array([0.2088003 , 0.20897953, 0.20895358, 0.20911743, 0.21106115,
+                 0.20858843, 0.20914311, 0.20901022, 0.40519709, 0.20881298])
+ message: 'Optimization terminated successfully'
+    nfev: 110
+     nit: 10
+    njev: 10
+  status: 0
+ success: True
+       x: array([3.33744344e-01, 1.68530140e-01, 8.18977235e-03, 9.91808728e-02,
+                 0.00000000e+00, 7.10377889e-02, 6.05724516e-03, 8.44657341e-02,
+                 3.89635156e-20, 2.28794102e-01])
+\end{ioutput}
+\begin{ipython}
+print ("Portfolio composition")
+for i, n in enumerate(df.columns):
+    print ("{:5}: {:4.1f}%".format(n, opts.x[i]*100))
+print ("Portfolio variance: {:.4f}".format(opts.fun**2))
+print ("Expected Portfolio return: {:.3f}".format(opts.x.dot(returns)))
+\end{ipython}
+\begin{ioutput}
+Portfolio composition
+CHD  : 33.4%
+COST : 16.9%
+CTRE :  0.8%
+ENTR :  9.9%
+HI   :  0.0%
+LDOS :  7.1%
+TDS  :  0.6%
+TMUS :  8.4%
+UEC  :  0.0%
+WM   : 22.9%
+Portfolio variance: 0.0436
+Expected Portfolio return: 0.131
+\end{ioutput}
+\end{solution}
+
+%\begin{question}[title={(Return Allocation Portfolio)}]
+%After few months the same client of the previous question, contacted you again asking for larger returns. In particular she would like to increase it by 40\%.
+%Find the new portfolio composition that makes your client happy.
+%\end{question}
+%\begin{solution}
+%\begin{tcolorbox}[size=fbox, boxrule=1pt, colback=cellbackground, colframe=cellborder]
+%\begin{Verbatim}[commandchars=\\\{\}]
+%\PY{k}{def} \PY{n+nf}{efficient\PYZus{}frontier}\PY{p}{(}\PY{n}{w}\PY{p}{,} \PY{n}{asset\PYZus{}returns}\PY{p}{,} \PY{n}{target\PYZus{}return}\PY{p}{)}\PY{p}{:} 
+%    \PY{n}{portfolio\PYZus{}return} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{asset\PYZus{}returns} \PY{o}{*} \PY{n}{w}\PY{p}{)} 
+%    \PY{k}{return} \PY{p}{(}\PY{n}{portfolio\PYZus{}return} \PY{o}{\PYZhy{}} \PY{n}{target\PYZus{}return}\PY{p}{)}
+%		
+%\PY{n}{results} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+%\PY{n}{bounds} \PY{o}{=} \PY{n+nb}{tuple}\PY{p}{(}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mi}{1}\PY{p}{)} \PY{k}{for} \PY{n}{asset} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{)}
+%\PY{n}{target} \PY{o}{=} \PY{l+m+mf}{0.172}\PY{o}{*}\PY{l+m+mf}{1.4}
+%\PY{n}{constraints} \PY{o}{=} \PY{p}{(}\PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{efficient\PYZus{}frontier}\PY{p}{,} 
+%                \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{args}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:}\PY{p}{(}\PY{n}{returns}\PY{p}{,} \PY{n}{target}\PY{p}{)}\PY{p}{\PYZcb{}}\PY{p}{,}
+%               \PY{p}{\PYZob{}}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{type}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{eq}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{fun}\PY{l+s+s1}{\PYZsq{}}\PY{p}{:} \PY{n}{sum\PYZus{}weights}\PY{p}{\PYZcb{}}\PY{p}{)}
+%\PY{n}{weights} \PY{o}{=} \PY{p}{[}\PY{l+m+mf}{1.}\PY{o}{/}\PY{n}{num\PYZus{}assets} \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{n}{num\PYZus{}assets}\PY{p}{)}\PY{p}{]}
+%\PY{n}{opts} \PY{o}{=} \PY{n}{minimize}\PY{p}{(}\PY{n}{markowitz}\PY{p}{,} \PY{n}{weights}\PY{p}{,} \PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{covariance}\PY{p}{,}\PY{p}{)}\PY{p}{,}
+%\PY{n}{bounds}\PY{o}{=}\PY{n}{bounds}\PY{p}{,} \PY{n}{constraints}\PY{o}{=}\PY{n}{constraints}\PY{p}{)} 
+%		
+%\PY{n}{p\PYZus{}variance} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{o}{.}\PY{n}{T}\PY{p}{,} \PY{n}{np}\PY{o}{.}\PY{n}{dot}\PY{p}{(}\PY{n}{covariance}\PY{p}{,} \PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}\PY{p}{)}
+%\PY{n}{ret} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{n}{returns}\PY{o}{*}\PY{n}{opts}\PY{o}{.}\PY{n}{x}\PY{p}{)}
+%\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio variance: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{variance}\PY{p}{)}\PY{p}{)}
+%\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Portfolio return: }\PY{l+s+si}{\PYZob{}:.3f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{ret}\PY{p}{)}\PY{p}{)}
+%
+%Portfolio variance: 0.026
+%Portfolio return: 0.241
+%\end{Verbatim}
+%\end{tcolorbox}	
+%\end{solution}
+
+\begin{question}
+The client is not yet satisfied and decides to move to a risk parity portfolio. Compute the correct weights to have each asset contributing equally to the portfolio risk.
+\end{question}
+
+\cprotEnv \begin{solution}
+\begin{ipython}
+def risk_parity(w, cov):
+    variance = w.T.dot(cov.dot(w))
+    sum = 0 
+    N = len(w)
+    for i in range(N):
+        sum += (w[i] - (variance/(N*(cov.dot(w))[i])))**2
+    return sum
+
+args = (covariance,)
+constraints = ({'type': 'eq', 'fun': sum_weights})
+bounds = tuple((0, 1) for asset in range(num_assets))
+weights = [1./num_assets for _ in range(num_assets)]
+opts = minimize(risk_parity, weights, args=(covariance,),
+                bounds=bounds, constraints=constraints)
+
+print (opts)
+\end{ipython}
+\begin{ioutput}
+     fun: 3.5766519241779855e-07
+     jac: array([ 1.24834913e-03,  1.00388202e-03, -2.28052647e-04,  6.19051279e-04,
+                 -5.68149005e-04, -1.03169022e-03, -1.24285291e-03, -4.09550915e-04,
+                 -2.02491654e-03,  6.26250036e-06])
+ message: 'Optimization terminated successfully'
+    nfev: 80
+     nit: 7
+    njev: 7
+  status: 0
+ success: True
+       x: array([0.161952  , 0.12997992, 0.07022277, 0.10331577, 0.07717795,
+                 0.10490077, 0.08475445, 0.10276264, 0.04079525, 0.12413849])
+\end{ioutput}
+\begin{ipython}
+sigma_i = []
+for i in range(num_assets):
+    std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
+    a = opts.x[i]*covariance.dot(opts.x)[i]
+    sigma_i.append(a/std)
+
+for i in range(num_assets):
+    print ("Risk contribution for asset {}: {:6.3f}%"
+           .format(i, sigma_i[i]/sum(sigma_i)*100))
+\end{ipython}
+\begin{ioutput}
+Risk contribution for asset 0:  9.986%
+Risk contribution for asset 1: 10.003%
+Risk contribution for asset 2:  9.971%
+Risk contribution for asset 3:  9.987%
+Risk contribution for asset 4: 10.014%
+Risk contribution for asset 5:  9.998%
+Risk contribution for asset 6: 10.047%
+Risk contribution for asset 7:  9.976%
+Risk contribution for asset 8: 10.023%
+Risk contribution for asset 9:  9.995%		
+\end{ioutput}
+\end{solution}
+

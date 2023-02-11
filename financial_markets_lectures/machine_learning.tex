@@ -1,0 +1,667 @@
+\chapter{Machine Learning Theory}
+\label{ch:neural-network}
+
+In this Chapter we will see how machine learning techniques can be successfully applied to solve financial problems. We first do a quick tour on the theory behind neural networks and then see few examples and practical applications regarding regression and classification issues.
+
+Beware this Chapter just scratches the surface of machine learning theory which has seen a huge development in the latest years leading to thousands of applications in many different fields.
+    
+\section{Neural Networks}\label{neural-networks}
+
+Artificial Neural Networks (ANN or simply NN) are information processing models that are developed by inspiring from the working principles of the human brain. Their most essential property is \emph{the ability of learning from sample sets}.
+
+\subsection{Neurons and Activation Functions}
+The basic unit of an ANN is the neuron. It consists of weights ($w_i$) and takes in input real numbers ($x_i$). After the injection into a neuron all these inputs are individually weighted, added together (sometimes it is added also a bias $w_0$) and passed into the activation function which produces the final neuron output
+
+\begin{equation}
+\textrm{Inputs} = \sum_{i=1}^{N} x_i w_i + w_0 \rightarrow f(\textrm{Inputs}) = \textrm{Outputs}
+\end{equation}
+Figure~\ref{fig:neuron} shows an example of neuron.
+
+There are many different types of activation functions but the main reason why it is introduced into the neuron is that it adds non-linearity to the response. Examples are:
+\begin{itemize}
+\item \emph{step function}: which returns just 0 or 1 according to the input value;
+\item \emph{sigmoid}: which can be thought of as the continuous version of the step function, see Fig.~\ref{fig:act_func};
+\item \emph{Rectified Linear Unit} (ReLU);
+\item \emph{hyperbolic tangent} (tanh).
+\end{itemize}
+For a deeper discussion on activation functions see~\cite{bib:activation_function}.
+
+\begin{figure}[htb]
+\centering
+\subfloat[Model of an artificial neuron.\label{fig:neuron}]{%
+	\includegraphics[width=0.6\textwidth]{figures/neuron}
+}
+\subfloat[Examples of sigmoidal and step activation functions.\label{fig:act_func}]{%
+	\includegraphics[height=0.30\textwidth]{figures/sigmoid}
+}
+\caption{Basic components of a neuron.}
+\label{fig:sigmoid}
+\end{figure}
+
+\subsection{Training of a Neuron}
+\label{training-of-a-neuron}
+
+When teaching children how to recognize a bus, we just tell them, showing an example: "This is a bus (or that is not a bus)." until they learn the concept of what a bus is. Afterwards, if a child sees new objects that she hasn't seen before, we could expect her to recognize correctly whether the new object is a bus or not.
+
+This is exactly the idea behind neuron training. Inputs from a \emph{training} set are presented to the neuron, one after the other, together with the correct output. During the process neuron weights are modified so that its response best matches the target output we provided.
+
+When an entire pass through all of the inputs is completed (an \emph{epoch}) the neuron has learned. Usually, to make it learn even better, the same training data is processed multiple times.
+
+After the training is completed, when an input vector $\mathbf{x}$, contained in the training set, is presented to the neuron, it will output approximately the correct value. With out of sample $\mathbf{x}$, the neuron will respond with an output close to those corresponding to other training vectors similar to $\mathbf{x}$.
+
+This kind of training is called \emph{supervised} because the input dataset is accompanied by the known targets (the true outputs), and we want our model to learn to predict the target from those input variables.
+
+Unfortunately using just a neuron is not too useful since with such a simple architecture is not possible to solve the interesting problems we would like to face. 
+The next step is to put together more neurons in \emph{layers} and connect those layers in more advanced configuration.
+
+\subsection{Multilayered Neural Networks}
+\label{multi-layered-neural-networks}
+
+In a multilayered (fully connected) configuration each neuron from a \emph{layer} is fed up to each node in the next. This kind of connection is repeated for each node down to the \emph{output layer}. 
+We should note that there can be any number of nodes per layer and there are usually multiple \emph{hidden layers} to pass through before ultimately reaching the output. The \textbf{only two architectural constraints} are: the neuron number in the input layer has to match the inputs number, and the amount of output layer nodes needs to match the desired target. Figure~\ref{fig:multilayered_nn} shows an example of such an architecture.
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.6\textwidth]{figures/multilayer.jpeg}
+\caption{A multilayered neural network.}
+\label{fig:multilayered_nn}
+\end{figure}
+
+\subsection{Training a Multilayered Neural Network}
+\label{training-a-multilayered-neural-network}
+
+The training of a multilayered NN follows these steps:
+
+\begin{itemize}
+\tightlist
+\item present an input sample to the neural network whose neurons are initialized with random weights;
+\item compute the network output obtained by calculating the activation functions of each layer;
+\item calculate the \emph{loss} as the difference between NN predicted and target outputs;
+\item re-adjust the network weights such that the loss decreases;
+\item continue the process for the entire sample (and also for several epochs), until the loss is not changing too much (i.e. the process converged).
+\end{itemize}
+In Figure~\ref{fig:training} an example of training is shown.
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/training_nn}
+\caption{Training example of a multilayered neural network.}
+\label{fig:training}
+\end{figure}
+
+\subsubsection{Loss Function}
+The NN loss (or error) is computed by the \emph{loss function}. Different loss functions will give different error estimates for the same prediction, and thus they have a considerable effect on the performance of any model. Two are the main choices:
+
+\begin{itemize}
+\tightlist
+\item Mean Absolute Error (MAE): the average of the absolute value of the differences between the predictions and true values. It shows how far off we are on average from the correct value;
+\item Root Mean Squared Error (MSE): the square root of the average of the squared differences between the predictions and true values. It instead penalizes larger errors more heavily and is commonly used in regression tasks. 
+\end{itemize}
+Either metrics may be appropriate depending on the situation and you can use both for comparison. More information about loss function can be found in~\cite{bib:loss_function}.
+
+\subsubsection{Back-propagation}
+The loss is a function of the internal parameters of the model (i.e neuron weights) and for an accurate prediction it has to be minimized. In practice this is done using the \emph{back-propagation} algorithm~\cite{bib:backpropagation}.
+
+Here the current loss is "propagated" backwards from the output to previous layers, where it is used to modify the weights in such a way that the error is minimized. The weights are modified with a function called \emph{optimization function} (we will use \emph{Adam} in the following but there are more).
+
+\subsection{Regression and Classification}
+\label{regression-and-classification}
+
+Neural network applications can be categorized into two main classes: \emph{classification} and \emph{regression}. Let's see their c5haracteristics and differences.
+
+\subsubsection{Classification}
+\label{classification}
+
+Classification is the process of finding a function which helps in dividing the input dataset into classes based on its characteristics. The goal is to find the mapping function between the input ($x$) and the \textbf{discrete} output ($y$) or, equivalently, to find the decision boundary which can divide the dataset into different classes.
+
+A typical classification problem is the \emph{email spam detection}. The model is trained on different parameters using millions of emails, and whenever it receives a new email, it checks whether is spam or not. Classification algorithms can also be used in speech recognition, car plates identification,~$\ldots$
+
+\subsubsection{Regression}
+\label{regression}
+
+Regression is the process of finding hidden correlations between dependent variables. It helps in predicting market trends, house prices,~$\ldots$
+
+The goal is to find the mapping function between the input variables ($x$) and the \emph{continuous} output variable ($y$), that is to find the best fit which can predict the output.
+
+As an example suppose we want to do weather forecasting. The model is trained on past data, and on the basis of today's inputs can predict the weather for future days. In general whenever we are dealing with function approximations this kind of techniques can be applied.
+
+\subsection{Hyper-parameters Setting}
+\label{neural-network-design}
+
+%There is no rule to guide developers into the design of a neural network in terms of number of layers and neurons (the so called \emph{hyper-parameters}). 
+%
+%One popular method for hyper-parameter optimization is the \emph{grid search}. A list of possible values for each hyper-parameter is defined, then the model is run multiple times, each time with a different combination of the hyper-parameter values. In the end the set giving the best result is taken. This is the most thorough way of selecting the neural network architecture but it is also the most computationally intense.
+%In the end a \emph{trial and error} strategy is what is implemented anyway, and the solution giving the best accuracy is selected, although without an exhaustive check of all the possibilities.
+%
+%In general a larger number of nodes is better to catch highly structured data with a lot of feature although it may require larger training sample to work correctly. As a rule of thumb a \emph{NN with just one hidden layer and a number of neurons averaging the inputs and outputs} is sufficient in most cases.
+
+Every NN has three types of layers: input, hidden, and output and creating its architecture means coming up with values for the number of layers of each type and the number of nodes in each of these layers.
+Unfortunately there is not standard and accepted method for selecting the number of the so-called \emph{hyper-parameters}. 
+
+\subsubsection*{The Input Layer}
+
+Every NN has exactly one of them, no exceptions and the number of neurons comprising this layer is completely and uniquely determined once you know the shape of your training data. Specifically, the number of neurons in the input layer is equal to the number of features (columns) in your data. 
+
+\subsubsection*{The Output Layer}
+
+Like the Input layer, every NN has exactly one Output layer. Determining its size (number of neurons) is simple; it is completely determined by the chosen model configuration.
+If the NN is a \textbf{regressor}~\ref{regression}, then the output layer has a single node, if it is a \textbf{classifier}~\ref{classification}, it also has a single node unless \emph{softmax} activation is used in which case the output layer has one node per class label in your model.
+
+\subsubsection*{The Hidden Layers}
+
+First examine how to determine the number of hidden layers to use with the neural network.
+
+\paragraph{Hidden Layer Number}
+If your data is linearly separable, then you don't need any hidden layers at all. Of course, you don't need a NN to resolve your data either, but it will still do the job.
+
+Beyond that, there's a mountain of commentary on the question of hidden layer configuration in NNs. One issue within this subject on which there is a \textbf{consensus} is the performance difference from adding additional hidden layers: the situations in which performance improves with a second (or third, etc.) hidden layer are very few i.e. \emph{one hidden layer is sufficient for the large majority of problems}. Table~\ref{tab:nn} summarizes the capabilities of neural network architectures with various hidden layers.
+
+\begin{center}
+\begin{table}[htbp]
+\begin{tabularx}{\textwidth}{|c|X|}%|p{0.3\linewidth}|p{0.65\linewidth}|}
+\hline
+%\vspace{1mm}
+Number of Hidden Layers & Result\xdef\tempwidth{\the\linewidth}\\
+\hline
+%\vspace{0.2\baselineskip} 
+0 & \multicolumn{1}{|m{\tempwidth}|}{Only capable of representing linear separable functions or decisions.} \\
+\hline
+%\vspace{0.2\baselineskip}
+1 & \multicolumn{1}{|m{\tempwidth}|}{Can approximate any function that contains a continuous mapping from one finite space to another.} \\
+\hline
+%\vspace{0.5\baselineskip}
+2 & \multicolumn{1}{|m{\tempwidth}|}{Can represent an arbitrary decision boundary to arbitrary accuracy with rational activation functions and can approximate any smooth mapping to any accuracy.} \\
+\hline
+%\vspace{0.1\baselineskip}
+More than 2 &  \multicolumn{1}{|m{\tempwidth}|}{Additional layers can learn complex representations (sort of automatic feature engineering)} \\
+\hline
+\end{tabularx}
+\vspace{2mm}
+\caption{Determining the number of hidden layers.}
+\label{tab:nn}
+\end{table}
+\end{center}
+
+\paragraph{Hidden Neuron Number}
+
+Deciding the number of neurons in the hidden layers is a very important part of deciding your overall neural network architecture. Though these layers do not directly interact with the external environment, they have a tremendous influence on the final output, hence their number must be carefully considered.
+
+In order to secure the network ability to generalize the number of nodes has to be kept as low as possible. If you have a large excess of nodes, your network becomes a memory bank that can recall the training set to perfection, but does not perform well on samples that was not part of the training set. This is usually referred to as \emph{overfitting}.
+
+On the other hand using too few neurons in the hidden layers will result in something called \emph{underfitting}. It occurs when the number of neurons is inadequate to detect the signals in a complicated data set.
+
+Obviously, some compromise must be reached between too many and too few neurons in the hidden layers. There are some empirically derived rules of thumb:
+\begin{itemize}
+\item the number of hidden neurons should be between the size of the input layer and the size of the output layer;
+\item the number of hidden neurons should be 2/3 the size of the input layer, plus the size of the output layer~\cite{bib:heaton};
+\item the number of hidden neurons should be less than twice the size of the input layer~\cite{bib:heaton};
+\item a rough approximation can be obtained by the geometric pyramid rule~\cite{bib:master} (e.g. for a three layer network with $n$ input and $m$ output neurons, the hidden layer would have $\sqrt{n\cdot m}$ neurons);
+\item overfitting can usually be prevented by keeping the number of neurons below~\cite{bib:hagan}:
+\begin{equation*}
+N_h = \frac{N_s}{\alpha\cdot(N_i+N_o)}
+\end{equation*}
+where $N_i$ = number of input neurons, $N_o$ = number of output neurons, $N_s$ = number of samples in training data set, $\alpha$ = an arbitrary scaling factor usually between $[2-10]$. 
+You want to limit the number of free parameters in your model (\emph{degree}) to a small portion of the degrees of freedom in your data which is the number of samples times the  dimensions in each sample or $N_s\cdot(N_i+N_o)$. So $\alpha$ is a way to indicate how general you want your model to be, or how much you want to prevent overfitting (with 10 giving the safest architecture).
+\end{itemize}
+
+In sum, for most problems, one could probably get decent performance (even without a second optimization step) by setting the hidden layer configuration using just two rules:
+\begin{enumerate}
+\item the number of hidden layers equals one; 
+\item the number of neurons in that layer is the mean of the neurons in the input and output layers.
+\end{enumerate}
+
+\subsubsection*{Optimization of the Network Configuration}
+
+Previous rules provide a good starting point to consider. Ultimately, the selection of an architecture for your neural network will come down to a smart \emph{trial and error}. 
+
+\paragraph{Pruning}
+The term \emph{pruning} describes a set of techniques to trim network size (by nodes, not layers) to improve computational and sometimes resolution performance. 
+The gist of these techniques is removing nodes from the network during training by identifying those nodes which, if removed from the network, would not noticeably affect network performance. To get a rough idea of which nodes are not important it is enough to look at the weight matrix after training and consider to remove the nodes with weights very close to zero. 
+Obviously, if you use a pruning algorithm during training, then begin with a network configuration that has excess of nodes.
+
+\paragraph{Genetic Algorithms}
+
+Another approach involves a set of techniques called "genetic algorithms" that try a small subset of the potential options (random number of layers and nodes per layer). It then treats this population of options as "parents" that create children by combining/mutating one or more of the parents much like organisms evolve. The best children and some random ok children are kept in each generation and, over generations, the fittest survive.
+
+For about 100 or fewer parameters (such as the choice of number, type of layers, and number of neurons per layer), this method is super effective. It can be used to create a number of potential network architectures for each generation and training them partially till the learning curve can be estimated. After a few generations, you may want to consider the point in which the train and validation start to have significantly different error rate (overfitting) as your objective function for choosing children. It may be a good idea to use a very small subset of your data (10-20\%) until you choose a final model to reach a conclusion faster. Also, use a single seed for your network initialization to properly compare the results. 10-50 generations should yield great results for a decent sized network.
+
+\begin{attention}
+\subsubsection{Technical Note}
+\label{technical-note}
+
+Neural network training and testing is performed using two modules: \texttt{keras}~\cite{bib:keras} (which in turn is based on a Google open source library called \texttt{tensorflow}~\cite{bib:tensorflow}) and \texttt{scikit-learn}~\cite{bib:scikit} which provides many useful utilities.
+\end{attention}
+
+\section{Function approximation}
+\label{function-approximation}
+
+Let's design an ANN which is capable of learning the functional form underlying a set of data. For this example the training sample is generated as a two columns array: $x$ (input), $f(x)$ (target output) where $f(x) = x^3 +2$. The dataset is saved in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/function_approx.csv}{function\_approx.csv}. 
+
+Before embarking into the actual training the sample undergoes to a transformation in order to have all the inputs (and outputs) with the same scale. This sample transformation is called \emph{scaling}, and is done to provide the NN with "equalized" inputs since it could be fooled by very large or small numbers giving unstable results.
+
+There are various methods available for data scaling in \texttt{scikit-learn}, the most important being:
+\begin{itemize}
+\tightlist
+\item \emph{StandardScaler}: scales features such that the distribution is centered around 0, with a standard deviation of 1. It is not quite good if data is not normally distributed (i.e. no Gaussian distribution);
+\item \emph{MinMaxScaler}: shrinks the range such that it becomes between 0 and 1 (or -1 to 1 if there are negative values in the first place). It is influenced heavily by outliers (i.e. extreme values);
+\item \emph{RobustScaler}: similar to the previous one but it instead uses quantile ranges, so that it is robust against outliers. It doesn't take the median of the original sample into account and only focuses on the regions where the bulk data is. Consider that \textbf{robust} doesn't mean immune or invulnerable and that the purpouse of scaling is not to remove outliers.
+\end{itemize}
+
+Figure~\ref{fig:scalers} reports the different transformations on the distribution of the target outputs. Which one to use depends on the particular case under study: in the actual example we are going to use the \texttt{MinMaxScaler}.
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/scalers}
+\caption{Effect of different kind of scalers in the target output distribution.}
+\label{fig:scalers}
+\end{figure}
+
+\begin{ipython}
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+
+df = pd.read_csv("function_approx.csv")
+print("Data before scaling ", df['X'].min(), df['X'].max(),
+                              df['y'].min(), df['y'].max())
+
+scale_X = MinMaxScaler()
+scale_y = MinMaxScaler()
+
+X_scaled = scale_X.fit_transform(df[['X']])
+y_scaled = scale_y.fit_transform(df[['y']])
+
+print("The same data after the normalization ", X_scaled.min()
+                                              , X_scaled.max()
+                                              , y_scaled.min()
+                                              , y_scaled.max())
+
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, 
+                                                    y_scaled, 
+                                                    test_size=0.2)
+\end{ipython}
+\begin{ioutput}
+Data before scaling -2.0 2.0 -6.0 9.999999999994714
+The same data after the normalization  0.0 1.0 0.0 1.0
+\end{ioutput}
+
+Notice that the sample has been split into two parts: training and testing. The reason will be explained in Sec.~\ref{sec:overtraining}.
+
+
+In the following we will use complex networks just for illustration, but no attempt in optimizing the layout has been done at all.
+In our first example two hidden layers with 15 and 5 neurons respectively and a \texttt{sigmoid} activation function are used, see Fig,~\ref{fig:ann_1}. The \texttt{inputs} parameter has to be set to 1 since we have just one single input, the \texttt{x} value.
+The training will last 5000 epochs and the mean squared error is used as loss function. Note the parameter \texttt{batch\_size} in the \texttt{fit} command; it can be useful in those circumstances where if we will feed the complete dataset during the training process to the model and then will try to do a back-propagation for all examples at once, we might run out of memory, and each training epoch may take too long to execute. To avoid a situation like this, we need to split our dataset indeed into batches.
+
+\begin{ipython}
+from keras.models import Sequential
+from keras.layers import Dense
+
+model = Sequential()
+model.add(Dense(15, input_dim=1, activation='sigmoid'))
+model.add(Dense(5, activation='sigmoid'))
+model.add(Dense(1, activation='sigmoid'))
+
+model.compile(loss='mse', optimizer='adam')
+model.fit(X_train, y_train, epochs=5000, batch_size=10, verbose=1)
+\end{ipython}
+\begin{ioutput}
+Epoch 1/5000
+100/100 [==============================] - 1s 2ms/step - loss: 0.0362
+Epoch 2/5000
+100/100 [==============================] - 0s 2ms/step - loss: 0.0293
+...
+Epoch 4999/5000
+100/100 [==============================] - 0s 2ms/step - loss: 5.6730e-06
+Epoch 5000/5000
+100/100 [==============================] - 0s 3ms/step - loss: 6.1324e-06
+<keras.callbacks.History at 0x7f9c22abd450>
+\end{ioutput}
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/ann_1.png}
+\caption{Graphical representation of the ANN used to approximate the function $f(x) = x^3 + 2$.}
+\label{fig:ann_1}
+\end{figure}
+
+The training output shows: a counter with the current epoch number, the computed loss which is evaluated using the chosen method and the timing. When the training is completed we can evaluate how good it is \textbf{using the loss value.}
+
+Since it takes some time to generate data samples and training, it is always advisable to save them in a file since it may be needed to load it many times during the NN development. 
+Also both the training model and the actual scalers need to be stored in files in order to use them for later predictions. 
+%Remember that the NN has to work with data as close as possible to that used during the training to give meaningful results, so every time we need to apply the very same scaling functions to our inputs and outputs.
+
+\begin{ipython}
+import joblib
+
+model_name = 'func_approx'
+model.save(job_name)
+joblib.dump(scale_X, model_name + "_x_scaler.save")
+joblib.dump(scale_y, model_name + "_y_scaler.save")
+model.save(model_name)
+\end{ipython}
+
+\subsection{Model Prediction}
+
+A \emph{perfect} model would lead to loss=0 so the lower these number the better is our training. 
+Model performance improves with the number of epochs in the training, since the NN has more chances to learn the input features. To get an idea of what is going on in Fig.~\ref{fig:training_vs_epochs} is shown the actual function we want to approximate and different predictions obtained with the same architecture but various number of epochs (i.e. 5, 100, 800, 5000). Clearly the agreement improves with the number of epochs.
+\textbf{Notice that if the original dateset has been scaled or transformed in any way, we need to apply the same transformation to the input before the prediction and apply the inverse transformation to the result to get the correct values.}
+
+\begin{ipython}
+x0 = 1
+x_transf = scale_X.transform([[x0]])
+print (scale_y.inverse_transform(model.predict(x_transf)))
+\end{ipython}
+\begin{ioutput}
+1/1 [==============================] - 0s 52ms/step
+[[2.996728]]
+\end{ioutput}
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/training_vs_epoch}
+\caption{Prediction of the target $f(x)$ using different number of epochs in the training (5, 100, 800 and 5000) respectively.}
+\label{fig:training_vs_epochs}
+\end{figure}
+
+\subsection{Overtraining}
+\label{sec:overtraining}
+A common issue to avoid during the training is \emph{overtraining} or \emph{overfitting}. 
+This happens when a model is "trained too well" on the particular dataset used in the process. This means that the NN mostly memorized data, and its performance accounts for a large accuracy within the training sample but a low accuracy in similar but independent datasets. 
+
+To check for overfitting it is required to split the available sample in at least two parts: training and testing (e.g.~80\% and 20\%) and to use the former to perform the training and the latter to cross-check performance.
+
+%Actually you should split the sample in three parts: training, testing and validation. What you would do is take the model with the highest validation accuracy and then test it with the testing set.
+%This makes sure that you don’t overfit the model. Using the validation set to choose the best model is a form of data leakage (or “cheating”) to get to pick the result that produced the best test score out of hundreds of them. Data leakage happens when information outside the training data set is used in the model.
+%In this case, our testing and validation set are the same, since we have a smaller sample size.
+
+Looking at the output of the \texttt{evaluate()} calls we can compare the loss computed with the training sample to that on the testing sample. If the two numbers are comparable the NN is ok, otherwise if the loss on the training is much smaller than the testing we had overfitting.
+In our example since the two numbers are in good agreement we can be confident that there hasn't been overtraining.
+
+The check can be done with the \texttt{evaluate()} method
+
+\begin{ipython}
+eval_train = model.evaluate(X_train, y_train)
+print('Training: {}'.format(eval_train))
+
+eval_test = model.evaluate(X_test, y_test)
+print('Test: {}'.format(eval_test))
+\end{ipython}
+\begin{ioutput}
+100/100 [==============================] - 0s 1ms/step - loss: 5.2089e-06
+Training: 5.208917627896881e-06
+26/26 [==============================] - 0s 2ms/step - loss: 5.2780e-06
+Test: 5.277975560602499e-06
+\end{ioutput}
+
+In case one would need more accuracy and had already incremented too much the number of epochs could either increase the training sample size or change the NN architecture.
+
+\subsection{Why Am I Getting Different Results ?}
+
+In applied machine learning, we run an algorithm on a dataset to get a model. The model is then used to predict outputs from inputs given a dataset. Unlike the models that we may be used to, neural networks may not be entirely deterministic.
+The resulting machine learning models may be different each time they are trained. In turn, the models may make different predictions, and when evaluated, may have a different level of error or accuracy. This is to be expected and might even be a feature of the algorithm, not a bug.
+In the following the major sources of difference are listed and analyzed.
+
+\subsubsection{Stochastic Learning Algorithm}
+
+Neural network models are not deterministic but rather stochastic. This means that their behavior incorporates elements of randomness.
+Nevetheless stochastic does not mean random: the machine learning algorithms are not learning a random model. They are learning a model conditional on the dataset you have provided. Instead, the specific small decisions made by the algorithm during the learning process can vary randomly.
+
+The impact is that each time the stochastic machine learning algorithm is run on the same data, it learns a slightly different model. In turn, the model may make slightly different predictions, and when evaluated using error or accuracy, may have a slightly different performance.
+
+The random initial weights allow the model to try learning from a different starting point in the search space each time and allow the learning algorithm to “break symmetry” during learning. The random shuffle of examples during training ensures that each gradient estimate and weight update is slightly different.
+
+Nevertheless the randomness used by learning algorithms can be controlled. For example, you set the seed used by the pseudorandom number generator to ensure that each time the algorithm is run, it gets the "same randomness".
+
+This is not a good approach in practice (apart from tutorials or lectures). Since there is no best seed for a stochastic machine learning algorithm you can summarize the performance of these models by fitting multiple final models on your dataset and averaging their predictions.
+
+\subsubsection{Evaluation Procedure}
+
+There may be differences in the training data due to sample splitting.
+A train-test split involves randomly assigning rows to either be used to train the model or evaluate the model to meet a predefined train or test set size.
+
+\subsubsection{Differences Caused by Platform}
+
+Different results can arise from running the same algorithm on the same data on different computers.
+This can happen even if you fix the random number seed to address the stochastic nature of the learning algorithm and evaluation procedure. The cause in this case is the platform or development environment used to run.
+
+Some of the possible specific causes are:
+\begin{itemize}
+\tightlist
+\item system architecture, e.g. CPU or GPU;
+\item operating system, e.g. MacOS or Linux;
+\item underlying math libraries, e.g. LAPACK or BLAS;
+\item \texttt{python} of library version, e.g. 3.6 or 3.7, \texttt{scikit-learn} 0.22 or 0.23.
+\end{itemize}
+
+Honestly, the effect is usually very small in practice (at least in my experience) as long as major software versions are used.
+
+\section{Image Recognition Neural Network}
+\label{neural-net-to-recognize-handwritten-digits}
+
+The difficulties of visual pattern recognition becomes immediately apparent if you attempt to write a computer program to recognize digits like those in Fig.~\ref{fig:mnist}.
+
+\begin{figure}[b]
+\centering
+\includegraphics[width=0.5\textwidth]{figures/mnist_100_digits}
+\caption{MNIST sample of handwritten digits.}
+\label{fig:mnist}
+\end{figure}
+
+Simple intuition about how we discern shapes (e.g. a 9 has a loop at the top, and a vertical stroke in the bottom right) turns out to be not so simple to express algorithmically. When you try to make such rules precise, you quickly get lost in a morass of exceptions, caveats, and special cases so that it seems hopeless.
+
+Neural networks approach the problem in a different way. They take a large number of handwritten digits and develop a system which can learn from those.
+
+By increasing the number of training examples, the network can learn more and more about handwriting, and so improve its accuracy. So while it has been shown just 100 training digits in Fig.~\ref{fig:mnist}, a better handwriting recognizer could be certainly built by using thousands or millions training examples (\textbf{as we have seen above neural nets are not capable of extrapolating results, hence in general it won't recognize a digit written in some strange way not included in the training sample !!!}).
+
+\subsection{Convolutional Layer}
+
+An image can be thought of as a matrix:
+\begin{itemize}
+\item \emph{grayscale}: each pixel is represented as a number ranging from 0 (black) to 255 (white);
+\item \emph{colored}: each pixel is a triplet of numbers ranging from 0 to 255 and indicating the intensity of Red, Green and Blue (RGB) component.
+\end{itemize}
+
+Every image can be transformed by applying \emph{kernels} (sometimes referred to as filters). Such kernels are matrices which are \emph{convolved} with the original image, this operation is explained in Fig.~\ref{fig:convolution} and essentially means that each pixel of the kernel is multiplied by the corresponding image pixel and the results are summed together. The process is repeated many times in order to cover the entire image surface.
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/convolution}
+\caption{Example of convolution between a kernel and an image.}
+\label{fig:convolution}
+\end{figure}
+
+Starting from the original image shown in Fig.~\ref{subfig:kernel_orig} it can be seen how by applying various filters (i.e. different definition of the kernel matrix) can be extracted the main features of the image. Figures~\ref{subfig:kernel_hor}, \ref{subfig:kernel_ver} and~\ref{subfig:kernel_blur} show examples of the so called \emph{Sobel} kernels detecting horizontal and vertical edges and of the Gaussian blurring.
+
+\begin{figure}[!p]
+\centering
+\subfloat[Original image of a road.\label{subfig:kernel_orig}]{%
+	\includegraphics[width=0.45\textwidth]{figures/via_gray}
+	}\quad
+\subfloat[Sobel kernel for horizontal edges.\label{subfig:kernel_hor}]{%
+	\includegraphics[width=0.45\textwidth]{figures/hor}
+	}\\
+\subfloat[Sobel kernel for vertical edges.\label{subfig:kernel_ver}]{%
+	\includegraphics[width=0.45\textwidth]{figures/ver}
+	}\quad
+\subfloat[Gaussian blurring kernel.\label{subfig:kernel_blur}]{%
+	\includegraphics[width=0.45\textwidth]{figures/blur}
+	}
+\caption{Example application of different kernels on an image.}
+%\label{fig:dummy}
+\end{figure} 
+
+To implement image recognition in machine learning a new kind of network has to be used, the Convolutional Neural Network (CNN). It is based on a different kind of layer (\emph{convolutional layer}) which instead of applying predefined filters like the ones seen before, learns the specific ones which are better in highlighting the training dataset features. If we want to make a parallelism between NN and CNN, the former parameters are the neuron weights while in the latter the those are the elements of the kernel matrices.
+
+Stacking convolutional layers prove to be very effective, and allows to learn both low (e.g. lines) and high level features (e.g. complex shapes or even specific objects).
+
+The CNN output won't be a single number but rather a list containing the probabilities that an image belongs to each class, thanks to the \texttt{softmax} activation at the last layer. 
+Next we define the CNN architecture, see Fig.~\ref{fig:cnn2d}, to explore its capabilities the sample provided with the \texttt{mnist} module will be used.
+
+\begin{ipython}
+import numpy as np, mnist
+from keras.models import Sequential
+from keras.layers import Dense, Conv2D, MaxPooling2D, Flatten
+from tensorflow.keras.utils import to_categorical
+
+train_images = mnist.train_images() 
+train_labels = mnist.train_labels() 
+
+model = Sequential()
+model.add(Conv2D(8, kernel_size=3, input_shape=(28, 28, 1)))
+model.add(MaxPooling2D(pool_size=2))
+model.add(Flatten())
+model.add(Dense(10, activation="softmax"))
+
+model.compile(loss='categorical_crossentropy', optimizer='adam')
+model.fit(train_images, to_categorical(train_labels), epochs=5, verbose=1)
+\end{ipython}
+\begin{ioutput}
+Epoch 1/5
+1875/1875 [==============================] - 19s 10ms/step - loss: 2.0868
+Epoch 2/5
+1875/1875 [==============================] - 18s 10ms/step - loss: 0.3320
+Epoch 3/5
+1875/1875 [==============================] - 18s 10ms/step - loss: 0.2153
+Epoch 4/5
+1875/1875 [==============================] - 18s 10ms/step - loss: 0.1891
+Epoch 5/5
+1875/1875 [==============================] - 18s 10ms/step - loss: 0.1799
+<keras.callbacks.History at 0x7f07b05d0350>
+\end{ioutput}
+
+\begin{attention}
+\subsubsection{Pooling}
+
+Looking closely to the convolutional neural network implementation we can notice new kind of layers never used before, in particular the \texttt{MaxPooling2} layer.
+
+Convolutional layers in a CNN systematically apply filters to input images in order to create feature maps that summarize the main characteristics of the sample.
+
+A limitation of such maps is that they record the precise position of features in the input. This means that small movements in its position will result in a different feature map. This can happen with cropping, rotation, shifting, and other minor changes to the input image.
+
+Imagine a program that looks for car plates in pictures taken by a speed radar: cars won't be in the same position in the frame so there may be differences in the classification of similar (but not equal) pictures.
+
+A common approach to address this problem is called \emph{down sampling}. 
+This is where a lower resolution version of an input signal (e.g. the picture) is created that still contains the large or important structural elements, without the finer detail that may not be as useful to the task.
+
+Down sampling can be achieved using a pooling layer.
+It involves selecting kind of a filter to be applied to the feature maps. The pooling operation size is smaller than the feature map; specifically, it is almost always 2×2 pixels. This means that the pooling layer will always reduce the size of each feature map by a factor of 2, e.g. each dimension is halved. For example, a pooling layer applied to a feature map of 6×6 (36 pixels) will result in an output pooled feature map of 3×3 (9 pixels).
+
+\begin{center}
+\includegraphics[width=0.6\textwidth]{figures/MaxpoolSample2}
+\end{center}
+
+The most common pooling operation are:
+\begin{itemize}
+\tightlist
+\item Average Pooling: calculate the average value for each patch on the feature map;
+\item Maximum Pooling (or Max Pooling): calculate the maximum value for each patch of the feature map.
+\end{itemize}
+\end{attention}
+
+\begin{figure}[hb]
+\centering
+\includegraphics[width=0.9\textwidth]{figures/cnn_2d}
+\caption{Graphical representation of the CNN developed to recognize handwritten digits.}
+\label{fig:cnn2d}
+\end{figure}
+
+Let's see how well our NN predicts \texttt{mnist} testing digits.
+
+\begin{ipython}
+test_images = mnist.test_images()
+test_labels = mnist.test_labels()
+
+predictions = model.predict(test_images[:10])
+
+print ("Tesing on MNIST digits...")
+print("Predicted: ", np.argmax(predictions, axis=1)) 
+print("Truth:     ", test_labels[:10])
+\end{ipython}
+\begin{ioutput}
+Tesing on MNIST digits...
+Predicted:  [7 2 1 0 4 1 4 4 6 9]
+Truth: [7 2 1 0 4 1 4 9 5 9]
+\end{ioutput}
+
+Since the last but one digit has lower probability let's check the returned list to see which other number have non-zero probability.
+
+\begin{ipython}
+for i, p in enumerate(predictions[-2])])
+    print("9th digit:", ["dig {}: {:.3f}".format(i, p)
+\end{ipython}
+\begin{ioutput}
+9th digit: ['dig 0: 0.0000', 'dig 1: 0.0000', 'dig 2: 0.0000', 'dig 3: 0.0000', 
+            'dig 4: 0.0000', 'dig 5: 0.0001', 'dig 6: 0.9999', 'dig 7: 0.0000', 
+            'dig 8: 0.0000', 'dig 9: 0.0000']
+\end{ioutput}
+
+%So the second ranked digit is a 6 (which can be confused with a five if the lower loop is almost closed).
+
+The NN performance can be checked using your own calligraphy. 
+
+Open your favourite image editor (e.g. Paint, GIMP,\ldots) and create a black-white 200x200 pixels canvas. With the help of the mouse draw a digit and save it as a png file.
+Before passing the image to the NN it has to be resized and this is done with an ad-hoc function, \texttt{transform\_image}, which can be imported from \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/digit_converter.py}{\texttt{digit\_converter.py}}.
+
+\begin{ipython}
+from digit_converter import transform_image
+
+filenames = ['four.png', 'five.png']
+for f in filenames:
+    test_images = np.array(transform_image(f))
+test_images = np.expand_dims(test_images, axis=3)
+predict = model.predict(test_images)
+
+print ("Tesing on custom digits...")
+print ("Predicted: ", np.argmax(predict, axis=1))
+print("%:", ["{:.3f}".format(p[np.argmax(p)]) for p in predict])
+print(["{:.2f}".format(p) for p in predict[0]])
+\end{ipython}
+\begin{ioutput}
+Tesing on custom digits...
+Predicted:  [4]
+%: ['0.802']
+['0.00', '0.00', '0.00', '0.00', '0.80', '0.00', '0.00', '0.20', '0.00', 
+'0.00']
+
+Testing on custom digits...
+Predicted:  [5]
+%: ['0.981']
+['0.00', '0.00', '0.00', '0.01', '0.00', '0.98', '0.00', '0.01', '0.00', 
+'0.00']
+\end{ioutput}
+The handwritten images used in this test are shown in Fig.~\ref{fig:test_images}.
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.2\textwidth]{figures/four.png}
+\includegraphics[width=0.2\textwidth]{figures/five.png}
+\caption{Test handwritten digits used in the example.}
+\label{fig:test_images}
+\end{figure}
+
+\section{Remarks on Artificial Intelligence}
+
+A neural network is a \emph{black box} in the sense that while it can approximate any function, studying its structure won't give you any insights on the functional form of the function being approximated.
+
+As an example, one common use of neural networks on the banking business is to classify loaners on "good payers" and "bad payers". You have a matrix of input characteristics $C$ (sex, age, income, etc) and a vector of results $R$ ("defaulted", "not defaulted", etc). When you model this using a neural network, you are supposing that there is a function $f(C)=R$, in the proper sense of a mathematical function. This function $f$ can be arbitrarily complex, and might change according to the evolution of the business, so you can't derive it by hand.
+
+Then you use the Neural Network to build an approximation of $f$ that has an error rate that is acceptable to your application. This works, and the precision can be arbitrarily small, you can expand the network, fine tune its training parameters and get more data until the precision hits your goals.
+
+The black box issue is: the approximation given by the neural network will not give you any insight on the form of $f$. There is no simple link between the weights and the function being approximated. 
+
+Plus, from a traditional statistics viewpoint, a neural network is a non-identifiable model: given a dataset and network architecture, there can be two neural networks with different weights but exactly the same result. This makes the analysis very hard.
+Needless to say, debugging NN results is even harder given this lack of interpretability. So use with caution machine learning models since they can be quite misleading.
+ 
+\begin{thebibliography}{9}
+\bibitem{bib:deep_learning} I. Goodfellow, Y. Bengio and A. Courville, \href{http://www.deeplearningbook.org}{\emph{Deep Learning}}, MIT Press, 2016
+\bibitem{bib:nn_over_human}K. Grace, J. Salvatier, A. Dafoe, B. Zhang and O. Evans, \emph{When Will AI Exceed Human Performance? Evidence from AI Experts}, arXiv:1705.08807, 2005
+\bibitem{bib:activation_function} J. Lederer, \emph{Activation Functions in Artificial Neural Networks: A Systematic Overview}, arxiv: 2101.09957, 2001
+\bibitem{bib:backpropagation}\href{https://towardsdatascience.com/understanding-backpropagation-algorithm-7bb3aa2f95fd}{\emph{Understanding back-propagation algorithm}}, Towards Data Science [Online]
+\bibitem{bib:loss_function}\href{https://medium.com/human-in-a-machine-world/mae-and-rmse-which-metric-is-better-e60ac3bde13d}{\emph{Mae and rmse which metric is better ?}}, Medium [Online]
+\bibitem{bib:master} Masters, Timothy, \emph{Practical neural network recipes in C++}, Morgan Kaufmann, 1993.
+\bibitem{bib:heaton} J. Heaton, \emph{Introduction to Neural Networks for Java} ($2^{nd}$ edition).
+\bibitem{bib:hagan} Hagan, Demuth, Beale, De Jesus, \emph{Neural Network Design}.
+\bibitem{bib:keras}\href{https://keras.io/}{\emph{Keras Documentation}}, [Online]  
+\bibitem{bib:tensorflow}\href{https://www.tensorflow.org/}{\emph{Tensorflow Documentation}}, [Online] 
+\bibitem{bib:scikit}\href{https://scikit-learn.org/stable/}{\emph{scikit-learn Documentation}}, [Online]
+\end{thebibliography}

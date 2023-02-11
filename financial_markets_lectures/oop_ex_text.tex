@@ -1,0 +1,271 @@
+\cprotEnv\begin{question}
+Calculate the prices of calls with various strikes, using the following input data.
+
+\begin{ipython}
+s = 800 
+# strikes expressed as percentage of spot price
+moneyness = [0.5, 0.75, 0.825, 1.0, 1.125, 1.25, 1.5]
+vol = 0.3
+ttm = 0.75
+r = 0.005
+\end{ipython}
+\noindent
+The output should be a dictionary mapping strikes to call prices.
+\end{question}
+
+\cprotEnv\begin{solution}
+\begin{ipython}
+import numpy as np
+from scipy.stats import norm
+
+def d1(S, K, r, vol, ttm):
+    num = np.log(S/K) + (r + 0.5*np.power(vol, 2)) * ttm
+    den = vol * np.sqrt(ttm)
+    return num/den
+
+def d2(S, K, r, vol, ttm):
+    return d1(S, K, r, vol, ttm) - vol*np.sqrt(ttm)
+
+def call(S, K, r, vol, ttm):
+    return (S * norm.cdf(d1(S, K, r, vol, ttm)) - \
+           K*np.exp(-r*ttm)*norm.cdf(d2(S, K, r, vol, ttm)))
+
+S = 800
+# strikes expressed as % of spot price
+moneyness = [0.5, 0.75, 0.825, 1.0, 1.125, 1.25, 1.5]
+vol = 0.3
+ttm = 0.75
+r = 0.005
+
+result = {}
+for m in moneyness:
+    result[S*m] = round(call(S, S*m, r, vol, ttm), 2)
+print(result)
+\end{ipython}
+\begin{ioutput}
+{400.0: 401.66, 
+ 600.0: 213.99, 
+ 660.0: 166.86, 
+ 800.0: 84.04, 
+ 900.0: 47.62, 
+ 1000.0: 25.63, 
+ 1200.0: 6.66}
+\end{ioutput}
+\end{solution}
+
+\cprotEnv\begin{question}
+Write two classes, \texttt{Circle} and \texttt{Rectangle} that given the radius and height, width respectively allow to compute area and perimeter of the two shapes. Test them with the following:
+
+\begin{ipython}
+a_circle = Circle(5)
+print("My circle has an area of {} m2".format(a_circle.area()))
+
+a_rectangle = Rectangle(3, 6)
+print ("My rectangle has a perimeter of {} m and an area of {} m2". \\
+        format(a_rectangle.perimeter(), a_rectangle.area())}
+\end{ipython}
+\end{question}
+
+\cprotEnv\begin{solution}
+\begin{ipython}
+from math import pi
+
+class Circle:
+    def __init__(self, radius):
+        self.radius = radius
+
+    def area(self):
+        return pi*self.radius**2
+
+class Rectangle:
+    def __init__(self, width, height):
+        self.height = height
+        self.width = width
+
+    def area(self):
+        return self.width*self.height
+
+    def perimeter(self):
+        return self.width*2 + self.height*2
+
+circle = Circle(5)
+print ("My circle area is {:.1f} m**2".format(circle.area()))
+
+rect = Rectangle(3, 6)
+print ("My rect area is {:.1f} m**2 and the perimeter is {} m". \\
+        format(rect.area(), rect.perimeter()))
+\end{ipython}
+\begin{ioutput}
+My circle area is 78.5 m**2
+My rect area is 18.0 m**2 and the perimeter is 18 m
+\end{ioutput}
+\end{solution}
+
+\cprotEnv\begin{question}
+Write a class \texttt{Menu} which is a component of a restaurant ordering system. Through this program the waiters should be able to: register client orders adding or deleting dishes and print the final bill.
+The only attribute of the class is the following list of dishes with an \texttt{id} to identify them, their name and cost.
+
+\begin{ipython}
+dishes = {'1':("Spaghetti", 6.50), '2':("Pizza", 7.00), '3':("Water", 0.50),
+                       '4':("Red Wine 0.5l", 5.00)}
+\end{ipython}
+\noindent
+To test the class simulate an order and print the corresponding bill.
+\end{question}
+
+\cprotEnv\begin{solution}
+\begin{ipython}
+class Menu:
+    def __init__(self):
+        self.dishes = {'1':("Spaghetti", 6.50), '2':("Pizza", 7.00), '3':("Water", 0.50),
+                       '4':("Red Wine 0.5l", 5.00)}
+        self.current_choice = {}
+        
+    def clear_order(self):
+        self.current_choice = {}
+        
+    def add_dish(self, dish_id, quantity = 1):
+        if dish_id not in self.dishes.keys():
+            print ("Dish {} currently not availble.".format(dish_id))
+        else:
+            self.current_choice[dish_id] = 
+                self.current_choice.setdefault(dish_id, 0) + quantity
+            
+    def remove_dish(self, dish_id, quantity = 1):
+        if dish_id in self.current_choice.keys():
+            self.current_choice[dish_id] = max(0, self.current_choice[dish_id] - quantity)
+            
+    def bill(self):
+        cost = 0
+        for id, qty in self.current_choice.items():
+            cost += self.dishes[id][1] * qty
+            print ("{:15} {:2} {:>6.2f}".format(self.dishes[id][0],
+                                                qty,
+                                                self.dishes[id][1]))
+        print ("{:15}    {:>6.2f}".format("Tot:", cost))
+
+m = Menu()
+m.add_dish('1')
+m.add_dish('2')
+m.add_dish('3')
+m.bill()
+\end{ipython}
+\begin{ioutput}
+Spaghetti        1   6.50
+Pizza            1   7.00
+Water            1   0.50
+Tot:                14.00
+\end{ioutput}
+\end{solution}
+
+\begin{question}
+Define a Point2D class that represent a point in a plane. Its \texttt{\_\_init\_\_} method should accept the point coordinates \texttt{x} and \texttt{y}. Write a method \texttt{distanceTo} that compute the distance of the point to another passed as input. Test the class by printing the distance of the point $P=(4, 5)$ to the origin $P=(0,0)$ and to $P=(3,4)$.
+
+\noindent\textbf{Hint:} in the Cartesian plane the distance between two points is: $\sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2}$.
+\end{question}
+
+\cprotEnv\begin{solution}
+\begin{ipython}
+from math import sqrt
+
+class Point2D:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def distanceTo(self, x, y):
+        dist = sqrt((self.x-x)**2 + (self.y - y)**2)
+        return dist
+
+    def distanceTo_v2(self, p):
+        dist = sqrt((self.x-p[0])**2 + (self.y - p[1])**2)
+        return dist
+
+    def distanceTo_v3(self, p):
+        dist = sqrt((self.x-p.x)**2 + (self.y - p.y)**2)
+        return dist
+
+point = Point2D(4, 5)
+p0 = (0, 0)
+point0 = Point2D(0, 0)
+print ("distance to p0: {:.2f}".format(point.distanceTo(p0[0], p0[1])))
+print ("distance_v2 to p0: {:.2f}".format(point.distanceTo_v2(p0)))
+print ("distance_v3 to p0: {:.2f}".format(point.distanceTo_v3(point0)))
+\end{ipython}
+\begin{ioutput}
+distance to p0: 6.40
+distance_v2 to p0: 6.40
+distance_v3 to p0: 6.40
+\end{ioutput}
+\begin{ipython}
+p1 = (3, 4)
+point1 = Point2D(3, 4)
+print ("distance to p1: {:.2f}".format(point.distanceTo(p1[0], p1[1])))
+print ("distance v2 to p1: {:.2f}".format(point.distanceTo_v2(p1)))
+print ("distance v3 to p1: {:.2f}".format(point.distanceTo_v3(point1)))
+\end{ipython}
+\begin{ioutput}
+distance to p1: 1.41
+distance v2 to p1: 1.41
+distance v3 to p1: 1.41
+\end{ioutput}
+\end{solution}
+
+\cprotEnv\begin{question}
+Write a class \texttt{Student} which inherits from the class \texttt{Person} defined in Chapter Object Oriented Programming in Python. This new class should have two new attributes: \texttt{grade} which keeps the type of school and \texttt{votes} a dictionary which will record the student's votes and the corresponding course. Then add two methods, one to add votes and another to compute the average vote.Instantiate a "student" add some votes and show how good it has been.
+
+\noindent\textbf{Hint:} this is the \texttt{Person} class already developed.
+
+\begin{ipython}
+class Person:
+    def __init__(self, name, birthday):
+        self.name = name
+        self.birthday = birthday
+        self.employment = None
+
+    def age(self, d=date.today()):
+        age = (d - self.birthday).days/365
+        print ("{} is {:.0f} years old".format(self.name, age))
+
+    def mainOccupation(self, occupation):
+        self.employment = occupation
+        print ("{}'s main occupation is: {}".format(self.name, self.employment))
+\end{ipython}
+\end{question}
+
+\cprotEnv\begin{solution}
+\begin{ipython}
+class Student(Person):
+    def __init__(self, name, birthday, school):
+        Person.__init__(self, name, birthday)
+        self.grade = school
+        self.votes = {}
+
+    def addVote(self, subject, vote):
+        self.votes[subject] = vote
+
+    def average(self):
+        print ("List of votes")
+        print ("-------------")
+        for k, v in self.votes.items():
+            print ("{}: {}".format(k, v))
+        avg = sum(self.votes.values())/len(self.votes)
+        print ("-------------")
+        print ("Avg: {:.1f}".format(avg))
+
+student = Student("Mario", date(1980, 5, 6), "Liceo Scientifico G. Galilei")
+student.addVote("Calculus", 8)
+student.addVote("Literature", 5.5)
+student.addVote("Latin", 6.5)
+student.average()
+\end{ipython}
+\begin{ioutput}
+List of votes
+-------------
+Calculus: 8
+Literature: 5.5
+Latin: 6.5
+-------------
+Avg: 6.7
+\end{ioutput}
+\end{solution}

@@ -1,0 +1,919 @@
+\chapter{Swaps and Bootstrapping}\label{sec:swaps-and-bootstrapping}
+
+In this Chapter the Overnight Index Swap contract is reviewed and a class to represent it will be added to our financial module. Beside financial arguments another very important mathematical technique is introduced: the \emph{bootstrapping}.
+
+\section{Payment Dates Generator}
+Before going to describe the Overnight Index Swap we need to develop a tool which helps us to generate list of dates (e.g. payment dates), a task that we need to do often from now on. 
+
+\begin{finmarkets}
+This function takes in input the initial date of the series (\texttt{start\_date}) and the maturity. An optional parameter allows to define the frequency of the list of dates, its default value being 12 months.
+In order to avoid confusion in the definition of maturity and frequency those are specified as strings bringing the units, e.g \texttt{"10y"} or \texttt{"7m"}.
+The strings are converted to integers in months with a simple utility \texttt{maturity\_from\_str}.
+\end{finmarkets}
+
+\begin{ipython}
+from datetime import date
+from dateutil.relativedelta import relativedelta
+
+def maturity_from_str(maturity_str):
+    tag = maturity_str[-1].lower()
+    maturity = int(maturity_str[:-1])
+    if tag == "y":
+        return maturity*12
+    elif tag == "m":
+        return maturity
+    elif tag == "d":
+        return maturity//30
+    else:
+        raise ValueError("Unrecognized label {}".format(tag))
+
+def generate_dates(start_date, maturity, tenor="1y"):
+    maturity_months = maturity_from_str(maturity)
+    tenor_months = maturity_from_str(tenor)
+    dates = []
+    for d in range(0, maturity_months, tenor_months):
+        dates.append(start_date + relativedelta(months=d))
+    dates.append(start_date + relativedelta(months=maturity_months))
+    return dates
+
+print (generate_dates(date.today(), "25M"))
+\end{ipython}
+\begin{ioutput}
+[datetime.date(2020, 10, 20), datetime.date(2021, 10, 20), datetime.date(2022,
+10, 20), datetime.date(2022, 11, 20)]
+\end{ioutput}
+
+\section{Overnight Index Swap}\label{overnight-index-swap}
+
+Interest rate swaps (IRS) are generally used to mitigate the risks of interest rates fluctuations or to benefit from lower rates.
+
+Overnight Index Swaps (OIS) are a particular kind of IRS which pay a floating coupon, determined by overnight rate fixings over the reference periods, against a fixed coupon. An OIS is defined by:
+
+\begin{itemize}
+\tightlist
+\item
+  a notional amount $N$;
+\item
+  a starting date $d_0$;
+\item
+  a sequence of payment dates $d_1,...,d_n$;
+\item
+  a fixed rate $K$.
+\end{itemize}
+
+For simplicity in the following we are assuming that both fixed and floating legs have the same notional and payment dates, although this is not necessarily always the case in practice. We will always look at these products from the point of view of the \textbf{receiver of the floating leg}.
+
+\subsection{OIS Valuation}\label{ois-valuation}
+The net present value (NPV) of such products is defined as the sum of the discounted cash flows of each leg.
+
+\subsubsection{Floating leg}\label{floating-leg}
+At each payment date, the floating leg pays a cash flow determined as follows:
+
+\begin{equation}
+f_{\mathrm{float},~i} = N \Bigg\{\prod_{d=d_{i-1}}^{d=d_i-1}\Big(1+r_{\mathrm{O/N}}(d)\cdot\frac{1}{360}\Big) -1 \Bigg\}
+\label{eq:floating_ois}
+\end{equation}
+
+Strictly speaking this formula is valid for an \euro STR swaps (i.e. for OIS swaps in EUR) other currencies might have different conventions. The $\frac{1}{360}$ fraction appears because \euro STR rates are quoted using the ACT/360 day-count convention. 
+
+In addition we are making the simplifying assumption of ignoring weekends and holidays, so we assume that each overnight rate is valid for only one day. The sum of the discounted expected values of these cash flows is
+
+\begin{equation}
+\mathrm{NPV}_{\mathrm{float}} = \sum_{i=1}^{n}D(d_i)\mathbb{E}[f_{\mathrm{float},~i}]
+\end{equation}
+where $D(d)$ is the discount factor with expiry $d$. Eq.~\ref{eq:floating_ois} can be simplified by using the same no-arbitrage argument exploited in Section~\ref{calculating-forward-rates}. Expanding the product indeed
+
+\begin{equation*}
+\prod_{i=d}^{d'} (1+r_i\tau_1) = \underbrace{(1+r_{d,d+1}\tau_1)\underbrace{(1+r_{d+1,d+2}\tau_1)\ldots\underbrace{(1+r_{d'-2,d'-1}\tau_1)(1+r_{d'-1,d'}\tau_1)}_{\textstyle =(1+r_{d'-2,d'}\tau_{d'-2,d')}}}_{\textstyle =(1+r_{d+1,d'}\tau_{d+1, d'})}}_{\textstyle =(1+r_{d,d'}\tau_{d,d'})}
+\end{equation*}
+\noindent
+Using Eq.~\ref{eq:no_arbitrage_r} the resulting expression can be written in terms of spot rates
+\begin{equation*}
+(1+r_{d,d'}\tau_{d,d'}) = \left(\cfrac{1+r_{0, d'}\tau_{0,d'}}{1+r_{0,d}\tau_{0,d}}\right)
+\end{equation*}
+\noindent Finally it is useful to express the expectation in terms of discount factors
+
+\begin{equation*}
+\mathbb{E}[f_{\mathrm{float},~i}] = N\cdot\Big(\cfrac{D_{\mathrm{OIS}}(0, d_{i-1})}{D_{\mathrm{OIS}}(0, d_{i})} - 1\Big)\qquad \mathrm{where}\ D_{\mathrm{OIS}}(0,d)=\cfrac{1}{1+r_{0,d}\tau_{0,d}}
+\end{equation*}
+
+\begin{equation*}
+\mathrm{NPV}_{\mathrm{float}} = N\cdot \sum_{i=1}^{n}D(d_i) \Big(\cfrac{D_{\mathrm{OIS}}(d_{i-1})}{D_{\mathrm{OIS}}(d_{i})} - 1\Big)
+\end{equation*}
+
+%The correct curve to use for discounting the flows of a collateralized contract, like OIS, is the one associated with the collateral. Since OIS contracts are collateralized with cash, and cash accrues daily interest at the overnight rate, the OIS curve is itself the correct curve with which to discount the flows of an OIS contract ! 
+%From what has been said in Section~\ref{sec:financial-crisis}
+%Since the financial crisis, in the Euro area the rates used for
+%discounting has been the EONIA rates. Similarly, in other jurisdictions
+%it has been used other overnight rates such us Fed fund rates in USA.
+%This practice is consistent with the daily remuneration of the
+%collateral (i.e. cash given or received as mitigants for credit risk
+%arising from the mark to market of the derivatives contract).
+%For arbitrage consideration the discounting curve of future cash flows
+%in a derivative contract can only be the one derived from the rates
+%applied for the collateral.
+%
+%So we have that \(D = D_{\mathrm{OIS}}\) and the NPV simplifies to
+
+From what has been said in Section~\ref{sec:financial-crisis} we have that $D = D_{\mathrm{OIS}}$ and the NPV simplifies to
+
+\begin{equation}
+  \begin{split}
+    \mathrm{NPV}_{\mathrm{float}} & = N\cdot\sum_{i=1}^{n}[D(d_{i-1}) - D(d_i)] =  \\
+    &= N\cdot[(D(d_{0}) - D(d_{1})) + (D(d_{1}) - D(d_{2})) + ... + (D(d_{n-1}) - D(d_{n}))]\\
+    &= N \cdot [D(d_0) - D(d_n)]
+  \end{split}
+\end{equation}
+
+\subsubsection{Fixed leg}\label{fixed-leg}
+
+The calculation for the fixed leg is simpler; each cash flow is equal to
+
+\begin{equation}
+f_{\mathrm{fixed},~i}=N\cdot K\cdot \frac{d_i - d_{i-1}}{360}
+\end{equation}
+so the NPV of the fixed leg is
+
+\begin{equation}
+\mathrm{NPV}_{\mathrm{fixed}} = N\cdot K\cdot \sum_{i=1}^{n}D(d_{i})\frac{d_i - d_{i-1}}{360}
+\end{equation}
+
+%\subsection{\texttt{OvernightIndexSwap} %Class}\label{discount-factor-determination-from-market-quotes}
+
+\begin{finmarkets}
+\emph{Our ultimate goal is to take a series of Overnight Index Swap quotations, and determine the discount factors implied by their prices.} To do this we implement a class to describe an OIS and compute its value given a particular discount curve. Then we will use this class, besides a numerical optimizer, to \emph{invert} the relationship between NPV and discount curve so that the \emph{implied} discount factors can be determined from OIS market quotes.
+The attributes of the \texttt{OvernightIndexSwap} class are the necessary parameters to fully describe an Overnight Index Swap, i.e. the nominal of the contract, its start date and maturity and the rate of the fixed leg. The class has methods to calculate the net present value and the fair value strike which computes the rate which would make the OIS NPV zero. The implementation of the former relies on the formulas derived above, while the latter is based on the simple observation that if the NPV is 0 the expressions for the NPV of each swap leg must equal, then just solve for $K$:
+
+\begin{equation}
+\begin{gathered}
+K \sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360} = [D(d_0) - D(d_n)] \\
+K = \cfrac{[D(d_0) - D(d_n)]}{\sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}}
+\end{gathered}
+\end{equation}
+\end{finmarkets}
+
+\begin{ipython}
+from finmarkets import generate_dates
+
+class OvernightIndexSwap:
+    def __init__(self, nominal, start_date, maturity, fixed_rate):
+        self.nominal = nominal
+        self.fixed_rate = fixed_rate
+        self.payment_dates = generate_dates(start_date, maturity)
+      
+    def npv_floating(self, dc):
+        return self.nominal * (dc.df(self.payment_dates[0]) - \
+                               dc.df(self.payment_dates[-1]))
+  
+    def npv_fixed(self, dc):
+        val = 0
+        for i in range(1, len(self.payment_dates)):
+            val += dc.df(self.payment_dates[i]) * \
+                    (self.payment_dates[i] - self.payment_dates[i-1]).days/360 
+        return self.nominal*self.fixed_rate*val
+  
+    def npv(self, dc):
+        return self.npv_floating(dc) - self.npv_fixed(dc)
+
+    def fair_value_strike(self, dc):
+        den = self.npv_fixed_leg(dc)/self.fixed_rate
+        num = self.npv_floating_leg(dc)
+        return num/den
+\end{ipython}
+
+Let's test the class using the following discount curve: \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{discount\_factors\_2022-10-05.xlsx}.
+
+\begin{ipython}
+import pandas as pd
+from datetime import date
+from finmarkets import DiscountCurve
+from dateutil.relativedelta import relativedelta
+
+obs_date = date.today()
+start_date = obs_date
+ois = OvernightIndexSwap(1e6,
+                         start_date, 
+                         "3y",
+                         0.025)
+
+df = pd.read_excel("discount_factors_2022-10-05.xlsx")
+pillars = [obs_date + relativedelta(months=i) for i in df['months']]
+dfs = df['dfs']
+
+curve = DiscountCurve(pillars, dfs)
+print ("OIS NPV: {:.2f} EUR".format(ois.npv(curve)))
+\end{ipython}
+\begin{ioutput}
+-2162.61 EUR
+\end{ioutput}
+
+\section{Bootstrap Technique}
+\label{bootstrapping-technique}
+
+In order to determine a discount curve (hence an yield curve) from market data a technique called \emph{bootstrap} will be used.
+
+%We are going to concentrate on \euro STR swaps in order to build an EUR discount curve.
+
+\subsection{Constructing the Yield Curve}
+\label{the-bootstrapping-technique}
+
+In finance, the \emph{bootstrap algorithm} is a method for constructing a yield curve from prices of coupon-bearing products, e.g. bonds and swaps. The term structure of spot returns is obtained from the product yields by solving for them recursively, by \emph{forward substitution}. 
+The beauty of bootstrap resides on that using only a few carefully selected products, it is possible to derive forward and spot rates for all maturities.
+
+This algorithm relies on the assumption that market quotes represent the \textbf{fair price} of the contracts so their NPV are null. The fair price is an estimate of what a willing buyer would pay a willing seller for a given asset, assuming both have a reasonable knowledge of the asset's worth.
+
+To illustrate bootstrapping let's consider some bonds (yearly coupon of 4\%, 5\%, 6\%, 7\% and 8\% respectively) with maturities ranging from 1 to 5 years, each having a value of 100 and traded at par. 
+
+To determine the yield curve proceed as follows:
+\begin{enumerate}
+\item at the end of the first year the $1^{st}$ bond will pay a coupon of 4 (= 100 * 4\%) plus the principal (=100) which sums up to 104 while the bond is trading at 100. The implied 1-year spot rate $S_{1y}$ can be calculated from $\mbox{100} = \mbox{104} / (1 + S_{1y})$;
+
+\item at the end of second year the sum of the cash flows of the $2^{nd}$ bond can be compared to its trading price to compute the 2-year spot rate $S_{2y}$ from $\mbox{100} = \mbox{5} / (1 + S_{1y}) + \mbox{105} / (1 + S_{2y})^{2}$ where the previously derived value of $S_{1y}$ is used;
+
+\item similarly at the end of third year we get the 3-year spot rate $S_{3y}$ as $\mbox{100} = \mbox{6} / (1 + S_{1y}) + \mbox{6} / (1 + S_{2y})^{2} + \mbox{106} / (1 + S_{3y})^{3}$, using $S_{1y}$ and $S_{2y}$ computed before;
+
+\item and so on for all the remaining bonds\ldots
+\end{enumerate}
+
+Putting all together we can construct a system of equations
+
+\begin{equation}
+\begin{cases}
+100 = \cfrac{104}{(1 + S_{1y})} \\
+100 = \cfrac{5}{(1 + S_{1y})} + \cfrac{105}{(1 + S_{2y})^{2}} \\
+100 = \cfrac{6} {(1 + S_{1y})} + \cfrac{6}{(1 + S_{2y})^{2}} + \cfrac{106} {(1 + S_{3y})^{3}} \\
+100 = \cfrac{7} {(1 + S_{1y})} + \cfrac{7} {(1 + S_{2y})^{2}} + \cfrac{7} {(1 + S_{3y})^{3}} + \cfrac{107} {(1 + S_{4y})^{4}} \\
+100 = \cfrac{8} {(1 + S_{1y})} + \cfrac{8} {(1 + S_{2y})^{2}}+ \cfrac{8} {(1 + S_{3y})^{3}} + \cfrac{8} {(1 + S_{4y})^{4}} + \cfrac{108} {(1 + S_{5y})^{5}}
+\end{cases}
+\label{eq:fifth_year_rate}
+\end{equation}
+
+This system can be solved quite easily: $S_{1y}$ can be derived from the first equation, $S_{2y}$ from the second, $S_{3y}$ from the third\ldots So
+
+\begin{equation}
+100 = 104 / (1 + S_{1y})\quad\Rightarrow\quad S_{1y} = 104/100 - 1 = 4\%
+\end{equation}
+Moving to the second equation:
+\begin{equation}
+\begin{split}
+& 100 = 5 / (1 + 0.04) + 105 / (1 + S_{2y})^{2}\quad\Rightarrow\quad S_{2y}^2  + 2 S_{2y}  - 0.103030 = 0 \\
+& S_{2y} = - 1 \pm \sqrt{1 + 0.103030} = \begin{cases}\text{\sout{-2.05023}} \\ 0.0502\end{cases}
+\end{split}
+\end{equation}
+where the first solution has been discarded because negative.
+
+This equation can also be solved in \texttt{python} with \texttt{numpy.roots}:
+\begin{ipython}
+import numpy as np
+
+coeff = [1, 2, -0.103030]
+np.roots(coeff)
+\end{ipython}
+\begin{ioutput}
+array([-2.05025235,  0.05025235])
+\end{ioutput}
+
+From the third equation on it is not as simple to solve them analytically since it involves third order (or more) equations, but is still possible to compute a numerical solution.
+
+As an example assume all rates up to the fourth year have been calculated and just the last one needs to be determined. The last column of Table~\ref{tab:rates} provides the terms to fill the yield curve.
+
+\begin{table}[htb]
+\begin{center}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{years} & \textbf{coupon rate} & \textbf{bond price} & \textbf{spot rate} \\
+\hline
+1 & 1.00 \% & 100 & 4.00\% \\
+\hline
+2 & 2.00 \% & 100 & 5.02\% \\
+\hline
+3 & 3.00 \% & 100 & 6.08\% \\
+\hline
+4 & 4.00 \% & 100 & 7.19\% \\
+\hline
+5 & 5.00 \% & 100 & ??? \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Table reporting maturity, coupon, bond price and implied spot rate for the example outlined in the text.}
+\label{tab:rates}
+\end{table}
+
+To solve the last of Eq.~\ref{eq:fifth_year_rate} numerically one of the root finding algorithm illustrated in Section~\ref{sec:root_finding} can be used. 
+In this case \texttt{scipy.optimize.brentq} is used, it finds zeros of a user-defined function within a validity interval.
+
+In Figure~\ref{fig:fifth_year_rate} the equation is plotted as a function of $S_{5y}$. It already gives us an idea of the expected result, the rate value which solves the equation should be around 0.08.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/bond_5_plot.png}
+  \caption{Plot of the discounted cash flow of bond 5 as a function of the 5 year spot rate.}
+  \label{fig:fifth_year_rate}
+\end{figure}
+
+\begin{ipython}
+from scipy.optimize import brentq
+
+def func(x):
+    return 100 - 8/(1+0.04) - 8/(1+0.0503)**2 - 8/(1+0.0608)**3
+               - 8/(1+0.0719)**4 - 108/(1+x)**5
+               
+a = brentq(func, 0, 0.10)
+print ("5y rate: {:.4f}".format(a))
+\end{ipython}
+\begin{ioutput}
+5y rate: 0.0836
+\end{ioutput}
+
+The very same mechanism can be generalized and extended to other maturities to get a more detailed yield curve. In general terms the previous system becomes
+
+\begin{equation}
+\begin{cases}
+f_1(S_1, p_1) = 0 \\
+f_2(S_1, S_2, p_2) = 0 \\
+f_3(S_1, S_2, S_3, p_3) = 0 \\
+f_4(S_1, S_2, S_3, S_4, p_4) = 0 \\
+\cdots
+\end{cases}
+\end{equation}
+where $S_i$ are the unknown spot rates and $p_i$ the market quotes of the considered products. The iterative procedure we have applied before exploits the first equation to find $S_1 = f_1^{-1}(p_1)$, the second to find $S_2 = f_2^{-1}(S_1, p_2)$ and so on. Each equation determines exactly one spot rate which is not already determined by the others.
+
+\subsection{Bootstrapping as Minimization Problem}
+\label{sec:bootstrap_as_minimization}
+
+From what we have seen the yield curve can be \emph{bootstrapped} by successively calibrating it to return the input product market quotes.
+Nevertheless the algorithm can be simplified by defining a vector of spot rates $\mathbf{S} = (S_1, S_2, S_3, \ldots)$ and seeking for a particular set $\mathbf{\hat{S}}$ which solves the following equation:
+
+\begin{equation}
+F = f_1^2(\hat{S}_1,p_1) + f_2^2(\hat{S}_1, \hat{S}_2,p_2) + f_3^2(\hat{S}_1, \hat{S}_2, \hat{S}_3,p_3) + f_4^2(\hat{S}_1, \hat{S}_2, \hat{S}_3, \hat{S}_4,p_4) + \ldots = 0
+\label{eq:bootstrap_as_minimization}
+\end{equation}
+
+Solving Eq.~\ref{eq:bootstrap_as_minimization} is perfectly equivalent to find the solution of the system~\ref{eq:fifth_year_rate}.
+Under this terms the bootstrap method becomes a \emph{minimization problem}. In fact we need to find $\mathbf{\hat{S}}$ which \emph{minimize} $F$, (i.e. makes it as close as possible to 0).
+Notice how each $f_i$ is squared since we want all of them to be minimized at the same time and not only $F$ globally (i.e. without the square there may be cancellation effects between the terms of the sum, which makes $F$ zero but not all $f_i$ individually).
+
+Before implementing the bootstrap method as described let's review minimization algorithms in general.
+
+\subsection{Minimization Algorithm}
+\label{minimization-algorithm}
+
+A minimization algorithm follows these steps:
+
+\begin{itemize}
+\tightlist
+\item
+  define an \emph{objective function} i.e. the function that has to be minimized;
+\item
+  set the initial value of the unknown parameters ($\mathbf{x_0}$) and their range of variability (those are the parameters that will be changed to find the objective function minimum);
+\item
+  compute the objective function value;
+\item
+  move the parameter values to find a smaller value of the objective function (e.g. following the derivative direction w.r.t. each parameter); in case constraints are defined, they will be considered when the parameter values are varied;
+\item
+  repeat the previous two steps until further variations of $\mathbf{x}$ won't change significantly the objective
+  function (i.e. we have found a minimum of the function so the minimization process is completed !).
+\end{itemize}
+
+Let's see with a couple of examples how minimization can be implemented in \texttt{python} using the function \texttt{scipy.optimize.minimize}.
+
+\subsubsection{A Simple Minimization Example}
+\label{example}
+
+Find the size of a circular cylindrical can of volume, $330~\mathrm{cm}^3$, that minimizes the cost of manufacture, see Figure~\ref{fig:cylinder}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.2\textwidth]{figures/cylinder.png}
+\caption{Graphical representation of the \emph{can} minimization example.}
+\label{fig:cylinder}
+\end{figure}
+
+Clearly to minimize the costs, you need to reduce the amount of aluminum used, consequently the can surface. 
+The objective function is given by the area of a cylinder
+
+\begin{equation} 
+S = 2\pi rh + 2\pi r^2 
+\label{eq:can_surface}
+\end{equation}
+On the other hand the can volume is fixed to 33~cl or 330~$\mathrm{cm}^3$ and this allows to simplify the previous equation by removing $h$
+
+\begin{equation*} 
+V = \pi r^2 h = 330\quad\implies h = \cfrac{330}{\pi r^2}
+\end{equation*}
+Replacing $h$ in Eq.~\ref{eq:can_surface} 
+
+\begin{equation}
+S = 2\pi rh + 2\cdot(\pi r^2) = \cfrac{2\cdot 330}{r} + 2\cdot(\pi r^2)
+\end{equation}
+The objective function depends on one parameter only \texttt{x[0]} which is the can radius in cm. We are going to use a \texttt{list} (or a \texttt{numpy.array}) even in this simple case so that the same code can be generalized to more complex problems with a larger number of parameters to minimize. 
+
+\begin{ipython}
+from math import pi
+
+def obj_func(x):
+    return 2*330/x[0] + 2*pi*x[0]**2
+\end{ipython}
+
+Set the limits to our unknown variable and its initial value:
+
+\begin{ipython}
+x0 = [1]
+bounds = [(0.01, 100)]
+\end{ipython}
+
+Finally run the minimization:
+
+\begin{ipython}
+from scipy.optimize import minimize
+
+r = minimize(obj_func, x0, bounds=bounds)
+print (r)
+\end{ipython}
+\begin{ioutput}
+      fun: 264.356810914805
+ hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
+      jac: array([5.68434189e-06])
+  message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
+     nfev: 24
+      nit: 9
+   status: 0
+  success: True
+        x: array([3.7449385])
+\end{ioutput}
+
+Printing the result gives us the a lot of information about the minimisation just performed, the most useful are:
+\begin{itemize}
+\item \texttt{func}: the objective function value at the last iteration;
+\item \texttt{message}: the summary message (if it is \texttt{CONVERGENCE} is almost always OK);
+\item \texttt{success}: the name is self explanatory;
+\item \texttt{x}: the vector of unknown parameters that have been optimised.
+\end{itemize}
+
+Referring to Fig.~\ref{fig:minimization_diagnostic} it can be understood how minimization works. On the left plot it is shown the objective function value at each iteration, on the right the objective function vs the can radius is plotted.
+The parameter $x[0]$ starts with the initial value we have set (1) then it is moved, too far, to 100.0 and indeed the evaluation gives an even higher value. $x[0]$ is then "adjusted" to $19.4\rightarrow 6.6\rightarrow 4.3\rightarrow 3.9\rightarrow 3.72\rightarrow 3.74\ldots$ always reducing the objective function value. Notice that the parameter is always moved according to the objective function derivative $\frac{dS}{dr}$ though by different amount.
+Also the surface is a quadratic function of the radius so it is guaranteed to have just one minimum.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.45\linewidth]{figures/objective_function_value}
+	\includegraphics[width=0.45\linewidth]{figures/can_surface}
+	\caption{Diagnostic plots for the minimization algorithm. On the left the objective function value at each iteration, on the right the objective function value versus the can radius $x_0$.}
+	\label{fig:minimization_diagnostic}
+\end{figure}
+
+Going back to the result it looks like that to minimize production costs the can radius has to be about 3.7~cm (or about 75~mm diameter).
+
+\begin{curiosity}
+It looks like Coke has done a similar calculation since the result is surprisingly close to that of a real can. 
+
+From \href{	https://www.ball.com/eu/solutions/markets-capabilities/capabilities/beverage-cans/standard-range
+}{here} seems that a real can has a 66.3~mm diameter, a little smaller than our but it is not surprising since the real can shape is more elaborated than a simple cylinder.
+\end{curiosity}
+
+\subsubsection{Example with Constraint}
+\label{example-with-constraint}
+
+We are going to fence a rectangular field. If we look at the field from above the vertical sides cost is 10~EUR/m, the bottom side cost is 2~EUR/m and that of the top side is 7~EUR/m. If we have a 700~EUR budget determine
+the field dimensions that will maximize the enclosed area, see Fig.~\ref{fig:field}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.4\textwidth]{figures/field.png}
+\caption{Graphical representation of the \emph{field} minimization example.}
+\label{fig:field}
+\end{figure}
+
+In this example there are two differences with respect to the previous:
+
+\begin{itemize}
+\tightlist
+\item we want to \emph{maximize} a quantity (not minimize);
+\item there is a constraint (we have a limited budget).
+\end{itemize}
+
+So let's repeat the steps as before. The objective is to maximize the enclosed area $A$ but our algorithm can only minimize functions. To overcome this issue the objective function can be defined to return the quantity $-A$, so that minimizing its value, the real objective, $A$, is maximized. 
+Define length and width of the field respectively as \texttt{x[0]} and \texttt{x[1]} (items of the \texttt{list} \texttt{x}):
+
+\begin{ipython}
+def obj_func(x):
+    return -x[0]*x[1]
+\end{ipython}
+
+Then we can set the boundaries for length and width, their initial values (1~m each) and the other needed parameters:
+
+\begin{ipython}
+x0 = [1, 1]
+bounds = [(0.01, 100) for _ in range(len(x0))]
+budget = 700
+side_cost = 10
+up_cost = 2
+down_cost = 7
+\end{ipython}
+
+Finally we have to impose the budget constraint. This is done by defining a function that computes the fence cost and compare it to the total budget. 
+The constraint is passed to the minimizer as a dictionary (or a list  of dictionaries if there are more) which has three keys: \texttt{type}, in this case set to \texttt{'eq'} (like equality, since we want to spend all of our available money so the fence has to cost \textbf{exactly} 700~EUR), \texttt{'fun'} which defines the constraint function and \texttt{'args'} which is optional and set to a tuple whose items are the parameters for the constraint function (see Section~\ref{sec:kwargs_args}).
+
+The constraint is then defined as
+\begin{equation*}
+\mathrm{budget} - \mathrm{fence~cost} = \mathrm{budget} - 2\cdot l\cdot\mathrm{side\_cost} - w\cdot(\mathrm{up\_cost} + \mathrm{down\_cost}) = 0
+\end{equation*}
+
+\begin{ipython}
+def cons(x, budget, up_cost, down_cost, side_cost):
+    return budget - 2*x[0]*side_cost - x[1]*(up_cost + down_cost)
+
+constraints = {'type':'eq', 'fun':cons,
+               'args':(budget, up_cost, down_cost, side_cost)}
+\end{ipython}
+
+Now we can call the minimizer.
+
+\begin{ipython}
+r = minimize(obj_func, x0, bounds=bounds, constraints=constraints)
+print (r)
+\end{ipython}
+\begin{ioutput}
+    fun: -680.5555555555482
+    jac: array([-38.88889313, -17.5       ])
+message: 'Optimization terminated successfully'
+   nfev: 12
+    nit: 4  
+   njev: 4
+ status: 0
+success: True
+      x: array([17.49999818, 38.88889293])
+\end{ioutput}
+
+The field will come out 17.5~m long and 38.9~m wide for a total field area of 680.5~$\textrm{m}^2$.
+
+\subsection{Local Minima}
+Minimization problems can be very nasty.
+For example when the objective function has various local minima, the parameter initial value choice can be critical. 
+Assume we would like to minimize an objective function like 
+
+\begin{equation*}
+f(x) = \cfrac{\mathrm{cos}(3\pi x)}{x}
+\end{equation*}
+This function is plotted in Fig.~\ref{fig:local_minima} in the range $[0, 2]$, and clearly it has many minima. 
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/local_minima}
+	\caption{Plot of an example function with many local minima. The red points highlights initial value and minimum found in a \emph{bad} minimization, green points for a good minimization.}
+	\label{fig:local_minima}
+\end{figure}
+Let's try to find a minimum setting the initial value to $x=1.1$.
+\begin{ipython}
+x0 = [1.1]
+bounds = [(0.01, 20)]
+r = minimize(func, x0, bounds=bounds)
+
+print (r)
+\end{ipython}
+\begin{ioutput}
+     fun: array([-1.00569871])
+hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
+     jac: array([-4.4408921e-07])
+ message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
+    nfev: 16
+     nit: 5
+  status: 0
+ success: True
+       x: array([0.98865633])
+\end{ioutput}
+The minimization worked perfectly and we found $x=0.98865633$ (i.e. the red point in Fig.~\ref{fig:local_minima}) but this is not the absolute minimum we were expecting to find. The problem arise since the algorithm, following the derivative direction, has got stuck in a local minimum without any possibility to jump out from the well.
+
+If we repeat the minimization using as initial value $0.5$ instead
+\begin{ipython}
+x0 = [0.5]
+bounds = [(0.01, 20)]
+r = minimize(func, x0, bounds=bounds)
+
+print (r)
+\end{ipython}
+\begin{ioutput}
+     fun: array([-3.17151711])
+hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
+     jac: array([9.76996262e-07])
+ message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
+    nfev: 16
+     nit: 5
+  status: 0
+ success: True
+       x: array([0.29691798])
+\end{ioutput}
+Now clearly the algorithm found the absolute minimum in $x=0.29691798$ (i.e. the green point in Fig.~\ref{fig:local_minima}) because there was no chance to find a local minimum during the iterations.
+
+This is just an example of what could happen when minimizing a function. When dealing with complicated cases it is possible to make a \emph{scan} of the objective function to try to approximately determine where the global minimum is and choose suitable initial values of the guess parameters.
+However there shouldn't be such an issue in the application of the bootstrap algorithm since the function that is minimized is a sum of squared terms which has no local minimum, just a global minimum (i.e. it is a hyper-parabola).
+
+\subsection{Building OIS Instances}
+\label{building-ois-instances}
+
+Back to bootstrap, the first step is to choose the set of contracts to use in the minimization.
+%The first step involves getting data, the swap market quotes, and this is not actually as simple as it sounds.
+
+%The issue is that EONIA swap market is over the counter (OTC) and it's not straightforward to access it. Unlike (some) listed futures, where anyone with a retail brokerage account can view and apply real time prices, to trade in the EONIA swap market you have to be a financial institution or at least a large company and have an agreement with a broker which operates in the market. One of the most important broker in the OIS market is ICAP, see Fig.~\ref{fig:icap}.
+
+Our choice concerns a set of Overnight Index Swaps indexed on \euro STR, in Fig.~\ref{fig:icap} the used quotes.
+ 
+\begin{figure}[bth]
+	\centering
+	\includegraphics[width=1.\linewidth]{figures/icap_3.png}
+	\caption{Screenshot of market quotes from ICAP.}
+	\label{fig:icap}
+\end{figure}
+
+%Though there exist some electronic platform in which market participants post bids and offers and other participants can apply them, in practice a lot of trading is still done over "voice", i.e.~by phone or more commonly over chat. For convenience, however, Bloomberg provides a service which displays indicative real time rates as provided by a selection of relevant brokers. 
+Note that interest rate swap quotes vary from standard prices of commonly traded instruments, they can be puzzling but are effectively interest rates (i.e. the rate of the fixed leg).
+
+The resulting dateset is stored in (\href{https://github.com/matteosan1/finance_course/raw/master/input_files/ois_2022_09_30.xlsx}{\texttt{ois\_2022\_09\_30.xlsx}}). With the help of \texttt{pandas} it can be inspected:
+
+\begin{ipython}
+import pandas as pd
+
+mq = pd.read_excel('ois_2022_09_30.xlsx')
+print (mq.head())
+\end{ipython}
+\begin{ioutput}
+   months   quotes
+0       1  0.70575
+1       2  1.03170
+2       3  1.23200
+3       4  1.42975
+4       5  1.59400
+\end{ioutput}
+
+As an example let's build the 18 months swap. Be careful when doing this operation and always double check the units of rates and quotes. In this case for example quotes are expressed in percent so you need to multiply them by 0.01. Another possible source of mistakes could be the quote index, e.g. the 18 months quote is not the eighteenth entry in the dataframe but rather the twelfth.
+
+\begin{ipython}
+from finmarkets import OvernightIndexSwap
+from datetime import date
+
+obs_date = date.today()
+ois = OvernightIndexSwap(1e6,
+                         obs_date, 
+                         "18m",
+                         mq.loc[mq['months']==18, 'quotes']*0.01)
+	
+ois.fixed_rate
+\end{ipython}
+\begin{ioutput}
+0.024475
+\end{ioutput}
+
+To price every derivative a discount curve is needed and here comes to hand the bootstrapping technique !
+%use the \texttt{npv} method to calculate the OIS's NPV, we need a discount curve and here comes to hand the bootstrapping technique !
+At the beginning of the Chapter we said that the OIS market quotes represent the \emph{fair} prices (i.e. the price which buyer and seller happily agree for the contract). This means that the OIS NPV's should be close to 0 hence the natural choice for the objective function is
+
+\begin{equation}
+\mathrm{Objective Function} = \sum_{i=1}^{n}\mathrm{NPV}^\mathrm{OIS}_i(\mathcal{C})^2
+\end{equation}.
+
+Once the OIS characteristics (e.g. nominal, maturity\ldots) have been specified the only unknown parameter in the NPV calculation is the discount curve $\mathcal{C}$ (i.e. the minimization algorithm will adjust $\mathcal{C}$ to reach the minimum).
+
+In previous examples the number of minimization parameters, \emph{the degrees of freedom} of the problem, were clear:
+\begin{itemize}
+\item 1 for the can example, the can radius;
+\item 2 for the fence problem, width and height of the field.
+\end{itemize}
+
+A discount curve is characterized by a set of pillar dates ($\mathbf{d}$) and a set of discount factors ($\mathbf{x}$), but it hasn't yet been identified any constraint on how many points the curve has to be made of (too many or too few points may prevent us from finding the solution).
+
+In practice \textbf{it makes sense to choose the degrees of freedom to match the number of market quotes}. In particular it is wise to choose the pillar dates of the discount curve equal to the swap expiry dates, leaving as unknown parameters just the discount factors.
+
+The final version of the optimization problem becomes
+
+\begin{equation}
+ \mathrm{min}_{\mathbf{x}} \left\{\sum_{i=1}^{N}\mathrm{NPV}^\mathrm{OIS}_i( \mathcal{C}(\mathbf{x}))^2\right\}
+\end{equation}
+i.e. finding the minimum of the above expression as a function of the discount factors $\mathbf{x}$.
+
+\subsection{Bootstrapping of Discount Curve}
+First create the swap objects according to all the available market quotes
+
+\begin{ipython}
+from finmarkets import generate_dates
+from datetime import date
+
+pillar_dates = []
+swaps = []
+for i in range(len(mq)):
+    start_date = obs_date
+    swap = OvernightIndexSwap(1e5,
+                              start_date,
+                              "{}M".format(data.loc[i, 'months']),
+                              0.01 * mq.loc[i, 'quotes'])
+    swaps.append(swap)
+    pillar_dates.append(swap.payment_dates[-1])
+
+pillar_dates = sorted(pillar_dates)
+\end{ipython}
+
+With these swaps define the objective function: the sum of the squared NPVs of the OIS (today's discount factor is fixed to 1 so it is not included among the minimization parameters). Note that the objective function have constant additional parameters so they can be passed using \texttt{args} (see Section~\ref{sec:kwargs_args}). 
+
+\begin{ipython}
+import numpy as np
+from finmarkets import DiscountCurve 
+
+def objective_function(dfs, obs_date, pillars, swaps):
+    curve = DiscountCurve(obs_date, pillars, dfs)
+    sum_sq = 0.0
+    for swap in swaps:
+        sum_sq += swap.npv(curve) ** 2
+    return sum_sq
+\end{ipython}
+
+Set the initial value of the discount factors $x_i^0$ to 1 with a range of variability $[0.01, 10]$. Discount factor 0 will be set fixed to 1.
+
+\begin{ipython}
+x0 = [1.0 for i in range(len(swaps))]
+bounds = [(0.01, 10.0) for i in range(len(swaps))]
+\end{ipython}
+
+Finally launch the minimizer to find the discount factors $\mathbf{x}$
+
+\begin{ipython}
+result = minimize(objective_function, x0, bounds=bounds,
+                  args=(obs_date, pillar_dates, swaps))
+
+print (result)
+\end{ipython}
+\begin{ioutput}
+      fun: 6.013612670431716e-06
+ hess_inv: <30x30 LbfgsInvHessProduct with dtype=float64>
+      jac: array([  0.04434611,   1.36917983,   2.29552162,   2.5711866 ,
+         2.16690915,   1.32810603,   0.30645228,  -0.5974601 ,
+        -1.13748197,  -1.27599895,  -1.00129447,  -9.80350707,
+        -1.74136091,   4.02268735,   2.72203981,   2.03794119,
+         1.56284007,   1.77433427,   1.94559823,   2.27940774,
+         2.62049768,   3.02952444,   2.92352974,  -0.99744574,
+        -1.32504836, -14.21784677,   0.69443698,   5.40812762,
+        -7.85010772,  -1.33104848])
+  message: 'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH'
+     nfev: 713
+      nit: 10
+     njev: 23
+   status: 0
+  success: True
+        x: array([0.99939263, 0.99831201, 0.99692945, 0.99525677, 0.99335846,
+       0.99136706, 0.9892002 , 0.98691644, 0.98469213, 0.98233439,
+       0.98001276, 0.97763573, 0.9638143 , 0.95044587, 0.92527826,
+       0.90036952, 0.8752759 , 0.85061109, 0.8265085 , 0.80234949,
+       0.77842018, 0.75456742, 0.73127098, 0.70888994, 0.64940464,
+       0.58284654, 0.54160531, 0.50880545, 0.44281208, 0.39008517])
+\end{ioutput}
+
+A useful cross-check to perform to understand if everything went fine, is the comparison of the objective function value at the beginning and at the end of minimization.
+
+\begin{ipython}
+print ("Initial objective function value ", objective_function(x0,
+                                          obs_date, 
+                                          pillar_dates, 
+                                          swaps))
+print ("Final objective function value ", objective_function(result.x, 
+                                          obs_date,
+                                          pillar_dates, 
+                                          swaps))
+\end{ipython}
+\begin{ioutput}
+Initial objective function value  51601443377.52911
+Final objective function value  6.013612670431716e-06
+\end{ioutput}
+
+The objective function at the end of the minimization is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied: the initial value was around $1$ and now it is $10^{-11}$ so several orders of magnitude smaller. This means that with the derived discount curve the NPV's of our OIS won't be identically 0 but so small that can be regarded as they would.
+
+%It can be very useful to also look at some diagnostic plots to check if the minimization was successful. Figure~\ref{fig:minimization_diagnostic} reports on the left the objective function value as a function of discount factor $(x_{32})$; clearly we have found a minimum (the sixth point represents the parameter value at the minimization end). On the right instead, the value of the objective function at each iteration is shown: its value is decreasing dramatically (notice that the $y$ axis is drawn in log scale).
+%
+%\begin{figure}[htb]
+%\centering
+%\includegraphics[width=0.45\linewidth]{figures/obj_func_diagnostic1}
+%\includegraphics[width=0.45\linewidth]{figures/obj_func_diagnostic2}
+%\caption{Diagnostic plots for the minimization algorithm. On the left the objective function value as a function of the discount factor $x_1$ (the red points represent $x_{32}$ values taken during the minimization), on the right the objective function value as a function of the iteration number.}
+%\label{fig:minimization_diagnostic}
+%\end{figure}
+
+Finally we can create the discount curve implied by the market quotes of our swaps (see Fig.~\ref{fig:discount_curve}) and try to compute some implied rates (remember to add back the first discount factor to the vector of parameters).
+
+\begin{ipython}
+from math import log
+from dateutil.relativedelta import relativedelta
+
+dfs = result.x
+curve = DiscountCurve(obs_date, pillar_dates, dfs)
+d = observation_date + relativedelta(years=40)
+
+print ("40y df: {:.3f}".format(curve.df(d)))
+print ("40y rate: {:.4f}".format(curve.annualized_yield(d)))
+\end{ipython}
+\begin{ioutput}
+40y df: 0.622
+40y rate: 0.0028
+\end{ioutput}
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/example_discount_curve}
+	\caption{Plot of the discount curve implied by Overnight Index Swap market quotes.}
+	\label{fig:discount_curve}
+\end{figure}
+
+\section{Discount Factors with Pseudo-inverse}
+An alternative procedure to derive discount factors involves matrix inversion and in some special cases the usage of the \emph{pseudoinverse} described in Section~\ref{sec:the-moore-penrose-pseudoinverse}.Details on this algorithm can be found in~\cite{bib:boostrap_pseudoinv}.
+
+Consider a set of $n$ financial instruments (e.g. bonds, futures, swaps, \ldots). The price of such instruments is connected to the discount factors by the following relationship
+
+\begin{equation}
+P_i = \sum_{j=0}^{m} C_{i,j} d_j
+\label{eq:discounted_cashflows}
+\end{equation}
+where $P_i$ is the market quote of the $i^{th}$ product, $C_{i,j}$ is the $j^{th}$ cash-flow of the $i^{th}$ product and $d_j$ is the discount factor relative to period $(t_0, t_j)$.
+Eq.~\ref{eq:discounted_cashflows} can be written in matrix form
+
+\begin{equation}
+\boldsymbol{P} = [C]\boldsymbol{d}
+\label{eq:discount_matrix}
+\end{equation}
+and now $P$ and $d$ are column vectors while $[C]$ is a $n \times m$ matrix where each row element is a cash-flow associated to the row product.
+
+Recalling Section~\ref{solving-systems-of-equations-using-matrix-inverses}, Eq.~\ref{eq:discount_matrix} represents a system of equations which can be solved to determine the unknown $\boldsymbol{d}$.
+The sought solution is 
+\begin{equation}
+\boldsymbol{d} = [C^{-1}] \boldsymbol{P}
+\end{equation} 
+If matrix $[C]$ is not invertible (i.e. the system of equations is under-determined) $[C^{-1}]$ can be replaced by the optimal approximation $[C^+]$ (i.e. the pseudo-inverse). 
+
+To illustrate the algorithm let's consider again the previous example with five coupon bearing bonds (coupon of 4\%, 5\%, 6\%, 7\% and 8\% respectively) with maturities ranging from 1 to 5 years, each having a value of \euro{100} and traded at par. In this case we have
+\begin{equation*}
+\boldsymbol{P} = 
+\begin{bmatrix}
+100 \\
+100 \\
+100 \\
+100 \\
+100 
+\end{bmatrix}; \quad
+[C] = 
+\begin{bmatrix}
+104 & 0 & 0 & 0 & 0 \\
+5 & 105 & 0 & 0 & 0 \\
+6 & 6 & 106 & 0 & 0 \\
+7 & 7 & 7 & 107 & 0 \\
+8 & 8 & 8 & 8 & 108
+\end{bmatrix}; \quad \boldsymbol{d} =
+\begin{bmatrix}
+d_1 \\
+d_2 \\
+d_3 \\
+d_4 \\
+d_5 
+\end{bmatrix}
+\end{equation*}
+The \texttt{python} implementation to determine the solution is given in the snippet below. The code use by default the pseudo-inverse since if $[C]$ is invertible holds $[C^+] = [C^{-1}]$. 
+\begin{ipython}
+import numpy as np
+
+C = np.array([[104, 0, 0, 0, 0],
+              [5, 105, 0, 0, 0],
+              [6, 6, 106, 0, 0],
+              [7, 7, 7, 107, 0],
+              [8, 8, 8, 8, 108]])
+P = np.array([100, 100, 100, 100, 100])
+
+Cinv = np.linalg.inv(C)
+d = Cinv.dot(P.T)
+print (d)
+\end{ipython}
+\begin{ioutput}
+[0.96153846 0.90659341 0.83765291 0.75756548 0.66938146]	
+\end{ioutput}
+To determine the corresponding yields just use \texttt{brentq} to solve $1/(1+y_n)^{n}$
+\begin{ipython}
+from scipy.optimize import brentq
+
+def rate(x, d, tau):
+    return d - 1/(1+x)**tau
+
+for i in range(5):
+    print ("yield y{}: {:.4f}".format(i+1, brentq(rate, 0, 1, args=(d[i], i+1))))
+\end{ipython}
+\begin{ioutput}
+yield y1: 0.0400
+yield y2: 0.0503
+yield y3: 0.0608
+yield y4: 0.0719
+yield y5: 0.0836
+\end{ioutput}
+which matches those in Table~\ref{tab:rates}.
+
+In this simple example just bonds were considered but clearly the method can be extended also to other instruments when creating the cash-flow matrix $[C]$.
+
+\section*{Exercises}
+\input{bootstrap_ex_text}
+
+\begin{thebibliography}{9}
+\bibitem{bib:bootstrap2} J. C. Hull, \emph{Options, Futures and Other Derivatives, 7th Ed.}, Swaps (Ch. 7), Pearson Prentice Hall, 2009
+\bibitem{bib:bootsrap} \href{https://financetrain.com/bootstrapping-spot-rate-curve-zero-curve}{\emph{Bootstrapping Spot Rate Curve}} [Online]
+\bibitem{bib:boostrap_pseudoinv} D. Filipovic, S. Willems, \emph{Exact Smooth Term-Structure Estimation}, arXiv: 1606.03899, February 12, 2018
+\end{thebibliography}
