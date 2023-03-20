@@ -4,6 +4,12 @@
 \usepackage{tikz}
 \usetikzlibrary{calc,positioning}
 
+\usepackage{xcolor}
+\usepackage{pifont}
+\newcommand{\goodcheck}{\color{green}\ding{52}}
+\newcommand{\badcheck}{\color{red}\ding{56}}
+
+
 \title{Interest Rate Swap}
 \author{Matteo Sani}
 \begin{document}
@@ -17,6 +23,7 @@
 		\end{frame}
 	}
 
+\section{Interest Rate Swap}
 \begin{frame}{Interest Rate Swap}
 	\begin{itemize}
 		\item An \textcolor{red}{Interest Rate Swap} (IRS) is a contract that exchanges payments between two differently indexed "legs", starting from a future time instant. At every pre-specified instant $T_i$, the fixed leg pays the amount
@@ -40,7 +47,7 @@
 \begin{frame}{IRS and FRA}
 	\begin{itemize}
 		\item We can view the last expression as a portfolio of FRAs though.
-		\item Consider a Receiver IRS and express its payoff as a sum FRAs with Eq.~\ref{eq:fram_payoff_withF}
+		\item Indeed consider a Receiver IRS and express its payoff as a sum FRAs with Eq.~\ref{eq:fram_payoff_withF}
 		\begin{equation}
 			\begin{aligned}
 				\text{RFS}&(t,T,\tau,N,K) =N\sum_{i=\alpha+1}^{\beta}\tau_i P(t,T_i)(K-F(t;T_{i-1},T_i))\\
@@ -51,6 +58,7 @@
 	\end{itemize}
 \end{frame}
 
+\subsection{Swap Rate}
 \begin{frame}{Swap Rates as Break-even Rates}
 	\begin{itemize}
 		\item The fixed rate $K$ which makes the above expression null is called \textcolor{red}{forward swap rate}:
@@ -70,8 +78,9 @@
 		\item So the rate payer will have to fund the payments for the first part of the contract and to invest at his best the receipt during the second part. (This is a very hot topic nowadays; this feature is sometimes referred to as the funding profile of the contract).
 	\end{itemize}
 	\begin{tikzpicture}[remember picture,overlay]
-		\node[xshift=5cm,yshift=-3.7cm] at (current page.center) {\includegraphics[width=30px]{python_logo}};
-	\end{tikzpicture}
+	\node[xshift=5cm,yshift=-3.7cm] (image) at (current page.center) {\includegraphics[width=20px]{python_logo}};
+	\node[align = center, yshift=1.45cm, below=of image] {\tiny{\href{shorturl.at/xELS2}{shorturl.at/xELS2}}};
+\end{tikzpicture}
 \end{frame}
 
 \begin{frame}{An Alternative Expression for the Swap Payoff}
@@ -101,6 +110,7 @@
 	\end{itemize}
 \end{frame}
 
+\subsection{Swaps and Bonds}
 \begin{frame}{Swaps and Bonds}
 	\begin{itemize}
 		\item Consider again a Payer Forward Swap
@@ -132,10 +142,7 @@
 \begin{frame}{Swap and Bond Switching}
 	\begin{itemize}
 		\item A swap can be considered as an exchange between two kinds of bond with the same notional reimbursed at maturity. In fact, the fixed leg of the swap can be viewed as a fixed coupon stream, while the variable can be considered a floating rate note coupon stream. 
-		\item More formally, consider a coupon bond that pays the following cash flows
-		\newline
-		$\mathcal{C}=[c_{\alpha+1},\ldots,c_\beta]$	on the schedule
-		$T = [T_{\alpha+1},\ldots,T_\beta]$ with 
+		\item More formally, consider a coupon bond that pays the following cash flows $\mathcal{C}=[c_{\alpha+1},\ldots,c_\beta]$	on the schedule $T = [T_{\alpha+1},\ldots,T_\beta]$ with 
 		\begin{equation*}
 			c_i = N\tau K,\quad i<\beta
 		\end{equation*}
@@ -150,7 +157,7 @@
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{Floating Rate Note}
+\begin{frame}{Floating Rate Note (FRN)}
 	\begin{itemize}
 		\item Next consider a floating rate note that pays coupons at dates
 		\begin{equation*}
@@ -170,31 +177,30 @@
 
 \begin{frame}{Floating Rate Side}
 	\begin{itemize}
-		\item We impose $K=0$, i.e. no fixed rate payments are done, and finally we insert the present value of the notional at maturity $NP(0,T_\beta)$.
-		\item Hence
+		\item We impose $K=0$, i.e. no fixed rate payments are done, and finally we insert the present value of the notional at maturity $NP(0,T_\beta)$
 		\begin{equation}
 			-\text{RFS}(t,\tau,N,0) + NP(t,T_\beta) = NP(t,T_\alpha)
 		\end{equation}
 	\end{itemize}
 	\begin{block}{Interpretation}
-		The intuition behind this formula is again straightforward: if we set $T_\alpha =t$. At the date of the first reset, the bond price equals par. This result also holds for all the dates equal to the reset of the floating rates. 
+		The intuition behind this formula is again straightforward: if we set $T_\alpha =t$. At the date of the first reset, the bond price equals par. This result also holds for all the dates equal to the reset of the floating rates (an FRN is equivalent to a roll-over strategy of short-term loans).
 	\end{block}
-	This is an alternative proof that to avoid arbitrage opportunities, floating rate notes must trade at par.
-	DA CAPIRE L'ULTIMA INTERPRETAZIONE
+	The FRN is a debt security in which coupon payments adjust according to changes in interest rates. The coupons are closely tied to current short-term spot rates, such that their prices are always at or near par value (no arbitrage). 
 	%\item Provide an example of Italian government floating rate note. Did they trade at par in recent times ? Provide an explanation.
 \end{frame}
 
+\subsection{Fixed vs Variables}
 \begin{frame}{Concepts behind the Formulas}
-	Suppose that a generic Bank \emph{MyFavouriteBank} has the same credit risk of the corresponding average inter-bank entity. So, the spread over the LIBOR rate is 0. Suppose now the bank needs financing and it plans to issue coupon bonds. It has two alternatives:
+	Suppose that a generic bank, \emph{MyFavouriteBank}, has the same credit risk of the corresponding average inter-bank entity. So, the spread over the LIBOR rate is 0. Suppose now the bank needs financing and it plans to issue coupon bonds. It has two alternatives:
 	\begin{enumerate}
 		\item borrow $N$ and pay floating interest at the rates
 		\begin{equation*}
-			L(T_{i-1},T_i)
+			L(T_{i-1},T_i);
 		\end{equation*}
 		\item borrow $N$ and pay fixed interest given by the coupon
 		\begin{equation*}
-			K = S_{\alpha,\beta}
-		\end{equation*}	
+			K = S_{\alpha,\beta}.
+		\end{equation*}
 	\end{enumerate}
 \end{frame}
 
@@ -217,10 +223,17 @@
 
 \begin{frame}{Concepts behind the Formulas}
 	\begin{itemize}
-		\item Banks like floating rates exposure: as the liability value (the bond floating rate) resets with rates.
-		\item Also floating interest rate debt often costs less than fixed-rate debt:
-		\item  in compensation for lower fixed rate costs, borrowers must bear a higher interest rate risk (i.e. for bonds, risk of rates rising in the future). With inverted yield curve, the cost of debt may actually be higher than fixed-rate debt. However, this is the exception rather than the norm.
-		\item  Floating rates are less expensive in the case of a long-term loan (e.g. 30-year mortgage), lenders require higher fixed rates for longer-term loans, due to bad accuracy in forecast economic conditions over such a long period of time.% There is a general assumption that interest rates will rise – or, increase – over time,
+		\item Banks like floating rates exposure: 
+		\begin{itemize}
+			\item [\goodcheck] the liability value (the bond floating rate) resets with rates;
+			\item [\goodcheck] often smaller costs then fixed rates;
+			\item [\goodcheck]surely less expensive in the case of a long-term loan (e.g. 30-year mortgage), lenders require higher fixed rates in that case, due to bad accuracy in forecast economic conditions over such a long period of time.
+		\end{itemize}
+		\begin{itemize}
+			\item [\badcheck] higher interest rate risk (risk of rising rates in the future);
+			\item [\badcheck] with inverted yield curve, the cost of debt may actually be higher than fixed-rate debt (however, this is the exception rather than the norm).
+		\end{itemize}
+% There is a general assumption that interest rates will rise – or, increase – over time,
 	\end{itemize}
 \end{frame}
 
@@ -232,10 +245,11 @@
 	\end{itemize}
 \end{frame}
 
+\section{Credit Risk and Asset Swap}
 \begin{frame}{Adding Credit Risk}
 	\begin{itemize}
 		\item When we make the real world enter the picture a typical bank will pay a spread over LIBOR representing credit risk (and other stuff, but leave this extra aside for the moment). 
-		\item For the swap to be worth 0 at inception the fixed rate must clearly be higher then in the case of no spread. Hence a bank which has credit risk will have to pay
+		\item For the swap to be worth 0 at inception the fixed rate must be higher as well. Hence a bank which has credit risk will have to pay
 		\begin{enumerate}
 			\item a higher coupon if it issues a bond with fixed coupon;
 			\item a spread over the variable rate if it opts for a floating rate bond.
@@ -245,16 +259,17 @@
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{Asset Swap}
+\begin{frame}{Par Asset Swap}
 	\begin{itemize}
 		\item An \textcolor{red}{Asset Swap} (AS) can be defined as a \emph{synthetic floating-rate note}.
 		\item In fact, the Asset Swap transforms a fixed rate in a floating rate, \emph{leaving the credit risk profile unchanged}.
 		\item In the following we consider \textcolor{red}{Par Asset Swaps}. 
 		\item The package is made of a position in a bond and another in a swap.
-		\item In case of default, the Asset Swap buyer must pay the fixed leg and the principal in the swap but does not receive the coupon of the defaulted bond. 
+		\item In case of default of the bond issuer, the Asset Swap buyer must pay the fixed leg and the principal in the swap but does not receive the coupon of the defaulted bond. 
 	\end{itemize}
 \end{frame}
 
+\subsection{Asset Swap Valuation}
 \begin{frame}{Valuation of the Asset Swap}
 	At valuation time $t$ the \emph{three} following facts are observed:
 	\begin{itemize}
@@ -285,108 +300,121 @@
 
 \begin{frame}{Valuation of the Asset Swap}
 	\begin{itemize}
-		\item We can replace the future rate with the forward rates, and after the substitution of $L$ with $F$ we can write
-		\begin{equation}
+		\item We can replace the future rate with the forward rates, and then
+		\begin{equation*}
 			1 = \sum_{i=\alpha+1}^{\beta}\tau_i P(0,T_i)F(t,T_{i-1},T_i)+P(0,T_\beta)
-		\end{equation}
+		\end{equation*}
 		\item Hence 
-		\begin{equation}
+		\begin{equation*}
 			1 - P(0,T_\beta) = \sum_{i=\alpha+1}^{\beta}\tau_i P(0,T_i)F(t,T_{i-1},T_i)
-		\end{equation}
+		\end{equation*}
 		\item Substitute into Eq~\ref{eq:asset_swap_value} to get
-		\begin{equation}
+		\begin{equation*}
 			\begin{aligned}
 				1&-\overline{CBP}+K\sum_{i=\alpha+1}^{\beta}\tau_i P(0,T_i) -(1-P(0,T_\beta)) \\
 				&+ \sum_{i=\alpha+1}^{\beta}\tau_i P(0,T_i)ASWS=0
 			\end{aligned}
-		\end{equation}
+		\end{equation*}
 	\end{itemize}
 \end{frame}
 
 \begin{frame}{Valuation of the Asset Swap}
 	\begin{itemize}
 		\item Canceling out the 1s
-		\begin{equation}
+		\begin{equation*}
 			\begin{aligned}
 				&-\overline{CBP}+K\sum_{i=\alpha+1}^{\beta}\tau_i P(0,T_i) +P(0,T_\beta) \\
 				& + \sum_{i=\alpha+1}^{\beta}\tau_i P(0,T_i)ASWS=0
 			\end{aligned}
-		\end{equation}
+		\end{equation*}
 		\item Finally we know that
-		\begin{equation}
+		\begin{equation*}
 			K\sum_{i=\alpha+1}^{\beta}\tau_i P(0,T_i) + P(0,T_\beta)
-		\end{equation}
+		\end{equation*}
 		represents the price of coupons and principal of a bond priced off the LIBOR curve which we have assumed risk-free. We can denote it by $CBP$.
 	\end{itemize}
 \end{frame}
-
+\subsection{Asset Swap Spread}
 \begin{frame}{Asset Swap Spread}
 	Solving for $ASWS$ we arrive at the final expression
 	\begin{equation}
 		ASWS = \frac{CBP-\overline{CBP}}{\sum_{i=\alpha+1}^{\beta}\tau_iP(0,T_i)}
 	\end{equation}
-	\href{https://colab.research.google.com/drive/1RrfmcrdqT4twtKr9HaDt4czR-HGSjivb?usp=share_link}{
-		\begin{tikzpicture}[remember picture,overlay]
-			\node[xshift=5cm,yshift=-3.7cm] at (current page.center) {\includegraphics[width=30px]{python_logo}};
-	\end{tikzpicture}}
+	\begin{itemize}
+	\item With the Asset Swap we have transformed the type of cash flows (fixed to variables) of the bond, but the credit risk remains to the investor.
+	\item She is exposed to the loss of the coupons and redemption on the bond, i.e. the difference between the bond price and recovery value.
+	\item In economic terms the purpose of the Asset Swap Spread is to compensate the Asset Swap buyer for taking these risks, which is measured by the spread.
+	\end{itemize}
+	\begin{tikzpicture}[remember picture,overlay]
+	\node[xshift=5cm,yshift=-3.7cm] (image) at (current page.center) {\includegraphics[width=20px]{python_logo}};
+	\node[align = center, yshift=1.45cm, below=of image] {\tiny{\href{shorturl.at/asMU1}{shorturl.at/asMU1}}};
+\end{tikzpicture}
 \end{frame}
 
 \begin{frame}{Asset Swap: Credit Considerations}
 	\begin{itemize}
-		\item As we have seen, in an Asset Swap the buyer takes on the credit risk of the bond. She is exposed to the loss of the coupons and redemption on the bond, i.e. the difference between the bond price and recovery value.
+		\item If the credit worthiness of the issuer reduces ($\overline{CBP}$ decreases), rates remain constant, so $ASWS$ increases.
+		\item To avoid arbitrage opportunities, $ASWS$ of bond with maturity $T_N$ must be very close to corresponding maturity CDS $X_N$
+		\begin{itemize}
+			\item if $ASWS - X_N > 0$ the investor can buy the bond, financing the purchase, enters in AS and buying protection, making an (almost) risk free profit (\emph{negative basis trading});
+			\item if $ASWS - X_N < 0$ can do the opposite.
+		\end{itemize}
 		%If the bond defaults, the asset swap buyer has to continue paying on the swap — which can no longer be funded with the coupon from the bond — or the swap can be closed out at market value. The asset swap buyer also loses the par redemption of the bond, receiving whatever recovery rate the bond issuer pays. 
-		\item As a result the buyer has a default contingent exposure to the mark-to-market on the swap and to the redemption on the asset.  
-		\item In economic terms the purpose of the Asset Swap Spread is to compensate the Asset Swap buyer for taking these risks.
 		\item Since the $ASWS$ is quoted as a spread to LIBOR, for assets of better credit quality than AA-rated banks it may be negative.
 	\end{itemize}
 \end{frame}
 
+\section{Delta Measures}
 \begin{frame}{Swap Delta Measures}
 	\begin{itemize}
 		\item \textbf{Basis Point Value:} the variation (in EUR) of the swap $NPV$ when the fixed rate is shifted by a basis point. It is equal to the present value of a one basis point rent, whose payments are scheduled according to the fixed leg of the swap:
 		\begin{equation}
-			BPV(t,T_\beta) = 0.01\%\sum_{i=\alpha+1}^{\beta}\tau_iP(0,T_i)
+			BPV(t,T_\beta) = 0.01\%\sum_{i=\alpha+1}^{\beta}\tau_iP(0,T_i);
 		\end{equation}
-		\item \textbf{Market Rate Sensitivity:} it is given by the sum of the swap $NPV$ variations obtained by shifting one by one by a basis point the input market instruments of the yield curve used in the bootstrapping. In a standard plain vanilla swap is very close but does not coincide with the Basis Point Value. (Why ? Convexity is the answer.)
-		\item \textbf{Modified Duration:} it is the relative variation of a bond price given the variation of the reference rate.
+		\item \textbf{Modified Duration:} it is the relative variation of a bond price given the variation of the reference rate. Since swaps can be thought of exchange of two bonds it can be used as a delta measure as well.
 	\end{itemize}
-	\href{shorturl.at/fBCK6}{
-		\begin{tikzpicture}[remember picture,overlay]
-			\node[xshift=5cm,yshift=-3.7cm] at (current page.center) {\includegraphics[width=30px]{python_logo}
-				shorturl.at/fBCK6};
-		\end{tikzpicture}
-	}
+	\begin{tikzpicture}[remember picture,overlay]
+	\node[xshift=5cm,yshift=-3.7cm] (image) at (current page.center) {\includegraphics[width=20px]{python_logo}};
+	\node[align = center, yshift=1.45cm, below=of image] {\tiny{\href{shorturl.at/mqvFP}{shorturl.at/mqvFP}}};
+\end{tikzpicture}
 \end{frame}
 
-\begin{frame}{Considerations}
+\begin{frame}{Swap Delta Measures}
 	\begin{itemize}
-		\item The mark to market value of the swap is a \emph{convex} function of the rates just in the same way a bond is a convex function of the yield.
-		\item This is the reason why $BPV$ and sensitivity are not exactly the same number.
-		\item Suppose for instance that we are short on a five year swap and to receive $4y$. If the rates go higher we lose money, but the rate of variation of the MTM decreases with the increases of rates. If rates decrease, the MTM increases, and the rate of variation of the MTM increase with the further increase with the further decrease of rates.
+		\item \textbf{Market Rate Sensitivity:} it is given by the sum of the swap $NPV$ variations obtained by shifting one by one by a bps the input market instruments used in the yield curve bootstrap. In a plain vanilla swap is very close but equal to BPV.
+		\item The mark to market value of the swap is not linear (as in a futures contract), but rather it is a \emph{convex} function of the rates (just like a bond is a convex function of the yield.
+		\begin{columns}
+		\column{0.45\linewidth}
+		\item If interest rates go down, the swap’s profit is more than proportional, whilst if rates go up, the loss is also more than proportional.
+		\begin{equation*}
+			\frac{\Delta P}{P}\approx -D \Delta y
+		\end{equation*}
+		%\item This is the reason why $BPV$ and sensitivity are not exactly the same number.
+		\column{0.45\linewidth}
+		\includegraphics[width=0.9\linewidth]{bond_duration}
+		\end{columns}
+%		\item Suppose for instance that we are short on a five year swap and to receive $4y$. If the rates go higher we lose money, but the rate of variation of the MTM decreases with the increases of rates. If rates decrease, the MTM increases, and the rate of variation of the MTM increase with the further increase with the further decrease of rates.
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{Considerations}
+%\begin{frame}{Considerations}
+%	\begin{itemize}
+%		\item Higher rates affect the $NPV$ in two ways: via the discounting and via the forecasting. If the rates go higher the present value of both legs is lower, but the forecasted value of the floating leg is higher: forward rates are higher.
+%		\item The way the curve is bootstrapped interferes with the calculation of the delta also for bullet swaps especially in the front end because the curve is bootstrapped using different instruments.
+%	\end{itemize}
+%\end{frame}
+
+\begin{frame}{Trading and Hedging Swaps}
 	\begin{itemize}
-		\item Higher rates affect the $NPV$ in two ways: via the discounting and via the forecasting. If the rates go higher the present value of both legs is lower, but rhe forecasted value of the floating leg is higher: forward rates are higher.
-		\item The total sensitivity is spread a bit along the curve even for bullet swaps also because of numerical factors.
-		\item The way the curve is bootstrapped interferes with the calculation of the delta also for bullet swaps especially in the front end because the curve is bootstrapped uses different instruments.
+		\item With a swap you can have a clear picture of the market. For example if you pay the $5y$, you make money if rates go higher, loose money if they go lower.
+		\item With two swaps instead you can bet on the \textcolor{red}{slope} of the interest rate curve.
+		\item If you bet on steepening of the $30y-10y$ slope, you pay the $10y-30y$; if you bet on flattening on the same portion of the yield curve you receive the $10y-30y$.		
+		\item With swaps you can bet on the \emph{bund basis}: this quantity is linked to the evolution of credit and liquidity in the inter-bank and Government bond markets.
 	\end{itemize}
 \end{frame}
 
 \begin{frame}{Trading and Hedging Swaps}
-	\begin{itemize}
-		\item With a swap you can have a clear picture of the market. For example if you pay the 5Y, you make money if rates go higher, los money if they go lower.
-		\item With two swaps you can bet on the \emph{slope} of the interest rate curve.
-		\item If you bet on steepening of the 30y-10y slope, you pay the 10-30; if you bet on flattening on the same portion of the yield curve you receive the 10-30.
-		\item Think of the economic determinants of the Steepening and flattening. Take the 30y-2y spread.
-		\item With swaps you can bet on the \emph{bund basis}: this quantity is linked to the evolution of credit and liquidity in the interbank and Government bond markets.
-	\end{itemize}
+	For example, the yield spread is 0.6524\%. An investor believes that this yield spread will narrow as inter-bank credit improves relative to German Sovereign credit. By entering into a position which profits from a rise in the lower (German	Sovereign) yields and / or a fall in the higher (inter-bank) yields, the investor is able to express his view on relative credit pricing.
 \end{frame}
-
-
-
-
-
 
 \end{document}
