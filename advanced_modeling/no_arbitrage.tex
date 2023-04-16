@@ -1,81 +1,350 @@
 \documentclass{beamer}
-\usetheme{CambridgeUS}
-
-\usepackage{tikz}
-\usetikzlibrary{calc,positioning}
+\usetheme{afm}
 
 \title{Arbitrage-Free Pricing Theory}
-\author{Matteo Sani}
+\subtitle{Basic Definitions and a Bit of Stochastic Calculus}
+\course{Advanced Financial Modeling}
+\author{\href{mailto:matteosan1@gmail.com}{Matteo Sani}}
+
 \begin{document}
 	\begin{frame}[plain]
 		\maketitle
 	\end{frame}
 
-\AtBeginSection{
-\begin{frame}{Outline}
-	\tableofcontents[currentsection]
+%\AtBeginSection{
+%\begin{frame}{Outline}
+%	\begin{multicols}{2}
+%		\tableofcontents
+%	\end{multicols}
+%	\tableofcontents%[currentsection]
+%\end{frame}
+%}
+
+\section{Random Variables}
+\begin{frame}{Random Variables}
+	A variable whose value is a number determined by the outcome of a random experiment is called a \textcolor{red}{random variable}.
+	\newline
+	
+	There are two kinds of random variable:
+	\begin{itemize}
+		\item Discrete Random Variable
+		\item Continuous Random Variable
+	\end{itemize}
+	\vspace{1cm}
+	\pause
+    \begin{block}{Definition}
+	The \textcolor{red}{sample space} is the set of all possible future states (or outcomes) of a process ($\Omega$).
+	\end{block}
 \end{frame}
+
+\subsection{Properties and Characteristics of Random Variables}
+\begin{frame}{Discrete and Continuous Random Variables}
+	\begin{block}{Definition} 
+		If a random variable takes only a countable number (finite) of values, it is called \textcolor{red}{discrete}.
+	\end{block}
+	
+	\small{
+		\textbf{Example:} when 3 coins are tossed, the number of heads obtained is the random variable, which assumes the values $\Omega=\{0,1,2,3\}$ ($\Omega$ ia a countable set).}
+	\newline
+	\pause
+	\begin{block}{Definition} 
+		A random variable $X$ which can take any value between certain interval is called \textcolor{red}{continuous}.
+	\end{block}
+	
+	\small{\textbf{Example:} the height of students in a particular class lies between 160 and 190~cm $(X = \{x|160 \leq x \leq 190\})$.}
+\end{frame}
+
+\begin{frame}{Probability Distribution}
+	Let $X$ be a random variable defined on a domain $\Omega$ of possible outcomes. 
+	\renewcommand{\arraystretch}{1.6}
+	\begin{table}[bt]
+		\begin{tabular}{|c|c|} \hline
+			\textbf{Discrete} & \textbf{Continuous} \\ \hline
+			Probability Mass & Probability Density \\ \hline		
+			$P(X=x)\;\forall x\in\Omega$ & $P(X=x)=\int_x^{x+dx}f(x)dx$ \\ \hline
+			$P_i \geq 0;\;\forall i$ & $f(x) \geq 0;\;-\infty < x < \infty$\\ \hline
+			$\sum_{i=0}^{n} P_i = 1$ & $\int_{-\infty}^{\infty} f(x) dx = 1$\\ \hline
+			\multicolumn{2}{|c|}{Cumulative Distribution} \\ \hline
+			$F(x) = P(X<x_i) = \sum_{x_i<x} P_i$ & $F(x) = P(X<a) = \int_{-\infty}^{a} f(x) dx$ \\ \hline
+		\end{tabular}
+	\end{table}
+	\begin{tikzpicture}[remember picture,overlay]
+	\node[xshift=5cm,yshift=-3.7cm] (image) at (current page.center) {\includegraphics[width=20px]{python_logo}};
+	\node[align = center, yshift=1.45cm, below=of image] {\tiny{\href{shorturl.at/JR059}{shorturl.at/JR059}}};
+\end{tikzpicture}
+\end{frame}
+
+\begin{frame}{Characterizing a Random Variable}
+	If we know the distribution of a random variable, we pretty much know all is needed about it. 
+	\newline
+	\begin{columns}
+		\column{0.45\linewidth}
+		\includegraphics[height=3cm]{continouos_random_variable}
+		\pause
+		\column{0.45\linewidth} 
+		\includegraphics[height=3 cm]{real_data}
+	\end{columns}
+	\vspace{0.5cm}
+	But with \textit{real data}, we don't know the full distribution. Fortunately we can characterize it by a couple of numbers (\emph{statistics}).
+	\pause
+	\small{
+		\begin{center}
+			\textcolor{red}{mean:} $\boxed{\mu = \mathbb{E}[X] = \int_{-\infty}^{\infty} xf(x)dx}$\quad
+			\textcolor{red}{variance:}  
+			$\boxed{\sigma^2 = \mathbb{E}[(X-\mu)^2] =\int_{-\infty}^{\infty} (x-\mu)^2f(x)dx}$
+	\end{center}
 }
-\section{Fundamental Definitions}
-\subsection{Portfolio, Numeraire, Arbitrage\ldots}
+\end{frame}
+
+\subsection{Expectation and Its Properties}
+\begin{frame}{Properties of Expectation}
+	\renewcommand{\arraystretch}{1.4}
+	{\tiny {\tiny }}{
+		\begin{table}[bt]
+			\begin{tabular}{|c|c|} \hline
+				Scalar multiplication & $\mathbb{E}[aX] = a\mathbb{E}[X]$ \\ \hline
+				Sums & $\mathbb{E}[X_1+\ldots +X_K] =  \mathbb{E}[X_1] +\ldots + \mathbb{E}[X_n]$ \\ \hline
+				Linear combinations & $\mathbb{E}[a_1X_1+\ldots +a_KX_K] =  a_1\mathbb{E}[X_1] +\ldots + a_K\mathbb{E}[X_K]$ \\ \hline
+				Expected value of a constant & $\mathbb{E}[a] = a$ \\ \hline
+				Products (independent variables) & $\mathbb{E}[XY] = \mathbb{E}[X] \mathbb{E}[Y]$ \\ \hline
+			\end{tabular}
+		\end{table}
+	}
+\end{frame}
+
+\section{Stochastic Processes}
+\begin{frame}{Stochastic Process}
+	Real world data is noisy (i.e. distorted), and exhibits behaviours that cannot be described by a deterministic model (always produce same result from same inputs, e.g $f(x)=x^3+2$).
+	\pause
+	\begin{tabular}{cl}  
+		\begin{tabular}{c}
+			\includegraphics[height=3cm]{stochastic_process}
+		\end{tabular}
+		& \begin{tabular}{l}
+			\parbox{0.45\linewidth}{
+				Need to switch to \textcolor{red}{stochastic processes} in order to model the uncertainty of data.  
+			}
+		\end{tabular}  \\
+	\end{tabular}
+    \pause
+	\begin{block}{Definition}
+		A collection of random variables that is indexed by some mathematical set (usually time).
+	\end{block}
+\end{frame}
+
+\subsection{SDE}
+\begin{frame}{Stochastic Differential Equation}
+	
+	Stochastic processes are described by \emph{stochastic differential equation} (SDE):
+	
+	\begin{equation*}
+		\begin{aligned}
+			dX(t) = \mu(t,X(t)) dt &+ \sigma(t,X(t)) dW(t) =\\  & =\underbrace{\mu(t,X(t))dt}_{\textrm{deterministic}} + \underbrace{\sigma(t,X(t)) \mathcal{N}(0,1)\sqrt{dt}}_{\textrm{stochastic}}
+		\end{aligned}
+	\end{equation*}
+	
+	\begin{tabular}{cl}  
+		\begin{tabular}{c}
+			\includegraphics[height=3.5cm]{brownian_process}
+		\end{tabular}
+		& \begin{tabular}{l}
+			\parbox{0.45\linewidth}{
+				\begin{itemize}
+					\item The mean of $dW$ is zero and its variance is $dt$
+					\item the standard deviation grows with the square root of time: $W(t) \simeq \mathcal{N}(0, t)$ because each $dW$ is distributed like independent standard Gaussian.
+				\end{itemize}  
+			}
+		\end{tabular}  \\
+	\end{tabular}
+\end{frame}
+
+\subsection{Martingales}
+\begin{frame}{Martingale}
+	\begin{block}{Definition}
+		A \textcolor{red}{martingale} is a (integrable and adapted) stochastic process which models a fair game with the following remarkable feature
+		\begin{equation}
+			\mathbb{E}[X_t|\mathcal{F}_s] = X_s
+		\end{equation}
+		so the best prediction for the future value $X_t$, given the knowledge $\mathcal{F}_s$ at time $s$ is the value at time $s$ itself, $X_s$.
+	\end{block}
+\end{frame}
+
+\begin{frame}{Martingale}
+	\begin{block}{Properties}
+		If $X_t$ is a stochastic process with volatility $\sigma_t$, which satisfies $\mathbb{E}\left[\left(\int_0^T\sigma^2_s ds\right)^{\frac{1}{2}}\right]<\infty$, and SDE $dX_t=\mu_t dt+\sigma_t dW_t$ 
+		\begin{equation*}
+			X\text{ is a martingale } \iff X\text{ is drift-less } (\mu_t=0)
+		\end{equation*}
+	\end{block}	
+	A martingale corresponds to the common notion that "an efficient price, changes randomly" so we cannot know if it will go up or down. That is why this mathematical concept is brought into finance.
+	
+	\begin{tikzpicture}[remember picture,overlay]
+		\node[xshift=-5cm,yshift=-3.7cm] (image) at (current page.center) {\includegraphics[width=20px]{python_logo}};
+		\node[align = center, yshift=1.45cm, below=of image] {\tiny{\href{shorturl.at/knyGT}{shorturl.at/knyGT}}};
+	\end{tikzpicture}
+\end{frame}
+
+\subsection{Geometric Brownian Motion (GBM)}
+\begin{frame}{Geometric Brownian Motion}
+	\begin{itemize}
+		\item<0-> Trade random fluctuations deviate a stock price $S_t$ from a steady state.
+		\item<0-> The price relative change in $dt$ can be decomposed into two parts
+		\begin{itemize}
+			\item<2-> \textcolor{red}{deterministic}: the expected return from holding the stock during $dt$. It can be expressed as $\mu S_tdt$ (with $\mu$ being the expected rate of return);
+			\item<3-> \textcolor{red}{stochastic}: model the random changes of the market. A reasonable assumption is to equal this term to $\sigma S_t dW_t$. 
+		\end{itemize}
+		\item<4-> Putting all together, the resulting SDE is
+		\begin{equation}
+			\begin{gathered}
+				dS_t = \mu S_t dt + \sigma S_t dW_t \\
+				\frac{dS_t}{S_t} = d\log(S_t) = \mu dt + \sigma dW_t
+			\end{gathered}
+			\label{eq:log_normal_sde}
+		\end{equation}
+	\end{itemize}
+\end{frame}
+
+\subsubsection{It$\hat{o}$'s Formula}
+\begin{frame}{It$\hat{o}$'s Formula}
+	\begin{block}{Proposition}
+		For any given continuous and differentiable function $G(S,t)$ where S satisfies $dS=adt + bdW_t$, holds
+		\begin{equation}
+			dG = \left(a\frac{\partial G}{\partial S} + \frac{\partial G}{\partial t} + \underbrace{\frac{1}{2}b^2\frac{\partial^2 G}{\partial S^2}}_{\text{additional term}}\right)dt + b\frac{\partial G}{\partial S} dW
+			\label{Eq:itos_lemma}
+		\end{equation}
+	\end{block}
+	
+	This is essentially an extension of the \emph{Taylor series} for stochastic functions, in the expansion an extra ($2^{nd}$ order) term appears.
+\end{frame}
+
+\begin{frame}{Geometric Brownian Motion}
+	\begin{itemize}
+		\item<0-> Let's apply this expansion to $G=\log(S_t)$ 
+		\begin{equation*}
+			\frac{\partial G}{\partial S}=\frac{1}{S_t},\;\frac{\partial G}{\partial t}=0,\;\frac{\partial^2 G}{\partial S^2}=-\frac{1}{S_t^2}
+		\end{equation*}
+		\item<2-> Substituting back into It$\hat{o}$'s lemma \cref{Eq:itos_lemma} and taking $a$ and $b$ values from \cref{eq:log_normal_sde}
+		\begin{equation*}
+			dG = \left(a\frac{\partial G}{\partial S} + \frac{\partial G}{\partial t} + \frac{1}{2}b^2\frac{\partial^2 G}{\partial S^2}\right)dt + b\frac{\partial G}{\partial S} dW
+		\end{equation*}
+	\end{itemize}
+	\pause
+	\pause
+	\begin{equation*}
+	d(\log S_t) = \left[\mu S_t\frac{1}{S_t} + \frac{1}{2}\sigma^2S_t^2\left(-\frac{1}{S_t^2}\right)\right]dt + \sigma dW
+	\end{equation*}
+	\pause
+	\begin{equation*}
+	\log(S_t) - \log(S_{t-1}) = \log\frac{S_t}{S_{t-1}}=\left(\mu - \frac{1}{2}\sigma^2\right)dt + \sigma dW 
+	\end{equation*}	
+	\pause
+	\begin{equation}
+	S_t = S_{t-1}\exp\left[\left(\mu-\frac{1}{2}\sigma^2\right)dt + \sigma\mathcal{N}(0,1)\sqrt{dt}\right] 
+	\label{eq:lognormal_solution}
+	\end{equation}
+\end{frame}
+
+\subsubsection{Log-normality}
+\begin{frame}{Log-normality}
+	\begin{itemize}
+		\item The variation in $\log(S_t)$ equals a constant (the \emph{drift} $\mu-\frac{1}{2}\sigma^2$) plus a Gaussian distributed random variable. Therefore at some time $t$
+		\begin{equation*}
+			\log S_t = \mathcal{N}\left[\left(\mu -\frac{\sigma^2}{2}\right)t, \sigma^2 t\right]
+		\end{equation*}
+	\end{itemize}
+	\pause
+	\begin{block}{Definition}
+		A random variable whose logarithm is normally distributed is said to be \textcolor{red}{log-normal}.
+		
+		One of the most important properties of a log-normal distribution is to be positive definite (a good characteristic for stock prices).
+	\end{block}
+	\begin{tikzpicture}[remember picture,overlay]
+		\node[xshift=5cm,yshift=-3.7cm] (image) at (current page.center) {\includegraphics[width=20px]{python_logo}};
+		\node[align = center, yshift=1.45cm, below=of image] {\tiny{\href{shorturl.at/htCFJ}{shorturl.at/htCFJ}}};
+	\end{tikzpicture}
+\end{frame}
+
+\begin{frame}{Final Remark on Stochastic Processes}
+\begin{center}
+\includegraphics[width=0.45\linewidth]{sde_simulations}
+\end{center}
+When you have to get something out of a stochastic process you cannot rely on a single realization. 
+Instead you need to take into account all the possible paths the process can go through in a \emph{statistical} way with an \textcolor{red}{expectation ($\mathbb{E}$)}. 
+Hence it is mandatory to know (or assume) the \textcolor{red}{proper probability distribution}.
+\end{frame}
+	
+
+\section{No Arbitrage Theory}
+\subsection{No Arbitrage Principle\ldots}
+
+\begin{frame}{Disclaimer}
+"When it comes to making things sound and look much more complicated than they are, financial maths really does reign supreme. Fortunately it’s not just me who thinks it’s all overly complicated but even Paul Wilmott \href{https://wilmott.com/science-in-finance-viii-the-maths-sweet-spot/}{thinks the profession takes it just a bit too far} and he’s a bit better at maths than me."
+\end{frame}
+
 \begin{frame}{Portfolio}
-	\begin{block}{Portfolio Definition}
+	\begin{block}{Definition}
 		A \textcolor{red}{portfolio} is a vector $\mathbf{\theta}\in \mathbb{R}^K$ whose $j$ components represent the number of shares of asset $A_j$. It's value is
 		\begin{equation}
 			V_t(\mathbf{\theta}, \omega)=\sum_{j=1}^K\theta_jS^j_t(\omega)
 		\end{equation} 
-		where $S_t^j$ is the value of $j$th asset, and $\omega$ a market situation. A portfolio is \textcolor{red}{self-financing} if its value changes only due to variations of the asset prices.
+		where $S_t^j$ is the value of $j$-th asset, and $\omega$ a market situation. A portfolio is \textcolor{red}{self-financing} if its value changes only due to variations of the asset prices.
 	\end{block}
 \end{frame}
 
 \begin{frame}{Arbitrage}
-	\begin{block}{Arbitrage Definition}
-		An \textcolor{red}{arbitrage} is a self financing portfolio that \emph{makes money from nothing}, formally a portfolio $\mathbf{\theta}$ such that
+	\begin{block}{Definition}
+		An \textcolor{red}{arbitrage} is a self financing portfolio $\mathbf{\theta}$ such that
 		\begin{equation}
-				V_0(\mathbf{\theta}, \omega)\le 0 \text{ and } \mathcal{P}\{V_t(\mathbf{\theta}, \omega) > 0\} > 0
+		%V_0(\mathbf{\theta}, \omega)\le 0 \text{ and } \mathcal{P}\{V_t(\mathbf{\theta}, \omega) > 0\} > 0
+		P(V_{t}\geq 0)=1{\text{ and }}P(V_{t}\neq 0)>0,\,0<t\leq T
 		\end{equation}
+		where $V_0=0$, $V_t$ denotes the portfolio value at time $t$ and $T$ is the time the portfolio ceases to be available on the market. This means that the value of the portfolio is never negative, and guaranteed to be positive at least once over its lifetime.
 	\end{block}
-	Informally, an arbitrage is a way to make a guaranteed profit from nothing, by short-selling certain assets at time $t = 0$, using the proceeds to buy other assets, and then settling accounts at time $t$.
+    \pause
+	Informally, \textcolor{red}{arbitrage is a way to make a guaranteed profit from nothing}, by short-selling certain assets at time $t = 0$, using the proceeds to buy other assets, and then settling accounts at time $t$. 
+	\small{Arbitrage may take place when: the same asset does not trade at the same price on all markets, or two assets with identical cash flows do not trade at the same price}.
 \end{frame}
 
 \subsection{Fundamental Theorems of Arbitrage Pricing}
-\begin{frame}{Fundamental Theorem of Arbitrage Pricing (I)}
-	\begin{block}{Fundamental Theorem of Arbitrage Pricing I}
+\begin{frame}{Fundamental Theorems of Arbitrage Pricing}
+	\begin{block}{Theorem I}
 		There exists a \emph{risk-neutral measure} if and only \textcolor{red}{if arbitrages do not exist}.
 	\end{block}
+	\pause
 	\vspace{1cm}
     We are assuming the market doesn't allow for risk-free profits with no initial investment.
     Indeed arbitrage opportunities rarely exist in practice. If and when they do, gains are extremely small (not for small investors), and are typically short-lived and difficult to spot. 
     
 	\textcolor{red}{Arbitrage exclusion in the mathematical model is close enough to reality}.
+	
+	\pause
+	But what does it mean "risk-neutral measure" ?
 \end{frame}
 
-\begin{frame}{Few Definitions}
-	\begin{block}{Numeraire Definition}
-		A \textcolor{red}{numeraire} is any positive non-dividend-paying asset. It is a reference asset chosen to normalize all other asset prices to it. Having a numeraire allows for the comparison of the value of goods against one another.
-	\end{block}
-
-    \begin{block}{Sample Space}
-        The \textcolor{red}{Sample space} is the set of all possible future states (or outcomes) of a process ($\Omega$).
-    \end{block}
-    
-    \begin{block}{Probability Measure}
-		A \textcolor{red}{probability measure} is a real-valued function that assignes probabilities to a set of events in a sample space that satisfies measure properties such as countable additivity, and assigning value 1 to the entire space.
-	\end{block}	
-\end{frame}
+%\begin{frame}{Few Definitions}
+%	TOGLIERE
+%	\begin{block}{Definition}
+%		A \textcolor{red}{numeraire} is any positive non-dividend-paying asset. It is a reference asset chosen to normalize all other asset prices to it. Having a numeraire allows for the comparison of the value of goods against one another.
+%	\end{block}
+%    METTERE NELLE SLIDE DOPO
+%    \begin{block}{Definition}
+%		A \textcolor{red}{probability measure} is a real-valued function that assignes probabilities to a set of events in a sample space that satisfies measure properties such as countable additivity, and assigning value 1 to the entire space.
+%	\end{block}	
+%\end{frame}
 
 \begin{frame}{Risk-Neutral Measure}
-Denote the risk-free rate with $r$ and assume today's stock price to be $S_0$. In one period from now, the price could be 
+Denote the risk-free rate with $r$ and assume today's stock price to be $S_0$. In one period of time from now, the price could be 
 \begin{equation*}
 	\begin{cases}
 		S_0\cdot u = S_u \\
 		S_0\cdot d = S_d \\ 
-	\end{cases}
+	\end{cases}, \quad \text{with }(u > d)
 \end{equation*}
-
+\pause
 To \emph{avoid arbitrage opportunities}, conditions must be imposed on $u$ and $d$. 
 
 (Example: in case $e^r > u$, I could short the stock in $t_0$ and invest the proceeds $S_0$ into the risk-free account: in both future states in $t_1$, I could buy the stock back for less than my proceeds $S_0e^r$ because $S_u$ and $S_d$ would both be lower. Similarly for $e^r < d$\ldots)
+\pause
 
 So \textcolor{red}{imposing $d\le e^r \le u$, will ensure no arbitrage}.
 \end{frame}
@@ -89,43 +358,86 @@ So \textcolor{red}{imposing $d\le e^r \le u$, will ensure no arbitrage}.
 	&= \frac{1}{e^r}\left(S_0u\frac{e^r - d}{u-d} + S_0d\frac{u - e^r}{u-d}\right)
 	\end{aligned}
 \end{equation*}
+\pause
 The no arbitrage condition implies the following bounds
 \begin{equation*}
 0\le\frac{e^r -d}{u-d}\le 1,\quad 0\le\frac{u - e^r}{u-d}\le 1
 \end{equation*}
-Also
+\pause
+also
 \begin{equation*}
  \frac{e^r -d}{u-d} + \frac{u - e^r}{u-d} = 1
 \end{equation*}
 \end{frame}
 
 \begin{frame}{Risk-Neutral Measure}
-So we can interpret $p_u=\cfrac{e^r -d}{u-d}$ and $p_d=\cfrac{u - e^r}{u-d}$ as \textcolor{red}{probability measure}.\vspace{0.3cm}
-
+So we can interpret $p_u=\cfrac{e^r -d}{u-d}$ and $p_d=\cfrac{u - e^r}{u-d}$ as \textcolor{red}{probability measure} ($\mathcal{Q}$).\vspace{0.3cm}
+\pause
+\begin{block}{Definition}
+	A \textcolor{red}{probability measure} is a real-valued function that assigns probabilities to a set of events in a sample space that satisfies measure properties such as countable additivity, and assigning value 1 to the entire space.
+\end{block}	
+\pause
 Rewriting previous expression of $S_0$ in terms of the newly defined probabilities
-\begin{equation*}
-S_0 = \frac{S_up_u + S_dp_d}{e^r} = e^{-r}\mathbb{E}[S_1]
-\end{equation*}
+\begin{equation}
+S_0 = \frac{S_up_u + S_dp_d}{e^r} = e^{-r}\mathbb{E}^\mathcal{Q}[S_1]
+\label{eq:risk_neutral_price}
+\end{equation}
 
-Notice that we have never talked about the probabilities of the stock going up or down (e)very market participant might have her view of the world with different probabilities assigned to the stock going up or down). 
-But the \textcolor{red}{risk-neutral measure} is agreed upon by the market as a whole just as a consequence of no arbitrage.
+So the stock price, "under the chosen probability measure" is the discounted stock expectation at $t_1$.
 \end{frame}
 
 \begin{frame}{Risk-Neutral Measure}
-	\begin{block}{Price Uniqueness}
-	Assume there exists a \textcolor{red}{risk-neutral measure} $\mathcal{Q}$ %on the set $\Omega$ of possible market scenarios 
+%We have never talked about the probabilities of the stock going up or down; every investor might have her view of the world with different probabilities assigned to the stock. 
+
+The \textcolor{red}{risk-neutral measure} is agreed upon by the market as a whole just as a consequence of no arbitrage assumption.
+In other words it is nothing more than an \emph{implied probability distribution}.
+\pause
+
+Implied from observable prices of tradable instruments, and used to try to determine \textcolor{red}{objective fair prices} for an asset or financial instrument. Probabilities are assessed with the risk taken out of the equation, so it doesn’t play a factor in the anticipated outcome.
+\pause
+
+By contrast, if you tried to estimate the anticipated value of a stock based on how likely it is to go up or down, considering unique factors or market conditions that influence that specific asset, you would be including risk into the equation and, thus, would be looking at \textcolor{red}{real or physical probability}.
+\end{frame}
+
+\begin{frame}{Risk-Neutral Measure and Pricing}
+
+\begin{block}{Proposition}
+	Assume there exists a \textcolor{red}{risk-neutral measure} $\mathcal{Q}^0$ %on the set $\Omega$ of possible market scenarios 
 	and let $A$ be an asset. Then, for each time $t$, $0\le t\le T$ there exists a unique price $\pi_t$ associated with $A$
 	\begin{equation}
-		\pi_t = \mathbb{E}[D(t,T)A|\mathcal{F}_t]
+		\pi_t = \mathbb{E}^{\mathcal{Q}^0}[D(t,T)A|\mathcal{F}_t]
 		\label{eq:risk_neutral_pricing}
 	\end{equation}
 \end{block}
-Such a price is given by the expectation of the discounted payoff under the measure $\mathcal{Q}$.
+
+Such a price is given by the expectation of the discounted payoff under the measure $\mathcal{Q}^0$.
+
+Note that $\mathcal{F}_t$ is called \textcolor{red}{filtration} and represents our knowledge of the system up to time $t$, i.e. the expectation is indeed \emph{conditioned} to what happened until time $t$.
+%The benefit of this risk-neutral pricing approach is that once the risk-neutral probabilities are calculated, they can be used to price every asset based on its expected payoff. These theoretical risk-neutral probabilities differ from actual real-world probabilities, which are sometimes also referred to as physical probabilities. If real-world probabilities were used, the expected values of each security would need to be adjusted for its individual risk profile.
+
+%You might think of this approach as a structured method of guessing what the fair and proper price for a financial asset should be by tracking price trends for other similar assets and then estimating the average to arrive at your best guess. 
+
+%For this approach, you would try to level out the extreme fluctuations at either end of the spectrum, creating a balance that creates a stable, level price point. You would essentially be minimizing the possible unusual high market outcomes while increasing the possible lows.
+\end{frame}
+
+\begin{frame}{Risk-Neutral Measure and Pricing}
+	\begin{itemize}
+		\item Later in this course, in the context of the change of measure, we are going to formalize the previous slide statement.
+		\item In summary, we will show a generalization of the original ideas of Black and Scholes, showing that, under complete markets with no arbitrage, it is possible to use for pricing purposes (only) stochastic models that do not factor in the equity premium.
+		\item \textbf{Example:} imagine an asset such that $S_0=100$ and that $S_a=120$ and $S_b=80$. If the risk-free rate is 5\% the risk-neutral probability is 
+		\begin{equation*}
+		q = \frac{e^r - d}{u-d} \approx 63\%
+		\end{equation*}
+	\end{itemize}
+%	\begin{tikzpicture}[remember picture,overlay]
+%	\node[xshift=5cm,yshift=-3.7cm] (image) at (current page.center) {\includegraphics[width=20px]{python_logo}};
+%	\node[align = center, yshift=1.45cm, below=of image] {\tiny{\href{shorturl.at/htCFJ}{shorturl.at/htCFJ}}};
+%	\end{tikzpicture}
 \end{frame}
 
 \begin{frame}{Hedging}
 	\begin{itemize}
-		\item A portfolio $\mathbf{\theta}$ in the assets $\mathbf{A}$ is a \textcolor{red}{replicating portfolio} for the asset $B$ if
+		\item A portfolio $\mathbf{\theta}$ in the assets $A$ is a \textcolor{red}{replicating portfolio} for the asset $B$ if
 		\begin{equation}
 			S_t^{B}(\omega_i) = \sum_{j=1}^K \theta_j S_t^j(\omega_i)\quad\forall i=1,2,\ldots,N
 		\end{equation}
@@ -139,13 +451,14 @@ Such a price is given by the expectation of the discounted payoff under the meas
 	\end{itemize}
 \end{frame}
 
-\begin{frame}{Fundamental Theorem of Arbitrage Pricing (II)}
+\begin{frame}{Fundamental Theorems of Arbitrage Pricing}
 	\begin{itemize}
 		\item In some circumstances, an arbitrage-free market may admit more than one risk-neutral measure, i.e. \textcolor{red}{incomplete markets}.
 		\item By contrast, a \textcolor{red}{complete market} is one that has a unique risk-neutral measure.
 	\end{itemize}
-	\begin{block}{Completeness Theorem Definition}
-		Let $\mathcal{M}$ be an arbitrage-free market with a risk-less asset. If for every derivative security there is a replicating portfolio in the assets $A_j$ then the market $\mathcal{M}$ is complete. Conversely, if the market $\mathcal{M}$ is complete, and if the unique risk-neutral measure $\mathcal{P}$ gives positive probability to every market scenario $\omega$, then for every
+	\pause
+	\begin{block}{Theorem II}
+		Let $\mathcal{M}$ be an arbitrage-free market with a risk-less asset. If for every derivative security there is a replicating portfolio in the assets $A_j$ then the market $\mathcal{M}$ is complete. Conversely, if the market $\mathcal{M}$ is complete, and if the unique risk-neutral measure $\mathcal{Q}$ gives positive probability to every market scenario $\omega$, then for every
 		derivative security there is a replicating portfolio in the assets $A_j$.
 	\end{block}
 \end{frame}
@@ -161,30 +474,29 @@ Such a price is given by the expectation of the discounted payoff under the meas
 \subsection{Money Market Account}
 \begin{frame}{Money Market Account}
 	\begin{itemize}
-		\item The \textcolor{red}{money market account} represents a risk-less investment, where profit is accrued continuously at the risk-free rate, and its value is denoted by $B(t)$.
-		\item We assume $B(0)=1$ and by definition
+		\item<0-> The \textcolor{red}{money market account} represents a risk-less investment, where profit is accrued continuously at the risk-free rate, and its value is denoted by $B(t)$.
+		\item<1-> We assume $B(0)=1$ and by definition
 		\begin{equation}
 			dB(t) = r(t)B(t)dt
 		\end{equation}
-		\item This evolution can be solved through variable separation
+		\item<2-> This evolution can be solved through variable separation
         \begin{equation}
             \begin{gathered}
-            \frac{dB_t}{B_t} = r_t dt \implies \int_0^t \frac{dB_t}{B_t} = \int_0^t t_t dt \\
-			\implies \ln\frac{B_t}{B_0} = r_t t \implies \box{B(t) = \exp\left(\int_0^t r_s ds\right)}
+            \frac{dB_t}{B_t} = r_t dt \implies \int_0^t \frac{dB_t}{B_t} = \int_0^t r_s ds \\
+			\implies \log\frac{B_t}{B_0} = \int_0^t r_s ds \implies \boxed{B(t) = \exp\left(\int_0^t r_s ds\right)}
             \end{gathered}
 		\end{equation}
-        COME FARE BOX DENTRO EQUATION ???
-		where $r_t$ is referred to as \textcolor{red}{instantaneous spot rate} or  \textcolor{red}{short rate}.
+		where $r_t$ is referred to as \textcolor{red}{instantaneous spot rate} or \textcolor{red}{short rate}.
 	\end{itemize}
 \end{frame}
 
 \begin{frame}{Money Market Account}
 	\begin{itemize}
-		\item In case $r_t$ is \emph{deterministic}, from the definition of money market account it follows that 
+		\item<0-> In case $r_t$ is \emph{deterministic}, from the definition of money market account it follows that 
 		\begin{equation*}
 			V(0) = A \implies V(t) = A\cdot B(t)
 		\end{equation*}
-		\item If we want at time $T$ exactly 1 unit of currency
+		\item<2-> If we want to have at time $T$ exactly 1 unit of currency
 		\begin{equation*}
 			AB(T) = 1 \implies AB(t) = \frac{B(t)}{B(T)} 
 		\end{equation*}
@@ -199,22 +511,27 @@ Such a price is given by the expectation of the discounted payoff under the meas
 
 \subsection{Stochastic Discount Factor and Zero Coupon Bond}
 \begin{frame}{Stochastic Discount Factor}
-	\begin{itemize}
-		\item The \textcolor{red}{(stochastic) discount factor} $D(t, T)$ is the amount at time $t$ that is \emph{equivalent} to one unit of currency payable at time $T$ and is given by
+	\begin{block}{Defintion}
+		The \textcolor{red}{(stochastic) discount factor} $D(t, T)$ is the amount at time $t$ that is \emph{equivalent} to one unit of currency payable at time $T$ and is given by
 		\begin{equation}
 			D(t, T) = \frac{B(t)}{B(T)} = e^{-\int_t^T r_s ds}
 		\end{equation}
-		\item Can you guess which are its dimension ?	
-		\item In many pricing application (e.g. Black-Scholes formula) $r$ is assumed to be a \textcolor{red}{deterministic} function of time, and so are $B(t)$ and $D(t,T)$:
+	\end{block}
+	\pause
+	\begin{itemize}
+		\item<1-> Can you guess which are its dimension ?	
+		\item<2-> In many pricing application (e.g. Black-Scholes formula) $r$ is assumed to be a \textcolor{red}{deterministic} function of time, and so are $B(t)$ and $D(t,T)$:
 		\begin{itemize}
 			\item this is motivated by the small influence interest rate variations have on equity prices.
 		\end{itemize}
-		\item When dealing with interest rate products, $r$ becomes the main actor, so the deterministic assumption must be dropped.
+		\item<3-> When dealing with interest rate products, $r$ becomes the main actor, so the deterministic assumption must be dropped.
 	\end{itemize}	
 \end{frame}
 
 \begin{frame}{Money Market Account}
-    Recalling Eq.~\ref{eq:risk_neutral_pricing}
+\begin{itemize}
+	\item<0-> Looking at \cref{eq:risk_neutral_price}, it is apparent that we are computing prices w.r.t. the bank account (the \emph{numeraire}). The corresponding risk-neutral measure is often denoted by $\mathcal{Q}^0$ or $\mathcal{Q}^B$, and similarly for the expectation. 
+    \item<2-> Recalling the risk-neutral pricing formula (\cref{eq:risk_neutral_pricing})
     \begin{equation*}
     	\pi_t = \mathbb{E}^{\mathcal{Q}^B}[D(t,T)A|\mathcal{F}_t]
     \end{equation*}
@@ -225,22 +542,23 @@ Such a price is given by the expectation of the discounted payoff under the meas
 %		\end{aligned}
 %	\end{equation*}
 %	where $\mathcal{Q}^B$ is the risk-neutral measure.% that makes $\frac{S_t}{B_t}$ a martingale. 	
-	When \textcolor{red}{interest rates are deterministic}, the exponential can be brought out of the expectation
+	when \textcolor{red}{interest rates are deterministic}, the exponential can be brought out of the expectation
 	\begin{equation*}
 		\pi_t = e^{-\int_t^T r_s ds} \mathbb{E}^B\left[A|\mathcal{F}_t\right]
 	\end{equation*}
-	And finally when \textcolor{red}{rates are constant} (e.g. Black-Scholes or Heston models)
+	\item<3-> Instead when \textcolor{red}{rates are constant} (e.g. Black-Scholes or Heston models)
 	\begin{equation*}
 		\pi_t = e^{-r(T-t)}\mathbb{E}^B\left[A|\mathcal{F}_t\right]
 	\end{equation*}
+\end{itemize}
 \end{frame}
 
 \begin{frame}{Zero Coupon Bond}
 	\begin{itemize}
-		\item \textcolor{red}{Zero Coupon Bond} (ZCB) is a contract that pays one unit of money at time $T$. Its price at time $t$ is denoted by $P(t,T)$, and by definition $P(T,T) = 1$.
-		\item What is the relation between $P(t,T)$ and $D(t,T)$ ? \\
+		\item<0-> \textcolor{red}{Zero Coupon Bond} (ZCB) is a contract that pays one unit of money at time $T$. Its price at time $t$ is denoted by $P(t,T)$, and by definition $P(T,T) = 1$.
+		\item<2-> What is the relation between $P(t,T)$ and $D(t,T)$ ? \\
 		\renewcommand{\arraystretch}{1.2}
-		\footnotesize{\tiny {\tiny }}{
+		{\tiny {\tiny }}{
 			\begin{table}[bt]
 				\begin{tabular}{|c|c|} \hline
 					$D(t, T)$ & $P(t, T)$ \\ \hline
@@ -251,21 +569,20 @@ Such a price is given by the expectation of the discounted payoff under the meas
 					random quantity at time $t$ &
 					\renewcommand{\arraystretch}{1.0} 
 					\begin{tabular}{@{}c@{}}
-						being the value of a contract\\ with payoff at time $T$ must be known in $t$. \\
-                        Indeed we will see that in absence of arbitrage\\
+						being the value of a contract\\ with a payoff at time $T$, must be known in $t$. \\
+                        Indeed
                     	$P(t, T) = \mathbb{E}^Q[D(t, T)|\mathcal{F}_t]$
 					\end{tabular} \\ \hline
 				\end{tabular}
 			\end{table}
 		}
-	QUANDO ??????
 	\end{itemize}
 \end{frame}
 
 \begin{frame}{Intermezzo}
 	\begin{itemize}
 		\item Time to maturity: $T-t$
-		\item Year fraction, day-time convention. Denote by $\tau(t, T)$ the chosen time measure between $t$ and $T$. In theory, you can think of $\tau(t, T)=T-t$. In practice, among the plethora of convention, the following are worth mentioning:
+		\item Year fraction, day-count convention. Denote by $\tau(t, T)$ the chosen time measure between $t$ and $T$. In theory, you can think of $\tau(t, T)=T-t$. In practice, among the plethora of conventions, the following are worth mentioning:
 		\begin{itemize}
 			\item Actual/365
 			\item Actual/360
@@ -290,7 +607,7 @@ Such a price is given by the expectation of the discounted payoff under the meas
 		\begin{equation*}
 			T\rightarrowtail L(t, T)
 		\end{equation*}
-		\item In the market (and in the \emph{books}) these are the so called LIBOR (or EURIBOR) rates and are typically compounded with the actual/360 convention. They are the main rates underlying interest rate derivatives.
+		\item In the market these are the so called LIBOR (or EURIBOR) rates and are typically compounded with the actual/360 convention. They are the main rates underlying interest rate derivatives.
 	\end{itemize}
 \end{frame}
 
@@ -298,17 +615,17 @@ Such a price is given by the expectation of the discounted payoff under the meas
 	In the following we recall some useful definition \textbf{you should be always familiar with}.
 	\begin{itemize}
 		\item Annually-compounded spot interest rate
-		\begin{equation}
+		\begin{equation*}
 			Y(t, T)= \frac{1}{P(t, T)^{\frac{1}{\tau(t,T)}}}-1
-		\end{equation}
+		\end{equation*}
 		\item $k$-times-per-year compounded spot interest rate
-		\begin{equation}
+		\begin{equation*}
 			Y^k(t, T)= \frac{k}{P(t, T)^{\frac{1}{k\tau(t,T)}}}-1
-		\end{equation}
+		\end{equation*}
 		\item When $k\rightarrow\infty$, we get the continuously compounded rate
-		\begin{equation}
+		\begin{equation*}
 			R(t,T)=-\frac{\log P(t,T)}{\tau(t,T)} \implies P(t,T)=e^{-R(t,T)\tau(t,T)}
-		\end{equation}
+		\end{equation*}
 	\end{itemize}
 \end{frame}
 
@@ -322,269 +639,6 @@ Such a price is given by the expectation of the discounted payoff under the meas
 		%		\end{equation}
 	%	\item So what is the difference between $r(t)$ and $f(t, T)$ ?
 	%	\end{itemize}
-%\end{frame}
-
-\section{Forward Rate Agreement}
-\begin{frame}{Forward Rate Agreement: Definition}
-	\begin{itemize}	
-		\item A \textcolor{red}{Forward Rate Agreement} (FRA) is a contract involving three time instants: %the current time $t$, the fixing time $T>t$, and the maturity time $S>T$.
-		\begin{equation*}
-			\underbrace{t}_{\text{current time}} \leq \underbrace{T}_{\text{fixing time}} \leq\underbrace{S}_{\text{maturity}}
-		\end{equation*}
-		\item The FRA payout consists of an exchange of interest rate flows calculated for the time period $\tau=S-T$. At the maturity $S$, a fixed payment based on a fixed rate $K$ is exchanged against a floating payment based on the spot rate $L(T, S)$ whose value is known only in $T$.
-		\item Basically, this contract allows one to lock-in the interest rate between times $T$ and $S$ at a desired value $K$. Interest rate flows are calculated using the simple compounding law.
-	\end{itemize}
-\end{frame}
-
-\begin{frame}{FRA: Formalization of the Contract}
-	\begin{itemize}
-		\item Formally, at time $S$ one receives $\tau(T, S)KN$ units of currency and pays the amount $\tau(T,S)L(T,S)N$, where $N$ is the contract nominal value.
-		\item Thus, at time $S$, the (future and today unknown) payout of the contract is: 
-		\begin{equation}
-			N\tau(T,S)(K-L(T,S))
-			\label{eq:fra_payoff}
-		\end{equation}
-		\item In order to assign a value at this contract we have to tackle two issues:
-		\begin{itemize}
-			\item how to estimate $L(T, S)$
-			\item how to discount it from $S$ to $t$
-		\end{itemize}.
-		\item There are several ways to arrive at the final result: \textbf{no arbitrage is the common denominator.}
-	\end{itemize}
-\end{frame}
-
-%\begin{frame}{FRA: Numerical Example}
-%	A company enters into a FRA to receive 4\% on \$100M for a 3-month period starting in 3 years. Imagine that LIBOR is 4.5\% in 3 years.
-%	
-%	So $T=3y$, $S=3.25y$, $K=4\%$, and $L(T,S)=4.5\%$.
-%	
-%	The net cash-flow at time $S$ is
-%	\begin{equation*}
-%		100000000\times(0.04-0.045)\times0.25 = -\$125000
-%	\end{equation*} 
-%\end{frame}
-
-\subsection{FRA Valuation}
-\begin{frame}{FRA: the Standard Derivation}
-	\begin{itemize}
-		\item Following the approach reported in Brigo-Mercurio (2006) we can proceed as follows:
-		\item Substitute in Eq.~\ref{eq:fra_payoff} $L(T,S)$ with its expression as a function of $P$ and get
-		\begin{equation*}
-			N[\tau K - \frac{1}{P(T, S)} + 1]
-		\end{equation*}
-		\item Interpret $A=\frac{1}{P(T,S)}$ as an amount of money held at time $S$. At $T$ it's worth 1, which in turn, at time $t$, equals $A=P(t,T)$.
-		\item On the other hand $B=\tau K + 1$ in $S$ becomes at time $t$
-		\begin{equation*}
-			P(t,S)\tau K + P(t, S)
-		\end{equation*}
-		\item Collecting the terms we get
-		\begin{equation}
-			\mathbf{FRA}(t,T,S,\tau,N,K)=N[P(t,S)\tau K–P(t,T)+P(t,S)]
-		\end{equation}
-	\end{itemize}
-\end{frame}
-
-\subsection{FRA Valuation ($2^{nd}$ Approach)}
-\begin{frame}{FRA Valuation: a Different Approach}
-	Now we will try to estimate the value of a FRA using a simple replication approach:
-	\begin{itemize}
-		\item at time $t$: 
-		\begin{equation*}
-			\begin{cases}
-				\text{lend}~P(t,T)\\
-				\text{borrow}~P(t,S)(1+(S-T)K)
-			\end{cases};
-		\end{equation*}
-		\item at time $T$: you receive 1 which you will invest at the (in $t$ unknown) EURIBOR rate $L(T,S)$;
-		\item at time $S$: 
-		\begin{equation*}
-			\begin{cases}
-				\text{receive}~(1+L(T,S)(S-T))\\
-				\text{pay}~1 + (S-T)K
-			\end{cases}.
-		\end{equation*}
-	\end{itemize}
-\end{frame}
-
-\begin{frame}{FRA Valuation: a Different Approach}
-	Adding the cash-flows together and evaluating in $t$ we get:
-	\begin{equation*}
-		\begin{gathered}
-			1+L(T,S)(S-T) - 1 - (S-T)K = (L(T,S)-K)(S-T) \\
-			\mathbb{E}^Q[D(t, S)(L(T, S)-K)(S-T)]
-		\end{gathered}
-	\end{equation*}
-	
-	But its value must equal to the value of the replicating portfolio in $t$ (we are in a complete market\ldots). Hence
-	\begin{equation}
-		\begin{aligned}
-			\mathbb{E}^Q[D(t,S)&(L(T,S)-K)(S-T)]=\\
-			&[P(t,S)(S-T)K-P(t,T)+P(t,S)]
-		\end{aligned}
-	\end{equation}
-\end{frame}
-
-\subsection{Forward Rate Definition}
-\begin{frame}{FRA: the Forward Rate as a Break-even Rate}
-	\begin{block}{Forward Rate}
-		The value of $K$ which makes the value of the FRA equal to zero is called \textcolor{red}{simply-compounded forward rate}
-		\begin{equation}
-			F(t;T,S):=\frac{1}{\tau(T,S)}\left[\frac{P(t,T)-P(t,S)}{P(t,S)}\right]
-		\end{equation}
-	\end{block}
-	
-	The forward rate can be interpreted as a rate observed in $t$ spanning the time period $S-T$.
-	
-	%Its value depends on no-arbitrage consideration.
-	
-\end{frame}
-
-\begin{frame}{Forward Rate}
-	\begin{itemize}
-		\item We can then rewrite the value of the FRA in terms of the simply-compounded forward rate
-		\begin{equation}
-			\mathbf{FRA}(t,T,S,\tau,N,K)=NP(t,S)\tau(T,S)(K-F(t;T,S))
-			\label{eq:fram_payoff_withF}
-		\end{equation}
-		(this formula will be used for the swap evaluation)
-		\item It is just like we had replaced the LIBOR rate $L(T,S)$ in the payoff with the forward rate $F(t,T,S)$ and then taken the present value of the (deterministic) quantity.
-		\item The forward rate can be interpreted as an \emph{estimate} of the future spot rate, which is random at time $t$ (based on the market conditions).
-		\item We'll see later that indeed $F(t,T,S)$ is the expectation of $L(T,S)$ under a particular probability measure.
-	\end{itemize}
-\end{frame}
-
-\begin{frame}{Instantaneous Forward Rate}
-	\begin{itemize}
-		\item Now we introduce the \textcolor{red}{instantaneous forward rate} $f(t, T)$.
-		It is defined as 
-		\begin{equation}
-			\begin{aligned}
-			f(t, T) &:= \lim_{S\rightarrow T^+} F(t,T,S) \\
-			& = \lim_{\epsilon\rightarrow 0}  \frac{1}{\tau(T,T+\epsilon)}\frac{P(t,T)-P(t,T+\epsilon)}{P(t,T+\epsilon)} \\
-			& = \lim_{\epsilon\rightarrow 0} - \frac{1}{P(t,T)} \frac{P(t,T+\epsilon)-P(t,T)}{\epsilon} \\
-			& = -\frac{\partial \log P(t, T)}{\partial T}
-			\end{aligned}
-		\end{equation}
-	\end{itemize}
-\end{frame}
-
-\begin{frame}{Instantaneous Forward Rate}
-	\begin{itemize}
-		\item From the previous equation we can derive
-		\begin{equation}
-			P(t, T) = e^{-\int_t^T f(t, s) ds}
-		\end{equation}
-		\item The instantaneous forward rate is the forward rate for a forward contract with an infinitesimal investment period after the settlement date.
-		\item Notice that
-		\begin{equation}
-			r(t) = f(t,t)
-		\end{equation}
-	\end{itemize}
-\end{frame}
-
-%\begin{frame}{}
-%\begin{block}{}
-%This derivation seems very general but in reality it relies on some strong assumptions about the absence of counter-party liquidity credit risk. If that book were written today may be the authors would give a different version of the proof. The next derivation is a bit more explicit in the assumptions needed to get to the result.
-%\end{block}
-%\end{frame}
-%
-%\begin{frame}{Derivation of the Forward Rate by no arbitrage}
-%\begin{itemize}
-%	\item Following Filipovic (2009) we can also directly define the \textcolor{red}{forward rate} by implementing the following:
-%	\item at time $t$ sell one $T$-maturity ZCB and buy $\frac{P(t,T)}{P(t,S)}$ ZCBs;
-%	\item in $T$ you must pay 1;
-%	\item in $S$ you receive $\frac{P(t,T)}{P(t,S)}$, it is equivalent to a forward start investment of 1 in $T$;
-%	\item so 
-%	\begin{equation*}
-	%	1 + (S-T)F(t;T, S)= \frac{P(t,T)}{P(t,S)}
-	%	\end{equation*}
-%	\item hence we get as before the expression for the forward rate.
-%	\item Are there risks in the implementation of this strategy ?
-%\end{itemize}	
-%\end{frame}
-%
-%\begin{frame}{FRA: detailed proof}
-%We start by
-%\begin{equation}
-%\mathbb{E}_t^Q[D(t, S)\tau K – D(t,S) \tau L(T,S)]
-%\end{equation}
-%From which we derive easily
-%\begin{align}
-%\tau K \mathbb{E}_t^Q[D(t, S)]&-\mathbb{E}_t^Q[D(t, S)\tau L(T,S)]=\\
-%& \tau K P(t,S) - \mathbb{E}_t^Q[D(t, S)\tau L(T,S)]
-%\end{align}
-%as $P(t,S)=\mathbb{E}_t^Q[D(t, S)]$
-%
-%But remembering the definition given above
-%$D(t,S) = D(t,T)D(T,S)$
-%\end{frame}
-%
-%\begin{frame}{}
-%Substituting in (1)
-%\begin{equation}
-%\tau KP(t,S)-\mathbb{E}_t^Q[\tau D(t, T)D(T,S)L(T,S)]
-%\end{equation}
-%Then using the properties of the expectation operator
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[\mathbb{E}_t^Q[\tau D(t, T)D(T, S)L(T,S)]]
-%\end{equation}
-%From the last equation we get (using another property of expectation)
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[ \tau D(t, T) L(T,S) \mathbb{E}_t^Q[D(T, S)]]
-%\end{equation}
-%From which we can write by the definition of $P$
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[ \tau D(t, T) L(T,S) P(T,S)]]
-%\end{equation}
-%\end{frame}
-%
-%\begin{frame}{}
-%From the last equation I can write by the property of Expectation
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[D(t,T)]+\mathbb{E}_t^Q[D(t, T) \mathbb{E}_t^Q[D(T, S)]]
-%\end{equation}
-%Perversely splitting 
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[D(t,T)]+\mathbb{E}_t^Q[\mathbb{E}_t^Q[D(t, T) D(T, S)]]
-%\end{equation}
-%More perversely
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[D(t,T)]+\mathbb{E}_t^Q[\mathbb{E}_t^Q[D(t, S)]
-%\end{equation}
-%Then applying the lay of iterated expectations we get
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[D(t,T)]+\mathbb{E}_t^Q[D(t, S)]
-%\end{equation}
-%\end{frame}
-%
-%\begin{frame}{}
-%Finally we get what we are looking for
-%\begin{equation}
-%\tau K P(t,S)-P(t, T)+ P(t, S)
-%\end{equation}
-%\end{frame}
-
-%\begin{frame}{Forward rates: shedding light on an underlying relation}
-%\begin{itemize}
-%\item The starting point is the observation that in a FRA, we must evaluate the future value of the rate $L(T,S)$
-%\item Let us define the forward zero coupon bond in valuation date $t$ as
-%\begin{equation}
-%P(t,T,S):= \mathbb{E}_t^Q[P(T,S)]
-%\end{equation}
-%\item In order to avoid arbitrage in the calculation of the price $V(t,G(S))$ in $t$ of a generic and certain sum $G(S)$, the following must hold
-%\end{itemize}
-%\end{frame}
-%
-%\begin{frame}{}
-%\begin{equation}
-%V(t,G(T))=P(t,S)G(T)=G(T)P(t,T)P(t,T,S)
-%\end{equation}
-%Hence we get $P(t,T,S)+\frac{P(t,S)}{P(t,T)}$
-%And then we can define $F(t,T,S)$ inverting
-%$P(t,T,S)+\frac{P(t,S)}{P(t,T)}:=\frac{1}{1+F(t,T,S)(S-T)}$
-%We invert and find the same no arbitrage formula above. The relation
-%$P(t,S)=P(t,T)P(t,T,S)$
-%Relies on the fact that there is no counterparty risk. Basically the crisis has broken this relationship because the $P(…)$ may be risky: between $t$, $T$ and $S$ many things can happen to one of the participants of the trade.
 %\end{frame}
 
 \end{document}
