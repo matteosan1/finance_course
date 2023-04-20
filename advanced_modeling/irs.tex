@@ -23,6 +23,19 @@
 	\end{itemize}
 \end{frame}
 
+\begin{frame}{Forward Rate Agreement}
+	\begin{itemize}
+	\item<1-> A FRA is an agreement that enables a user to \emph{hedge} itself against unfavorable movements in interest rates by fixing a rate on a notional amount that is (usually) of the same size and term as its exposure that starts sometime in the future. 
+	\item<2-> Consider a $3\times 6$ FRA (3-month into 6-month): the 3 in the $3\times 6$ refers to 3 months' time when settlement (fixing) takes place, and the 6 to the expiry date of the FRA from deal date, i.e. the rate quoted for the FRA is a 3-month rate at the time of settlement
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{FRA Example}
+	\begin{center}
+		\includegraphics[width=0.9\linewidth]{FRA_diagram}
+	\end{center}
+\end{frame}
+
 \begin{frame}{FRA: Formalization of the Contract}
 	\begin{itemize}
 		\item<1-> Formally, at time $S$ one receives $\tau(T, S)KN$ units of currency and pays the amount $\tau(T,S)L(T,S)N$, where $N$ is the contract nominal value.
@@ -33,10 +46,10 @@
 		\end{equation}
 		\item<3-> In order to assign a value at this contract we have to tackle two issues:
 		\begin{itemize}
-			\item estimate the future value of $L(T, S)$;
-			\item discount the result from $S$ to today (time $t$).
+			\item<4-> estimate the future value of $L(T, S)$;
+			\item<5-> discount the result from $S$ to today (time $t$).
 		\end{itemize}
-		\item<4-> There are several ways to arrive at the final result: \textbf{no arbitrage is the common denominator.}
+		\item<6-> There are several ways to arrive at the final result: \textbf{no arbitrage is the common denominator.}
 	\end{itemize}
 \end{frame}
 
@@ -67,16 +80,28 @@
 			N\bigg[\tau K + 1 - \underbrace{\frac{1}{P(T, S)}}_{A}\bigg]
 		\end{equation*}
 		}
-		\only<4-5>{
+		\item<3-> First interpret $A$ as an amount of money held at time $S$. At $T$ it's worth 1, indeed 
+		\begin{equation*}
+			A = P(S,S)A \implies P(T,S)A = P(T,S)\frac{1}{P(T,S)}=1
+		\end{equation*}
+		which in turn, at time $t$, equals to
+		\begin{equation*}
+			P(t,T) 1 = P(t,T)
+		\end{equation*}
+	\end{itemize}
+\end{frame}
+
+\subsection{FRA Valuation}
+\begin{frame}{FRA: the Standard Derivation}
+	\begin{itemize}
+		\item<1-> Following the approach reported in Brigo-Mercurio (2006) we can proceed as follows.		
 		\item Substitute in \cref{eq:fra_payoff} $L(T,S)$ with its expression as a function of the zero-coupon bond price $P$ and get
 		\begin{equation*}
 			N\bigg[\underbrace{\tau K + 1}_{B} - \underbrace{\frac{1}{P(T, S)}}_{A}\bigg]
 		\end{equation*}
-		}
-		\item<3-> Interpret $A$ as an amount of money held at time $S$. At $T$ it's worth 1, which in turn, at time $t$, equals $A=P(t,T)$.
-		\item<4-> On the other hand $B$ in $S$ becomes at time $t$:
+		\item<1-> On the other hand $B$ in $S$ becomes at time $t$:
 		$P(t,S)\tau K + P(t, S)$.
-		\item<5-> Collecting the terms we get
+		\item<3-> Collecting the terms we get
 		\begin{equation}
 			\textbf{FRA}(t,T,S,\tau,N,K)=N[P(t,S)\tau K–P(t,T)+P(t,S)]
 		\end{equation}
@@ -87,19 +112,19 @@
 \begin{frame}{FRA Valuation: a Different Approach}
 	Now we will try to estimate the value of a FRA using a simple replication approach:
 	\begin{itemize}
-		\item<2-> at time $t$: 
+		\item<1-> at time $t$: 
 		\begin{equation*}
 			\begin{cases}
 				\text{lend}~P(t,T)\\
-				\text{borrow}~P(t,S)(1+(S-T)K)
+				\text{borrow}~P(t,S)(1+\tau(T,S)K)
 			\end{cases};
 		\end{equation*}
 		\item<3-> at time $T$: you receive 1 which you will invest at the (in $t$ unknown) EURIBOR rate $L(T,S)$;
 		\item<4-> at time $S$: 
 		\begin{equation*}
 			\begin{cases}
-				\text{receive}~(1+L(T,S)(S-T))\\
-				\text{pay}~1 + (S-T)K
+				\text{receive}~(1+L(T,S)\tau(T,S))\\
+				\text{pay}~1 + \tau(T,S)K
 			\end{cases}.
 		\end{equation*}
 	\end{itemize}
@@ -108,18 +133,17 @@
 \begin{frame}{FRA Valuation: a Different Approach}
 	Adding the cash-flows together and evaluating in $t$ we get:
 	\begin{equation*}
-		1+L(T,S)(S-T) - 1 - (S-T)K = (L(T,S)-K)(S-T)
+		1+L(T,S)\tau - 1 - \tau K = (L(T,S)-K)\tau
 	\end{equation*}
 	\uncover<2->{From the risk-neutral pricing formula
 	\begin{equation*}
-	\mathbb{E}^Q[D(t, S)(L(T, S)-K)(S-T)|\mathcal{F}_t]
+	\mathbb{E}^Q[D(t, S)(L(T, S)-K)\tau(T,S)|\mathcal{F}_t]
 	\end{equation*}
 	}
-	\uncover<3->{
-	But according to the \emph{Fundamental Theorem II} its value must equal to the value of the replicating portfolio in $t$ (we are in a complete market). Hence
+	\uncover<3->{According to the \emph{Fundamental Theorem II} its value must equal to the value of the replicating portfolio in $t$ (we assume to be in a complete market). Hence
 	\begin{equation}
 		\begin{aligned}
-			\mathbb{E}^Q[D(t,S)&(L(T,S)-K)(S-T)|\mathcal{F}_t]=\\
+			\mathbb{E}^Q[D(t,S)&(L(T,S)-K)\tau(T,S)|\mathcal{F}_t]=\\
 			&[P(t,S)(S-T)K-P(t,T)+P(t,S)]
 			\label{eq:fra_as_expectation}
 		\end{aligned}
@@ -127,10 +151,89 @@
     }
 \end{frame}
 
+\subsection{FRA Detailed Proof}
+\begin{frame}{FRA Detailed Proof I}
+\begin{itemize}
+	\item<1-> Let's start from the risk neutral pricing formula
+	\begin{equation*} \textbf{FRA} = 
+\mathbb{E}^\mathcal{Q}_t[D(t,S)\tau (K - L(T,S))] = 	\mathbb{E}^\mathcal{Q}_t[D(t,S)\tau K - D(t,S)\tau L(T,S)]
+	\end{equation*}
+	\item<2-> From which we can easily derive
+	\begin{equation*}
+		\begin{aligned}
+		\textbf{FRA} = \tau &K\mathbb{E}_t^\mathcal{Q}[D(t,S)] - \mathbb{E}_t^\mathcal{Q}[D(t,S)\tau L(T,S)] = \\
+		&=\tau KP(t,S) - \mathbb{E}_t^\mathcal{Q}[D(t,S)\tau L(T,S)]
+		\end{aligned}
+	\end{equation*}
+	which follows from the definition of \textbf{ZCB} value.
+	\item<3-> From the definition of discount factor we know that
+	\begin{equation*}
+		D(t,S) = D(t,T)D(T,S)
+	\end{equation*}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{FRA Detailed Proof II}
+	\begin{itemize}
+		\item<1-> So we get
+		\begin{equation*}
+			\textbf{FRA} = \tau KP(t,S)-\mathbb{E}_t[\tau D(t,T)D(T,S)L(T,S)]
+		\end{equation*}
+		\item<2-> Then using the properties of the expectation operator
+		\begin{equation*}
+		\textbf{FRA} = \tau KP(t,S) - \mathbb{E}_t[\mathbb{E}_T[\tau D(t,T)D(T,S)L(T,S)]]
+		\end{equation*}
+		\item<3-> Last equation can be transformed as (using another property of expectation)
+		\begin{equation*}
+			\textbf{FRA} = \tau KP(t,S) - \mathbb{E}_t[\tau D(t,T)L(T,S)\mathbb{E}_T[D(T,S)]]
+		\end{equation*}
+		\item<4-> From which again
+		\begin{equation*}
+		\textbf{FRA} = \tau KP(t,S) - \mathbb{E}_t[\tau D(t,T)L(T,S)P(T,S)]
+		\end{equation*}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{FRA Detailed Proof III}
+	\begin{itemize}
+		\item<1-> Then using the definition of LIBOR rate
+		\begin{equation*}
+			\begin{aligned}
+			\textbf{FRA} = &\tau KP(t,S)-\mathbb{E}_t\left[D(t,T)P(T,S)\left(\frac{1}{P(T,S)}-1\right)\right]= \\
+			&=\tau KP(t,S)-\mathbb{E}_t[D(t,T)] + \mathbb{E}_t[D(t,T)P(T,S)]
+			\end{aligned}
+		\end{equation*}
+		\item<2-> The last term can be expressed in terms of $D$
+		\begin{equation*}
+			\textbf{FRA} = \tau KP(t,S)-\mathbb{E}_t[D(t,T)] + \mathbb{E}_t\left[D(t,T)\mathbb{E}_T[D(T,S)]\right]
+		\end{equation*}		
+		\item<2-> Bringing the discount factor inside the expectation
+		\begin{equation*}
+			\begin{aligned}
+			\textbf{FRA} = &\tau KP(t,S)-\mathbb{E}_t[D(t,T)] + 				\mathbb{E}_t\left[\mathbb{E}_T[D(t,T)D(T,S)]\right]=\\
+			&=\tau KP(t,S)-\mathbb{E}_t[D(t,T)] + 				\mathbb{E}_t\left[\mathbb{E}_T[D(t,S)]\right]
+			\end{aligned}
+		\end{equation*}		
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{FRA Detailed Proof IV}
+	\begin{itemize}
+		\item<1-> Then applying the law of iterated expectations we get
+		\begin{equation*}
+		\textbf{FRA} = \tau KP(t,S)-\mathbb{E}_t[D(t,T)] + 			\mathbb{E}_t[D(t,S)]
+		\end{equation*}
+	\item<2-> Finally we arrive at the final result
+	\begin{equation*}
+	\textbf{FRA} = \tau KP(t,S) - P(t,T) + P(t,S)
+	\end{equation*}
+	\end{itemize}
+\end{frame}
+
 \subsection{Forward Rate Definition}
 \begin{frame}{FRA: Forward Rate as Break-Even Rate}
 	\begin{block}{Definition}
-		The value of $K$ which makes the value of the FRA equal to zero is called \textcolor{red}{simply-compounded forward rate}
+		The value of $K$ which makes the FRA worth zero is called \textcolor{red}{simply-compounded forward rate}
 		\begin{equation}
 			F(t;T,S):=\frac{1}{\tau(T,S)}\left[\frac{P(t,T)-P(t,S)}{P(t,S)}\right]
 			\label{eq:forward_rate_definition}
@@ -141,6 +244,24 @@
 	
 	%Its value depends on no-arbitrage consideration.
 	
+\end{frame}
+
+\begin{frame}{Forward Rate and No-Arbitrage}
+	\begin{itemize}
+		\item Following Filipovic (2009) we can also directly define the Forward Rate by implementing the following.
+		\item At time $t$
+		\begin{itemize}
+			\item sell one $T$-ZCB
+			\item buy $\frac{P(t,T)}{P(t,S)}$ $S$-ZCB 
+		\end{itemize}
+		This results in a zero net investment.
+		\item At $T$ you must pay 1.
+		\item At time $S$ you receive $\frac{P(t,T)}{P(t,S)}$
+		\item The net effect of the operation is a \emph{forward} investment of one dollar a time $T$ yielding $\frac{P(t,T)}{P(t,S)}$ so
+		\begin{equation*}
+		1 + \tau(T,S)F(t;T,S) = \frac{P(t,T)}{P(t,S)}
+		\end{equation*}
+	\end{itemize}
 \end{frame}
 
 \begin{frame}{Forward Rate}
@@ -189,111 +310,6 @@
 	\end{itemize}
 \end{frame}
 
-%\begin{frame}{}
-%\begin{block}{}
-%This derivation seems very general but in reality it relies on some strong assumptions about the absence of counter-party liquidity credit risk. If that book were written today may be the authors would give a different version of the proof. The next derivation is a bit more explicit in the assumptions needed to get to the result.
-%\end{block}
-%\end{frame}
-%
-%\begin{frame}{Derivation of the Forward Rate by no arbitrage}
-%\begin{itemize}
-%	\item Following Filipovic (2009) we can also directly define the \textcolor{red}{forward rate} by implementing the following:
-%	\item at time $t$ sell one $T$-maturity ZCB and buy $\frac{P(t,T)}{P(t,S)}$ ZCBs;
-%	\item in $T$ you must pay 1;
-%	\item in $S$ you receive $\frac{P(t,T)}{P(t,S)}$, it is equivalent to a forward start investment of 1 in $T$;
-%	\item so 
-%	\begin{equation*}
-	%	1 + (S-T)F(t;T, S)= \frac{P(t,T)}{P(t,S)}
-	%	\end{equation*}
-%	\item hence we get as before the expression for the forward rate.
-%	\item Are there risks in the implementation of this strategy ?
-%\end{itemize}	
-%\end{frame}
-%
-%\begin{frame}{FRA: detailed proof}
-%We start by
-%\begin{equation}
-%\mathbb{E}_t^Q[D(t, S)\tau K – D(t,S) \tau L(T,S)]
-%\end{equation}
-%From which we derive easily
-%\begin{align}
-%\tau K \mathbb{E}_t^Q[D(t, S)]&-\mathbb{E}_t^Q[D(t, S)\tau L(T,S)]=\\
-%& \tau K P(t,S) - \mathbb{E}_t^Q[D(t, S)\tau L(T,S)]
-%\end{align}
-%as $P(t,S)=\mathbb{E}_t^Q[D(t, S)]$
-%
-%But remembering the definition given above
-%$D(t,S) = D(t,T)D(T,S)$
-%\end{frame}
-%
-%\begin{frame}{}
-%Substituting in (1)
-%\begin{equation}
-%\tau KP(t,S)-\mathbb{E}_t^Q[\tau D(t, T)D(T,S)L(T,S)]
-%\end{equation}
-%Then using the properties of the expectation operator
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[\mathbb{E}_t^Q[\tau D(t, T)D(T, S)L(T,S)]]
-%\end{equation}
-%From the last equation we get (using another property of expectation)
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[ \tau D(t, T) L(T,S) \mathbb{E}_t^Q[D(T, S)]]
-%\end{equation}
-%From which we can write by the definition of $P$
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[ \tau D(t, T) L(T,S) P(T,S)]]
-%\end{equation}
-%\end{frame}
-%
-%\begin{frame}{}
-%From the last equation I can write by the property of Expectation
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[D(t,T)]+\mathbb{E}_t^Q[D(t, T) \mathbb{E}_t^Q[D(T, S)]]
-%\end{equation}
-%Perversely splitting 
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[D(t,T)]+\mathbb{E}_t^Q[\mathbb{E}_t^Q[D(t, T) D(T, S)]]
-%\end{equation}
-%More perversely
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[D(t,T)]+\mathbb{E}_t^Q[\mathbb{E}_t^Q[D(t, S)]
-%\end{equation}
-%Then applying the lay of iterated expectations we get
-%\begin{equation}
-%\tau K P(t,S)-\mathbb{E}_t^Q[D(t,T)]+\mathbb{E}_t^Q[D(t, S)]
-%\end{equation}
-%\end{frame}
-%
-%\begin{frame}{}
-%Finally we get what we are looking for
-%\begin{equation}
-%\tau K P(t,S)-P(t, T)+ P(t, S)
-%\end{equation}
-%\end{frame}
-
-%\begin{frame}{Forward rates: shedding light on an underlying relation}
-%\begin{itemize}
-%\item The starting point is the observation that in a FRA, we must evaluate the future value of the rate $L(T,S)$
-%\item Let us define the forward zero coupon bond in valuation date $t$ as
-%\begin{equation}
-%P(t,T,S):= \mathbb{E}_t^Q[P(T,S)]
-%\end{equation}
-%\item In order to avoid arbitrage in the calculation of the price $V(t,G(S))$ in $t$ of a generic and certain sum $G(S)$, the following must hold
-%\end{itemize}
-%\end{frame}
-%
-%\begin{frame}{}
-%\begin{equation}
-%V(t,G(T))=P(t,S)G(T)=G(T)P(t,T)P(t,T,S)
-%\end{equation}
-%Hence we get $P(t,T,S)+\frac{P(t,S)}{P(t,T)}$
-%And then we can define $F(t,T,S)$ inverting
-%$P(t,T,S)+\frac{P(t,S)}{P(t,T)}:=\frac{1}{1+F(t,T,S)(S-T)}$
-%We invert and find the same no arbitrage formula above. The relation
-%$P(t,S)=P(t,T)P(t,T,S)$
-%Relies on the fact that there is no counterparty risk. Basically the crisis has broken this relationship because the $P(…)$ may be risky: between $t$, $T$ and $S$ many things can happen to one of the participants of the trade.
-%\end{frame}
-
 \section{Interest Rate Swap}
 \begin{frame}{Interest Rate Swap}
 	\begin{itemize}
@@ -313,6 +329,12 @@
 			\label{eq:payoff_payer_irs}
 		\end{equation}	
 	\end{itemize}
+\end{frame}
+
+\begin{frame}{}
+\begin{center}
+	\includegraphics[width=0.9\linewidth]{Interest-Rate-Swap-diagram}
+\end{center}
 \end{frame}
 
 \begin{frame}{IRS and FRA}
@@ -338,10 +360,11 @@
 		\item<3-> If the market don't move so much the swap rate payer will have to pay a net interest differential in the first part of the contract life, and to receive net interest in the second.
 		\item<4-> So the rate payer will have to fund the payments for the first part of the contract and to invest at his best the receipt during the second part. (This is a very hot topic nowadays; this feature is sometimes referred to as the funding profile of the contract).
 	\end{itemize}
-	\begin{tikzpicture}[remember picture,overlay]
+	\uncover<4->{
+		\begin{tikzpicture}[remember picture,overlay]
 		\node[xshift=5cm,yshift=-3.7cm] (image) at (current page.center) {\includegraphics[width=20px]{python_logo}};
 		\node[align = center, yshift=1.45cm, below=of image] {\tiny{\href{shorturl.at/xELS2}{shorturl.at/xELS2}}};
-	\end{tikzpicture}
+	\end{tikzpicture}}
 \end{frame}
 
 \subsection{Swap Rate}
