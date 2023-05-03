@@ -368,7 +368,7 @@
   \item<1-> Until now we have used $B(t)$, the money market account, as numeraire. But as we have seen it is natural to look for the most convenient numeraire, which minimizes the mathematical difficulties according to the problem at hand.
   \item<2-> Given a contingent claim whose payoff at time $T$ is $\chi$, we have the following formula for its price $\Pi$
     \begin{equation*}
-      \Pi_\chi(t,T)=\mathbb{E}^B\left[e^{-\int_t^T r_s ds}\chi\bigg|\mathcal{F}_t \right]=\mathbb{E}^B\left[e^{-\int_0^t r_s ds}e^{-\int_0^T r_s ds}\chi\bigg|\mathcal{F}_t \right]=B_t\mathbb{E}^B\left[B^{-1}_T\chi|\mathcal{F}_t\right]
+      \Pi_\chi(t,T)=\mathbb{E}^B\left[e^{-\int_t^T r_s ds}\chi\bigg|\mathcal{F}_t \right]=\mathbb{E}^B\left[e^{\int_0^t r_s ds}e^{-\int_0^T r_s ds}\chi\bigg|\mathcal{F}_t \right]=B_t\mathbb{E}^B\left[B^{-1}_T\chi|\mathcal{F}_t\right]
     \end{equation*}
   \item<3-> If $\chi$ and the short rate process were independent under $\mathcal{Q}^B$ (recall $\mathbb{E}[XY]=\mathbb{E}[X]\mathbb{E}[Y]$) then we could write
     \begin{equation*}
@@ -701,7 +701,7 @@
       dX_t = b(X_t, t) dt + a(X_t, t) dW_t
     \end{equation*}
   \item Let's assume that the drift and diffusion coefficients are such that there exists a unique solution to the equation which is $X$.
-  \item We want to find a probability measure $\mathcal{Q}$ such that the drift of $X$ is $\tilde{b}(X_t,t)$ instead of $b(X_t,t)$.
+  \item We want to find a probability measure $\mathcal{P}^*$ such that the drift of $X$ is $\tilde{b}(X_t,t)$ instead of $b(X_t,t)$.
   \end{itemize}
 \end{frame}
 
@@ -710,27 +710,28 @@
     \begin{aligned}
       dX_t &= \tilde{b}(X_t,t) dt+b(X_t,t) dt -\tilde{b}(X_t,t) dt + a(X_t,t) dW_t = \\
       &=\tilde{b_t} dt + (b_t -\tilde{b_t})dt + a(X_t,t) dW_t =\\
-      &=\tilde{b_t}dt+ a_t\overbrace{\left(\frac{b_t-\tilde{b_t}}{a_t}\right)}^{\gamma_t}dt + a_t dW_t = \\
-      &= \tilde{b_t}dt+a_t dW_t + \gamma_t dt\\
+      &=\tilde{b_t}dt+ a_t\overbrace{\left(\frac{b_t-\tilde{b_t}}{a_t}\right)}^{-\gamma_t}dt + a_t dW_t = \\
+      &= \tilde{b_t}dt+a_t dW_t - a_t\gamma_t dt\\
       &=\tilde{b_t}dt+a_t d\tilde{W_t}
     \end{aligned}
   \end{equation*}
-  where $d\tilde{W_t}=dW_t+\gamma_t dt$.
+  where $d\tilde{W_t}=dW_t-\gamma_t dt$.
 \end{frame}
 
 \begin{frame}{An Example}
   \begin{itemize}
-  \item If the Novikov condition is satisfied then we can apply the Girsanov theorem and we have that
+  \item<1-> If the Novikov condition is satisfied then we can apply the Girsanov theorem and we have that
     \begin{equation}
-      \mathcal{Q} = \mathbb{E}^\mathcal{P}\left[\exp\left(-\frac{1}{2}\int_0^t \gamma_s^2 ds + \int_0^t \gamma_s dW_s \right)\right]
+      \mathcal{P}^* = \mathbb{E}^\mathcal{P}\left[\exp\left(-\frac{1}{2}\int_0^t \gamma_s^2 ds + \int_0^t \gamma_s dW_s \right)\right]
     \end{equation}
-    and that $\tilde{W}$ is a Brownian motion on $\mathcal{Q}$.
-  \item In practice, don't need to determine $\mathcal{Q}$. It is enough to know it exists, and the SDE of the process of interest according to the new measure.	
-  \end{itemize}
+    and that $\tilde{W}$ is a Brownian motion on $\mathcal{P}^*$.
+  \item<2-> In practice, don't need to determine the new measure $\mathcal{P}^*$.
+  \item<3-> It is enough to know it exists, such that we can work with the resulting SDE of the process of interest under the new measure.	
   \begin{tikzpicture}[remember picture,overlay]
-    \node[xshift=5cm,yshift=-3.9cm] (image) at (current page.center) {\includegraphics[width=20px]{python_logo}};
-    \node[align = center, yshift=1.45cm, below=of image] {\tiny{\href{shorturl.at/ctCF7}{shorturl.at/ctCF7}}};
-  \end{tikzpicture}
+	\node[xshift=5cm,yshift=-3.9cm] (image) at (current page.center) {\includegraphics[width=20px]{python_logo}};
+	\node[align = center, yshift=1.45cm, below=of image] {\tiny{\href{shorturl.at/ctCF7}{shorturl.at/ctCF7}}};
+\end{tikzpicture}
+  \end{itemize}
 \end{frame}
 
 %\begin{frame}{title}
@@ -831,31 +832,29 @@
 
 \begin{frame}{Moving Away from $\mathcal{P}$ Measure}
   \begin{itemize}
-  \item Let's go back to the real-world probabilities.
-  \item Assume that a stock price has the following dynamics (Geometric Brownian Motion) under the real-world measure $\mathcal{P}$
+  \item<1-> Let's go back to the real-world probabilities and assume that a stock price has the following dynamics (Geometric Brownian Motion) under the real-world measure $\mathcal{P}$
     \begin{equation*}
       dS_t = \mu S_t dt + \sigma S_t dW_t
     \end{equation*}
-  \item As usual the bank account is deterministic hence
+  \item<2-> By definition the bank account dynamics is described by (for simplicity let's consider deterministic rates)
     \begin{equation*}
       dB_t = rB_tdt\implies B_t = e^{rt}
     \end{equation*}
-	\pause
-  \item We want to know what happens to the SDE of the stock with two different numeraires:
+  \item<3-> We want to know what happens to the stock SDE when moving to two different numeraires:
     \begin{itemize}
-    \item risk-neutral measure (bank account numeraire);
-    \item stock measure (stock numeraire).
+    \item<4-> risk-neutral measure (bank account numeraire);
+    \item<5-> stock measure (stock numeraire).
     \end{itemize}
   \end{itemize}
 \end{frame}
 
 \begin{frame}{Risk-Neutral Measure Dynamics}
   \begin{itemize}
-  \item We have seen that under the bank account induced measure 
+  \item<1-> We have seen that under the bank account induced measure the process defined as an asset divided by the numeraire is a martingale
     \begin{equation*}
       \cfrac{S_t}{B_t} = \mathbb{E}^B\left[\frac{S_T}{B_T}\bigg|\mathcal{F}_t\right]
     \end{equation*}
-  \item So if we define $Z_t=\frac{S_t}{B_t}$, since $Z_t$ is a martingale (no-drift process) it's evolution can be described by
+  \item<2-> So if we define $Z_t=\cfrac{S_t}{B_t}$, since $Z_t$ is a martingale (no-drift process) it's evolution could be described by
     \begin{equation}
       dZ_t = \sigma Z_t dW_t^B
       \label{eq:z_martingale1}
@@ -866,56 +865,56 @@
 
 \begin{frame}{Risk-Neutral Measure Dynamics}
   \begin{itemize}
-  \item Computing directly the $Z_t$ differential (by It$\hat{o}$'s rule at first order)
+  \item<1-> Computing directly the $Z_t$ differential (by It$\hat{o}$'s rule at first order)
     \begin{equation*}
       \begin{aligned}
-	d\left(\frac{S_t}{B_t}\right) &= \frac{dS_t}{B_t} + S_t d\left(\frac{1}{B_t}\right) \\ 
+	d\left(\frac{S_t}{B_t}\right) &= \frac{dS_t}{B_t} + S_t d\left(\frac{1}{B_t}\right) = \\ 
 	&=\frac{dS_t}{B_t} + S_t d\left(e^{-rt}\right) = \frac{dS_t}{B_t} - S_t re^{-rt}dt \\
-	&= \frac{dS_t}{B_t} - r\frac{dS_t}{B_t}dt 
+	&= \frac{dS_t}{B_t} - r\frac{S_t}{B_t}dt 
       \end{aligned}
     \end{equation*}
-  \item Now substitute for $dS_t$
+  \item<2-> Now substitute for $dS_t$
     \begin{equation*}
-      d\left(\frac{S_t}{B_t}\right)= \frac{ \mu S_t dt + \sigma S_t dW_t}{B_t} - r\frac{dS_t}{B_t}dt = \sigma\frac{S_t}{B_t}\left(\frac{\mu - r}{\sigma}dt + dW_t \right)
+      d\left(\frac{S_t}{B_t}\right)= \frac{ \mu S_t dt + \sigma S_t dW_t}{B_t} - r\frac{S_t}{B_t}dt = \sigma\frac{S_t}{B_t}\left(\frac{\mu - r}{\sigma}dt + dW_t \right)
     \end{equation*}	
   \end{itemize}
 \end{frame}
 
 \begin{frame}{Risk-Neutral Measure Dynamics}
   \begin{itemize}
-  \item In terms of $Z_t$ it becomes
+  \item<1-> In terms of $Z_t$ it becomes
     \begin{equation}
       dZ_t = \sigma Z_t\left(\frac{\mu - r}{\sigma}dt + dW_t \right)
       \label{eq:z_martingale2}
     \end{equation}
-  \item Both \cref{eq:z_martingale2} and~\cref{eq:z_martingale1} represent the dynamics of $Z_t$ so they must equal
+  \item<2-> Both \cref{eq:z_martingale2} and~\cref{eq:z_martingale1} represent the dynamics of $Z_t$ so they must be equal
     \begin{equation*}
       \cancel{\sigma Z_t}dW_t^B = \cancel{\sigma Z_t}\left(\frac{\mu - r}{\sigma}dt + dW_t\right)
     \end{equation*}
-  \item Replacing the Brownian Motion into the real-world dynamics
+  \item<3-> Replacing the Brownian Motion into the real-world dynamics
     \begin{equation*}
       \begin{aligned}
-	dS_t &= \mu S_t dt + \sigma S_t \left(dW_t^B - \frac{\mu - r}{\sigma}dt\right) \\
-	& = \cancel{\mu S_t dt} \cancel{-\mu S_t dt} + rS_t dt + \sigma S_t dW_t^B  = rS_t dt + \sigma S_t dW_t^B
+	dS_t &= \mu S_t dt + \sigma S_t \left(dW_t^B - \frac{\mu - r}{\sigma}dt\right) =\\
+	& = \cancel{\mu S_t dt} \cancel{-\mu S_t dt} + rS_t dt + \sigma S_t dW_t^B  = \boxed{rS_t dt + \sigma S_t dW_t^B}
       \end{aligned}
     \end{equation*}
-  \item So \textcolor{red}{under the risk-neutral measure the drift equals the risk-free rate}.
+  \item<4-> So \textcolor{red}{under the risk-neutral measure the drift equals the risk-free rate}.
   \end{itemize}
 \end{frame}
 
 \begin{frame}{Stock Numeraire Measure Dynamics}
   \begin{itemize}
-  \item Now let's see what happens under the stock numeraire.
-  \item Again under the measure $\mathcal{Q}^B$
+  \item<1-> Now let's see what happens under the stock numeraire.
+  \item<2-> Under the risk-neutral measure $\mathcal{Q}^B$
     \begin{equation*}
       \frac{S_0}{B_0} = \mathbb{E}^B\left[\frac{S_t}{B_t}\bigg|\mathcal{F}_0\right] \implies
       S_0 = \mathbb{E}^B\left[B_0\frac{S_t}{B_t}\bigg|\mathcal{F}_0\right]
     \end{equation*}
-  \item Similarly under the measure $\mathcal{Q}^A$ induced by asset numeraire $A$
+  \item<3-> By the Change of Numeraire Theorem under the measure $\mathcal{Q}^A$ induced by asset numeraire $A$
     \begin{equation*}
       S_0 = \mathbb{E}^A\left[A_0\frac{S_t}{A_t}\bigg|\mathcal{F}_0\right]
     \end{equation*}
-  \item Since both expressions represent a price of an asset they must be the same and we can equal the terms inside the expectations.
+  \item<4-> Since both expressions represent a price of an asset they must be the same and we can equal the terms inside the expectations. Note that the expectations are computed according two different measures so we keep the factors $d\mathcal{Q}^X$. 
   \end{itemize}
 \end{frame}
 
@@ -924,24 +923,24 @@
     \frac{B_0}{B_t}d\mathcal{Q}^B = \frac{A_0}{A_t}d\mathcal{Q}^A\implies \frac{d\mathcal{Q}^A}{d\mathcal{Q}^B}=\frac{B_0A_t}{B_tA_0}
   \end{equation*}
   \begin{itemize}
-  \item We know that the solution in the risk-neutral measure of the GBM is (see pg. 14 to 18 of "no\_arbitrage" slides)
+  \item<2-> We have already derived the analytical GBM solution in the risk-neutral measure (see pg. 14 to 18 of "no\_arbitrage" slides)
     \begin{equation*} 
-      A_t = A_0 e^{rt-\frac{1}{2}\sigma^2 t + \sigma W^B_t}
+      A_t = A_0 \exp\left(rt-\frac{1}{2}\sigma^2 t + \sigma W^B_t\right)
     \end{equation*}
-    so we can re-write
+    \item<3-> So we can replace the numeraire definition into the Radon-Nikodym derivative
     \begin{equation*}
-      \frac{d\mathcal{Q}^A}{d\mathcal{Q}^B}=\frac{\cancel{A_0}e^{\cancel{rt}-\frac{1}{2}\sigma^2 t + \sigma W^B_t}}{\cancel{e^{rt}}\cancel{A_0}}=e^{-\frac{1}{2}\sigma^2 t + \sigma W^B_t}
+      \frac{d\mathcal{Q}^A}{d\mathcal{Q}^B}=\frac{\cancel{A_0}e^{\cancel{rt}-\frac{1}{2}\sigma^2 t + \sigma W^B_t}}{\cancel{e^{rt}}\cancel{A_0}}=\exp\left(-\frac{1}{2}\sigma^2 t + \sigma W^B_t\right)
     \end{equation*}
   \end{itemize}
 \end{frame}
 
 \begin{frame}{Stock Numeraire Measure Dynamics}
   \begin{itemize}
-  \item From the Girsanov theorem, setting the function $y_t = \sigma$, we get the transformed diffusion process
+  \item<1-> From the Girsanov theorem, setting the function $y_t = \sigma$, we can get the transformed diffusion process
     \begin{equation*}
       dW_t^A = dW_t^B - \sigma dt 
     \end{equation*}
-  \item Substituting back into the risk-neutral dynamics we get
+  \item<2-> Substituting back into the risk-neutral dynamics we get
     \begin{equation*}
       \begin{aligned}
 	dS_t &= r S_t dt + \sigma S_t dW_t^B = 
@@ -978,13 +977,13 @@
 
 \begin{frame}{Drift Changes Generalization}
   \begin{block}{Proposition}
-    Assume that, under the $S$-measure, we have
+    Assume that, under a generic $N$-measure, we have the following dynamics for a $n$-vector diffusion process $X$
     \begin{equation*}
-      dX_t = \mu_t^S(X_t)dt + \sigma_t(X_t)CdW^S_t
+      dX_t = \mu_t^N(X_t)dt + \sigma_t(X_t)CdW^N_t
     \end{equation*}
-    where $dW^S_t$ is a $n$-dimensional standard Brownian motion whose correlation is modeled by the $n\times n$ matrix $C$, $\mu$ is an $n\times 1$ vector and $\sigma_t$ a $n\times n$ diagonal matrix. Under the $U$-measure, we have
+    where $dW^N_t$ is a $n$-dimensional standard Brownian motion whose correlation is modeled by the $n\times n$ matrix $C$, $\mu$ is an $n\times 1$ vector and $\sigma_t$ a $n\times n$ diagonal matrix. Under the $U$-measure, we have
     \begin{equation}
-      \mu^U_t(X_t) = \mu^S_t(X_t) - \rho\sigma(X_t)\left(\frac{\sigma^S_t}{S_t}-\frac{\sigma^U_t}{U_t}\right)'
+      \mu^U_t(X_t) = \mu^N_t(X_t) - \rho\sigma(X_t)\left(\frac{\sigma^N_t}{N_t}-\frac{\sigma^U_t}{U_t}\right)'
     \end{equation}
 	or \ldots
 	\end{block}
@@ -993,61 +992,65 @@
 \begin{frame}{Drift Changes Generalization}
 	\begin{block}{Proposition contd.}
 		\begin{equation}
-			CdW^U_t = CdW^S_t + \rho\left(\frac{\sigma^S_t}{S_t}-\frac{\sigma^U_t}{U_t}\right)' dt
+			CdW^U_t = CdW^N_t + \rho\left(\frac{\sigma^N_t}{N_t}-\frac{\sigma^U_t}{U_t}\right)' dt
 		\end{equation}
-		$\rho=CC'$ is the correlation matrix of $<dW^S_i,dW^S_j>$ and $\sigma^S_t$ and $\sigma^U_t$ are the (vector) volatilities of numeraires $S$ and $U$. %(one component for each Brownian motion).
+		$\rho=CC'$ is the correlation matrix of $<dW^N_i,dW^N_j>$ and $\sigma^N_t$ and $\sigma^U_t$ are the (vector) volatilities of numeraires $N$ and $U$. %(one component for each Brownian motion).
 	\end{block}
 \end{frame}
 
 \begin{frame}{Drift Changes (Proof)}
   %We now provide a formal proof of the above proposition in the special case of \textcolor{red}{$n=1$}, in which \textcolor{red}{$\rho=1$}.
   
-  Indicate by $\mathcal{Q}^S$ and $\mathcal{Q}^U$ the $S$-measure and $U$-measure. By Girsanov theorem we have the following expression for the Radon-Nikodym derivative
+  Indicate by $\mathcal{Q}^N$ and $\mathcal{Q}^U$ the $N$-measure and $U$-measure. By Girsanov theorem we have the following expression for the Radon-Nikodym derivative
   \begin{equation*}
-    \zeta_t = \frac{d\mathcal{Q}^S}{d\mathcal{Q}^U} = e^{-\frac{1}{2}\int_0^t\alpha_s^2 ds + \int_0^t\alpha_s dW_s^U}
+    \zeta_t = \frac{d\mathcal{Q}^N}{d\mathcal{Q}^U} = e^{-\frac{1}{2}\int_0^t\gamma_s^2 ds + \int_0^t\gamma_s dW_s^U}
   \end{equation*}
   with 
   \begin{equation}
-    \alpha_t=\frac{[\mu^S_t(X_t)-\mu_t^U(X_t)]'}{(\sigma_t(X_t)C)'}
-    \label{eq:alpha_t}
+    \gamma_t=\frac{[\mu^N_t(X_t)-\mu_t^U(X_t)]'}{(\sigma_t(X_t)C)'}
+    \label{eq:gamma_t}
   \end{equation}
 	\pause
   We also know that $\zeta_t$ is an exponential martingale hence its dynamics is such that 
   \begin{equation}
-    d\zeta_t=\alpha_t\zeta_tdW_t^U
+    d\zeta_t=\gamma_t\zeta_tdW_t^U
     \label{eq:dzeta1}
   \end{equation}
 \end{frame}
 
 \begin{frame}{Drift Changes (Proof)}
-  By the main theorem on numeraire change \cref{eq:radon_nikodym_der2}, and using the fact that $\zeta_t$ is a $\mathcal{Q}^U$ martingale, 
+  By the main theorem on numeraire change \cref{eq:radon_nikodym_der2}, and using the fact that $\zeta_t$ is a $\mathcal{Q}^U$-martingale, 
   \begin{equation}
-    \zeta_t = \frac{d\mathcal{Q}^S}{d\mathcal{Q}^U} = \frac{U_0S_t}{S_0U_t}
+    \zeta_t = \frac{d\mathcal{Q}^N}{d\mathcal{Q}^U} = \frac{U_0N_t}{N_0U_t}
     \label{eq:zeta_numeraire}
   \end{equation}
   thus
   \begin{equation}
-    d\zeta_t= \frac{U_0}{S_0}d\left(\frac{S_t}{U_t}\right)= \frac{U_0}{S_0}\sigma_t^{S/U}CdW_t^U
+    d\zeta_t= \frac{U_0}{N_0}d\left(\frac{N_t}{U_t}\right)= \frac{U_0}{N_0}\sigma_t^{N/U}CdW_t^U
     \label{eq:dzeta2}
   \end{equation}
-  where $\sigma^{S/U}_t$ is the volatility of the process $S_t/U_t$, which is also a martingale under $\mathcal{Q}^U$. \pause Comparing the two results for $d(S_t/U_t)$ (\cref{eq:dzeta1}, \cref{eq:dzeta2} and using \cref{eq:zeta_numeraire}) we get
-  \begin{equation}
+  where $\sigma^{N/U}_t$ is the volatility of the process $N_t/U_t$, which is also a martingale under $\mathcal{Q}^U$.
+\end{frame}
+  
+\begin{frame}{Drift Changes (Proof)}
+  Comparing the two results for $d\zeta_t$ (\cref{eq:dzeta1}, \cref{eq:dzeta2} and using \cref{eq:zeta_numeraire}) we get
+  \begin{equation*}
     \begin{gathered}
-      \alpha_t\zeta_tdW_t^U = \alpha_t\frac{\cancel{U_0}S_t}{\cancel{S_0}U_t}\cancel{dW_t^U}=	\frac{\cancel{U_0}}{\cancel{S_0}}\sigma^{S/U}_tC\cancel{dW_t^U} \implies 
-      \alpha_t = \frac{U_t}{S_t}\sigma^{S/U}_tC
+      \gamma_t\zeta_tdW_t^U = \gamma_t\frac{\cancel{U_0}N_t}{\cancel{N_0}U_t}\cancel{dW_t^U}=	\frac{\cancel{U_0}}{\cancel{N_0}}\sigma^{N/U}_tC\cancel{dW_t^U} \implies 
+      \gamma_t = \frac{U_t}{N_t}\sigma^{N/U}_tC
     \end{gathered}
-  \end{equation}
+  \end{equation*}
   \pause
-  Using the definition of $\alpha_t$ (\cref{eq:alpha_t})
+  Using the definition of $\gamma_t$ (\cref{eq:gamma_t})
 \begin{equation}
-	\mu_t^U(X_t)=\mu_t^S(X_t)-\frac{U_t}{S_t}\sigma_t(X_t)\rho(\sigma^{S/U}_t)'
-	\label{eq:alpha}
+	\mu_t^U(X_t)=\mu_t^N(X_t)-\frac{U_t}{N_t}\sigma_t(X_t)\rho(\sigma^{N/U}_t C)'
+	\label{eq:gamma}
 \end{equation}
 \end{frame}
 
 \begin{frame}{Intermezzo}
   \begin{itemize}
-  \item One of the classical formulas of differential calculus is Leibniz rule $d(x y) = x(dy) + y(dx)$
+  \item One of the classical formulas of differential calculus is th Leibniz rule $d(x y) = x(dy) + y(dx)$
   \item For stochastic processes this becomes, applying It$\hat{o}$'s formula to the function $F(X,Y) = XY$
     \begin{equation*}
       dF(x_i)=\sum_{i=1}^n \frac{\partial F}{\partial x_i}dx_i
@@ -1066,57 +1069,58 @@
 \end{frame}
 
 \begin{frame}{Drift Changes (Proof)}	
-Now let $S_t$ and $U_t$ have dynamics under $\mathcal{Q}^U$ given by 
+Now let $N_t$ and $U_t$ have dynamics under $\mathcal{Q}^U$ given by 
 \begin{equation*}
 	\begin{gathered}
-		dS_t = (\ldots) dt + \sigma^SCdW^U_t\\
-		dU_t = (\ldots) dt + \sigma^UCdW^U_t 
+		dN_t = (\ldots) dt + \sigma_t^NCdW^U_t\\
+		dU_t = (\ldots) dt + \sigma_t^UCdW^U_t 
 	\end{gathered}
 \end{equation*}
 	\pause
   From what we have just seen
   \begin{equation*}
     \begin{gathered}
-      d\left(\frac{S_t}{U_t}\right)=\frac{1}{U_t}dS_t+S_td\frac{1}{U_t}+dS_td\frac{1}{U_t} \\
+      d\left(\frac{N_t}{U_t}\right)=\frac{1}{U_t}dN_t+N_td\frac{1}{U_t}+dN_td\frac{1}{U_t} \\
       d\frac{1}{U_t}=-\frac{1}{U^2_t}dU_t+\cancel{\frac{1}{U^3_t}dU_tdU_t}
     \end{gathered}
   \end{equation*}
 	\pause
-  Replacing the dynamics for $S_t$ and $U_t$ (ignoring the terms in $dt$ since we know that $d\frac{S_t}{U_t}$ is a martingale)
+  Replacing the dynamics for $N_t$ and $U_t$ (ignoring the terms in $dt$ since we know that $d\cfrac{N_t}{U_t}$ is a martingale)
   \begin{equation}
-    d\left(\frac{S_t}{U_t}\right) = \frac{\sigma^S_t dW^U_t}{U_t} - \frac{S_t}{U^2_t}\sigma^U_t dW^U_t
+    d\left(\frac{N_t}{U_t}\right) = \frac{\sigma^N_t dW^U_t}{U_t} - \frac{N_t}{U^2_t}\sigma^U_t dW^U_t
   \end{equation}
 \end{frame}
 
 \begin{frame}{Drift Changes (Proof)}   
-  Taking $d(S_t/U_t)$ definition from \cref{eq:dzeta2}
+  Taking $d(N_t/U_t)$ definition from \cref{eq:dzeta2}
   \begin{equation}
-    \sigma_t^{S/U} = \frac{\sigma^S_t}{U_t} - \frac{S_t}{U^2_t}\sigma^U_t
+    \sigma_t^{N/U}C = \frac{\sigma^N_t}{U_t} - \frac{N_t}{U^2_t}\sigma^U_t
   \end{equation}
-  Replacing above expression for $\sigma^{S/B}$ in \cref{eq:alpha}
+  Replacing above expression for $\sigma_t^{N/U}C$ in \cref{eq:gamma}
   \begin{equation}
     \begin{aligned}
-      \mu_t^U(X_t)&=\mu_t^S(X_t)-\frac{U_t}{S_t}\sigma_t(X_t)\rho\left(\frac{\sigma^S_t}{U_t} - \frac{S_t}{U^2_t}\sigma^U_t\right)'\\
-      &=\mu_t^S(X_t)-\sigma_t(X_t)\rho\left(\frac{\sigma^S_t}{S_t} - \frac{\sigma^U_t}{U_t}\right)'
+      \mu_t^U(X_t)&=\mu_t^N(X_t)-\frac{\cancel{U_t}}{N_t}\sigma_t(X_t)\rho\left(\frac{\sigma^N_t}{\cancel{U_t}} - \frac{N_t}{U_t^{\cancel{2}}}\sigma^U_t\right)'\\
+      &=\mu_t^N(X_t)-\sigma_t(X_t)\rho\left(\frac{\sigma^N_t}{N_t} - \frac{\sigma^U_t}{U_t}\right)'
     \end{aligned}
   \end{equation}
   \textcolor{red}{which proves the first part of the statement}.
 \end{frame}
 
 \begin{frame}{Drift Changes (Proof)}
-  Expressing $\alpha_t$ coefficient in terms of the numeraires volatilities
+  Expressing $\gamma_t$ coefficient in terms of the numeraires volatilities
   \begin{equation}
     \begin{aligned}
-      \alpha_t = \frac{[\mu_t^S(X_t) - \mu_t^U(X_t)]'}{(\sigma_t(X_t)C)'} = \left(\frac{\sigma^S_t}{S_t} - \frac{\sigma^U_t}{U_t}\right)'
+      \gamma_t = \frac{[\mu_t^N(X_t) - \mu_t^U(X_t)]'}{(\sigma_t(X_t)C)'} = C' \left(\frac{\sigma^N_t}{N_t} - \frac{\sigma^U_t}{U_t}\right)'
     \end{aligned}
   \end{equation}
 	\pause
   Finally from the Girsanov theorem we get the new diffusion under the new numeraire
   \begin{equation}
     \begin{gathered}
-      CdW^U_t = CdW^S_t - \alpha_t dt \\
-      CdW^U_t = CdW^S_t - \rho\left(\frac{\sigma^S_t}{S_t}-\frac{\sigma^U_t}{U_t}\right)' dt
+      CdW^N_t = CdW^U_t - \gamma_t dt \\
+      CdW^N_t = CdW^U_t - \rho\left(\frac{\sigma^N_t}{N_t}-\frac{\sigma^U_t}{U_t}\right)' dt
     \end{gathered}
+	\label{eq:girsanov_shock_extended}
   \end{equation}
   \textcolor{red}{which proves also the second part of the proposition}.
   
@@ -1127,14 +1131,14 @@ Now let $S_t$ and $U_t$ have dynamics under $\mathcal{Q}^U$ given by
   Assuming an asset $S$ and a numeraire $N$ with the following evolutions under the risk-neutral measure
   \begin{equation}
     \begin{cases}
-      \cfrac{dS_t}{S_t} = r_tdt + \sigma^S_t dW^B_t \\
-      \cfrac{dN_t}{N_t} = r_tdt + \sigma^N_t dW^B_t
+      \cfrac{dS_t}{S_t} = r_tdt + \sigma^S_t dW^B_t\quad\text{(asset)} \\
+      \cfrac{dN_t}{N_t} = r_tdt + \sigma^N_t dW^B_t\quad\text{(numeraire)}
       %\frac{d\mathcal{Q}^N}{d\mathcal{Q}^B} = \frac{N_TB_0}{B_TN_0} = \exp\left(\int_0^T\sigma_t^N dW^B_t - \frac{1}{2}\int_0^T(\sigma^N_t)^2 dt\right)
     \end{cases}
     \label{eq:S_N_dynamics}
   \end{equation}
   
-  by Girsanov, under $\mathcal{Q}^N$, we get
+  by Girsanov Theorem (\cref{eq:girsanov_shock_extended}), under $\mathcal{Q}^N$, we get
   \begin{equation}
     dW^N_t = dW_t^B - \sigma_t^N dt
     \label{eq:girsanov_ex}
