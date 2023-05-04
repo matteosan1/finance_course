@@ -1,609 +1,177 @@
 \documentclass{beamer}
-\usetheme{CambridgeUS}
+\usetheme{afm}
 
-\title{Libor Market Model}
-\author{Matteo Sani}
+\title{Libor Market Models}
+\course{Advanced Financial Modeling}
+\author{\href{mailto:matteo.sani@unisi.it}{Matteo Sani}}
+
 \begin{document}
-	\begin{frame}[plain]
-		\maketitle
-	\end{frame}
+\begin{frame}[plain]
+  \maketitle
+\end{frame}
+
+\section{Libor Market Model}
+\begin{frame}{Before Market Models}
+  \begin{itemize}
+  \item<1-> For a very long time, the market practice has been to value caps, floors and swaptions (which represent the vast majority of interest rate market) by using a formal extension of the Black (1976) model. 
+  \item<2-> However, this formula was applied in a completely heuristic way, under some simplifying and inexact assumptions.
+    \begin{enumerate}
+    \item despite the use of \emph{short rate models}; $r$ was assumed to be deterministic, so that the discounting could be factorized out of the expectation in the risk-neutral pricing formula; 
+    \item then, inconsistently, the forward LIBOR rates were modeled as drift-less geometric Brownian motions (hence stochastic);
+    \item finally the expectation could be viewed as the price of a call option in a market with zero risk-free rate, therefore obtained through the Black’s formula.
+    \end{enumerate} 
+  \item<3-> Unfortunately this is logically inconsistent.
+  \end{itemize}
+\end{frame}
 
 \begin{frame}{Market Models}
-\begin{itemize}
-\item Before market models were introduced, there were no interest-rate dynamics compatible with the Black formula for Caps and Swaptions.
-\item The (forward) LIBOR market model assumes lognormality of the forward rates under their own measure
-\item The (forward) SWAP market model assumes lognormality of the swap rates, under their own measure.
-\item They are not compatible each other.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Map}
-\begin{itemize}
-\item Vanilla-quoted in the market (FRAs-Swaps: only the yield curve is needed)
-\item CAPS\&FLOORS EUROPEAN SWAPTIONS
-\item Standardized contracts for many maturities. Used as input to determine the Set of ($P(o,T)$ needed to price not quoted instruments. Here models are needed mainly for hedging.)
-\item No Vanilla-not quaoted in the market BERMUDAN SWAPTIONS  LIBRO EXOTICS
-\item For these Exotics you need a model to price and Hedge
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Basic Valuation Formula}
-\begin{itemize}
-\item Absence of arbitrage implies the existence of a martingale measure $\mathcal{Q}$ such that, for every contingent claim whose payoff at time $t$ is $\chi$, we have the following formula for its price $\Pi$:
-\begin{equation}
-\Pi(0,\chi) = \mathbb{E}^{\mathcal{Q}}\left[e^{-\int_0^T r_s ds}\chi\right]
-\end{equation}
-\item The main issue of this formula is the interaction between the two terms: the discount factor $e^{-\int_0^T r_s ds}$ and the contingent claim payoff $\chi$.
-\item We then devise a technique which allows the separation of the two.
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{Numeraires}
-\begin{block}{Definition}
-A numeraire is any positive non-dividend-paying asset.
-\end{block}
-\begin{itemize}
-\item In general, a numeraire is a portfolio or a self-financing strategy.
-\item The condition for a strategy to be self-financing in an economy with $K$ assets is
-\begin{equation}
-dV_t = \sum_{k=0}^K \phi^k_t dS^k_t
-\end{equation}
-which implies that form every numeraire $Z_t$
-\begin{equation}
-d\left(\frac{V_t}{Z_t}\right) = \sum_{k=0}^K \phi^k_t d\left(\frac{S^k_t}{Z_t}\right)
-\end{equation}
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{Numeraires}
-\begin{itemize}
-\item Intuitively, the numeraire is a reference asset that normalizes all other assets in the economy.
-\item The simplest numeraire is the money market account
-\begin{equation}
-B_t = e^{\int_0^t r_s ds}
-\end{equation} 
-\item Also the ZCB price $(P(0,T)$ can be a numeraire.
-\item And also your friend BPV.
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{Numeraire Pricing}
-\begin{block}{Theorem (German, El Karoui and Rochet, 1995)}
-Assume that there exists a numeraire $N$ and a probability measure $\mathcal{Q}^N$ which is equivalente to $\mathcal{P}$ such that, for every traded asset $X$:
-\begin{equation}
-\frac{X_t}{N_t} = \mathbb{E}^{\mathcal{Q}^N}\left[\frac{X_T}{N_T}|\mathcal{F}_t\right]
-\end{equation}
-Now, given a second arbitrary numeraire $U$, there exists a probability measure $\mathcal{Q}^U$ which is equivalent to $\mathcal{P}$ and such that:
-\begin{equation}
-\frac{X_t}{U_t} = \mathbb{E}^{\mathcal{Q}^U}\left[\frac{X_T}{U_T}|\mathcal{F}_t\right]
-\end{equation}
-\end{block}
-\end{frame}
-
-
-\begin{frame}{Numeraire Pricing}
-\begin{block}{Theorem (German, El Karoui and Rochet, 1995)}
-Moreover, the Radon-Nykodin derivative of the probability change from $\mathcal{Q}^N$ to $\mathcal{Q}^U$ is given by:
-\begin{equation}
-\frac{d\mathcal{Q}^U}{d\mathcal{Q}^N} = \frac{U_T N_0}{U_0 N_T} 
-\end{equation}
-\end{block}
-\end{frame}
-
-
-\begin{frame}{title}
-\begin{itemize}
-	\item Absence of arbitrage insures the existence of at least one numeraire: the money market account.
-	\item The numeraire theorem allows other numeraires to be used to price a contingent claim.
-	\item It is the natural to look for the most convenient numeraire, that one which minimize the mathematical difficulties.
-	\item When changing numeraire, also the drift will change (convexity adjustments).
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{How to Use the Change of Numeraire}
-\begin{itemize}
-	\item We have to compute
-	\begin{equation}
-		\Pi(0,\chi)=\mathbb{E}^{\mathcal{Q}}\left[e^{-\int_0^T r_s ds}\chi\right]=\mathbb{E}^{\mathcal{Q}}\left[\frac{\chi}{B_T}\right]
-	\end{equation}
-\item By changing numeraire and using the new one $S_t$
-	\begin{equation}
-	\Pi(0,\chi)=S_0\mathbb{E}^{\mathcal{Q}^S}\left[\frac{\chi}{S_T}\right]
-\end{equation}
-\item The chosen numeraire should then make the quantity $\frac{\chi}{S_T}$ particularly simple.
-\end{itemize}
-\end{frame}
-
-\begin{frame}{title}
-\begin{itemize}
-\item In many concrete situations, the best numerarie is the ZCB with the same maturity of the derivative to price.
-In this case $S_t = P(T,T)=1$.
-\item The forward measure $\mathcal{Q}^T$ (the T-measure) is defined as the martingale measure for the numeraire process $P(t,T)$, where $P(t,T)$ is the ZCB maturing in T.
-\item It is easy to see that, in this case the Radon-Nykodin derivative is given by
-\begin{equation}
-\frac{d\mathcal{Q}^T}{d\mathcal{Q}} = \frac{P(t,T)}{B_t P(0,T)} 
-\end{equation}
-\item Using the pricing formula after the change of numeraire, we finally have
-\begin{equation}
-\Pi(0,\chi)=P(t,T)\mathbb{E}^{\mathcal{Q}^T}[\chi]
-\end{equation}
-which achieves the desired separation (although under a new measure).
-\item Notice that if the interest rates are deterministic, then $\mathcal{Q} = \mathcal{Q}^T$
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{The Expectation Hypothesis}
-\begin{itemize}
-\item It is possible to prove the following
-\begin{equation}
-f(t, T) = \mathbb{E}^{\mathcal{Q}^T}[r(T)|\mathcal{F}_t]
-\end{equation}
-\item According to the pure expectation hypothesis, the above formula is valid if the expected value is taken under the real probability.
-\item Absence of arbitrage makes this incompatible with stochastic interest rates.
-\end{itemize}
-DA CAPIRE MEGLIO
-\end{frame}
-
-
-\begin{frame}{Drift Changes}
-\begin{itemize}
-\item Assume that, under the $S$-measure, we have
-\begin{equation}
-dX_t = \mu^S(X_t)dt + \sigma(X_t)dW^S_t
-\end{equation}
-where $dW^S_t$ is n-dimensional standard brownian motion.
-\item Under the $U$-measure, we have
-\begin{equation}
-\mu^U_t(X_t) = \mu^S_t(X_t) - \rho\sigma(X_t)\left(\frac{\sigma^S_t}{S_t}-{\sigma^U_t}{U_t}\right) 
-\end{equation}
-or
-\begin{equation}
-dW^U_t = dW^S_t + \rho\sigma\left(\frac{\sigma^S_t}{S_t}-{\sigma^U_t}{U_t}\right) 
-\end{equation}
-$\rho$ is the correlation matrix of $<dW^S,dW^U>$ and $\sigma^S_t$ and $\sigma^U_t$ are the (vector) volatilities of numeraires $S$ and $U$ (one component for each brownian motion).
-\end{itemize}
-\end{frame}
-
-
-
-\begin{frame}{A General Option Pricing Formula}
-\begin{itemize}
-	\item Consider an European call on an asset $S$ which is also a numeraire
-	\begin{equation}
-		\chi = \max[S_T-K,0]
-	\end{equation}
-\item Denote by $\mathcal{Q}^S$ the martingale measure for the numeraire $S$, and by $\mathcal{Q}^T$ the forward measure.
-\begin{block}{Theorem (German, El Karoui and Rochet, 1995)}
-	\begin{equation}
-\Pi(0,\chi) = S_0\mathcal{Q}^S(S_T \geq K) - KP(0,T)\mathcal{Q}^T(S_T\geq K)
-\end{equation}
-\end{block}
-\item This is a general-purpouse Black-Scholes formula.
-\item Put prices can be computed by put-call parity.
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}
-\begin{itemize}
-\item To make this formula simpler in a special (but relevant case), we assume that the process 
-\begin{equation}
-Z_t = \frac{S_t}{P(t,T)}
-\end{equation}
-follows the diffusion
-\begin{equation}
-dZ_t = Z_tm_tdt + Z_t\sigma_tdW_t
-\end{equation}
-where $sigma_t$ is non-stochastic (can you quote a famous example of this kind ?).
-\item Under $\mathcal{Q}^T$, $Z-t$ is a martingale, then
-\begin{equation}
-	dZ_t = Z_t\sigma_tdW^T_t
-\end{equation}
-which implies
-\begin{equation}
-Z_t = Z_0 e^{-\frac{1}{2}\int_0^T\sigma_t^2 dt + \int_0^T\sigma_tdW^T_t}
-\end{equation}
-which in turn implies that
-\begin{equation}
-\mathcal{Q}^T(S_T\geq K) = \mathcal{N}(d_2)
-\end{equation}
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{title}
-\begin{itemize}
-	\item Now define
-	\begin{equation}
-		Y_t = \frac{P(t,T)}{S_t}=\frac{1}{Z_t}
-	\end{equation}
-Again, under $\mathcal{Q}^S$ $Y_t$ is a martingale, whose volatility must be $-\sigma_t$ by Ito's lemma, so we have
-\begin{equation}
-	dY_t = -Y_t\sigma_tdW^S_t
-\end{equation} 
-which implies
-\begin{equation}
-Y_t = Y_0 e^{-\frac{1}{2}\int_0^T\sigma_t^2 dt - \int_0^T\sigma_tdW^S_t}
-\end{equation}
-\item This implies in turn that
-\begin{equation}
-\mathcal{Q}^S(S_T\geq K) = \mathcal{N}(d_1)
-\end{equation}
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}
-\begin{block}{Extended Black and Scholes formula (deterministic volatility)}
-\begin{equation}
-\Pi(0,\chi) = S_0\mathcal{N}(d_1) - KP(0,T)\mathcal{N}(d_2)
-\end{equation}
-where $d_1$ and $d_2$ are computed with $\sigma^2 = \int_0^T \sigma_s^2 ds$
-\end{block}
-\end{frame}
-
-
-
-
-\begin{frame}{Toward the Black-76 Formula}
-\begin{itemize}
-	\item Consider a caplet resetting at $T_1$ and payed at $T_2$. The payout is 
-	\begin{equation}
-		\tau(L(T_1,T_2)-X)^+ = \tau(F(T_1,T_1,T_2)-X)^+
-	\end{equation}
-\item Its value in $t$ is given by
-	\begin{equation}
-	\mathbb{E}\left[e^{-\int_t^T2r_s ds}\tau(F(T_1,T_1,T_2)-X)^+\right]
-\end{equation}
-\item Notice that $P(0,T_2)F(T_1,T_1,T_2)$ is a tradable asset since
-\begin{equation}
-P(t,T2)F(T_1,T_1,T_2)=\frac{P(t,T_1)-P(t,T_2)}{\tau}
-\end{equation}
-Hence changing numeraire to $P(t,T_2)$ we get
-\begin{equation}
-P(t,T2)\tau \mathbb{E}^{\mathcal{T_2}}\left[(F(T_1,T_1,T_2)-X)^+\right]
-\end{equation}
-\item Now we assume lognormality of $F(t,T_1,T_2)$ under the $T_2$-measure
-\begin{equation}
-dF(t,T_1,T_2)=v_2F(t,T_1,T_2) dW^{T_2}_t
-\end{equation}
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}
-\begin{itemize}
-	\item This implies the Black-76 formula for caps.
-	\item The LMM is automatically fitted to cap prices.
-	\item To price a more complicated derivative, we have to compute the drift of the forward rates under a unique measure.
-	\item For example, $F(t,T_1,T_2)$ is driftless in the $T_2$-measure. In the $T_1$-measure
-	\begin{equation}
-	dF(t,T_1,T_2)=\frac{v_2F(t,T_1,T_2)\tau}{1+\tau F(t,T_1,T_2)}dt + v_2F(t,T_1,T_2)dW^{T_1}_t
-	\end{equation}
-\item We need simulation of the forward rates to price exotic instruments.
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}{The Libor Market Model}
-\begin{itemize}
-\item We now specify the LIBOR market model. We have a set $T_0,\ldots,T_M$ of dates and $\tau_i=T_i-T_{i-1}$. Settlement date is fixed to 0.
-\item Now consider forward rate $F_k(t)=F(t,T_{k-1},T_k)$. They last from $t$ to $T_{k-1}$.
-\item $F_k(t)$ is lognormally distributed under the $T_k$-measure, that is 
-\begin{equation}
-dF_k(t) = \sigma_k(t)F_k(t)dW^k(t),\quad t\leq T_{k-1}
-\end{equation} 
-where $dW^k(t)$ is an M-dimensional brownian motion with correlation matrix $\rho$. $\sigma_k$ is an M-vector of volatilities whose only non-zero entry is at the $k$-th place.
-\item A typical specification of $\sigma_k(t)$ is piece-wise constant.
-\end{itemize}
-\end{frame}
-
-
-
-\begin{frame}{Decorrelation}
-\begin{itemize}
-	\item In the LMM, we can assume that the brownian motions driving the dynamics of forward rate are correlated
-	\begin{equation}
-	<dW_t^{T_i}, dW_t^{T_i}> = \rho_{ij}dt
-	\end{equation}
-\item In models for short rate or for i.f.r. it is assumed full correlation $\rho_{ij}=1$, which is a tight constraint on the dynamics of the forward rates.
-\item In the LMM, we can allow decorrelation to better fit the derivatives at hand.
-\item The change of measure with decorrelation implies
-\begin{equation}
-dF(t,T_1,T_2)=\rho_{12}\frac{v_2F(t,T_1,T_2)\tau}{1+\tau F(t,T_1,T_2)}dt + v_2F(t,T_1,T_2)dW^{T_1}_t
-\end{equation}
-\item Correlations have no impacts on Caps.
-\end{itemize}
-\end{frame}
-
-
-
-
-
-
-%\begin{frame}{A General Option Pricing Formula}
-%	\begin{itemize}
-	%		\item Consider an European call on an asset $S$ which is also a numeraire
-	%		\begin{equation}
-		%			\chi = \max[S_T-K,0]
-		%		\end{equation}
-	%		\item Denote by $\mathcal{Q}^S$ the martingale measure for the numeraire $S$, and by $\mathcal{Q}^T$ the forward measure.
-	%		\begin{block}{Theorem (German, El Karoui and Rochet, 1995)}
-		%			\begin{equation}
-			%				\Pi(0,\chi) = S_0\mathcal{Q}^S(S_T \geq K) - KP(0,T)\mathcal{Q}^T(S_T\geq K)
-			%			\end{equation}
-		%		\end{block}
-	%		\item This is a general-purpouse Black-Scholes formula.
-	%		\item Put prices can be computed by put-call parity.
-	%	\end{itemize}
-%\end{frame}
-%
-%\begin{frame}
-%To prove the theorem, note that the value of the option is given by
-%
-%\begin{equation}
-%\Pi(0,\chi) = \mathbb{E}^{\mathcal{Q}}[B_TS_T I_{\{S_T\geq K\}}] - K\mathbb{E}^{\mathcal{Q}}[B_TI_{\{S_T\geq K\}}]
-%\end{equation}
-%\end{frame}
-%
-%\begin{frame}
-%	\begin{itemize}
-	%		\item To make this formula simpler in a special (but relevant case), we assume that the process 
-	%		\begin{equation}
-		%			Z_t = \frac{S_t}{P(t,T)}
-		%		\end{equation}
-	%		follows the diffusion
-	%		\begin{equation}
-		%			dZ_t = Z_tm_tdt + Z_t\sigma_tdW_t
-		%		\end{equation}
-	%		where $sigma_t$ is non-stochastic (can you quote a famous example of this kind ?).
-	%		\item Under $\mathcal{Q}^T$, $Z-t$ is a martingale, then
-	%		\begin{equation}
-		%			dZ_t = Z_t\sigma_tdW^T_t
-		%		\end{equation}
-	%		which implies
-	%		\begin{equation}
-		%			Z_t = Z_0 e^{-\frac{1}{2}\int_0^T\sigma_t^2 dt + \int_0^T\sigma_tdW^T_t}
-		%		\end{equation}
-	%		which in turn implies that
-	%		\begin{equation}
-		%			\mathcal{Q}^T(S_T\geq K) = \mathcal{N}(d_2)
-		%		\end{equation}
-	%	\end{itemize}
-%\end{frame}
-%
-%
-%\begin{frame}{title}
-%	\begin{itemize}
-	%		\item Now define
-	%		\begin{equation}
-		%			Y_t = \frac{P(t,T)}{S_t}=\frac{1}{Z_t}
-		%		\end{equation}
-	%		Again, under $\mathcal{Q}^S$ $Y_t$ is a martingale, whose volatility must be $-\sigma_t$ by Ito's lemma, so we have
-	%		\begin{equation}
-		%			dY_t = -Y_t\sigma_tdW^S_t
-		%		\end{equation} 
-	%		which implies
-	%		\begin{equation}
-		%			Y_t = Y_0 e^{-\frac{1}{2}\int_0^T\sigma_t^2 dt - \int_0^T\sigma_tdW^S_t}
-		%		\end{equation}
-	%		\item This implies in turn that
-	%		\begin{equation}
-		%			\mathcal{Q}^S(S_T\geq K) = \mathcal{N}(d_1)
-		%		\end{equation}
-	%	\end{itemize}
-%\end{frame}
-%
-%\begin{frame}
-%	\begin{block}{Extended Black and Scholes formula (deterministic volatility)}
-	%		\begin{equation}
-		%			\Pi(0,\chi) = S_0\mathcal{N}(d_1) - KP(0,T)\mathcal{N}(d_2)
-		%		\end{equation}
-	%		where $d_1$ and $d_2$ are computed with $\sigma^2 = \int_0^T \sigma_s^2 ds$
-	%	\end{block}
-%\end{frame}
-%
-%\begin{frame}{Toward the Black-76 Formula}
-%	\begin{itemize}
-	%		\item Consider a caplet resetting at $T_1$ and payed at $T_2$. The payout is 
-	%		\begin{equation}
-		%			\tau(L(T_1,T_2)-X)^+ = \tau(F(T_1,T_1,T_2)-X)^+
-		%		\end{equation}
-	%		\item Its value in $t$ is given by
-	%		\begin{equation}
-		%			\mathbb{E}\left[e^{-\int_t^T2r_s ds}\tau(F(T_1,T_1,T_2)-X)^+\right]
-		%		\end{equation}
-	%		\item Notice that $P(0,T_2)F(T_1,T_1,T_2)$ is a tradable asset since
-	%		\begin{equation}
-		%			P(t,T2)F(T_1,T_1,T_2)=\frac{P(t,T_1)-P(t,T_2)}{\tau}
-		%		\end{equation}
-	%		Hence changing numeraire to $P(t,T_2)$ we get
-	%		\begin{equation}
-		%			P(t,T2)\tau \mathbb{E}^{\mathcal{T_2}}\left[(F(T_1,T_1,T_2)-X)^+\right]
-		%		\end{equation}
-	%		\item Now we assume lognormality of $F(t,T_1,T_2)$ under the $T_2$-measure
-	%		\begin{equation}
-		%			dF(t,T_1,T_2)=v_2F(t,T_1,T_2) dW^{T_2}_t
-		%		\end{equation}
-	%	\end{itemize}
-%\end{frame}
-%
-%
-%\begin{frame}
-%	\begin{itemize}
-	%		\item This implies the Black-76 formula for caps.
-	%		\item The LMM is automatically fitted to cap prices.
-	%		\item To price a more complicated derivative, we have to compute the drift of the forward rates under a unique measure.
-	%		\item For example, $F(t,T_1,T_2)$ is driftless in the $T_2$-measure. In the $T_1$-measure
-	%		\begin{equation}
-		%			dF(t,T_1,T_2)=\frac{v_2F(t,T_1,T_2)\tau}{1+\tau F(t,T_1,T_2)}dt + v_2F(t,T_1,T_2)dW^{T_1}_t
-		%		\end{equation}
-	%		\item We need simulation of the forward rates to price exotic instruments.
-	%	\end{itemize}
-%\end{frame}
-%
-%
-%\begin{frame}{The Libor Market Model}
-%	\begin{itemize}
-	%		\item We now specify the LIBOR market model. We have a set $T_0,\ldots,T_M$ of dates and $\tau_i=T_i-T_{i-1}$. Settlement date is fixed to 0.
-	%		\item Now consider forward rate $F_k(t)=F(t,T_{k-1},T_k)$. They last from $t$ to $T_{k-1}$.
-	%		\item $F_k(t)$ is lognormally distributed under the $T_k$-measure, that is 
-	%		\begin{equation}
-		%			dF_k(t) = \sigma_k(t)F_k(t)dW^k(t),\quad t\leq T_{k-1}
-		%		\end{equation} 
-	%		where $dW^k(t)$ is an M-dimensional brownian motion with correlation matrix $\rho$. $\sigma_k$ is an M-vector of volatilities whose only non-zero entry is at the $k$-th place.
-	%		\item A typical specification of $\sigma_k(t)$ is piece-wise constant.
-	%	\end{itemize}
-%\end{frame}
-%
-%\begin{frame}{Decorrelation}
-%	\begin{itemize}
-	%		\item In the LMM, we can assume that the brownian motions driving the dynamics of forward rate are correlated
-	%		\begin{equation}
-		%			<dW_t^{T_i}, dW_t^{T_i}> = \rho_{ij}dt
-		%		\end{equation}
-	%		\item In models for short rate or for i.f.r. it is assumed full correlation $\rho_{ij}=1$, which is a tight constraint on the dynamics of the forward rates.
-	%		\item In the LMM, we can allow decorrelation to better fit the derivatives at hand.
-	%		\item The change of measure with decorrelation implies
-	%		\begin{equation}
-		%			dF(t,T_1,T_2)=\rho_{12}\frac{v_2F(t,T_1,T_2)\tau}{1+\tau F(t,T_1,T_2)}dt + v_2F(t,T_1,T_2)dW^{T_1}_t
-		%		\end{equation}
-	%		\item Correlations have no impacts on Caps.
-	%	\end{itemize}
-%\end{frame}
-
-\begin{frame}
-\begin{itemize}
-	\item For a very long time, the market practice has been to value caps, floors and swaptions (which represent the vast majority of interest rate market) by using a formal extension of the Black (1976) model. 
-	\item However, this formula was applied in a completely heuristic way, under some simplifying and inexact assumptions.
-	\begin{enumerate}
-		\item despite the use of \emph{short rate models}; $r$ was assumed to be deterministic, so that the discounting could be factorized out of the expectation in the risk-neutral pricing formula; 
- 		\item then, inconsistently, the forward LIBOR rates were modeled as drift-less geometric Brownian motions (hence stochastic);
- 		\item finally the expectation could be view as the price of a call option in a market with zero risk-free rate, therefore obtained through the Black’s formula.
- 	\end{enumerate} 
- 	\item This is logically inconsistent.
- 	\end{itemize}
-\end{frame}
-
-\begin{frame}
-	\begin{itemize}
-		\item At the end of the ’90, a family of (arbitrage-free) interest rate models was introduced: the \textcolor{red}{Market Models}. %\item The principal idea of these approaches is to choose a different numeraire than the risk-free bank account.
-%The interest rate market is radically different from the others, e.g. commodities or equities, thus needs a own kind of modeling. 
-		\item There are three possible choices in interest rate modeling: short rate models, that model one single variable, instantaneous forward rate models, that model all infinite points of the term structure and Market Models.
-		\item These recent ones have the following characteristics:
-		\begin{itemize}
-		\item instead of modeling instantaneous interest rates, they model a selection of discrete real world rates (quoted in the market) spanning the term structure;
-		\item under a suitable change of numeraire these market rates can be modeled log-normally;
-		\item they produce pricing formulas for caps, floors and swaptions of the Black-76 type;
-		\item they are easy to calibrate to market data and are then used to price more exotic products.
-	\end{itemize}
-\end{itemize}
+  \begin{itemize}
+  \item<1-> At the end of the ’90, a family of (arbitrage-free) interest rate models was introduced: the \textcolor{red}{Market Models}. %\item The principal idea of these approaches is to choose a different numeraire than the risk-free bank account.
+    %The interest rate market is radically different from the others, e.g. commodities or equities, thus needs a own kind of modeling. 
+  \item<2-> There are three possible choices in interest rate modeling: short rate models, that model one single variable, instantaneous forward rate models, that model all infinite points of the term structure at once and Market Models.
+  \item<3-> These recent ones have the following nice characteristics:
+    \begin{itemize}
+    \item instead of modeling instantaneous interest rates, they model a selection of discrete real world rates (quoted in the market) spanning the term structure;
+    \item under a suitable change of numeraire these market rates can be modeled log-normally;
+    \item they produce pricing formulas of the Black-76 type for caps/floors and swaptions;
+    \item they are relatively easy to calibrate to market data and are then used to price more exotic products.
+    \end{itemize}
+  \end{itemize}
 \end{frame}
 %The model we are introducing is best known generally as ”LIBOR Market Model” (LMM), or else ”Log-normal Forward LIBOR Model” or ”BraceGatarek-Musiela 1997 Model” (BGM model), 
 
 \begin{frame}{Setting the Model}
-\begin{itemize}
-	\item $t = 0$ is the current time and the set $\{T_0, T_1, \dots, T_M\}$ of expiry-maturity dates is the tenor structure; %with the corresponding year fractions $\tau_i$ associated with the expiry-maturity pair $(T_{i−1}, T_i)$, for all $i > 0$;
-	\item the simply-compounded forward interest rate resetting at its expiry date $T_{i-1}$ and with maturity $T_i$ is denoted by $F_i(t) = F(t; T_{i-1}, T_i)$; %and is alive up to time Ti−1, where it coincides with the spot LIBOR rate Fi(Ti−1) = L(Ti−1, Ti), for i = 1, . . . , M;
-	%\item there exists an EMM $\mathcal{Q}$ and the bond prices $P(\cdot, T_i)$ are $\mathcal{Q}$-prices, for $i = 1,\ldots, M$;
-	\item $\mathcal{Q}_i$ is the EMM associated with the numeraire $P(\cdot, T_i)$, i.e. the $T_i$-forward measure;
-	\item $Z_i$is the $M$-dimensional correlated Brownian motion under $\mathcal{Q}_i$, with instantaneous correlation matrix $\rho$.
-\end{itemize}
-We have already seen that $F_i$ is a martingale under the corresponding $T_i$-forward measure, on the interval $[0, T_{i-1}]$, hence each $F$’s has a drift-less dynamics under $\mathcal{Q}_i$.
+  \begin{itemize}
+  \item $t = 0$ is the current time and the set $\{T_0, T_1, \dots, T_M\}$ of expiry-maturity dates is the tenor structure. %with the corresponding year fractions $\tau_i$ associated with the expiry-maturity pair $(T_{i−1}, T_i)$, for all $i > 0$;
+  \item The simply-compounded forward interest rate resetting at its expiry date $T_{i-1}$ and with maturity $T_i$ is denoted by $F_i(t) = F(t; T_{i-1}, T_i)$; %and is alive up to time Ti−1, where it coincides with the spot LIBOR rate Fi(Ti−1) = L(Ti−1, Ti), for i = 1, . . . , M;
+    %\item there exists an EMM $\mathcal{Q}$ and the bond prices $P(\cdot, T_i)$ are $\mathcal{Q}$-prices, for $i = 1,\ldots, M$;
+  \item $\mathcal{Q}_i$ is the equivalent martingale measure (EMM) associated with the numeraire $P(\cdot, T_i)$, i.e. the $T_i$-forward measure;
+  \item $W_i$ is a $M$-dimensional correlated Brownian motion under $\mathcal{Q}_i$, with instantaneous correlation matrix $\rho$.
+  \end{itemize}
+  We have already seen that $F_i$ is a martingale under the corresponding $T_i$-forward measure, on the interval $[0, T_{i-1}]$, \textcolor{red}{hence each $F_i$ has a drift-less dynamics under $\mathcal{Q}_i$.}
 \end{frame}
 
-\begin{frame}
-\begin{block}{Proposition}
-A discrete tenor LIBOR market model assumes that the forward rates have the following dynamics under their associated forward measures:
-\begin{equation*}
-dF_i(t) = \sigma_i(t)F_i(t)dZ_i(t), t \le T_{i-1},\quad\text{ for } i = 1,\ldots, M
-\label{eq:forward_process_lmm}
-\end{equation*}
-where $\sigma_i$ is assumed to be deterministic and scalar, whereas $dZ_i$ is the $i$-th component of the Brownian motion.
-\end{block}
-
-We know that, if $\sigma_i$ is bounded, the solution for $F$ is 
-\begin{equation*}
-F_i(T) = F_i(t) \exp\left(\int_t^T\sigma_i(s)dZ_i(s)ds - \frac{1}{2}\int_t^T 
-\sigma_i^2(s)ds\right),\quad 0\le t \le T \le T_{i-1} 
-\end{equation*}.
+\begin{frame}{Forward Rate Dynamics}
+  \begin{block}{Proposition}
+    A discrete tenor LIBOR market model assumes that the forward rates have the following dynamics under their associated forward measures:
+    \begin{equation}
+      dF_i(t) = \sigma_i(t)F_i(t)dW_i(t), t \le T_{i-1},\quad\text{ for } i = 1,\ldots, M
+      \label{eq:forward_process_lmm}
+    \end{equation}
+    where $\sigma_i$ is assumed to be deterministic and scalar, whereas $dW_i$ is the $i$-th component of the Brownian motion.
+  \end{block}
+  We know that, if $\sigma_i$ is bounded, the solution for $F_i$ is 
+  \begin{equation*}
+    F_i(T) = F_i(t) \exp\left(\int_t^T\sigma_i(s)dW_i(s)ds - \frac{1}{2}\int_t^T 
+    \sigma_i^2(s)ds\right),\quad 0\le t \le T \le T_{i-1} 
+  \end{equation*}
+  (for a non-rigorous proof see next slide.)
 \end{frame}
 
-\begin{frame}
-\begin{block}{Forward measure dynamics in the LMM}
-Under the assumptions of the LIBOR market model, the dynamics of each $F_k$, for $k = 1,\ldots, M$, under the forward measure $\mathcal{Q}_i$ with $i \in \{1,\ldots, M\}$, is:
-\begin{equation*}
-	\begin{cases}
-		k < i: dF_k(t) = -\sigma_k(t)F_k(t)\sum_{j=k+1}^i\frac{\rho_{k,j}\tau_j\sigma_j(t)F_j(t)}{1+\tau_jF_j(t)}dt + \sigma_k(t)F_k(t)dZ^i_k(t), \\
-		k = i : dF_k(t) = \sigma_k(t)F_k(t)dZ_k^i(t), \\
-		k > i : dF_k(t) = \sigma_k(t)F_k(t)\sum_{j=k+1}^i\frac{\rho_{k,j}\tau_j\sigma_j(t)F_j(t)}{1+\tau_jF_j(t)}dt + \sigma_k(t)F_k(t)dZ^i_k(t)		
-	\end{cases}
-\end{equation*}
-for $t \le \min\{T_{k-1}, T_i\}$.
-\end{block}
-
-By assumption, there exist a LIBOR market model satisfying Eq.~\ref{eq:forward_process_lmm}.
-We try to determine the deterministic functions $\mu_k^i(t, \mathbf{F}(t))$, where:
-$F(t) = (F_1(t),\ldots, F_M(t))$, that satisfies
-\begin{equation*}
-dF_k(t) = \mu_k^i(t, F(t))F_k(t)dt + \sigma_k(t)F_k(t)dZ^i_k(t),\quad k\neq i
-\end{equation*}
-Let's apply the change of measure from $\mathcal{Q}_i$ to $\mathcal{Q}_k$, then impose that the $\mathcal{Q}_k$ resulting drift is null. 
+\begin{frame}{Exponential Martingale}
+  \begin{itemize}
+	  \item<1-> We have already seen that the solution of the SDE $dF_t=\mu_t F_t dt + \sigma_t F_t dW_t$ is
+	    \begin{equation*}
+		      \frac{F_T}{F_t} = e^{\int_t^T(\mu_s -\frac{1}{2}\sigma_s^2)ds+\int_t^T\sigma_s dW}
+		    \end{equation*}
+	  \item<2-> If we now assume the drift coefficient $\mu_t=0$ 
+	    \begin{equation*}
+		    \frac{F_T}{F_t} = e^{\int_t^T-\frac{1}{2}\sigma_s^2 ds+\int_t^T\sigma_s dW}
+	    \end{equation*}
+	  is a solution for $dF_t=\sigma_t F_tdW_t$
+	  \item<3-> \textcolor{red}{This is a pretty straightforward result, but what is the $F_i$ dynamics under the $T_j$-measure ($i\neq j$) ?}
+	  \end{itemize}
 \end{frame}
 
-\begin{frame}
-The Radon-Nikodym derivative of $\mathcal{Q}_{i-1}$ w.r.t. $\mathcal{Q}_i$ at time $t$ is
-\begin{equation}
-\frac{dQ_{i-1}}{dQ_i}|\mathcal{F}_t = \frac{P(t, T_{i-1})P(0, T_i)}{P(0, T_{i-1})P(t, T_i)} = \gamma^i_t
-\end{equation}
-and, by (1.9),
-\begin{equation}
-\gamma^i_t = \frac{P(0, T_i)}{P(0, T_{i-1})}(1+F_i(t)\tau_i)
-\end{equation}
-Therefore, assuming (2.1), the dynamics of $\gamma^i_t$ under $\mathcal{Q}_i$ is
-\begin{equation}
-d\gamma^i_t =\frac{P(0, T_i)}{P(0, T_{i-1})}dF_i(t)\tau_i = \frac{P(0, T_i)}{P(0, T_{i-1})}\tau_i\sigma_i(t)F_i(t)dZ^i_i(t) = \frac{\gamma_t^i}{1+F_i(t)\tau_i}\tau_i\sigma_i(t)F_i(t)dZ^i_i(t)
-\end{equation}
-Thus, the RND $\gamma_i$ is an exponential martingale with associated process $\lambda$ that is the d-dimensional null vector apart from the i-th component,
-\begin{equation}
-\lambda = \left(0\cdots-\frac{\tau_i\sigma_iF_i}{1+F_i\tau_i}\cdots 0\right)
-\end{equation}
-so from the Girsanov theorem:
-\begin{equation}
-dZ^i(t) = dZ^{i-1}(t)-\rho\lambda dt,\quad \left(dZ^i(t) = dZ^{i-1}(t)+\rho^{ji}\frac{\tau_i\sigma_i(t)F_i(t)}{1+F_i(t)\tau_i} dt\right)
-\end{equation}
+
+\begin{frame}{Forward Rate Dynamics in LMM}
+  \begin{block}{Proposition}
+    Under the assumptions of the LIBOR market model, the dynamics of each $F_k$, for $k = 1,\ldots, M$, under the forward measure $\mathcal{Q}_i$ with $i \in \{1,\ldots, M\}$, is:
+    \begin{equation}
+      \begin{cases}
+	k < i: dF_k(t) = -\sigma_k(t)F_k(t)\sum_{j=k+1}^i\cfrac{\rho_{k,j}\tau_j\sigma_j(t)F_j(t)}{1+\tau_jF_j(t)}dt + \sigma_k(t)F_k(t)dW^i_k(t) \\ \vspace{0.1cm}
+	k = i : dF_k(t) = \sigma_k(t)F_k(t)dW_k^i(t) \\
+	\vspace{0.1cm}
+	k > i : dF_k(t) = \sigma_k(t)F_k(t)\sum_{j=k+1}^i\cfrac{\rho_{k,j}\tau_j\sigma_j(t)F_j(t)}{1+\tau_jF_j(t)}dt + \sigma_k(t)F_k(t)dW^i_k(t)		
+      \end{cases}
+  	\label{eq:forward_rat_dynamics_lfm}
+    \end{equation}
+    for $t \le \min\{T_{k-1}, T_i\}$.
+  \end{block}
 \end{frame}
 
-\begin{frame}
-Applying this inductively we obtain
-\begin{equation}
-	\begin{cases}
-	k < i : dZ^i_j = dZ^k_j + \sum_{h=k+1}^i \rho^{jh}\frac{\tau_h\sigma_h(t)F_h(t)}{1+F_h(t)\tau_h} dt;\\
-	k > i : dZ^i_j = dZ^k_j - \sum_{h=k+1}^i \rho^{jh}\frac{\tau_h\sigma_h(t)F_h(t)}{1+F_h(t)\tau_h} dt;\\
-\end{cases}
-\end{equation}
-Then, inserting these into (2.3) and equating the $\mathcal{Q}_k$-drift to zero, we have:
-\begin{equation}
-	\begin{gathered}
-	k < i : F_k(t)\left( \mu_k^i(t, F(t)) + \sigma_i(t)\sum_{h=k+1}^i \rho^{jh} \frac{\tau_h\sigma_h(t)F_h(t)}{1+F_h(t)\tau_h}\right) dt = 0 \\
-	\implies \mu_k^i(t, F(t)) = - \sigma_i(t)\sum_{h=k+1}^i \rho^{jh} \frac{\tau_h\sigma_h(t)F_h(t)}{1+F_h(t)\tau_h}
-	\end{gathered}
-\end{equation}
-and similarly for $k > i$.
+\begin{frame}{Forward Rate Dynamics in LMM (Proof)}
+  \begin{itemize}
+  \item<1-> By assumption, there exist a LIBOR market model satisfying \cref{eq:forward_process_lmm}.
+  \item<2-> We would like to determine the deterministic functions $\mu_k^i(t, \bar{F}(t))$, with ($\bar{F}(t)$ is the vector $(F_1(t),\ldots, F_M(t))$), that satisfies
+    \begin{equation}
+      dF_k(t) = \mu_k^i(t, \bar{F}(t))F_k(t)dt + \sigma_k(t)F_k(t)dW^i_k(t),\quad k\neq i
+      \label{eq:forward_dynamics_in_lfm}
+    \end{equation}
+  \item<3-> Let's apply the change of measure from $\mathcal{Q}_i$ to $\mathcal{Q}_k$, then impose that the $\mathcal{Q}_k$ resulting drift is null. 
+  \item<4-> The Radon-Nikodym derivative (RND) of $\mathcal{Q}_{i-1}$ w.r.t. $\mathcal{Q}_i$ at time $t$ is
+    \begin{equation*}
+      \frac{dQ_{i-1}}{dQ_i}\bigg|\mathcal{F}_t = \frac{P(t, T_{i-1})P(0, T_i)}{P(0, T_{i-1})P(t, T_i)} = \zeta^i_t
+    \end{equation*}
+  \end{itemize}
 \end{frame}
 
-\begin{frame}
-At this point, we can turn around the argument to have the following existence result.
-\begin{block}{Proposition}
-Consider a given volatility structure $\sigma_1,\ldots, \sigma_M$, where each $\sigma_i$ is bounded, and the terminal measure $\mathcal{Q}_M$ with associated d-dimensional correlated B.m. $W^M$. If we define the processes $F_1,\ldots, F_M$ by
-$dF_i(t) = -\sigma_i(t)F_i(t)\sum_{j=i+1}^M \rho^{ij} \frac{\tau_j\sigma_j(t)F_j(t)}{1+F_j(t)\tau_j} dt + \sigma_i(t)F_i(t)dZ^M_i(t)$
-for $i = 1,\ldots, M$, then the $\mathcal{Q}_i$-dynamics of $F_i$ is given by (2.1), i.e. there exists a LIBOR model with the given volatility structure.
-\end{block}
+\begin{frame}{Forward Rate Dynamics in LMM (Proof)}
+  \begin{itemize}
+  \item<1-> From the forward rate definition $\cfrac{P(t,T_{i-1})}{P(t,T_i)} = 1 + \tau_i F_i$ so
+    \begin{equation*}
+      \zeta^i_t = \frac{P(0, T_i)}{P(0, T_{i-1})}(1+F_i(t)\tau_i)
+    \end{equation*}
+    therefore, assuming \cref{eq:forward_process_lmm}, the dynamics of $\zeta^i_t$ under $\mathcal{Q}_i$ is
+    \begin{equation*}
+      \begin{aligned}
+	d\zeta^i_t &= \frac{P(0, T_i)}{P(0, T_{i-1})}dF_i(t)\tau_i = \frac{P(0, T_i)}{P(0, T_{i-1})}\tau_i\sigma_i(t)F_i(t)dW^i_i(t) = \\ &= \frac{\zeta_t^i}{1+F_i(t)\tau_i}\tau_i\sigma_i(t)F_i(t)dW^i_i(t)
+      \end{aligned}
+    \end{equation*}
+  \item<2-> Thus, the RND $\zeta_i$ is an exponential martingale with associated process $\lambda$ that is the M-dimensional vector $\lambda = \left(0,\cdots,\frac{\tau_i\sigma_iF_i}{1+F_i\tau_i},\cdots, 0\right)$
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Forward Rate Dynamics in LMM (Proof)}
+  \begin{itemize}
+  \item<1-> So from the Girsanov theorem:
+    \begin{equation*}
+      dW^i(t) = dW^{i-1}(t)-\rho\lambda dt,\quad \left(dW^i(t) = dW^{i-1}(t)+\rho^{ji}\frac{\tau_i\sigma_i(t)F_i(t)}{1+F_i(t)\tau_i} dt\right)
+    \end{equation*}
+  \item<2-> Applying this inductively we obtain
+    \begin{equation*}
+  	\begin{cases}
+	k < i : dW^i_j = dW^k_j + \sum_{h=k+1}^i \rho^{jh}\cfrac{\tau_h\sigma_h(t)F_h(t)}{1+F_h(t)\tau_h} dt;\\
+	k > i : dW^i_j = dW^k_j - \sum_{h=k+1}^i \rho^{jh}\cfrac{\tau_h\sigma_h(t)F_h(t)}{1+F_h(t)\tau_h} dt;\\
+  	\end{cases}
+    \end{equation*}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Forward Rate Dynamics in LMM (Proof)}
+	\begin{itemize}
+	\item<1-> Then, inserting these into \cref{eq:forward_dynamics_in_lfm} and requiring the drift to zero, we have:
+		\begin{equation*}
+			\begin{gathered}
+				k < i : F_k(t)\left( \mu_k^i(t, F(t)) + \sigma_i(t)\sum_{h=k+1}^i \rho^{jh} \frac{\tau_h\sigma_h(t)F_h(t)}{1+F_h(t)\tau_h}\right) dt = 0 \\
+				\implies \mu_k^i(t, F(t)) = - \sigma_i(t)\sum_{h=k+1}^i \rho^{jh} \frac{\tau_h\sigma_h(t)F_h(t)}{1+F_h(t)\tau_h}
+			\end{gathered}
+		\end{equation*}
+		and similarly for $k > i$.
+	\item<2-> At this point, we can turn around the argument to have the following existence result.
+	\end{itemize}
+\end{frame}
+
+\subsection{Log-normal Forward Model}
+\begin{frame}{Log-normal Forward LIBOR Model}
+  \begin{block}{Proposition}
+    Consider a given volatility structure $\sigma_1,\ldots, \sigma_M$, where each $\sigma_i$ is bounded, and the terminal measure $\mathcal{Q}_M$ with associated M-dimensional correlated Brownian motions $W^M$. If we define the processes $F_1,\ldots, F_M$ by
+    \begin{equation}
+      dF_i(t) = -\sigma_i(t)F_i(t)\sum_{j=i+1}^M \rho^{ij} \frac{\tau_j\sigma_j(t)F_j(t)}{1+F_j(t)\tau_j} dt + \sigma_i(t)F_i(t)dW^M_i(t)
+    \end{equation}
+    for $i = 1,\ldots, M$, then the $\mathcal{Q}_i$-dynamics of $F_i$ is given by \cref{eq:forward_process_lmm}, i.e. there exists a LIBOR model with the given volatility structure.
+  This model is often called \textcolor{red}{log-normal forward LIBOR model} from the log-normal distribution of each forward rate under the related forward measure.
+  \end{block}
 \end{frame}
 
 %Proof. First, we have to prove the existence of a solution of (2.5). For i = M
@@ -686,108 +254,149 @@ for $i = 1,\ldots, M$, then the $\mathcal{Q}_i$-dynamics of $F_i$ is given by (2
 %, notice
 %that all LIBOR rate processes will be always positive, thus the process λ
 %in (2.4) is bounded and consequently satisfies the Novikov condition.
-%
-The ”log-normal forward LIBOR model” takes his name from the lognormal distribution of each forward rate under the related forward measure and we find it in the literature with several names. Anyway, the most common terminology remains that of ”LIBOR Market Model”.
 
+\begin{frame}{LFM and Black Price Equivalence}
+	\begin{block}{Proposition}
+		The price of the $i$-th caplet implied by the LIBOR market model coincides with that given by the corresponding Black caplet formula:
+		\begin{equation}
+			\textbf{Caplet}^{LFM}(0, T_{i-1}, T_i, K, v_i)= \tau_i P(0, T_i) Bl(K, F(0; T_{i-1}, T_i), v_i\sqrt{T_{i-1}})
+		\end{equation}
+		where
+		\begin{equation}
+			v_i^2 = \frac{1}{T_{i-1}}\int_0^{T_{i-1}}\sigma_i^2(t)dt
+			\label{eq:caplet_black_vol}
+		\end{equation}
+	\end{block}
+\end{frame}
 
-\begin{frame}
-\begin{itemize}
-	\item In the market, cap prices are not quoted in monetary terms, but rather in terms of the so-called implied Black volatilities. 
-%Typically, caps whose implied volatilities are quoted have resettlement dates $T_\alpha,\ldots, T_\beta$ with either
-%
-%\begin{block}
-%Given market price data for caps with tenor structure as above mentioned, denoted by $Cap_m(t, \mathcal{T}j, K)$ where $\mathcal{T}_j = \{T_0,\ldots, T_j\}$, the implied Black volatilities are defined as follows:
-	\item the implied flat volatilities are the solutions $v_{T_1-cap},\ldots, v_{T_M-cap}$ of the equations
-	$Cap_m(t, \mathcal{T}_j, K) = \sum_{i=1}^j Capl^{Black}(t, T_{i-1}, T_i,K,v_{T_j-cap}),\quad j=1, \ldots,M$
-	\item the implied spot volatilities are the solutions $v_{T_1-capl},\ldots, v_{T_M-capl}$ of
-	$Capl_m(t, T_{i-1},T_i,K) = Capl^{Black}(t, T_{i-1}, T_i,K,v_{T_i-cap}),\quad i=1, \ldots,M$, 
-	where $Capl^m(t, T_{i-1}, T_i, K) = Cap^m(t, \mathcal{T}_i,K)-Cap^m(t, \mathcal{T}_{i-1},K)$
+\begin{frame}{Flat and Spot Volatilities}
+	\begin{itemize}
+		\item<1-> In the market, cap prices are not quoted in monetary terms, but rather in terms of the so-called implied Black volatilities. 
+		%Typically, caps whose implied volatilities are quoted have resettlement dates $T_\alpha,\ldots, T_\beta$ with either
+		%
+		%\begin{block}
+		%Given market price data for caps with tenor structure as above mentioned, denoted by $Cap_m(t, \mathcal{T}j, K)$ where $\mathcal{T}_j = \{T_0,\ldots, T_j\}$, the implied Black volatilities are defined as follows:
+		\item<2-> The implied \textcolor{red}{flat volatilities} are the solutions $v_{T_1-cap},\ldots, v_{T_M-cap}$ of the equations
+		\begin{equation*}
+			Cap_m(t, \mathcal{T}_j, K) = \sum_{i=1}^j Caplet^{Black}(t, T_{i-1}, T_i,K,v_{T_j-cap}),\quad j=1, \ldots,M
+		\end{equation*}
+		\item<3-> While the implied \textcolor{red}{spot volatilities} are the solutions $v_{T_1-caplet},\ldots, v_{T_M-caplet}$ of
+		\begin{equation*}
+			Caplet_m(t, T_{i-1},T_i,K) = Caplet^{Black}(t, T_{i-1}, T_i,K,v_{T_i-caplet}),\quad i=1, \ldots,M
+		\end{equation*} 
+		where $Caplet^m(t, T_{i-1}, T_i, K) = Cap^m(t, \mathcal{T}_i,K)-Cap^m(t, \mathcal{T}_{i-1},K)$
+	\end{itemize}
+\end{frame}
 
-%Notice that the flat volatility $v_{T_1−cap}$ is that implied by the Black formula by putting the same average volatility in all caplets up to $T_j$, whereas the spot volatility $v_{T_i−capl}$ is just the implied average volatility from caplet over $[T_{i−1}, T_i]$.
-%
-	\item There seems to be one kind of inconsistency in the cap volatility system. Indeed, when considering a set of caplets all concurring to different caps, their average volatilities change moving from a cap to another, if computed as implied flat volatilities. Therefore, to recover correctly cap prices according to the LMM dynamics, we need to have
-	$\sum_{i=1}^j\tau_iP(t,T_i)Bl(K,F(t;T_{i-1},T_i),\sqrt{T_{i-1}v_{T_j-cap}}) = \sum_{i=1}^j\tau_iP(t,T_i)Bl(K,F(t;T_{i-1},T_i),\sqrt{T_{i-1}v_{T_i-capl}})$ for all $j = 1,\dots, M$.
-\end{itemize}
+\begin{frame}{Flat and Spot Volatilities}
+	\begin{itemize}
+		\item<1-> Notice that flat volatility $v_{T_1-cap}$ is that implied by the Black formula by putting the same average volatility in all caplets up to $T_j$, whereas the spot volatility $v_{T_i-caplet}$ is just the implied average volatility from caplet over $[T_{i-1}, T_i]$.
+		\item<2-> To recover correctly cap prices according to the LFM dynamics, we need to have
+		\begin{equation*}
+			\begin{aligned}
+				\textbf{Cap} = \sum_{i=1}^j&\tau_iP(t,T_i)Bl(K,F(t;T_{i-1},T_i),\sqrt{T_{i-1}v_{T_j-cap}}) = \\ &\sum_{i=1}^j\tau_iP(t,T_i)Bl(K,F(t;T_{i-1},T_i),\sqrt{T_{i-1}v_{T_i-caplet}}),\quad \forall j = 1,\dots, M
+			\end{aligned}
+		\end{equation*}
+	\end{itemize}
 \end{frame}	
 
-\begin{frame}
-	\begin{block}
-	Recalling the $t$-discounted payoff for a cap with tenor $\mathcal{T} = \{T_\alpha,\ldots, T_\beta\}$, year fractions $\tau$, cap rate $K$ and unit notional amount, we have that its price, given by the risk neutral valuation formula, is
-	\begin{equation}
-	\mathbb{E}^\mathcal{Q}\left[\sum_{i=\alpha+1}^{\beta}D(t,T_i)\tau_i(L(T_{i-1},T_i)-K)^+|\mathcal{F}_t\right]=
-	\sum_{i=\alpha+1}^{\beta}\tau_i\mathbb{E}^\mathcal{Q}[D(t,T_i)(L(T_{i-1},T_i)-K)^+|\mathcal{F}_t]
-	\end{equation}
-	but moving from the probability measure $\mathcal{Q}^B$ to the $T_i$-forward measure in each $i$-th summand, as in (D.7), we have
-	\begin{equation}
-		\sum_{i=\alpha+1}^{\beta}\tau_iP(t,T_i)\mathbb{E}^i[(L(T_{i-1},T_i)-K)^+|\mathcal{F}_t]
-	\end{equation}
-	\end{block}
+%\begin{frame}{Cap Price}
+%	\begin{itemize}
+%		\item From the risk-neutral valuation formula we get that the price of a cap with tenor $\mathcal{T} = \{T_\alpha,\ldots, T_\beta\}$, year fractions $\tau$, rate $K$ and unit notional amount is
+%		\begin{equation*}
+%			\begin{aligned}
+%				\textbf{Cap} = &\mathbb{E}^\mathcal{Q}\left[\sum_{i=\alpha+1}^{\beta}D(t,T_i)\tau_i(L(T_{i-1},T_i)-K)^+|\mathcal{F}_t\right]= \\
+%				&\sum_{i=\alpha+1}^{\beta}\tau_i\mathbb{E}^\mathcal{Q}[D(t,T_i)(L(T_{i-1},T_i)-K)^+|\mathcal{F}_t]
+%			\end{aligned}
+%		\end{equation*}
+%		\item As we have already seen, moving from the probability measure $\mathcal{Q}^B$ to the $T_i$-forward measure in each $i$-th term, we can decouple the discounting from the expectation
+%		\begin{equation*}
+%			\textbf{Cap} = \sum_{i=\alpha+1}^{\beta}\tau_iP(t,T_i)\mathbb{E}^i[(L(T_{i-1},T_i)-K)^+|\mathcal{F}_t]
+%		\end{equation*}
+%	\end{itemize}
+%\end{frame}
 
-Notice that the joint dynamics of forward rates is not involved in the pricing of a cap, because its payoff is reduced to a sum of payoffs of the caplets involved. Consequently, marginal distributions of forward rates are enough to compute the expectation and the correlation between them does not matter. %The above expectation in computed easily, remembering the log-normal distribution of the Fi’s under the related Qi ’s.
+\begin{frame}{Remarks on LFM and Cap Pricing}
+\begin{itemize}
+	\item<1-> The \textcolor{red}{joint dynamics of forward rates is not involved in the pricing of a cap}, its payoff is just a sum of caplet payoffs, i.e. marginal distributions of forward rates are enough to compute the expectation, correlation does not matter. 
+	\item<2-> From \cref{eq:caplet_black_vol} it is clear how it is impossible to uniquely determine the instantaneous volatility $\sigma_i(t)$ as there exist plenty of functions that would integrate to $v_i$.
+	\item<3-> Since usually one looks at particular interest rate fixings at a finite amount of times, it is customary to specify $\sigma_i(t)$ as a piecewise-constant function.
+	\end{itemize}
 \end{frame}
 
-\begin{frame}
-\begin{block}{Equivalence between LMM and Black’s caplet prices}
-The price of the $i$-th caplet implied by the LIBOR market model coincides with that given by the corresponding Black caplet formula:
-\begin{equation}
-Capl^{LMM}(0, T_{i-1}, T_i, K) = Capl^{Black}(0, T_{i-1}, T_i, K, v_i)= \tau_i P(0, T_i) Bl(K, F(0; T_{i-1}, T_i), v_i\sqrt{T_{i-1}})
-\end{equation}
-where
-\begin{equation}
-v_i^2 = \frac{1}{T_{i-1}}\int_0^{T_{i-1}}\sigma_i^2(t)dt
-\end{equation}
-\end{block}
+\begin{frame}{Remarks on LFM and Cap Pricing}
+	\begin{itemize}
+	\item In general, term structures of forward rate volatilities shape does not change significantly over time. 
+	\item Further, forward rate volatilites are low close to expiry, peak around 1-2 years and then fall off again (hump-shaped).
+	\end{itemize}
+	\begin{center}
+		\includegraphics[width=0.5\linewidth]{cap_vola}
+	\end{center}
 \end{frame}
 
+\begin{frame}{Remarks on LFM and Cap Pricing}
+	\begin{itemize}
+	\item<1-> A possible explanation is obtained by segmenting the caplet market across three maturities, see (Rebonato, 2002)
+	\begin{enumerate} 
+	\item<2-> \textbf{Very short end of the curve}: central banks nowadays clearly communicate their strategy so that their actions are by and large anticipated, leading to low volatilities in this region;
+	\item<3-> \textbf{6M to 12-18M}: market participants continuously assess their expectations of future monetary policy and also disagree to a large extent on the monetary course in
+	the intermediate term;
+	\item<4-> \textbf{Longer maturities}: lastly, the third segment is much more affected by structural, long-term
+	changes in expectations related to inflation and real rates/real returns. Thus, these long-term concerns are more or less independent of short-term monetary policies and the forward rate volatility is relatively low at the long end of the curve.
+	\end{enumerate}	
+	\end{itemize}
+\end{frame}
 
-%%\item The counterpart of the LIBOR market model among the market models, i.e. the ”Swap Market Model” (SMM), 
-%%models the evolution of the forward swap rates instead of the one of the
-%%forward LIBOR rates, these two kind of rates being the bases of the two main
-%%markets in the interest rate derivatives world. 
-%%
-%%\item The settings of this model are still the same of the LMM.
-%%From the formula (1.13) for the $T_\alpha$-price of a $T_\alpha\times(T_\beta−T_\alpha)$ payer swaption,
-%%it comes clearly that the natural choice of numeraire to model the dynamics
-%%of the forward swap rate is
-%%\begin{equation}
-%%C_{\alpha,\beta}(t) := \sum^\beta_{i=\alpha+1}\tau_i P(t, T_i)
-%%\end{equation}
-%%which is referred to as the accrual factor or the present value of a basis
-%%point, given $\alpha, \bet \in \{0,\ldots, M\}, \alpha < \beta$. 
-%%
-%%Moreover the accrual factor has the representation of the value at a time t of a traded asset that is a buy-and-hold
-%%portfolio consisting, for each i, of τi units of the zero coupon bond maturing
-%%at Ti, thus it is a plausible numeraire.
-%%
-%%Denoted by $\mathcal{Q}_{\alpha,\beta}$ the EMM associated with the numeraire $C_{\alpha,\beta}$, 
-%%the forward swap rate process $S_{\alpha,\beta}$ is a martingale under $\mathcal{Q}_{\alpha,\beta}$, on the
-%%interval $[0, T_\alpha]$.
-%%The probability measure Qα,β is called the (forward) swap measure related
-%%to α, β.
-%%
-%%We may note that the accrual factors play for the swap rate the same
-%%role as the the zero coupon bond prices did for the forward rates in the LIBOR
-%%market model. 
-%%
-%%\begin{block}
-%%Consider a fixed a subset T pairs of all pairs (α, β) of integer
-%%indexes such that 0 ≤ α < β ≤ M of the resettlement dates in the tenor
-%%structure {T0, T1, . . . , TM} and consider for each pair a deterministic function
-%%of time t 7→ σα,β(t) . A swap market model (SMM ) with volatilities σα,β
-%%assumes that the forward swap rates have the following dynamics under their
-%%associated swap measures:
-%%\begin{equation}
-%%dSα,β(t) = σα,β(t)Sα,β(t)dWα,β(t), t ≤ Tα
-%%\end{equation}
-%%for (α, β) ∈ T pairs, where Wα,β is a scalar standard Qα,β-Brownian motion.
-%%\end{block}
+\subsection{Log-normal Swap Model}
+\begin{frame}{A Model for Swaptions}
+  \begin{itemize}
+  \item<1-> The counterpart of the Log-normal Forward LIBOR model among the market models, is the \textcolor{red}{Log-normal Forward-Swap Model (LSM)}.
+  \item<2-> It describes the evolution of the forward swap rates instead of the forward LIBOR rates, these two kind of rates being the bases of the two main markets in the interest rate derivatives world. 
+  \item<3-> The settings of this model are similar to the LFM, the relevant exception being the choice of the more convenient numeraire.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Choice of the Numeraire}
+	\begin{itemize}
+		\item<1-> From the pricing formula of a payer swaption
+		\begin{equation*}
+			\textbf{PSw}=\mathbb{E}^{\mathcal{Q}}\left[D(t,T_\alpha)A\max(S_{\alpha,\beta}(T_\alpha)-K, 0)\right]
+		\end{equation*}
+		it comes clearly that the natural choice of numeraire to model the dynamics of the forward swap rate is
+		\begin{equation*}
+			A := \sum^\beta_{i=\alpha+1}\tau_i P(t, T_i)
+		\end{equation*}
+		which is referred to as the \textcolor{red}{annuity} or the \textcolor{red}{present value of a basis point}, given $\alpha, \beta \in \{0,\ldots, M\}, \alpha < \beta$. 
+	  \item<2-> Moreover it has the representation of the value at a time $t$ of a traded asset that is a buy-and-hold portfolio consisting, for each $i$, of $\tau_i$ units of the zero coupon bond maturing at $T_i$, thus it is a plausible numeraire.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Choice of the Numeraire}
+  \begin{itemize}
+  \item<1-> Denoted by $\mathcal{Q}_{\alpha,\beta}$ the EMM associated with the numeraire $A$, the forward swap rate process $S_{\alpha,\beta}$ is a martingale under $\mathcal{Q}_{\alpha,\beta}$, on the interval $[t, T_\alpha]$.
+  \begin{equation*}
+  	S_{\alpha,\beta}(t) = \cfrac{P(t,T_\alpha)-P(t,T_\beta)}{\sum_{i=\alpha+1}^{\beta}\tau_iP(t,T_i)}
+  \end{equation*}
+  \item<2-> The probability measure $\mathcal{Q}^{\alpha,\beta}$ is called \textcolor{red}{the (forward) swap measure} related to $\alpha, \beta$.
+  \item<2-> We may note that the annuity plays for the swap rate the same role as the zero coupon bond prices did for the forward rates in the LFM. 
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Log-normal Forward Swap Model}
+  \begin{block}{Definition}
+    Consider a fixed subset $T$ of all the pairs of integer indices ($\alpha, \beta$) of the resettlement dates in the tenor structure $\{T_0, T_1,\ldots, T_M\}$ such that $0 \leq \alpha < \beta \leq M$ and consider for each pair a deterministic function of time $t\rightarrow \sigma_{\alpha,\beta}(t)$. A swap market model (LSM) with volatilities $\sigma_{\alpha,\beta}$ assumes that the forward swap rates have the following dynamics under their associated swap measures:
+    \begin{equation}
+      dS_{\alpha,\beta}(t) = \sigma_{\alpha,\beta}(t)S_{\alpha,\beta}(t)dW_{\alpha,\beta}(t),\quad t \leq T_\alpha
+    \end{equation}
+    for $(\alpha, \beta) \in T$ pairs, where $W_{\alpha,\beta}$ is a scalar standard $\mathcal{Q}^{\alpha,\beta}$-Brownian motion.
+  \end{block}
+\end{frame}
 %%%We can also allows for correlation between the different Brownian motions, however, this will not affect the swaption prices but only the pricing of more complicated products.
 %%
 %%%Remark 3. In a model with M + 1 resettlement dates it is possible to model
 %%%only M swap rates as independent. The two typical choices of possible T
 %%%pairs
 %%%identify the following substructures:
-%%%36 3. The Swap Market Model (SMM)
 %%%• the regular SMM, which models the swap rates S0,M, S1,M, . . . , SM−1,M,
 %%%i.e.
 %%%T
@@ -795,187 +404,139 @@ v_i^2 = \frac{1}{T_{i-1}}\int_0^{T_{i-1}}\sigma_i^2(t)dt
 %%%• the reverse SMM, which models the swap rates S0,1, S0,2, . . . , S0,M, i.e.
 %%%T
 %%%pairs = {(0, 1),(0, 2), . . .,(0, M)} .
-%%
-%%\begin{block}{Equivalence between SMM and Black’s swaption prices}
-%%The price of a Tα×(Tβ−Tα) payer swaption implied by the swap market model
-%%coincides with that given by the corresponding Black swaptions formula:
-%%\begin{equation}
-%%PS^{SMM}(0, Tα, {Tα, . . . , Tβ}, K) = PS^{Black}(0, Tα, {Tα, . . . , Tβ}, K, vα,β(Tα))
-%%= Cα,β(0) Bl K, Sα,β(0),pTαvα,β(Tα))
-%%\end{equation}
-%%where $v_{\alpha,\beta}^2(T) = \int_0 1TαZ T0σα,β(t)2dt$ 
-%%\end{block}
-%%
-%%Theoretical incompatibility between LMM and SMM
-%%
-%%A crucial question rises: are the two main market models, theoretically consistent ? 
-%%Can the assumptions of log-normality of both LIBOR forward rates and forward swap rates
-%%coexist? 
-%%
-%%In order to give an answer we can proceed as follows:
-%%1. assume the hypothesis of the LMM, namely that each forward rate Fi
-%%is log-normal under its related forward measure Qi , i = 1, . . . , M,;
-%%2. apply the change of measure to obtain their dynamics under the swap
-%%measure Qα,β, for a choice of (α, β) ∈ T pairs;
-%%3. apply the Itˆo’s formula to obtain the resulting dynamics for the swap
-%%rate Sα,β under Qα,β;
-%%4. check if this distribution is log-normal, as it is under the hypothesis of
-%%the SMM.
-%%
-%%Unfortunately, the answer is negative. 
-%%
-%%However, from a practical point of view, this incompatibility seems to weaken considerably. 
-%%Indeed, simulating a large number of realizations of Sα,β(Tα) with the dynamics induced by
-%%the LMM one can compute its numerical density and compare it
-%%with the log-normal density. 
-%%
-%%Consequently, it has been argued (Brace-DunBurton 1998 and Morini 2001-2006) that, in normal market conditions, the
-%%two distributions are hardly distinguishable.
-%%
-%%Once ascertained the mathematical inconsistency of these two models, we
-%%must admit that the SMM is particularly convenient when pricing a swaption,
-%%because it yields the practice Black’s formula for swaptions. However, for
-%%different products, even those involving the swap rate, there is no analytical
-%%formula in general. 
-%%
-%%The problem left is choosing either of the two models
-%%for the whole market. After that choice, the half market consistent with the
-%%model is calibrated almost automatically, thanks to Black’s formulae, but
-%%the remaining half is more intricate to calibrate.
-%%
-%%Since the LIBOR forward rates, rather than swap rates, are more natural
-%%and representative coordinates of the yield curve usually considered, besides
-%%being mathematically more manageable, the better choice of modeling may
-%%be to assume as framework the LIBOR market model. Thus, hereafter, we
-%%are working under the hypothesis of the LMM.
-%%
-%%
-%%
-%%
-%%
-%%
-%%
-%%The LMM, unfortunately, does not feature a known distribution for the
-%%joint dynamics of forward rates, to evaluate swaptions, we have to resort to Monte Carlo
-%%simulation, under a chosen numeraire among the T1, . . . , TM-zero coupon
-%%bonds, or to some analytical approximation.
-%%
-%%Monte Carlo Pricing of Swaptions
-%%The Monte Carlo method is a numerical and probabilistic method which
-%%consists in a computational algorithm relying on repeated independent 
-%%random sampling to compute approximations of theoretical results, especially
-%%when it is infeasible to compute an exact result with a deterministic algorithm.
-%%In general, Monte Carlo intends to estimate an expectation value through
-%%an arithmetic mean of realizations of i.i.d. random variables and it proceed as
-%%follows: let X be the r.v., with known distribution, on which the expectation
-%%we need to estimate depends; a pseudorandom number generator provides
-%%a sequence of realizations X(k) of theoretical independent r.v. X1, X2, . . .
-%%distributed as X; then, the desired expectation is approximated by
-%%\begin{equation}
-%%\matbb{E}[\phi(X)] ∼= \frac{1}{m}\sum_{k=1}^m\phi(X^k)
-%%\end{equation}
-%%
-%%Indeed, by the ”Law of large numbers”, the sample average converges to the
-%%expected value, under the hypothesis that X1, X2, . . . is an infinite sequence
-%%of i.i.d. random variables with finite expected value.
-%%
-%%The most general way to price a swaption, as well as any other option with
-%%underlying forward rates, is through the Monte Carlo simulation. 
-%%
-%%In order to simulate all the processes involved in the payoff, their joint dynamics is
-%%discretized with a numerical scheme for SDEs, e.g. the Euler scheme.
-%%
-%%Recall the price of a Tα × (Tβ − Tα) payer swaption:
-%%EQ[D(0, Tα) (Sα,β(Tα) − K)+ Pβi=α+1τi p(Tα, Ti)
-%%= p(0, Tα)Eα(Sα,β(Tα) − K)+ Pβi=α+1τi p(Tα, Ti)
-%%
-%%by considering this time the Tα-bond p(·, Tα) as numeraire.
-%%Then, by keeping in mind that Sα,β has an expression in terms of the relevant
-%%spanning forward rates, given by (1.8), notice that the expectation above
-%%depends on the joint distribution of the same F’s.
-%%
-%%The dynamics of the k-th forward rate, for each k = α + 1, . . . , β, underQα
-%%isdFk(t) = σk(t)Fk(t)
-%%X
-%%k
-%%j=α+1
-%%ρk,j τjσj (t)Fj (t)
-%%1 + τjFj (t)
-%%dt + σk(t)Fk(t)dZα
-%%k
-%%(t), t < Tα ,
-%%(4.1)
-%%and, in order to evaluate the payoff
-%%(Sα,β(Tα) − K)
-%%+ X
-%%β
-%%i=α+1
-%%τi p(Tα, Ti), (4.2)
-%%we have to generate a number of realization, say m, of
-%%Fα+1(Tα), . . . , Fβ(Tα),
-%%according to the dynamics (4.1). Finally the Monte Carlo price of the swaption is given by the mean of the m evaluations of the payoff (4.2).
-%%To simulate the dynamics in the SDE (4.1), which has neither analytical
-%%solution nor known distribution, we discretize it by using the Euler scheme
-%%applied to the natural logarithm-version of the same equation. The choice to
-%%discretize the ln-version of (4.1) is based on the advantage of having both a
-%%deterministic diffusion coefficients and a better numerical stability. We have,
-%%by the Itˆo’s formula, the ln-dynamics
-%%d ln Fk(t) =
-%%σk(t)
-%%X
-%%k
-%%j=α+1
-%%ρk,j τjσj (t)Fj (t)
-%%1 + τjFj (t)
-%%−
-%%σk(t)
-%%2
-%%2
-%%!
-%%dt + σk(t)dZα
-%%k
-%%(t). (4.3)
-%%We introduce a time grid with a sufficiently (but not too) small step ∆t =
-%%Tα
-%%N
-%%and consider the discrete scheme
-%%ln Fk(ti+1) = ln Fk(ti)
-%%
-%%σk(ti) + P
-%%k
-%%j=α+1
-%%ρk,j τjσj (ti)Fj (ti)
-%%1+τjFj (ti) −
-%%σk(ti )
-%%2
-%%2
-%%!
-%%∆t+
-%%+σk(ti)(Z
-%%α
-%%k
-%%(ti+1) − Z
-%%α
-%%k
-%%(ti)),
-%%(4.4)
-%%with ti = i∆t, i = 0, . . . , N − 1. This provides us with m approximated
-%%realizations F
-%%(1)
-%%k
-%%(Tα), . . . , F(m)
-%%k
-%%(Tα) of the true process Fk(Tα), such that
-%%∃δ0 > 0 : E
-%%α
-%%h
-%%|F
-%%(i)
-%%k
-%%(Tα) − Fk(Tα)|
-%%i
-%%≤ c(Tα) ∆t for ∆t ≤ δ0 ,
-%%where c(Tα) is a positive constant. Hence the convergence is of order 1.
+
+\begin{frame}{Equivalence between LSM and Black’s Swaption Prices}
+  \begin{block}{Proposition}
+    The price of a payer swaption implied by the swap market model coincides with that given by the corresponding Black swaptions formula:
+    \begin{equation}
+      \textbf{PSw}^{LSM}(0,T_\alpha, [T_\alpha,\ldots,T_\beta],K,v_{\alpha,\beta}(T_\alpha))=
+      C_{\alpha, \beta}(0) Bl(K,S_{\alpha,\beta}(0),\sqrt{T_\alpha}v_{\alpha,\beta}(T_\alpha))
+      \label{eq:black_swaptions}
+    \end{equation}
+    where 
+	\begin{equation*}    	 
+   		v_{\alpha,\beta}^2(T) =\frac{1}{T_\alpha}\int_0^T\sigma_{\alpha,\beta}(t)^2dt 	
+    \end{equation*}
+  \end{block}
+\end{frame}
+
+\subsection{Incompatibility between LFM and LSM}
+\begin{frame}{Incompatibility between LFM and LSM}
+  A crucial question rises: \textcolor{red}{are the two main Market Models, theoretically consistent ?} 
+  Can the assumptions of log-normality of both LIBOR forward rates and forward swap rates coexist? 
+  \pause
+  In order to give an answer we can proceed as follows:
+  \begin{enumerate}
+  \item<2-> assume the hypothesis of the LFM, namely that each forward rate $F_i$ is log-normal under its related forward measure $\mathcal{Q}^i$;
+  \item<3-> apply the change of measure to obtain their dynamics under the swap measure $\mathcal{Q}^{\alpha,\beta}$, for a choice of $(\alpha,\beta) \in T$ pairs;
+  \item<4-> apply the It$\hat{o}$’s formula to obtain the resulting dynamics for the swap rate $S_{\alpha,\beta}$ under $\mathcal{Q}^{\alpha,\beta}$;
+  \item<5-> check if this distribution is log-normal, as it is under the hypothesis of the LSM.
+  \end{enumerate}
+	\uncover<6->{
+  \textcolor{red}{Unfortunately, the answer is negative}.} 
+\end{frame}
+
+\begin{frame}{Incompatibility between LFM and LSM}
+  \begin{itemize}
+  \item<1-> However, from a practical point of view, this incompatibility seems to weaken considerably. 
+  \item<2-> Indeed, simulating a large number of realizations of $S_{\alpha,\beta}(T_\alpha)$ with the dynamics induced by the LFM one can compute its numerical density and compare it with the log-normal density. 
+  \begin{center}
+  	\includegraphics[width=0.45\linewidth]{swap_rate_LFM}
+  \end{center}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Incompatibility between LFM and LSM}
+	\begin{itemize}
+	\item<1-> Consequently, it has been argued that, in normal market conditions, the two distributions are hardly distinguishable.
+	\item<2-> Once ascertained the mathematical inconsistency of these two models, we must admit that the LSM is particularly convenient when pricing a swaption, because it yields the practice Black’s formula for swaptions. However, for different products, even those involving the swap rate, there is no analytical formula in general. 
+  \item<3-> The problem left is choosing either of the two models for the whole market. After that choice, the half market consistent with the model is calibrated almost automatically, thanks to Black’s formulas, but the remaining half is more intricate to calibrate.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Proposed Solution}
+  \begin{itemize}
+  \item<1-> Since the LIBOR forward rates, rather than swap rates, are more natural and representative coordinates of the yield curve usually considered, besides being mathematically more manageable, the better choice of modeling may be to assume as framework the LIBOR market model. 
+  \item<2-> Thus, hereafter, \textcolor{red}{we are working under the hypothesis of the LFM}.
+  %\item The market quotes swaption prices as Black’76 swaption volatilities such that, when inserted into the Black’76 swaption formula, they give the option premium. 
+  \item<3-> If we choose one of the discount bonds $P(t, T_i)$ as a numeraire, one forward rate will be a martingale, however, the swap rate being a combination of several forward rates, will not. 
+  \item<4-> We thus conclude that swaption pricing via Black’s formula is not possible in the LFM.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Proposed Solution}
+	\begin{itemize}
+  \item<1-> Brigo and Mercurio derived a complex expression for the swap rate dynamics under the $T$-forward measure induced by the numeraire $P(t, T_i)$.
+  \item<2-> But it is not much manageable. There exist, however, very good approximate formulas to the swaption volatility which can be directly used to calibrate to a matrix of quoted swaption volatilities.  
+  \item<3-> Also, \textcolor{red}{performing a Monte Carlo simulation to obtain the swaption price is anyway feasible.} 
+  
+  %\item The LFM, unfortunately, does not feature a known distribution for the joint dynamics of forward rates: to evaluate swaptions, \textcolor{red}{we have to resort to Monte Carlo simulation.}
+  \end{itemize}
+\end{frame}
+
+\section{Monte Carlo Pricing}
+\begin{frame}{Monte Carlo Methods}
+  \begin{itemize}
+  \item<1-> The Monte Carlo (MC) method is a numerical and probabilistic technique which consists in a computational algorithm relying on repeated independent random sampling to compute approximations of theoretical results.
+  \item<2-> In general, MC intends to estimate an expectation value through an arithmetic mean of realizations of i.i.d. random variables and it proceed as follows: 
+    \begin{enumerate}
+    \item let $X$ be the r.v., with known distribution, on which the expectation we need to estimate depends;
+    \item a pseudo-random number generator provides a sequence of realizations $X(k)$ of theoretical independent r.v. $X_1, X_2,\ldots$ distributed as $X$;
+    \item then, the desired expectation is approximated by
+      \begin{equation*}
+	\mathbb{E}[\phi(X)] \approx \frac{1}{m}\sum_{k=1}^m\phi(X^k)
+      \end{equation*}
+    \end{enumerate}
+  \item<3-> Indeed, by the \textcolor{red}{Law of large numbers}, the sample average converges to the expected value, under the hypothesis that $X_i$ is an infinite sequence of i.i.d. random variables with finite expected value.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Monte Carlo Pricing of Swaptions}
+  \begin{itemize}
+  \item<1-> The most general way to price a swaption, as well as any other option with underlying forward rates, is through Monte Carlo simulation. 
+  \item<2-> In order to simulate all the processes involved in the payoff, their joint dynamics is discretized with a numerical scheme for SDEs, e.g. the Euler scheme.
+  \item<3-> Recall the price of a payer swaption:
+    \begin{equation*}
+      \begin{aligned}
+        \textbf{PSw} = \mathbb{E}^\mathcal{Q}&\left[D(0, T_\alpha) (S_{\alpha,\beta}(T_\alpha) - K)^+ \sum_{i=\alpha+1}^\beta \tau_i P(T_\alpha, T_i)\right] \\
+        &= P(0, T_\alpha)\mathbb{E}^\alpha\left[(S_{\alpha, \beta}(T_\alpha) - K)^+ \sum^\beta_{i=\alpha+1} \tau_i P(T_\alpha, T_i)\right]
+      \end{aligned}
+    \end{equation*}
+    by considering this time $P(\cdot, T_\alpha)$ as numeraire.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Monte Carlo Pricing of Swaptions}
+  \begin{itemize}
+  \item<1-> Keep in mind that $S_{\alpha,\beta}$ has an expression in terms of the relevant spanning forward rates, and notice that the expectation above depends on the joint distribution of the same $F$’s.
+  \item<2-> The dynamics of the $k$-th forward rate, for each $k = \alpha + 1,\ldots, \beta$, under $\mathcal{Q}^\alpha$ is (\cref{eq:forward_rat_dynamics_lfm})
+\begin{equation}
+  dF_k(t) = \sigma_kF_k\sum_{j=\alpha+1}^k\frac{\rho_{kj}\tau_j\sigma_jF_j}{1+\tau_jF_j}dt+\sigma_kF_k dW^\alpha_k, \quad t<T_\alpha
+  \label{eq:dynamics_4.1}
+\end{equation}
+and, in order to evaluate the swaption payoff we have to generate a number of realization of $F_{\alpha+1}(T_\alpha),\ldots, F_\beta(T_\alpha)$. 
+\item<3-> Finally the Monte Carlo price of the swaption is given by the mean of all the payoff evaluations.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Monte Carlo Pricing of Swaptions}
+  \begin{itemize}
+  \item<1-> Dynamics of \cref{eq:dynamics_4.1} has neither analytical solution nor known distribution, so we need to use the Euler scheme (actually the log version which is easier to handle).
+  \item<2-> By the It$\hat{o}$’s formula,
+    \begin{equation*}
+      d\log F_k(t) = \left(\sigma_k\sum_{j=\alpha+1}^k\frac{\rho_{kj}\tau_j\sigma_jF_j}{1+\tau_jF_j}-\frac{\sigma_k^2}{2}\right)dt+\sigma_k dW^\alpha_k
+    \end{equation*}
+  \item<3-> Choosing a time grid with step $\Delta t = \cfrac{T_\alpha}{N}$ we get
+    \begin{equation*}
+      \begin{aligned}
+        \log F_k(t_{i+1}) &=\log F_k(t_i) \left(\sigma_k(t_i)\sum_{j=\alpha+1}^k\frac{\rho_{kj}\tau_j\sigma_j(t_i)F_j(t_i)}{1+\tau_jF_j(t_i)}-\frac{\sigma_k(t_i)^2}{2}\right)\Delta t + \\
+        &+\sigma_k(t_i) (W^\alpha_k(t_{i+1}) - W^\alpha_k(t_i))
+      \end{aligned}
+    \end{equation*}
+  \item<4-> Which provides us with approximated realizations of the true process $F_k(T_\alpha)$.
+  \end{itemize}
+\end{frame}
+
 %%Remark 4. We may consider a more refined scheme coming from (4.4) by the
 %%following substitution, in the vector version:
 %%Σ(ti)(Z
@@ -1033,376 +594,258 @@ v_i^2 = \frac{1}{T_{i-1}}\int_0^{T_{i-1}}\sigma_i^2(t)dt
 %%instead of
 %%N (0, ∆tΣρΣ
 %%′
-%%
-%%
-%
-%Monte Carlo Variance Reduction
-%Before introducing the variance reduction technique for Monte Carlo simulation, we need to give some general notions and results.
-%Consider a general payoff at time T, Π(T), depending on a vector of
-%spanning forward LIBOR rates F(t), for t ∈ [0, T], where typically T is
-%smaller than or equal to the expiry of the first forward rate. For instance (4.2)
-%is a particular case of Π(T) = Π(Tα). We simulate various scenarios of Π(T)
-%through a scheme as (4.4) under the T-forward measure. Let m be the
-%number of simulated paths, the Monte Carlo price of the payoff is
-%E
-%Q [D(0, T)Π(T)] = p(0, T)E
-%T
-%[Π(T)] ≈ p(0, T)
-%Pm
-%j=1
-%Π(j)
-%(T)
-%m
-%.
-%Since Π(1)(T), Π(2)(T), . . . constitute a sequence of realizations of independent identically distributed random variables distributed as Π(T), under the
-%hypothesis that the r.v. are summable, i.e. Π(T) ∈ L
-%1
-%(Ω), we can apply the
-%Central Limit Theorem to have the convergence
-%Pm
-%j=1
-%(Π(j)
-%(T) − ET
-%[Π(T)]
-%√
-%mStd(Π(T))
-%in law −→ N (0, 1)
-%4.1 Monte Carlo Pricing of Swaptions 43
-%for m → +∞. Thus, for large m, the following approximation yields:
-%Pm
-%j=1
-%Π(j)
-%(T)
-%m
-%− E
-%T
-%[Π(T)] QT
-%∼
-%Std(Π(T))
-%√
-%m
-%Z , Z QT
-%∼ N (0, 1).
-%It follows that the probability that the Monte Carlo estimate is not farther
-%than ǫ from the true price is
-%QT
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%Pm
-%j=1
-%Π(j)
-%(T)
-%m − ET
-%[Π(T)]
-%
-%
-%
-%
-%
-%
-%< ǫ
-%
-%
-%
-%= QT
-%n
-%|Z| < ǫ
-%√
-%m
-%Std(Π(T))o
-%= 2 Φ 
-%ǫ
-%√
-%m
-%Std(Π(T))
-%− 1 ,
-%where as usual Φ denotes the c.d.f. of the standard gaussian distribution.
-%Once we have chosen a desired value for such a probability, we find the
-%corresponding value for ǫ. For a typical choice of accuracy of 98%, we solve
-%in ǫ the equation
-%2 Φ 
-%ǫ
-%√
-%m
-%Std(Π(T))
-%− 1 = 0.98
-%by
-%2 Φ(z) − 1 = 0.98 ⇔ Φ(z) = 0.99 ⇔ z ≈ 2.33 ⇔ ǫ ≈ 2.33
-%Std(Π(T))
-%√
-%m
-%.
-%The resulting confidence interval at level 98% for the true value E[Π(T)] is
-%
-%
-%
-%
-%Pm
-%j=1
-%Π(j)
-%(T)
-%m
-%− 2.33
-%Std(Π(T))
-%√
-%m
-%,
-%Pm
-%j=1
-%Π(j)
-%(T)
-%m
-%+ 2.33
-%Std(Π(T))
-%√
-%m
-%
-%
-%
-%
-%.
-%As m increases, the window shrinks as √
-%1
-%m
-%.
-%Moreover, the standard deviation of the payoff is usually unknown, thus it is
-%typically replaced by the sample standard deviation, with square
-%Std d(Π; m)
-%2
-%:=
-%Pm
-%j=1
-%(Π(j)
-%(T))2
-%m
-%−
-%
-%
-%Pm
-%j=1
-%Π(j)
-%(T)
-%m
-%
-%
-%2
-%44 4. Pricing of Swaptions in the LMM
-%and the actual Monte Carlo window is
-%
-%
-%
-%
-%Pm
-%j=1
-%Π
-%(j)
-%(T)
-%m
-%− 2.33
-%Std d(Π; m)
-%√
-%m
-%,
-%Pm
-%j=1
-%Π
-%(j)
-%(T)
-%m
-%+ 2.33
-%Std d(Π; m)
-%√
-%m
-%
-%
-%
-%
-%. (4.5)
-%In some cases, to have a small enough window, we need to simulate a
-%huge number of scenarios, being thus too time-consuming. A way to tackle
-%this problem is given by the control variate technique, which allows to reduce
-%the sample variance, so as to narrow the window in (4.5), without increasing
-%m. Omitting for simplicity the time T in the notations, the method is to
-%proceed as follows:
-%I. Consider another payoff Πan which we can evaluate analytically, whose
-%expectation is denoted by
-%E[Πan] = πan ,
-%and simulate it together with Π under the same scenarios for F.
-%II. Define an unbiased control-variate estimator Πbc(γ; m) for E[Π] as
-%Πbc(γ; m) :=
-%Pm
-%j=1
-%Π(j)
-%m
-%+ γ
-%
-%
-%Pm
-%j=1
-%Π
-%(j)
-%an
-%m
-%− πan
-%
-% ,
-%which is also the sample mean of the r.v.
-%Πc(γ) := Π + γ(Πan − πan).
-%Hence Πc(γ) has expectation E[Π] and variance
-%V ar(Πc(γ)) = V ar(Π) + γ
-%2V ar(Πan) + 2γCov(Π, Πan),
-%this last minimized by
-%arg min{V ar(Πc(γ))} =: γ
-%∗ = −
-%Cov(Π, Πan)
-%V ar(Πan)
-%= −
-%Corr(Π, Πan)Std(Π)
-%Std(Πan)
-%.
-%4.1 Monte Carlo Pricing of Swaptions 45
-%III. The minimum variance of Πc(γ) is computed as
-%V ar(Πc(γ
-%∗
-%)) = V ar(Π) + Corr(Π, Πan)
-%2 V ar(Π)
-%V ar(Πan)
-%V ar(Πan)+
-%−2Corr(Π, Πan)
-%2V ar(Π)
-%= V ar(Π) (1 − Corr(Π, Πan)
-%2
-%) ,
-%that is smaller than the variance of Π; moreover, the larger the distance
-%between the two variances the larger (in absolute value) the correlation
-%between the two r.v.
-%IV. Moving to simulated quantities, we have
-%Std d(Πc(γ
-%∗
-%); m) = Std d(Π; m)
-%r
-%1 − Corr [(Π, Πan; m)
-%2
-%
-%,
-%where the sample correlation is
-%Corr [(Π, Πan; m) := Cov d(Π, Πan; m)
-%Std d(Π; m)Std d(Πan; m)
-%and the sample covariance is
-%Cov d(Π, Πan; m) :=
-%Pm
-%j=1
-%Π(j)Π
-%(j)
-%an
-%m
-%−
-%1
-%m2
-%Xm
-%j=1
-%Π
-%(j)
-%! Xm
-%j=1
-%Π
-%(j)
-%an!
-%.
-%V. Concording with the observation at point III., the variance reduction
-%will be relevant if Π and Πan are as correlated as possible. Now the
-%window (4.5) can be substituted by
-%"
-%Πbc(γ; m) − 2.33
-%Std d(Πc(γ
-%∗
-%); m)
-%√
-%m
-%, Πbc(γ; m) + 2.33
-%Std d(Πc(γ
-%∗
-%); m)
-%√
-%m
-%#
-%,
-%(4.6)
-%which is narrower than (4.5) by a factor r
-%1 − Corr [(Π, Πan; m)
-%2
-%
-%.
-%This technique is quite general and the choice of Πan is theoretically free.
-%In the case of the pricing of swaptions in the LMM, we select as Πan
-%one of the simplest payoff with underlying rates Fα+1, . . . , Fβ, as may be a
-%46 4. Pricing of Swaptions in the LMM
-%portfolio of FRA contracts at time Tα on each single time interval (Ti−1, Ti
-%],
-%such that are all fair contracts at time 0. By recalling the price in (1.3) and
-%reversing the two roles involved, we consider the Tα-price
-%X
-%β
-%i=α+1
-%p(Tα, Ti)τi(Fi(Tα) − K),
-%where the fair value at time 0 of K is equal to Fi(0). We take such contract
-%as our Tα-payoff and rewrite it by a change of measure under its expectation
-%as follows:
-%EQ
-%
-%D(0, Tα)
-%P
-%β
-%i=α+1
-%p(Tα, Ti)τi(Fi(Tα) − Fi(0))
-%=
-%= Ej
-%
-%p(0,Tj )
-%p(Tα,Tj )
-%P
-%β
-%i=α+1
-%p(Tα, Ti)τi(Fi(Tα) − Fi(0))
-%=
-%= p(0, Tj )E
-%j
-%
-%
-%P
-%β
-%i=α+1
-%p(Tα,Ti)τi(Fi(Tα)−Fi(0))
-%p(Tα,Tj )
-%
-% .
-%(4.7)
-%Thus we can set
-%Πan(Tα) =
-%P
-%β
-%i=α+1
-%p(Tα, Ti)τi(Fi(Tα) − Fi(0))
-%p(Tα, Tj )
-%,
-%whose price at time 0 is
-%πan = 0 .
-%Indeed, the payoff Πan(·) is a sum of traded assets divided by p(·, Tj ), hence
-%it is a martingale under the Tj - forward measure Qj
-%, which implies that
-%E
-%j
-%[Πan(Tα)] = E
-%j
-%[Πan(0)] = E
-%j
-%[0] = 0 .
+
+\subsection{Confidence Interval}
+\begin{frame}{Confidence Interval}
+  \begin{itemize}
+  \item<1-> Consider a general payoff at time $T$, $\Pi(T)$, depending on a vector of spanning forward LIBOR rates $\bar{F}(t)$. %, for $t \in [0, T]$, where typically $T$ is smaller than or equal to the expiry of the first forward rate.
+  \item<2-> We simulate various scenarios of $\Pi(T)$ under the $T$-forward measure. Let $m$ be the number of simulated paths, the Monte Carlo price of the payoff is
+    \begin{equation*}
+      \mathbb{E}^\mathcal{Q}[D(0,T)\Pi(T)] = P(0,T)\mathbb{E}^T[\Pi(T)]\approx \frac{P(0,T)}{m}\sum_{j=1}^{m}\Pi^j(T)
+    \end{equation*}
+  \item<3-> Since $\Pi^1(T), \Pi^2(T),\ldots$ is a sequence of realizations of i.i.d. random variables distributed as $\Pi(T)$, the \textcolor{red}{Central Limit Theorem} tell us that for $m\rightarrow\infty$
+    \begin{equation*}
+      \cfrac{\sum_{j=1}^{m}\Pi^j(T)-\mathbb{E}^T[\Pi(T)]}{\sqrt{m} Std(\Pi(T))}\rightarrow \mathcal{N}(0,1)
+    \end{equation*}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Confidence Interval}
+  \begin{itemize}
+  \item<1-> Thus, for large $m$, the following approximation holds
+    \begin{equation*}
+      \frac{\sum_{j=1}^{m}\Pi^j}{m}-\mathbb{E}^T[\Pi]\approx \frac{Std(\Pi)}{\sqrt{m}}\mathcal{N}(0,1)
+    \end{equation*}
+  \item<2-> The probability that the MC estimate is closer than $\epsilon$ to the true price is
+    \begin{equation*}
+      P\left(\bigg|\frac{\sum_{j=1}^m\Pi^j}{m}-\mathbb{E}^T[\Pi]\bigg|<\epsilon\right) = P\left(|\mathcal{N}(0,1)|<\epsilon\frac{\sqrt{m}}{Std(\Pi)}\right) =
+      2\Phi\left(\epsilon\frac{\sqrt{m}}{Std(\Pi)}\right)-1
+    \end{equation*}
+    where $\Phi$ denotes the c.d.f. of the standard gaussian distribution.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Confidence Interval}
+  \begin{columns}
+    \column{0.6\linewidth}
+    \begin{itemize}
+    \item Once we have chosen the desired value for such a probability, we can find the corresponding value for $\epsilon$. For a typical choice of accuracy of 98\%: $\epsilon \approx 2.33 \cfrac{Std(\Pi)}{\sqrt{m}}$
+    \item Notice that as $m$ increases, the window shrinks as $1/\sqrt{m}$.
+    \end{itemize}
+    \column{0.4\linewidth}
+    \includegraphics[width=0.9\linewidth]{confidence_interval}
+  \end{columns}
+  \begin{tikzpicture}[remember picture,overlay]
+    \node[xshift=5cm,yshift=-3.7cm] (image) at (current page.center) {\includegraphics[width=20px]{python_logo}};
+    \node[align = center, yshift=1.45cm, below=of image] {\tiny{\href{shorturl.at/NPQT1}{shorturl.at/NPQT1}}};
+  \end{tikzpicture}
+\end{frame}
+
+\subsection{Variance Reduction}
+\begin{frame}{Monte Carlo Variance Reduction}
+  To reduce the confidence interval without running too many simulations, i.e. reduce the sample variance, without increasing $m$, the \textcolor{red}{control variate technique} can be used.
+  \pause]
+  \begin{enumerate}
+  \item<2-> Consider another payoff $\Pi_{an}$ which we can be evaluated analytically, whose expectation is denoted by $\mathbb{E}[\Pi_{an}] = \pi_{an}$, and simulate it together with $\Pi$ under the same scenarios for $\bar{F}$.
+  \item<3-> Define an unbiased estimator for $\mathbb{E}[\Pi]$ as the sample mean of the r.v. 
+    \begin{equation*}
+      \Pi_c(\gamma) = \Pi + \gamma(\Pi_{an} - \pi_{an})
+    \end{equation*}
+    Hence $\Pi_c(\gamma)$ has expectation $\mathbb{E}[\Pi]$ and variance
+    \begin{equation*}
+      Var(\Pi_c(\gamma)) = Var(\Pi) + \gamma^2 Var(\Pi_{an}) + 2\gamma Cov(\Pi, \Pi_{an})
+    \end{equation*}
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{Monte Carlo Variance Reduction}
+	\begin{enumerate}\addtocounter{enumi}{2}
+	\item This can be minimized by choosing the appropriate $\gamma$
+	\begin{equation*}
+	\gamma^* = -\frac{Cov(\Pi, \Pi_{an})}{Var(\Pi_{an})} = -\frac{Corr(\Pi, \Pi_{an})}{Std(\Pi)Std(\Pi_{an})}, \quad (Corr_{XY}=\frac{Cov_{XY}}{Std_X Std_Y})
+	\end{equation*}
+  	and the minimum variance of $\Pi_c$ is computed as
+    \begin{equation*}
+     Var(\Pi_c(\gamma^*)) = Var(\Pi)(1 - Corr(\Pi, \Pi_{an})^2)
+    \end{equation*}
+    that is \textcolor{red}{smaller than the variance of $\Pi$}. Moreover, the larger the correlation between $\Pi$ and $\Pi_{an}$ the larger the difference between the two variances.
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{Monte Carlo Variance Reduction}
+	\begin{enumerate}\addtocounter{enumi}{3}
+  \item<1-> Moving to the standard deviation
+	\begin{equation*}
+		Std(\Pi_c(\gamma^*)) = Std(\Pi) \sqrt{(1 - Corr(\Pi, \Pi_{an})^2)}
+	\end{equation*}
+	the variance reduction will increase with the correlation between $\Pi$ and $\Pi_{an}$. 
+	\item<2-> Now if we consider the confidence interval for $\Pi_c$ 
+	\begin{equation*}
+		98\% C.L. =\left[\Pi_c(\gamma,m) - 2.33\cdot\frac{Std(\Pi_c)}{\sqrt{m}};\Pi_c(\gamma,m) + 2.33\cdot\frac{Std(\Pi_c)}{\sqrt{m}}\right] 
+	\end{equation*}
+	we get a narrower width by a factor of
+	\begin{equation*}
+		\sqrt{1 - Corr(\Pi, \Pi_{an}; m)^2}
+	\end{equation*}
+	\end{enumerate}
+\end{frame}
+
+\begin{frame}{Monte Carlo Variance Reduction}
+  \begin{itemize}
+  \item<1-> This technique is quite general and the choice of $\Pi_{an}$ is theoretically free.
+  \item<2-> In the case of the pricing of swaptions in the LFM, we select as $\Pi_{an}$ one of the simplest payoff with underlying rates $F_{\alpha+1},\ldots,F_\beta$, as may be a portfolio of FRA contracts at time $T_\alpha$ on each single time interval $(T_{i-1}, T_i]$.
+  \item<3-> Consider the payoff of such portfolio where the $K = F_i(0)$ and rewrite it by a change of measure as follows:
+    \begin{equation*}
+      \begin{aligned}
+        \textbf{FRAs} = &\mathbb{E}^\mathcal{Q}\left[D(0,T_\alpha)\sum_{i=\alpha+1}^\beta P(T_\alpha,T_i)\tau_i(F_i(T_\alpha) - F_i(0))\right] = \\
+        &=\mathbb{E}^j\left[\frac{P(0,T_i)}{P(T_\alpha,T_j)}\sum_{i=\alpha+1}^\beta P(T_\alpha,T_i)\tau_i(F_i(T_\alpha) - F_i(0))\right] = \\
+        & = P(0,T_j)\mathbb{E}^j\left[\frac{\sum_{i=\alpha+1}^\beta P(T_\alpha,T_i)\tau_i(F_i(T_\alpha) - F_i(0))}{P(T_\alpha,T_j)}\right]
+      \end{aligned}
+    \end{equation*}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Monte Carlo Variance Reduction}
+  \begin{itemize}
+  \item<1-> Thus we can set
+    \begin{equation*}
+      \Pi_{an}(T_\alpha) = \frac{\sum_{i=\alpha+1}^\beta P(T_\alpha,T_i)\tau_i(F_i(T_\alpha) - F_i(0))}{P(T_\alpha,T_j)}
+    \end{equation*}
+    whose price at time 0 is $\pi_{an} = 0$.
+  \item<2-> Indeed, the payoff $\Pi_{an}(\cdot)$ is a sum of traded assets divided by $P(\cdot, T_j)$, hence it is a martingale under the $T^j$-forward measure $\mathcal{Q}^j$, which implies that
+    
+    \begin{equation*}
+      \mathbb{E}^j[\Pi_{an}(T_\alpha)] = \mathbb{E}^j[\Pi_{an}(0)] = 0
+    \end{equation*}
+  \end{itemize}
+\end{frame}
+
+\section{Correlated Brownian Motions}
+\subsection{Decorrelation}
+\begin{frame}{Correlated Brownian Motions}
+  \begin{itemize}
+  \item<1-> Correlation is a linear measure of dependency between random variables. Given two random variables $X$ and $Y$, it is given by
+  	\begin{equation*}
+  		\rho_{X,Y} = \frac{\mathbb{E}((X-\mathbb{E}(X))(Y-\mathbb{E}(Y))}{\sigma_X \sigma_Y}
+  	\end{equation*}
+  \item<2-> In the LFM, we can assume that the Brownian motions driving the dynamics of forward rate are correlated
+    \begin{equation}
+      <dW_t^{T_i}, dW_t^{T_i}> = \rho_{ij}dt
+    \end{equation}
+  \item<3-> This model feature is included because the value of a swaption at maturity is influenced by the joint distribution of forward rates and thus by the correlation amongst them. 
+  \item<4-> Since the underlying in a swaption is a swap rate which in turn is a weighted average of forward rates, we expect the price of a swaption to increase if the forward rates become more correlated. 
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Correlated Brownian Motions}
+	\begin{itemize}
+		\item In models for short rate it is assumed full correlation $\rho_{ij}=1$, which is a tight constraint on the dynamics of the forward rates.
+		\item In the LFM, we can allow \textcolor{red}{decorrelation} to better fit the derivatives at hand
+		\begin{equation*}
+			dF_k(t) = \sigma_kF_k\sum_{j=\alpha+1}^k\frac{\boxed{\rho_{kj}}\tau_j\sigma_jF_j}{1+\tau_jF_j}dt+\sigma_kF_k dZ^\alpha_k
+		\end{equation*}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Instantaneous and Terminal Correlation}
+	%\begin{itemize}
+	%\item For calibrating a LIBOR market model, instantaneous
+	%  correlation is modeled. However, for pricing correlation-sensitive products, terminal correlation is used.
+	%\item Define an $n$-dimensional LFM with $m$ factors:
+	%\begin{equation*}
+	%	\frac{df_i}{f_i} = \mu_i dt + \sigma_i \sum_{k=1}^m b_{ik}dZ_k
+	%\end{equation*}
+	%with $b_k=\frac{\sigma_{ik}}{\sqrt{\sum_{k=1}^m\sigma_{ik}^2}}$
+	
+	\begin{block}{Definition}
+		The \textcolor{red}{instantaneous correlation} is a quantity summarizing the degree of “dependence” between changes of different forward rates.
+		\begin{equation*}
+			\rho_{ij} = \frac{dF_i(t) dF_j(t)}{Std(dF_i(t)) Std(dF_j(t))}
+		\end{equation*}
+		%where $Std$ denotes the standard deviation conditional on the information available at time $t$ at which the change occurs. 
+		%The instantaneous correlation of the LIBOR rates $L(t, T_{i-1}, T_i)$ and $L(t, T_{j-1}, T_j)$ is given by the correlation of the increments of the Brownian motions:
+		%\begin{equation*}
+		%\rho_{i,j}(t) = \sum_{k=1}^m b_{i,k}b_{j,k}, \quad i,j=1,\ldots,n
+		%\end{equation*}
+		%From this formula it is clear that indeed the instantaneous correlation ρ is related to changes dF in for- ward rates. Instead, 
+		The \textcolor{red}{terminal correlation} is a quantity summarizing the degree of “dependence” between two different forward rates at a given \emph{terminal} time-instant. Typically, the $T_1$ terminal correlation between $F_i$ and $F_j$ is the correlation between $F_i(T_1)$ and $F_j(T_1)$.
+	\end{block}
+	It is important to understand how instantaneous correlation in the forward-rate dynamics translates into a terminal correlation of simple rates.
+	%\begin{block}{Definition}
+	%The terminal correlation of the LIBOR rates$L(t, T_{i-1}, T_i)$ and $L(t, T_{j-1}, T_j)$ is given by
+	%\begin{equation*}
+	%\tilde{\rho}_{i,j}(t) = %\frac{\int_o^t\sigma_i(u)\sigma_j(u)\rho_{i,j}(u)du}{\sqrt{\int_0^t\sigma_i(u)^2du\int_o^t\sigma_j(u)^2du}}
+	%\end{equation*}
+	%\end{block}
+	%\end{itemize}
+\end{frame}
+
+\begin{frame}{Instantaneous Correlation}
+  \begin{itemize}    
+  \item<1-> Insantaneous correlation can be estimated from historical market data.
+  \begin{enumerate}
+	  \item first derive yield curves for some period of time in the past;
+	  \item then, forward curves may be calculated off the yield curves;
+	  \item finally the dependence between forward rate increments may be estimated. 
+  \end{enumerate}
+  \item<2-> Anyway it would be nice to imply these correlations out of liquidly traded swaption prices. 
+  \item<3-> Many parametrizations functions have been introduced to express a given correlation matrix of forward rates in a functional form.
+  \item<4-> This has several advantages: it is computationally convenient to work with an analytical formula. Noise (e.g. non-synchronous data or illiquidity) is removed by focussing on general properties of correlation. Furthermore, the correlation matrix rank can be controlled through the functional form.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Correlation Parametrization}
+  \begin{itemize}
+  \item One property that is always implicitly present is time-homogeneity: correlation of forward rates does not depend on calendar time $t$, but only on the rates’ time to maturity $T_i-t$.
+  %\item An important aspect of these parameterizations is the number of parameters used to fit the market data. Most parameterizations advocate the use of few parameters that emphasize general properties of market correlation and prevent overfitting.
+  \item General requirements on an $M \times M$ correlation matrix $\rho$ are:
+	\begin{enumerate}
+		\item $\rho$ must be real and symmetric;
+		\item $\rho_{i,i}=1$ for $i = 1,\ldots, M$;
+		\item $\rho$ must be positive semi-definite such that can be decomposed into $\rho = BB^T$.
+	\end{enumerate}
+	\item Usually parameterizations are determined by minimizing the mean square error between historical market correlation and parameterized functional form.
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Decorrelation}
+\begin{itemize}
+	\item<1-> Generally, inferring instantaneous correlations from actively traded swaptions is desirable as they reflect current market conditions, thus not suffering from the backward-looking nature of historically estimated correlations. 
+	\item<2-> There are however, also problems with implying correlations from the market. One such general problem is that swaption prices depend on forward rate correlation AND volatility. 
+	\item<3-> There is no liquidly traded fixed income derivative that solely depends on correlation, as opposed to caplets, which solely depend on volatility.
+	\item<4-> Another problem concerns the relationship between instantaneous and terminal correlations.
+\end{itemize}
+\end{frame}	
+	 
+\begin{frame}{Decorrelation}
+	\begin{itemize}
+	\item<1-> For terminal correlations, (Rebonato, 1998) shows that the appropriate quantity summarizing the amount of decorrelation between two stochastic variables from time 0 to time $T$ is
+	\begin{equation}		
+		\tilde{\rho}_{ij}(t)=\frac{\int_0^t\sigma_i(u)\sigma_j(u)\rho_{ij}(u)du}{\sqrt{\int_0^t\sigma_i(u)^2 du\int_0^t\sigma_j(u)^2 du}}	
+		\label{eq:terminal_correlation}
+	\end{equation}
+	\item<2-> From this equation, we see that the terminal correlation not only depends on the instantaneous correlation $\rho_{ij}$ but also on the instantaneous volatilities. Hence, even for perfectly instantaneously correlated random variables, $\rho_{ij}= 1$, terminal \textcolor{red}{decorrelation} could be achieved by time-dependent instantaneous volatilities.
+\end{itemize}
+\end{frame}	
+%  \begin{itemize}
+%  \item Is terminal correlation completely determined by the instantaneous correlations $\rho_{ij}$ between $W_i$ and $W_j$ ?
+%  \item The answer is no, since terminal correlation also depends on the forward rate volatilities (caplet volatilities). 
+%  \item In particular it is important the choice of the function $\sigma(t)$ used to recover "average volatilities" through integration in $[0,T_i]$.
+%  \item If \textcolor{red}{instantaneous volatilities} are not constant, they have a significant impact on terminal correlation and can produce terminal \emph{decorrelation}, even in the case of perfect instantaneous correlation.
+%  %\item Prices of correlation-sensitive products depend on terminal correlation, and thus instantaneous correlation and instantaneous volatility. 
+%  %\item It is important to note that there is no instrument that is sensitive solely to instantaneous correlation. Therefore, estimating correlation from a product that is sensitive to multiple factors is not straight-forward and can lead to ambiguous results.
+%  \end{itemize}
+%\end{frame}
+
+\begin{frame}{An Example}
+\begin{itemize}
+	\item<1-> Considering Rebonato's analytical formula for terminal correlation \cref{eq:terminal_correlation}it can be shown that in the case of piecewise-constant volatilities, terminal correlation is just the average correlation over the period. 
+  	\item<2-> Since the instantaneous volatilities are constant, they can be factored out from the integrals
+	  \begin{equation*}	    \tilde{\rho}_{ij}(t)=\frac{\cancel{\sigma_i}\cancel{\sigma_j}\int_0^t\rho_{ij}(u)du}{\sqrt{\cancel{\sigma_i^2}\cancel{\sigma_j^2} t^2}}= \frac{\int_0^t\rho_{ij}(u)du}{t}		
+  	\end{equation*}
+  	which indeed leads to lower terminal correlation.
+  	\item<3-> Swaption payoffs depend on the terminal correlation between several different forward rates which leads (Brigo and Mercurio, 2006) to the conclusion that swaption volatilities are more directly linked with terminal correlations rather than with instantaneous ones.
+  \end{itemize}
+\end{frame}
 
 \end{document}
