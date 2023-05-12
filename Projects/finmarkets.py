@@ -5,20 +5,18 @@ from scipy.stats import norm
 from dateutil.relativedelta import relativedelta
 
 def d1(S_t, K, r, vol, ttm):
-  num = log(S_t/K) + (r + 0.5*pow(vol, 2)) * ttm
-  den = vol * sqrt(ttm)
-  if den == 0:
-    return 100000000.
+  num = np.log(S_t/K) + (r + 0.5*np.power(vol, 2)) * ttm
+  den = vol * np.sqrt(ttm)
   return num/den
 
 def d2(S_t, K, r, vol, ttm):
-  return d1(S_t, K, r, vol, ttm) - vol * sqrt(ttm)
+  return d1(S_t, K, r, vol, ttm) - vol * np.sqrt(ttm)
 
 def call(S_t, K, r, vol, ttm):
-  return S_t * norm.cdf(d1(S_t, K, r, vol, ttm)) - K * exp(-r * ttm) * norm.cdf(d2(S_t, K, r, vol, ttm))
+  return S_t * norm.cdf(d1(S_t, K, r, vol, ttm)) - K * np.exp(-r * ttm) * norm.cdf(d2(S_t, K, r, vol, ttm))
 
 def put(S_t, K, r, vol, ttm):
-  return K * exp(-r * ttm) * norm.cdf(-d2(S_t, K, r, vol, ttm)) - S_t * norm.cdf(-d1(S_t, K, r, vol, ttm))
+  return K * np.exp(-r * ttm) * norm.cdf(-d2(S_t, K, r, vol, ttm)) - S_t * norm.cdf(-d1(S_t, K, r, vol, ttm))
 
 def generate_dates(start_date, n_months, tenor_months=12):
   dates = []
