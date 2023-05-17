@@ -191,7 +191,368 @@ Figure~\ref{fig:call_option} shows the option price as a function of the stock p
 	\includegraphics[width=0.9\textwidth]{figures/call_option_price}
 	\caption{Option price as a function of the underlying price for various values of $t$.}
 	\label{fig:call_option}
-\end{figure} 
+\end{figure}
+
+\section{Asian Options}
+\label{sec:asian_option}
+
+An Asian option is a special option where the payoff is determined by \emph{the average underlying price over some pre-set period of time}; 
+Asian options are thus one of the basic forms of exotic options. 
+
+One advantage of Asian options is that these reduce the risk of market manipulation of the underlying instrument at maturity.
+Because of the averaging feature, Asian options reduce the volatility inherent in the option; therefore, Asian options are typically cheaper than European or American options. 
+
+There are numerous permutations of Asian option; the most basic are listed below:
+\begin{itemize}
+\item \textbf{Fixed strike} Asian call payout
+$C(T)={\text{max}}\left(A(0,T)-K,0\right),$
+where $A$ denotes the average price for the period $[0, T]$, and $K$ is the strike price. 
+The equivalent put option is given by
+$P(T)={\text{max}}\left(K-A(0,T),0\right)$.
+
+\item The \textbf{floating strike} Asian call option has the payout
+$C(T)={\text{max}}\left(S(T)-kA(0,T),0\right),$
+where $S(T)$ is the price at maturity and $k$ is a weighting, usually 1 so often omitted from descriptions.
+The equivalent put option payoff is given by
+$P(T)={\text{max}}\left(kA(0,T)-S(T),0\right)$.
+\end{itemize}
+
+The average $A$ may be obtained in many ways. Conventionally, this means an arithmetic average. In the continuous case, this is obtained by
+$A(0,T)={\frac  {1}{T}}\int _{{0}}^{{T}}S(t)dt$.
+For the case of discrete monitoring (with monitoring at the times 
+$0=t_{0},t_{1},t_{2},\dots ,t_{n}=T$ we have the average given by
+${\displaystyle A(0,T)={\frac {1}{n}}\sum _{i=1}^{n}S(t_{i}).}$
+
+There also exist Asian options with geometric average; in the continuous case, this is given by
+$A(0,T)=\exp \left({\frac  {1}{T}}\int _{{0}}^{{T}}\ln(S(t))dt\right)$.
+
+\subsection{Pricing of Asian options}
+We are able to derive a closed-form solution only for the geometric Asian option.
+This is given by 
+\begin{equation}
+\begin{aligned}
+C_A&=S_{0}e^{(b-r)T}\Phi (d_{1})-Ke^{-rT}\Phi (d_{2})\\
+P_A&=Ke^{-rT}\Phi (-d_{2})-S_{0}e^{(b-r)T}\Phi (-d_{1})
+\end{aligned}
+\end{equation}
+where 
+\begin{equation}
+\begin{aligned}
+b&={1 \over {2}}\left(r-{1 \over {2}}\sigma _A^{2}\right)\\
+\sigma _A&={\sigma  \over {\sqrt {3}}} \\
+d_1&={\log {S_0 \over {K}}+\left(b+{1 \over {2}}\sigma _A^2\right)T \over {\sigma_A{\sqrt {T}}}},\;d_{2}=d_1-\sigma_A{\sqrt {T}}
+\end{aligned}
+\end{equation}
+
+The Aritmethic average type instead needs to be estimated with Monte Carlo techniques.
+
+\subsection{Asian Option Pricing with Monte Carlo}
+
+Every time a Monte Carlo simulation is run, we get an estimate of the quantity we are trying to calculate. It is desirable to quantify how precise our estimate is through the "standard error" (i.e. confidence interval).
+
+As we have seen above an obvious way to make our estimate more precise is to increase the number $N$ of simuations (e.g. random price paths) considered. However this can be computationally expensive therefore different methods have been developed, namely \emph{variance reduction techniques}.
+
+\subsubsection{Antithetic Method}
+Let $\theta$ be estimated through $Y$, that is $\theta=\mathbb{E}[Y]$. Let $Y_1$ and $Y_2$ be two samples of $Y$, so the estimate is $\hat{\theta}=\frac{Y_1+Y_2}{2}$. The variance of the estimate is 
+\begin{equation*}
+Var(\hat{\theta}) = \frac{Var(Y_1)+Var(Y_2)+2Cov(Y_1,Y_2)}{4}
+\end{equation*}
+
+If $Y_1$ and $Y_2$ are i.i.d. $Var(\hat{\theta})=\frac{Var(Y)}{2}$, and if $Cov(Y_1, Y_2)<0$ the variance is reduced even more. In the extreme case where $\rho=-1$, the variance is reduced to the maximum allowed by this technique. 
+
+Since the path of the stock is defined as a geometric Brownian motion with random normal shocks, $Y_1$ can be a set of normal random numbers and $Y_2 = -Y_1$. Hence the final payoff is given by the average between two sets of payoffs computed respectiely with $Y_1$ and $Y_2$ which by construction are \emph{perfectly anti-correlated}. 
+
+\subsubsection{Control Variate Variance Reduction Method}
+
+Say desired simulation quantity is $\mathbb{E}[X]$, and there is another known random variable $Y$ with known analytical expectation $\mu_Y = \mathbb{E}[Y]$. For any constant $c$ one can see that $Z = X + c(Y -\mu_Y)$ is an unbiased estimator of $X$, by linearity of expectation. Also it can be shown that $Var(Z) = Var(X) + c\cdot 2 Var(Y) + 2c Cov(X; Y)$ is minimized when $c = -\frac{Cov(X;Y)^2}{Var(Y)}$. 
+$Y$ is called a \textbf{control variate} of $X$. 
+
+To reduce variance, $Y$ can be chosen as much correlated as possible with $X$. In practice, we can select a $Y$ which is approximately equal to $X$, easy to simulate and whose expectation is known. 
+
+In our case given that $X$ is the payoff of an Asian Option with Arithmetic average, these requirements are satisfied perfectly when we take $Y$ to be the Asian Option payoff with Geometric average (a closed form solution for its price is known).
+
+In practice we are going to simulate a set of paths for the underlying and compute $Z$ from  $X$, $Y$ and $\mu_Y$.
+
+\begin{finmarkets}
+The following class \texttt{AsianOption} implements all the methods described above besides tha analytical pricing formula of the Geometric average Asian option.
+\end{finmarkets}
+
+\begin{ipython}
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats.mstats import gmean
+from scipy.stats import norm
+
+class AsianOption:
+  def __init__(self, S0, K, ttm, sigma, r, type=0):
+    # type: 0=call, 1=put
+    self.S0 = S0
+    self.K = K
+    self.ttm = ttm
+    self.sigma = sigma
+    self.r = r
+    self.type = type
+
+  def geometric_price(self, timesteps=252):
+    adj_sigma = self.sigma*np.sqrt((2*timesteps+1)/(6*(timesteps+1)))
+    rho = 0.5*(self.r-(self.sigma**2)*0.5 + adj_sigma**2)
+    d1 = (np.log(self.S0/self.K)+(rho+0.5*adj_sigma**2)*self.ttm)/\\
+         (adj_sigma*np.sqrt(self.ttm))
+    d2 = (np.log(self.S0/self.K)+(rho-0.5*adj_sigma**2)*self.ttm)/\\
+         (adj_sigma*np.sqrt(self.ttm))
+    if self.type == 0:
+      return np.exp(-self.r*self.ttm)*\\
+             (self.S0*np.exp(rho*self.ttm)*norm.cdf(d1)-self.K*norm.cdf(d2))
+    else:
+      return np.exp(-self.r*self.ttm)*\\
+             (self.K*norm.cdf(-d2)-self.S0*np.exp(rho*self.ttm)*norm.cdf(-d1))
+
+  def path(self, n, timesteps, anti=False, seed=10000):
+    np.random.seed(seed)
+    dt = self.ttm/timesteps
+  
+    S = np.zeros(shape=(timesteps, n))
+    S[0] = self.S0
+    w = norm.rvs(size=(timesteps-1)*n).reshape(((timesteps-1), n))
+    for i in range(0, timesteps-1):
+        S[i+1] = S[i] * (1 + self.r*dt  + self.sigma*np.sqrt(dt)*w[i])
+
+    if anti:
+      S1 = np.zeros(shape=(timesteps, n))
+      S1[0] = self.S0
+      w = -w
+      for i in range(0, timesteps-1):
+          S1[i+1] = S1[i] * (1 + self.r*dt  + self.sigma*np.sqrt(dt)*w[i])
+
+    if anti:
+      return S, S1
+    else:
+      return S
+
+  def aritmethic_payoff(self, S):
+    if self.type == 0:
+      return np.maximum(0, np.mean(S, axis=0)-self.K)
+    else:
+      return np.maximum(0, self.K - np.mean(S, axis=0))
+
+  def geometric_payoff(self, S):
+    if self.type == 0:
+      return np.maximum(0, gmean(S, axis=0)-self.K)
+    else:
+      return np.maximum(0, self.K-gmean(S, axis=0))
+
+  def simulate_naive(self, n, timesteps=252, seed=10000):
+    S = self.path(n, timesteps, seed=seed)
+    payoffs = np.exp(-self.r*self.ttm) * self.aritmethic_payoff(S)
+    price = np.mean(payoffs)
+    err = np.std(payoffs)/np.sqrt(n)
+    return price, err
+
+  def simulate_antithetic(self, n, timesteps=252, seed=10000):
+    S1, S2 = self.path(n, timesteps, anti=True, seed=seed)
+    S = np.exp(-self.r*self.ttm) *\\
+        (self.aritmethic_payoff(S1) + self.aritmethic_payoff(S2))/2
+    price = np.mean(S)
+    err = np.std(S)/np.sqrt(n)
+    return price, err
+    
+  def simulate_control_variate(self, n, timesteps=252, seed=10000):
+    S = self.path(n, timesteps)
+    X = np.exp(-self.r*self.ttm) * self.aritmethic_payoff(S)
+    Y = np.exp(-self.r*self.ttm) * self.geometric_payoff(S)
+    c = -np.cov(X,Y)[0, 1]/np.var(Y)
+    mu = self.geometric_price(timesteps)
+    Z = X + c*(Y-mu)
+    price = np.mean(Z)
+    err = (np.std(Z)/np.sqrt(n))
+    return price, err
+\end{ipython}
+
+\subsubsection{An Example}
+We are going to consider an Asian Option (fixed strike) with the following properties
+\begin{ipython}
+S0 = 100 #underlying price
+K = 100 # strike
+tau = 1 # time to maturity (years)
+sigma = 0.2 # volatility
+r = 0.05 # constant risk-free rate
+\end{ipython}
+and compare the results from the different Monte Carlo techniques.
+
+The baseline result is represented by a "naive" Monte Carlo simulation where various underlying price paths are generated with the Euler scheme. The option price is determined as the mean of the discounted payoffs corresponding to each simulation
+\begin{equation*}
+C = \frac{1}{N}\sum_{i=1}^{N} e^{-r\tau}\max(0, A_i(0, \tau)-K)
+\end{equation*}
+
+Baseline results are compared to analogous simulations performed with antithetic and control variate techniques.
+Figures~\ref{fig:asian_mc_results} shows the comparison of prices and uncertainties as a function of $N$ and $K=100$.
+In general the larger the number of simulations, the more accurate the estimate.
+One can see also that with control variates, the option value is almost constant, whereas the naive implementation tends to jump around before converging.
+
+%\begin{table}[h]
+%\begin{center}
+%\begin{tabular}{l|c|c|c|c|c} 
+%  \hline
+%  & 80 & 90 & 100 & 110 & 120 \\
+%  \hline
+%  100 & 20.845 & 12.005 & 5.250 & 1.549 & 0.386 \\ 
+%  \hline
+%  1000 & 21.403 & 12.455 & 5.670 & 1.949 & 0.531 \\ 
+%  \hline
+%  10000 & 21.313 & 12.434 & 5.621 & 1.915 &  0.496 \\ 
+%  \hline
+%  100000 & 21.461 & 12.553 & 5.721 & 1.967 &  0.519 \\ 
+%  \hline
+%  1000000 & 21.489 & 12.591 & 5.754 & 1.981 &  0.522 \\ 
+%\end{tabular}
+%\end{center}
+%\end{table}
+%
+%
+%\begin{table}[h]
+%\begin{center}
+%\begin{tabular}{l|c|c|c|c|c} 
+%  \hline
+%  & 80 & 90 & 100 & 110 & 120 \\
+%  \hline
+%  100 & 1.0870 & 0.9900 & 0.7425 & 0.4388 & 0.2595 \\ 
+%  \hline
+%  1000 & 0.3543 & 0.3292 & 0.2524 & 0.1560 & 0.0807 \\ 
+%  \hline
+%  10000 & 0.1118 & 0.1027 & 0.0783 & 0.0473 &  0.0231 \\ 
+%  \hline
+%  100000 & 0.0335 & 0.0328 & 0.0251 & 0.0153 &  0.0077 \\ 
+%  \hline
+%  1000000 & 0.0113 & 0.0104 & 0.0080 & 0.0049 &  0.0025 \\ 
+%\end{tabular}
+%\end{center}
+%\end{table}
+%
+%
+%\begin{table}[h]
+%\begin{center}
+%\begin{tabular}{l|c|c|c|c|c} 
+%  \hline
+%  & 80 & 90 & 100 & 110 & 120 \\
+%  \hline
+%  100 & 20.845 & 12.005 & 5.250 & 1.549 & 0.386 \\ 
+%  \hline
+%  1000 & 21.403 & 12.455 & 5.670 & 1.949 & 0.531 \\ 
+%  \hline
+%  10000 & 21.313 & 12.434 & 5.621 & 1.915 &  0.496 \\ 
+%  \hline
+%  100000 & 21.461 & 12.553 & 5.721 & 1.967 &  0.519 \\ 
+%  \hline
+%  1000000 & 21.489 & 12.591 & 5.754 & 1.981 &  0.522 \\ 
+%\end{tabular}
+%\end{center}
+%\end{table}
+%
+%
+%\begin{table}[h]
+%\begin{center}
+%\begin{tabular}{l|c|c|c|c|c} 
+%  \hline
+%  & 80 & 90 & 100 & 110 & 120 \\
+%  \hline
+%  100 & 1.0870 & 0.9900 & 0.7425 & 0.4388 & 0.2595 \\ 
+%  \hline
+%  1000 & 0.3543 & 0.3292 & 0.2524 & 0.1560 & 0.0807 \\ 
+%  \hline
+%  10000 & 0.1118 & 0.1027 & 0.0783 & 0.0473 &  0.0231 \\ 
+%  \hline
+%  100000 & 0.0335 & 0.0328 & 0.0251 & 0.0153 &  0.0077 \\ 
+%  \hline
+%  1000000 & 0.0113 & 0.0104 & 0.0080 & 0.0049 &  0.0025 \\ 
+%\end{tabular}
+%\end{center}
+%\end{table}
+%
+%\begin{table}[h]
+%\begin{center}
+%\begin{tabular}{l|c|c|c|c|c} 
+%  \hline
+%  & 80 & 90 & 100 & 110 & 120 \\
+%  \hline
+%  100 & 21.385 & 12.377 & 5.577 & 1.761 & 0.428 \\ 
+%  \hline
+%  1000 & 21.483 & 12.561 & 5.723 & 1.939 & 0.508 \\ 
+%  \hline
+%  10000 & 21.472 & 12.576 & 5.720 & 1.967 &  0.517 \\ 
+%  \hline
+%  100000 & 21.476 & 12.572 & 5.731 & 1.963 &  0.512 \\ 
+%  \hline
+%  1000000 & 21.483 & 12.585 & 5.749 & 1.979 &  0.521 \\ 
+%\end{tabular}
+%\end{center}
+%\end{table}
+%
+%\begin{table}[h]
+%\begin{center}
+%\begin{tabular}{l|c|c|c|c|c} 
+%  \hline
+%  & 80 & 90 & 100 & 110 & 120 \\
+%  \hline
+%  100 & 0.1299 & 0.3639 & 0.2373 & 0.2925 & 0.1592 \\ 
+%  \hline
+%  1000 & 0.0464 & 0.1233 & 0.0817 & 0.0999 & 0.0555 \\ 
+%  \hline
+%  10000 & 0.0135 & 0.0390 & 0.0253 & 0.0312 &  0.0166 \\ 
+%  \hline
+%  100000 & 0.0043 & 0.0123 & 0.0080 & 0.0099 &  0.0053 \\ 
+%  \hline
+%  1000000 & 0.0014 & 0.0039 & 0.0026 & 0.0031 &  0.0017 \\ 
+%\end{tabular}
+%\end{center}
+%\end{table}
+%
+%\begin{table}[h]
+%\begin{center}
+%\begin{tabular}{l|c|c|c|c|c} 
+%  \hline
+%  & 80 & 90 & 100 & 110 & 120 \\
+%  \hline
+%  100 & 21.460 & 12.576 & 5.761 & 1.998 & 0.509 \\ 
+%  \hline
+%  1000 & 21.494 & 12.598 & 5.762 & 1.993 & 0.536 \\ 
+%  \hline
+%  10000 & 21.488 & 12.590 & 5.758 & 1.986 &  0.527 \\ 
+%  \hline
+%  100000 & 21.490 & 12.593 & 5.758 & 1.986 &  0.525 \\ 
+%  \hline
+%  1000000 & 21.490 & 12.593 & 5.758 & 1.986 &  0.525 \\ 
+%\end{tabular}
+%\end{center}
+%\end{table}
+%
+%\begin{table}[h]
+%\begin{center}
+%\begin{tabular}{l|c|c|c|c|c} 
+%  \hline
+%  & 80 & 90 & 100 & 110 & 120 \\
+%  \hline
+%  100 & 0.0249 & 0.0221 & 0.0190 & 0.0146 & 0.0131 \\ 
+%  \hline
+%  1000 & 0.0101 & 0.0088 & 0.0074 & 0.0065 & 0.0063 \\ 
+%  \hline
+%  10000 & 0.0029 & 0.0025 & 0.0021 & 0.0019 &  0.0017 \\ 
+%  \hline
+%  100000 & 0.0009 & 0.0008 & 0.0007 & 0.0006 &  0.0006 \\ 
+%  \hline
+%  1000000 & 0.0003 & 0.0003 & 0.0002 & 0.0002 &  0.0002 \\ 
+%\end{tabular}
+%\end{center}
+%\end{table}
+
+\begin{figure}[h}
+    \begin{center}
+     \includegraphics[width=0.4\linewidth]{figures/asian_option_price}
+      \includegraphics[width=0.4\linewidth]{figures/asian_option_error}
+    \end{center}
+    \caption{The left plot reports the estimated prices as a function of the number of simulated Monte Carlo events for naive, antithetic and control variate techniques.
+    Right plot instead reports the estimate uncertainties.}
+    \label{fig:asian_mc_results}
+\end{figure}
 
 \section*{Exercises}
 \input{options_ex_text}
