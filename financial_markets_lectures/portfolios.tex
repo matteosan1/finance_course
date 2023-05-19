@@ -505,391 +505,383 @@ Figure~\ref{fig:diversification} shows the risk of a portfolio made up of IBM an
 
 \section{Black-Litterman Portfolio}
 \label{sec:black-litterman}
-This example shows the workflow to implement the Black-Litterman model with the Portfolio class in Financial Toolbox™. The Black-Litterman model is an asset allocation approach that allows investment analysts to incorporate subjective views (based on investment analyst estimates) into market equilibrium returns. By blending analyst views and equilibrium returns instead of relying only on historical asset returns, the Black-Litterman model provides a systematic way to estimate the mean and covariance of asset returns.
 
-In the Black-Litterman model, the blended expected return is 
-%−
-%μ
-%=[P
-%T
-%Ω
-%−1
-%P+C
-%−1
-%]
-%−1
-%[P
-%T
-%Ω
-%−1
-%q+C
-%−1
-%π]
-and the estimation uncertainty is
-%cov(μ)=[P
-%T
-%Ω
-%−1
-%P+C
-%−1
-%]
-%−1
-%.
-To use the Black-Litterman model, you must prepare the inputs: P,q ,Ω , π, and C. The inputs for P, q , and Ω are view-related and defined by the investment analyst. π is the equilibrium return and C is the uncertainty in prior belief. This example guides you to define these inputs and use the resulting blended returns in a portfolio optimization. For more information on the concept and derivation of the Black-Litterman model, see the Appendix section Black-Litterman Model under a Bayesian Framework.
+The Black-Litterman asset allocation model, established for the first time in the early 1990’s by Fischer Black and Robert Litterman, is a sophisticated strategy for dealing with unintuitive, highly concentrated, and input-sensitive portfolios. The most likely reason that more portfolio managers do not use the Markowitz model, which maximises return for a given degree of risk, is input sensitivity, a well-documented issue with mean-variance optimization.
 
-Define the Universe of Assets
-The dowPortfolio.xlsx data set includes 30 assets and one benchmark. Seven assets from this data set comprise the investment universe in this example. The risk-free rate is assumed to be zero.
+The Black-Litterman Model employs a Bayesian technique to integrate an investor’s subjective views of expected returns on one or more assets with the market equilibrium vector (prior distribution) of expected returns to obtain a new, mixed estimate of expected returns. The new vector of returns (the posterior distribution) is a weighted complex average of the investor’s views and market equilibrium.
 
-%T = readtable('dowPortfolio.xlsx');
-%Define the asset universe and extract the asset returns from the price data.
-%
-%assetNames = ["AA", "AIG", "WMT", "MSFT", "BA", "GE", "IBM"];
-%benchmarkName = "DJI";
-%head(T(:,["Dates" benchmarkName assetNames]))
+\subsection{Mathematical Foundation}
+The idea of the Black Litterman estimates is not to find the optimum portfolio weights as in the Markowitz optimization framework, but instead to find the expected return that would be used as an input to compute the optimum portfolio weights. This approach is referred as reversion portfolio optimization technique. The idea behind is that optimum weights are already observed in the market and captured in the market portfolio.
+We can approach the reasoning by maximizing the following utility function adjusted to the risk:
+\begin{equation}
+U = w^T\Pi - \frac{1}{2}Aw^T,\quad\text{subject to }w^T=1
+\end{equation}
+where $w$ are the portfolio weights, $\Pi$ the implied equilibrium excess return vector, $A$ the risk aversion factor, and $\Sigma$ the variance-covariance matrix.
+We take the partial derivative of $U$ w.r.t. weights and set it equal to 0 to maximize the utility:
+\begin{equation*}
+  \frac{\partial U}{\partial w} = \Pi - A\Sigma w = 0
+\end{equation*}
+The approach proposed by Black and Litterman isolates $\Pi$ (implied equilibrium excess return) to obtain the optimal expected returns for the portfolio, instead of seeking the optimal weights, which are incorporated in the market portfolio and thus computable via the market capitalization of the equities in the portfolio.
+\begin{equation*}
+  \Pi = A\Sigma w
+\end{equation*}
 
-%retnsT = tick2ret(T(:, 2:end));
-%assetRetns = retnsT(:, assetNames);
-%benchRetn = retnsT(:, "DJI");
-%numAssets = size(assetRetns, 2);
+We can deconstruct the Black-Litterman model as
 
-Specify Views of the Market
-The views represent the subjective views of the investment analyst regarding future market changes, expressed as
+\begin{equation}
+  \mathbb{E}[R] = [(\tau\Sigma)^{-1}+P^T\Omega^{-1}P]^{-1}[(\tau\Sigma)^{-1}\Pi + P^T\Omega^{-1}Q]
+\end{equation}
+where $\tau$ is a scalar, $P$ the linking matrix, and $\Omega$ the uncertainty if views.
 
-%q =P∗μ + ε,   ε~N(0, Ω), Ω=diag(ω
-%1
-%,ω
-%2
-%,...ω
-%v
-%),
-where v is total number of views. For more information, see the Appendix section Assumptions and Views. With v views and k assets, P is a v-by-k matrix, q is a v-by-1 vector, and Ω is a v-by-v diagonal matrix (representing the independent uncertainty in the views). The views do not necessarily need to be independent among themselves and the structure of Ω can be chosen to account for investment analyst uncertainties in the views [4]. The smaller the ω
-%i
-in Ω, the smaller the variance in the distribution of the ith view, and the stronger or more certain the investor's ith view. This example assumes three independent views.
-%
-%AIG is going to have 5% annual return with uncertainty 1e-3. This is a weak absolute view due to its high uncertainty.
-%
-%WMT is going to have 3% annual return with uncertainty 1e-3. This is a weak absolute view due to its high uncertainty.
-%
-%MSFT is going to outperform IBM by 5% annual return with uncertainty 1e-5. This is a strong relative view due to its low uncertainty.
+The first term of the formula is introduced in order to respect the constraint that the portfolio weights should be equal to one.
+The second is to compute a weighted average of the implied equilibrium excess return adjusted to the uncertainty of the returns by the view vector weighted with the uncertainty of views.
+The final output $\mathbb{E}(R)$ is a $n\times 1$ vector of return that represents the equilibrium returns of the market adjusted to investors views.
 
-%v = 3;  % total 3 views
-%P = zeros(v, numAssets);
-%q = zeros(v, 1);
-%Omega = zeros(v);
-%
-%% View 1
-%P(1, assetNames=="AIG") = 1; 
-%q(1) = 0.05;
-%Omega(1, 1) = 1e-3;
-%
-%% View 2
-%P(2, assetNames=="WMT") = 1; 
-%q(2) = 0.03;
-%Omega(2, 2) = 1e-3;
-%
-%% View 3
-%P(3, assetNames=="MSFT") = 1; 
-%P(3, assetNames=="IBM") = -1; 
-%q(3) = 0.05;
-%Omega(3, 3) = 1e-5;
-%Visualize the three views in table form.
-%
-%viewTable = array2table([P q diag(Omega)], 'VariableNames', [assetNames "View_Return" "View_Uncertainty"]) 
-%viewTable=3×9 table
+\subsection{Implementation of the Model}
+To model a Black-Litterman portfolio allocation, we can use time series related to a certain time interval for various firms.
+We generate the variance-covariance matrix after obtaining all necessary statistical data, which includes the expected return and volatility indicated by the standard deviation of the returns for each stock during the provided period.
 
-Because the returns from dowPortfolio.xlsx data set are daily returns and the views are on the annual returns, you must convert views to be on daily returns.
+The first step is to calculate the logarithmic returns and excess returns on the selected assets (returns minus the risk-free rate). After calculating the logarithmic returns on each asset, we can estimate the capital asset pricing model’s returns (CAPM) expected returns. This information will be used to calculate the Black-Litterman expected returns on a comparative basis.
+\begin{enumerate}
+\item The first input for the model is the price of risk A, which represents the risk aversion of investor and is obtained by subtracting the expected return of the market the risk-free rate and divided by the variance of the market:
+\begin{equation}
+  A=\frac{\mathbb{E}(r_{mkt})-r_f}{\sigma_m^2}
+\end{equation}
 
-%bizyear2bizday = 1/252;
-%q = q*bizyear2bizday; 
-%Omega = Omega*bizyear2bizday;
-%Estimate the Covariance from the Historical Asset Returns
-%Σ is the covariance of the historical asset returns.
-%
-%Sigma = cov(assetRetns.Variables);
+\item We extract the respective market capitalization of each security to obtain their market weights in the portfolio. Given that our investable universe is made of five stocks, we can retrieve their respective market capitalization and compute the weights of each stock in relation to the sum of total market-capitalization in the portfolio.
+  \begin{equation}
+    w_{mkt} = \frac{\text{mkt-cap}_i}{\sum_i^n\text{mkt-cap}_i}
+  \end{equation}
 
-Define the Uncertainty C
-The Black-Litterman model makes the assumption that the structure of C is proportional to the covariance Σ. Therefore, C=τΣ, where τ is a small constant. A smaller τ indicates a higher confidence in the prior belief of μ. The work of He and Litterman uses a value of 0.025. Other authors suggest using 1/n where n is the number of data points used to generate the covariance matrix [3]. This example uses 1/n.
-%
-%tau = 1/size(assetRetns.Variables, 1);
-%C = tau*Sigma;
-%Market Implied Equilibrium Return
+  %Table 1 depicts the optimal weights obtained from their respective market capitalisation, coupled with the respective expected return and volatility.
 
-In the absence of any views, the equilibrium returns are likely equal to the implied returns from the equilibrium portfolio holding. In practice, the applicable equilibrium portfolio holding can be any optimal portfolio that the investment analyst would use in the absence of additional views on the market, such as the portfolio benchmark, an index, or even the current portfolio [2]. In this example, you use linear regression to find a market portfolio that tracks the returns of the DJI benchmark. Then, you use the market portfolio as the equilibrium portfolio and the equilibrium returns are implied from the market portfolio. The findMarketPortfolioAndImpliedReturn function, defined in Local Functions, implements the equilibrium returns. This function takes historical asset returns and benchmark returns as inputs and outputs the market portfolio and the corresponding implied returns.
+\item We compute the variance-covariance matrix of logarithmic returns.
+%Table 2. Variance-covariance matrix of asset returns
+\item We compute the implied equilibrium excess return ($\Pi$) as the matrix calculation of the price of risk ($A$) times the matrix multiplication of the weights computed in step 4 times the variance-covariance matrix computed in step 3 ($A\Sigma w$).
+\item  The views are incorporated into the model. To achieve this, we provide three views to include into the model. If there are no views, the values will correspond to the market portfolio. The investment manager’s views for the expected return on certain of the portfolio’s assets regularly diverge from the Implied Equilibrium Return Vector, which serves as the market-neutral starting point for the Black-Litterman model that quantifies the uncertainty associated with each view. The Black-Litterman Model can be used to depict such views in absolute or relative terms. As an illustration, let us suppose that the real and simulated portfolio will have the same views:
+\begin{itemize}
+\item view 1: Apple will outperform Microsoft by .05 percent
+\item view 2: Amazon will outperform Microsoft by .1 percent
+\item view 3: Apple will outperform Amazon by .05 percent
+\end{itemize}
+To incorporate the vector $Q$ of views, we create a link matrix $P$ where the rows sum to zero. %Figure 3 depicts the workings done in the spreadsheet.
+\item We compute $\Omega$ to determine the degree of uncertainty associated with the views. While Black-Litterman paper used a value of $\tau$ equal to 0.25, an important number of academics went for calculating the $\tau$ equal to one. For the sake of simplifying the model, consider $\tau$ to be equal to one. This input is obtained as $\Omega = \tau P\Sigma P^T$.
+\item We integrate all the values computed previously in the Black-Litterman model. %Table 4 depicts the results obtained via the Black-Litterman allocation model.
+%We can see that the results converge slightly to those from CAPM. Additionally, we can see that the views are reflected in the Black-Litterman expected returns. As a result, we can determine whether or not each view is satisfied. Indeed, Apple outperforms Amazon and Microsoft, while Amazon outperforms Microsoft.
+\end{enumerate}
 
-%[wtsMarket, PI] = findMarketPortfolioAndImpliedReturn(assetRetns.Variables, benchRetn.Variables);
-%Compute the Estimated Mean Return and Covariance
-%Use the P, q , Ω , π , and C inputs to compute the blended asset return and variance using the Black-Litterman model.
-%
-You can compute 
-%−
-%μ
-%and cov(μ) directly by using this matrix operation:
-%
-%−
-%μ
-%=[P
-%T
-%Ω
-%−1
-%P+C
-%−1
-%]
-%−1
-%[P
-%T
-%Ω
-%−1
-%q+C
-%−1
-%π], cov(μ)=[P
-%T
-%Ω
-%−1
-%P+C
-%−1
-%]
-%−1
-%
-%mu_bl = (P'*(Omega\P) + inv(C)) \ ( C\PI + P'*(Omega\q));
-%cov_mu = inv(P'*(Omega\P) + inv(C));
+\subsection{Black-Litterman Model Under a Bayesian Framework}
+Assume that the investment universe is composed of $k$ assets and the vector of asset returns $r$ is modeled as a random variable, following a multivariate normal distribution $r\approx\mathcal{N}(\mu,\Sigma)$. $\Sigma$ is the covariance from historical asset returns. The unknown model parameter is the expected return $\mu$. From the perspective of Bayesian statistics, the Black-Litterman model attempts to estimate $\mu$ by combining the investment analyst views (or "observations of the future") and some prior knowledge about $\mu$.
 
-Comparing the blended expected return from Black-Litterman model to the prior belief of expected return π, you find that the expected return from Black-Litterman model is indeed a mixture of both prior belief and investor views. For example, as shown in the table below, the prior belief assumes similar returns for MSFT and IBM, but in the blended expected return, MSFT has a higher return than IBM by more than 4\%. This difference is due to the imposed strong view that MSFT outperforms IBM by 5\%.
+In addition, assume the prior knowledge that $\mu$ is a normally distributed random variable $\mu\approx\mathcal{N}(\pi,C)$. In the absence of any views (observations), the prior mean $\pi$ is likely to be the equilibrium returns, implied from the equilibrium portfolio holding.
+In practice, the applicable equilibrium portfolio holding is not necessarily the equilibrium portfolio, but rather a target optimal portfolio that the investment analyst would use in the absence of additional views on the market, such as the portfolio benchmark, an index, or even the current portfolio. $C$ represents the uncertainty in the prior and the Black-Litterman model makes the assumption that the structure of $C$ is $\tau\Sigma$. $\tau$ is a small constant, and many authors use different values. % A detailed discussion about τ can be found in [3].
 
-%table(assetNames', PI*252, mu_bl*252, 'VariableNames', ["Asset_Name", ...
-%"Prior_Belief_of_Expected_Return", "Black_Litterman_Blended_Expected_Return"])
-%ans=7×3 table
+Observations are necessary to perform a statistical inference on $mu$. In the Black-Litterman model, the observations are views about future asset returns expressed at the portfolio level. A view is the expected return of a portfolio composed of the universe of $k$ assets. Usually, the portfolio return has uncertainty, so an error term is added to catch the departure. Assume that there is a total of $v$ views. For a view $i$, $p_i$
+is a row vector with dimension $1\times k$, and $q_i$ is a scalar.
+\begin{equation}
+  q_i = \mathbb{Ε}[p_i\cdot r|\mu]+\epsilon_i,\quad i=1,2,...,v
+\end{equation}
 
-Portfolio Optimization and Results
-The Portfolio object in Financial Toolbox™ implements the Markowitz mean variance portfolio optimization framework. Using a Portfolio object, you can find the efficient portfolio for a given risk or return level, and you can also maximize the Sharpe ratio.
+You can stack the $v$ views vertically, and $\Omega$ is the covariance of the uncertainties from all views. Assume that the uncertainties are independent.
+\begin{equation}
+q = \mathbb{Ε}[P\cdot r| \mu]+ \epsilon,  \epsilon\approx\mathcal{N}(0, \Omega),  \Omega= \text{diag}(\omega_1, \omega_2,\ldots,\omega_v)
+\end{equation}
 
-Use estimateMaxSharpeRatio with the Portfolio object to find allocations with the maximum Sharpe ratio for the following portfolios:
+Note that $\Omega$ does not necessarily need to be a diagonal matrix. The investment analyst can choose the structure of $\Omega$ to account for their uncertainties in the views.
 
-%Portfolio with asset mean and covariance from historical asset returns
+Under the previous assumption $r\approx\mathcal{N}(\mu,\Sigma)$, it follows that
+\begin{equation}
+q = P\cdot \mu + \epsilon,  \epsilon\approx\mathcal{N}(0, \Omega),  \Omega=\text{diag}(\omega_1, \omega_2,\ldots,\omega_v)
+\end{equation}
 
-%Portfolio with blended asset return and covariance from the Black-Litterman model
+%\subsubsection{The Bayesian Definition of the Black-Litterman Model}
+Based on Bayesian statistics, it is known that: $posterior\propto likelihood∗prior$.
+In the context of the Black-Litterman model this is expressed as $f(\mu∣q)\propto(q∣\mu)\cdot f(\mu)$, where each Bayesian term is defined as follows
+\begin{itemize}
+  \item The likelihood is how likely it is for the views to happen given $\mu$ and is expressed as $f(q∣\mu)\propto\exp[−\frac{1}{2}(P\mu-q)^T\Omega^{-1}(P\mu−q)]$.
+  \item The prior assumes the prior knowledge that $\mu\approx\mathcal{N}(\pi, C)$ and is expressed as $f(\mu)\propto\exp[−\frac{1}{2}(\mu−\pi)^T C^{-1}(\mu−\pi)]$
+  \item The posterior is the distribution of $\mu$ given views and is expressed as $f(\mu∣q)\propto\exp[−\frac{1}{2}(P\mu−q)^T \Omega^{-1}(P\mu−q)−\frac{1}{2}(\mu−\pi)^T C^{-1}(\mu−\pi)]$.
+\end{itemize}
 
-%port = Portfolio('NumAssets', numAssets, 'lb', 0, 'budget', 1, 'Name', 'Mean Variance');
-%port = setAssetMoments(port, mean(assetRetns.Variables), Sigma);
-%wts = estimateMaxSharpeRatio(port);
-%
-%portBL = Portfolio('NumAssets', numAssets, 'lb', 0, 'budget', 1, 'Name', 'Mean Variance with Black-Litterman');
-%portBL = setAssetMoments(portBL, mu_bl, Sigma + cov_mu);  
-%wtsBL = estimateMaxSharpeRatio(portBL);
-%
-%ax1 = subplot(1,2,1);
-%idx = wts>0.001;
-%pie(ax1, wts(idx), assetNames(idx));
-%title(ax1, port.Name ,'Position', [-0.05, 1.6, 0]);
-%
-%ax2 = subplot(1,2,2);
-%idx_BL = wtsBL>0.001;
-%pie(ax2, wtsBL(idx_BL), assetNames(idx_BL));
-%title(ax2, portBL.Name ,'Position', [-0.05, 1.6, 0]);
-%
-%
-%table(assetNames', wts, wtsBL, 'VariableNames', ["AssetName", "Mean_Variance", ...
-%"Mean_Variance_with_Black_Litterman"])
-%ans=7×3 table
-%AssetName    Mean_Variance    Mean_Variance_with_Black_Litterman
-%_________    _____________    __________________________________
-%
-%"AA"         6.5494e-11                     0.1115             
-%"AIG"        6.6964e-12                    0.23314             
-%"WMT"        2.6063e-12                   0.098048             
-%"MSFT"         0.059393                    0.15824             
-%"BA"            0.32068                    0.10748             
-%"GE"         7.3366e-10                     0.1772             
-%"IBM"           0.61993                    0.11439             
+As previously stated, the posterior distribution of $\mu$ is also a normal distribution. By completing the squares, you can derive the posterior mean and covariance as
+\begin{equation}
+  \mu=[P^T\Omega^{-1}P+C^{-1}]^{-1}[P^T\Omega^{-1}q+C^{-1}\pi], cov(\mu)=[P^T\Omega^{-1}P+C^{-1}]^{-1}
+\end{equation}
 
-When you use the values for the blended asset return and the covariance from the Black-Litterman model in a mean-variance optimization, the optimal allocations reflect the views of the investment analyst directly. The allocation from the Black-Litterman model is more diversified, as the pie chart shows. Also, the weights among the assets in the Black-Litterman model agree with the investment analyst views. For example, when you compare the Black-Litterman result with the plain mean-variance optimization result, you can see that the Black-Litterman result is more heavily invested in MSFT than in IBM. This is because the investment analyst has a strong view that MSFT will outperform IBM.
+Finally, by combining the Bayesian posterior distribution of $\mu$ and the model of asset returns $r\approx\mathcal{N}(\mu,\Sigma)$, you then have the posterior prediction of asset returns as $r\approx\mathcal{N}(\mu,\Sigma+cov(\mu)]$
+
+
+%###############################################################################################
+%This example shows the workflow to implement the Black-Litterman model with the Portfolio class in Financial Toolbox™. The Black-Litterman model is an asset allocation approach that allows investment analysts to incorporate subjective views (based on investment analyst estimates) into market equilibrium returns. By blending analyst views and equilibrium returns instead of relying only on historical asset returns, the Black-Litterman model provides a systematic way to estimate the mean and covariance of asset returns.
 %
-%Local Functions
-%function [wtsMarket, PI] = findMarketPortfolioAndImpliedReturn(assetRetn, benchRetn)
-%% Find the market portfolio that tracks the benchmark and its corresponding implied expected return.
-%The implied return is calculated by reverse optimization. The risk-free rate is assumed to be zero. The general formulation of a portfolio optimization is given by the Markowitz optimization problem: 
-%argmax
-%ω
-%ω
-%T
-%μ−
-%δ
-%2
-%ω
-%T
-%Σω. Here ω is an N-element vector of asset weights, μ is an N-element vector of expected asset returns, Σ is the N-by-N covariance matrix of asset returns, and δ is a positive risk aversion parameter. Given δ , in the absence of constraints, a closed form solution to this problem is ω=
-%1
-%δ
-%Σ
-%−1
-%μ. Therefore, with a market portfolio, the implied expected return is π=δΣω
-%mkt
-%.
+%In the Black-Litterman model, the blended expected return is 
+%%−
+%%μ
+%%=[P
+%%T
+%%Ω
+%%−1
+%%P+C
+%%−1
+%%]
+%%−1
+%%[P
+%%T
+%%Ω
+%%−1
+%%q+C
+%%−1
+%%π]
+%and the estimation uncertainty is
+%%cov(μ)=[P
+%%T
+%%Ω
+%%−1
+%%P+C
+%%−1
+%%]
+%%−1
+%%.
+%To use the Black-Litterman model, you must prepare the inputs: P,q ,Ω , π, and C. The inputs for P, q , and Ω are view-related and defined by the investment analyst. π is the equilibrium return and C is the uncertainty in prior belief. This example guides you to define these inputs and use the resulting blended returns in a portfolio optimization. For more information on the concept and derivation of the Black-Litterman model, see the Appendix section Black-Litterman Model under a Bayesian Framework.
 %
-%To compute an implied expected return, you need Σ,ω
-%mkt
-%,δ.
+%Define the Universe of Assets
+%The dowPortfolio.xlsx data set includes 30 assets and one benchmark. Seven assets from this data set comprise the investment universe in this example. The risk-free rate is assumed to be zero.
 %
-%1) Find Σ.
+%%T = readtable('dowPortfolio.xlsx');
+%%Define the asset universe and extract the asset returns from the price data.
+%%
+%%assetNames = ["AA", "AIG", "WMT", "MSFT", "BA", "GE", "IBM"];
+%%benchmarkName = "DJI";
+%%head(T(:,["Dates" benchmarkName assetNames]))
 %
-%Σ is calculated from historical asset returns.
+%%retnsT = tick2ret(T(:, 2:end));
+%%assetRetns = retnsT(:, assetNames);
+%%benchRetn = retnsT(:, "DJI");
+%%numAssets = size(assetRetns, 2);
 %
-%Sigma = cov(assetRetn);
-%2) Find the market portfolio.
+%Specify Views of the Market
+%The views represent the subjective views of the investment analyst regarding future market changes, expressed as
 %
-%To find the market portfolio, regress against the DJI. The imposed constraints are fully invested and long only: 
-%n
-%∑
-%i=1
-%ω
-%i
-%=1,0≤ω
-%i
-%,∀i∈{1,...,n}
+%%q =P∗μ + ε,   ε~N(0, Ω), Ω=diag(ω
+%%1
+%%,ω
+%%2
+%%,...ω
+%%v
+%%),
+%where v is total number of views. For more information, see the Appendix section Assumptions and Views. With v views and k assets, P is a v-by-k matrix, q is a v-by-1 vector, and Ω is a v-by-v diagonal matrix (representing the independent uncertainty in the views). The views do not necessarily need to be independent among themselves and the structure of Ω can be chosen to account for investment analyst uncertainties in the views [4]. The smaller the ω
+%%i
+%in Ω, the smaller the variance in the distribution of the ith view, and the stronger or more certain the investor's ith view. This example assumes three independent views.
+%%
+%%AIG is going to have 5% annual return with uncertainty 1e-3. This is a weak absolute view due to its high uncertainty.
+%%
+%%WMT is going to have 3% annual return with uncertainty 1e-3. This is a weak absolute view due to its high uncertainty.
+%%
+%%MSFT is going to outperform IBM by 5% annual return with uncertainty 1e-5. This is a strong relative view due to its low uncertainty.
 %
-%numAssets = size(assetRetn,2);
-%LB = zeros(1,numAssets);
-%Aeq = ones(1,numAssets);
-%Beq = 1;
-%opts = optimoptions('lsqlin','Algorithm','interior-point', 'Display',"off");
-%wtsMarket = lsqlin(assetRetn, benchRetn, [], [], Aeq, Beq, LB, [], [], opts);
-%3) Find δ.
+%%v = 3;  % total 3 views
+%%P = zeros(v, numAssets);
+%%q = zeros(v, 1);
+%%Omega = zeros(v);
+%%
+%%% View 1
+%%P(1, assetNames=="AIG") = 1; 
+%%q(1) = 0.05;
+%%Omega(1, 1) = 1e-3;
+%%
+%%% View 2
+%%P(2, assetNames=="WMT") = 1; 
+%%q(2) = 0.03;
+%%Omega(2, 2) = 1e-3;
+%%
+%%% View 3
+%%P(3, assetNames=="MSFT") = 1; 
+%%P(3, assetNames=="IBM") = -1; 
+%%q(3) = 0.05;
+%%Omega(3, 3) = 1e-5;
+%%Visualize the three views in table form.
+%%
+%%viewTable = array2table([P q diag(Omega)], 'VariableNames', [assetNames "View_Return" "View_Uncertainty"]) 
+%%viewTable=3×9 table
 %
-%Multiply both sides of π=δΣω
-%mkt
-%with ω
-%T
-%mkt
-%to output δ=
-%SharpeRatio
-%σ
-%m
-%. Here, the Benchmark is assumed to be maximizing the Sharpe ratio and the corresponding value is used as market Sharpe ratio. Alternatively, you can calibrate an annualized Sharpe ratio to be 0.5, which leads to shpr=0.5/sqrt(252) [1]. σ
-%m
-%is the standard deviation of the market portfolio.
+%Because the returns from dowPortfolio.xlsx data set are daily returns and the views are on the annual returns, you must convert views to be on daily returns.
 %
-%shpr = mean(benchRetn)/std(benchRetn);
-%delta = shpr/sqrt(wtsMarket'*Sigma*wtsMarket); 
-%4) Compute the implied expected return.
+%%bizyear2bizday = 1/252;
+%%q = q*bizyear2bizday; 
+%%Omega = Omega*bizyear2bizday;
+%%Estimate the Covariance from the Historical Asset Returns
+%%Σ is the covariance of the historical asset returns.
+%%
+%%Sigma = cov(assetRetns.Variables);
 %
-%Assuming that the market portfolio maximizes the Sharpe ratio, the implied return, without the effects from constraints, is computed directly as π=δΣω.
+%Define the Uncertainty C
+%The Black-Litterman model makes the assumption that the structure of C is proportional to the covariance Σ. Therefore, C=τΣ, where τ is a small constant. A smaller τ indicates a higher confidence in the prior belief of μ. The work of He and Litterman uses a value of 0.025. Other authors suggest using 1/n where n is the number of data points used to generate the covariance matrix [3]. This example uses 1/n.
+%%
+%%tau = 1/size(assetRetns.Variables, 1);
+%%C = tau*Sigma;
+%%Market Implied Equilibrium Return
 %
-%PI = delta*Sigma*wtsMarket;
-%end
-%Appendix: Black-Litterman Model Under a Bayesian Framework
-%Assumptions and Views
-%Assume that the investment universe is composed of k assets and the vector of asset returns r is modeled as a random variable, following a multivariate normal distribution r~N(μ,Σ). Σ is the covariance from historical asset returns. The unknown model parameter is the expected return μ. From the perspective of Bayesian statistics, the Black-Litterman model attempts to estimate μ by combining the investment analyst views (or "observations of the future") and some prior knowledge about μ.
+%In the absence of any views, the equilibrium returns are likely equal to the implied returns from the equilibrium portfolio holding. In practice, the applicable equilibrium portfolio holding can be any optimal portfolio that the investment analyst would use in the absence of additional views on the market, such as the portfolio benchmark, an index, or even the current portfolio [2]. In this example, you use linear regression to find a market portfolio that tracks the returns of the DJI benchmark. Then, you use the market portfolio as the equilibrium portfolio and the equilibrium returns are implied from the market portfolio. The findMarketPortfolioAndImpliedReturn function, defined in Local Functions, implements the equilibrium returns. This function takes historical asset returns and benchmark returns as inputs and outputs the market portfolio and the corresponding implied returns.
 %
-%In addition, assume the prior knowledge that μ is a normally distributed random variable μ~N(π,C) [1, 2]. In the absence of any views (observations), the prior mean π is likely to be the equilibrium returns, implied from the equilibrium portfolio holding. In practice, the applicable equilibrium portfolio holding is not necessarily the equilibrium portfolio, but rather a target optimal portfolio that the investment analyst would use in the absence of additional views on the market, such as the portfolio benchmark, an index, or even the current portfolio. C represents the uncertainty in the prior and the Black-Litterman model makes the assumption that the structure of C is τΣ. τ is a small constant, and many authors use different values. A detailed discussion about τ can be found in [3].
+%%[wtsMarket, PI] = findMarketPortfolioAndImpliedReturn(assetRetns.Variables, benchRetn.Variables);
+%%Compute the Estimated Mean Return and Covariance
+%%Use the P, q , Ω , π , and C inputs to compute the blended asset return and variance using the Black-Litterman model.
+%%
+%You can compute 
+%%−
+%%μ
+%%and cov(μ) directly by using this matrix operation:
+%%
+%%−
+%%μ
+%%=[P
+%%T
+%%Ω
+%%−1
+%%P+C
+%%−1
+%%]
+%%−1
+%%[P
+%%T
+%%Ω
+%%−1
+%%q+C
+%%−1
+%%π], cov(μ)=[P
+%%T
+%%Ω
+%%−1
+%%P+C
+%%−1
+%%]
+%%−1
+%%
+%%mu_bl = (P'*(Omega\P) + inv(C)) \ ( C\PI + P'*(Omega\q));
+%%cov_mu = inv(P'*(Omega\P) + inv(C));
 %
-%Observations are necessary to perform a statistical inference on μ. In the Black-Litterman model, the observations are views about future asset returns expressed at the portfolio level. A view is the expected return of a portfolio composed of the universe of k assets. Usually, the portfolio return has uncertainty, so an error term is added to catch the departure. Assume that there is a total of v views. For a view i, p
-%i
-%is a row vector with dimension 1 x k, and q
-%i
-%is a scalar [2].
+%Comparing the blended expected return from Black-Litterman model to the prior belief of expected return π, you find that the expected return from Black-Litterman model is indeed a mixture of both prior belief and investor views. For example, as shown in the table below, the prior belief assumes similar returns for MSFT and IBM, but in the blended expected return, MSFT has a higher return than IBM by more than 4\%. This difference is due to the imposed strong view that MSFT outperforms IBM by 5\%.
 %
-%q
-%i
-%= Ε[p
-%i
-%∗r ∣ μ]+ε
-%i 
-%,  i=1,2,...,v
+%%table(assetNames', PI*252, mu_bl*252, 'VariableNames', ["Asset_Name", ...
+%%"Prior_Belief_of_Expected_Return", "Black_Litterman_Blended_Expected_Return"])
+%%ans=7×3 table
 %
-%You can stack the v views vertically, and Ω is the covariance of the uncertainties from all views. Assume that the uncertainties are independent.
+%Portfolio Optimization and Results
+%The Portfolio object in Financial Toolbox™ implements the Markowitz mean variance portfolio optimization framework. Using a Portfolio object, you can find the efficient portfolio for a given risk or return level, and you can also maximize the Sharpe ratio.
 %
-%q = Ε[P∗r ∣ μ]+ ε,  ε~N(0, Ω),  Ω=diag(ω
-%1
-%,ω
-%2
-%,...ω
-%v
-%).
+%Use estimateMaxSharpeRatio with the Portfolio object to find allocations with the maximum Sharpe ratio for the following portfolios:
 %
-%Note that Ω does not necessarily need to be a diagonal matrix. The investment analyst can choose the structure of Ω to account for their uncertainties in the views [4].
+%%Portfolio with asset mean and covariance from historical asset returns
 %
-%Under the previous assumption r~N(μ,Σ), it follows that
+%%Portfolio with blended asset return and covariance from the Black-Litterman model
 %
-%q =P∗μ + ε,   ε~N(0, Ω), Ω=diag(ω
-%1
-%,ω
-%2
-%,...ω
-%v
-%).
+%%port = Portfolio('NumAssets', numAssets, 'lb', 0, 'budget', 1, 'Name', 'Mean Variance');
+%%port = setAssetMoments(port, mean(assetRetns.Variables), Sigma);
+%%wts = estimateMaxSharpeRatio(port);
+%%
+%%portBL = Portfolio('NumAssets', numAssets, 'lb', 0, 'budget', 1, 'Name', 'Mean Variance with Black-Litterman');
+%%portBL = setAssetMoments(portBL, mu_bl, Sigma + cov_mu);  
+%%wtsBL = estimateMaxSharpeRatio(portBL);
+%%
+%%ax1 = subplot(1,2,1);
+%%idx = wts>0.001;
+%%pie(ax1, wts(idx), assetNames(idx));
+%%title(ax1, port.Name ,'Position', [-0.05, 1.6, 0]);
+%%
+%%ax2 = subplot(1,2,2);
+%%idx_BL = wtsBL>0.001;
+%%pie(ax2, wtsBL(idx_BL), assetNames(idx_BL));
+%%title(ax2, portBL.Name ,'Position', [-0.05, 1.6, 0]);
+%%
+%%
+%%table(assetNames', wts, wtsBL, 'VariableNames', ["AssetName", "Mean_Variance", ...
+%%"Mean_Variance_with_Black_Litterman"])
+%%ans=7×3 table
+%%AssetName    Mean_Variance    Mean_Variance_with_Black_Litterman
+%%_________    _____________    __________________________________
+%%
+%%"AA"         6.5494e-11                     0.1115             
+%%"AIG"        6.6964e-12                    0.23314             
+%%"WMT"        2.6063e-12                   0.098048             
+%%"MSFT"         0.059393                    0.15824             
+%%"BA"            0.32068                    0.10748             
+%%"GE"         7.3366e-10                     0.1772             
+%%"IBM"           0.61993                    0.11439             
 %
-%The Bayesian Definition of the Black-Litterman Model
-%Based on Bayesian statistics, it is known that: posterior∝likelihood∗prior.
-%
-%
-%
-%In the context of the Black-Litterman model, posterior∝likelihood∗prior is expressed as f(μ∣q)∝ f(q∣μ)*f(μ), where each Bayesian term is defined as follows [2]:
-%
-%The likelihood is how likely it is for the views to happen given μ and is expressed as f(q∣μ)∝exp[−
-%1
-%2
-%(Pμ−q)
-%′
-%Ω
-%−1
-%(Pμ−q)].
-%
-%The prior assumes the prior knowledge that μ~N(π,C) and is expressed as f(μ)   ∝exp[−
-%1
-%2
-%(μ−π)
-%′
-%C
-%−1
-%(μ−π)].
-%
-%The posterior is the distribution of μ given views and is expressed as f(μ∣q) ∝exp[−
-%1
-%2
-%(Pμ−q)
-%′
-%Ω
-%−1
-%(Pμ−q)−
-%1
-%2
-%(μ−π)
-%′
-%C
-%−1
-%(μ−π)].
-%
-%As previously stated, the posterior distribution of μ is also a normal distribution. By completing the squares, you can derive the posterior mean and covariance as 
-%−
-%μ
-%=[P
-%T
-%Ω
-%−1
-%P+C
-%−1
-%]
-%−1
-%[P
-%T
-%Ω
-%−1
-%q+C
-%−1
-%π], cov(μ)=[P
-%T
-%Ω
-%−1
-%P+C
-%−1
-%]
-%−1
-%.
-%
-%Finally, by combining the Bayesian posterior distribution of μ and the model of asset returns r~N(μ,Σ), you then have the posterior prediction of asset returns as r~N(
-%−
-%μ
-%, Σ+cov(μ)).
-%
+%When you use the values for the blended asset return and the covariance from the Black-Litterman model in a mean-variance optimization, the optimal allocations reflect the views of the investment analyst directly. The allocation from the Black-Litterman model is more diversified, as the pie chart shows. Also, the weights among the assets in the Black-Litterman model agree with the investment analyst views. For example, when you compare the Black-Litterman result with the plain mean-variance optimization result, you can see that the Black-Litterman result is more heavily invested in MSFT than in IBM. This is because the investment analyst has a strong view that MSFT will outperform IBM.
+%%
+%%Local Functions
+%%function [wtsMarket, PI] = findMarketPortfolioAndImpliedReturn(assetRetn, benchRetn)
+%%% Find the market portfolio that tracks the benchmark and its corresponding implied expected return.
+%%The implied return is calculated by reverse optimization. The risk-free rate is assumed to be zero. The general formulation of a portfolio optimization is given by the Markowitz optimization problem: 
+%%argmax
+%%ω
+%%ω
+%%T
+%%μ−
+%%δ
+%%2
+%%ω
+%%T
+%%Σω. Here ω is an N-element vector of asset weights, μ is an N-element vector of expected asset returns, Σ is the N-by-N covariance matrix of asset returns, and δ is a positive risk aversion parameter. Given δ , in the absence of constraints, a closed form solution to this problem is ω=
+%%1
+%%δ
+%%Σ
+%%−1
+%%μ. Therefore, with a market portfolio, the implied expected return is π=δΣω
+%%mkt
+%%.
+%%
+%%To compute an implied expected return, you need Σ,ω
+%%mkt
+%%,δ.
+%%
+%%1) Find Σ.
+%%
+%%Σ is calculated from historical asset returns.
+%%
+%%Sigma = cov(assetRetn);
+%%2) Find the market portfolio.
+%%
+%%To find the market portfolio, regress against the DJI. The imposed constraints are fully invested and long only: 
+%%n
+%%∑
+%%i=1
+%%ω
+%%i
+%%=1,0≤ω
+%%i
+%%,∀i∈{1,...,n}
+%%
+%%numAssets = size(assetRetn,2);
+%%LB = zeros(1,numAssets);
+%%Aeq = ones(1,numAssets);
+%%Beq = 1;
+%%opts = optimoptions('lsqlin','Algorithm','interior-point', 'Display',"off");
+%%wtsMarket = lsqlin(assetRetn, benchRetn, [], [], Aeq, Beq, LB, [], [], opts);
+%%3) Find δ.
+%%
+%%Multiply both sides of π=δΣω
+%%mkt
+%%with ω
+%%T
+%%mkt
+%%to output δ=
+%%SharpeRatio
+%%σ
+%%m
+%%. Here, the Benchmark is assumed to be maximizing the Sharpe ratio and the corresponding value is used as market Sharpe ratio. Alternatively, you can calibrate an annualized Sharpe ratio to be 0.5, which leads to shpr=0.5/sqrt(252) [1]. σ
+%%m
+%%is the standard deviation of the market portfolio.
+%%
+%%shpr = mean(benchRetn)/std(benchRetn);
+%%delta = shpr/sqrt(wtsMarket'*Sigma*wtsMarket); 
+%%4) Compute the implied expected return.
+%%
+%%Assuming that the market portfolio maximizes the Sharpe ratio, the implied return, without the effects from constraints, is computed directly as π=δΣω.
+%%
+%%PI = delta*Sigma*wtsMarket;
+%%end
 \begin{figure}[h]
   \begin{center}
     \includegraphics[width=0.6\linewidth]{figures/replica_portfolio}
