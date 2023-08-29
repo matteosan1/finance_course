@@ -9,261 +9,45 @@
 	\maketitle
 \end{frame}
 
-\begin{frame}[fragile]{\textttdDatetime}}
-    \begin{itemize}
-      \item We will frequently use \texttt{datetime} module, which is dedicated to date and time in \texttt{python}.
-      \item In addition we rely on \texttt{dateutil.relativedelta} to perform operations on dates (dedicated Sections in the notes).
-    \end{itemize}
-\begin{ipython}
-from datetime import date
-from dateutil.relativedelta import relativedelta
+\begin{frame}{Random Variables}
+	\begin{itemize}
+		\item A random variable is a variable whose values depend on outcomes of a random phenomenon.
+        \begin{itemize}
+        \item coin toss: only two outcomes are possible: heads or tails;
+        \item random variable to represent the result of three dice rolls: it could be somewhere between 3 (1+1+1) and 18 (6+6+6).
+        \end{itemize}
 
-d = date.today()
-print (d)
-
-d1 = date(2023, 12, 25)
-print (d1)
-print ((d1 - d).days)
-print (d1.strftime('%d/%m/%Y'))
-print (d1.weekday())
-print (d + relativedelta(days=45))
-print (d + relativedelta(months=45))
-\end{ipython}
-\begin{ioutput}
-2022-09-27
-2023-12-25
-454
-25/12/2023
-0
-2022-11-11
-2026-06-27
-\end{ioutput}
+        \item Other Examples:
+        \begin{itemize}
+            \item In the corporate world, random variables can be assigned to: average price of an asset over a given time period, return on investment after a specified number of years, the estimated turnover rate at a company within the following six months. 
+            \item Risk analysts assign random variables to risk models when they want to estimate the probability of an adverse event occurring.
+        \end{itemize}
+       
+%		
+%		\begin{table}[bt]
+%			\begin{tabular}{|l|c|c|} \hline
+%				\textbf{Weekday} & \textbf{Room} & \textbf{Time} \\ \hline
+%				Monday & 1\footnotemark & 10-12 \\ \hline
+%				Tuesday & 1 & 18-19.30 \\ \hline		
+%				Wednesday & 1 & 18-19.30 \\ \hline
+%				Thursday & 13 & 10-12\\ \hline
+%			\end{tabular}
+%		\end{table}
+%		\item What about next Monday ?
+	\end{itemize}
+%	\footnotetext[1]{Except 15$^{th}$ of May Room 6}
 \end{frame}
 
-\begin{frame}[fragile]{Payment Dates Generator}
-  \begin{itemize}
-    \item Since we will need to create many lists of dates (e.g. contract payment dates) let's develop an utility that does that for us.
-    \item The function takes as input
-      \begin{itemize}
-        \item \emph{starting date} (the first date of the list);
-        \item \emph{maturity} a string like \texttt{5y} or \texttt{17m} which represents the length of the list;
-        \item \emph{tenor} string like maturity with default value of \texttt{12m}, if the maturity is not a multiple of the tenor the last period will be truncated to the last date.
-      \end{itemize}
-    \item The function returns a list of dates.
-\begin{ipython}
-!pip install --index-url https://test.pypi.org/simple finmarkets
-\end{ipython}
-
-\begin{ipython}
-from datetime import date
-from dateutil.relativedelta import relativedelta
-from finmarkets import maturity_from_str
-
-def generate_dates(start_date, maturity, tenor="1y"):
-  maturity_months = int(round(maturity_from_str(maturity), 0))
-  tenor_months = int(round(maturity_from_str(tenor), 0))
-  dates = []
-  for d in range(0, maturity_months, tenor_months):
-    dates.append(start_date + relativedelta(months=d))
-  dates.append(start_date + relativedelta(months=maturity_months))
-  return dates
-
-print (generate_dates(date.today(), "25m"))
-\end{ipython}
-\begin{ioutput}
-[datetime.date(2023, 8, 28), datetime.date(2024, 8, 28), datetime.date(2025, 8, 28), datetime.date(2025, 9, 28)]
-\end{ioutput}
-\enf{frame}
-
-\begin{frame}{Object Oriented Programming (OOP)}
-  \begin{itemize}
-  \item OOP is a programming model where programs are organized around data, or **objects**, rather than functions and logic.
-  \item Every object can be thought of as a dataset with unique attributes and behaviour.
-  \item Examples:
-    \begin{itemize}
-    \item a human being that is described by properties like name and birthday;
-    \item the \emph{abstract concepts} of a discount curve with dates and discount factor.
-    \end{itemize}
-  \end{itemize}
+\begin{frame}{Random Variables}
+	\begin{itemize}
+		\item The *variable* $x$ in an algebraic equation is an unknown value that can be calculated 
+        \begin{equation*}
+        10 + x = 13 \implies x=3
+        \end{equation*}
+        \item A \emph{random variable} $X$ has a set of values, and \textbf{any of those values could be the resulting outcome each of them with a certain probability} (probability density function PDF).
+	\end{itemize}
 \end{frame}
 
-\begin{frame}{Classes}
-  \begin{itemize}
-    \item Classes are the key ingredient of \emph{Object Oriented Programming}.
-    \item They are implemented in many modern programming language like \texttt{python}, \texttt{Java}, \texttt{C++}\ldots
-    \item In the OOP framework, classes are meant for
-      \begin{itemize}
-        \item creating objects (a particular data structure);
-        \item providing initial values for its state (member variables or attributes);
-        \item implementing their behaviour (member functions or methods).
-      \end{itemize}
-    \item \textbf{A class allows to bundle data and methods that work on that data within one single object.}
-    \item At the very end \emph{classes} are collections of functions that operate on a dataset and \emph{instances} of that class represent individual datasets (or if you prefer a *specialization* of that class).
-  \end{itemize}
-\end{frame}
-
-%![](https://drive.google.com/uc?id=1jAxUvetAM5HVv4yT_xYaFgCvxj8OEI8J)
-
-\begin{frame}{Discount Curve Class}
-  \begin{itemize}
-    \item Import the necessary modules;
-    \item then the \texttt{class} keyword followed by a name is used to start the actual definition;
-    \item define the \emph{constructor} method:
-      \begin{itemize}
-        \item it is always named as \texttt{__init__};
-        \item \textbf{as every other method in a class, takes \texttt{self} as the first argument};
-        \item then any number of parameters as desired by the programmer.
-      \end{itemize}
-    \item \texttt{__init__} allows to specify the initial state of a class by setting its attribute values;
-    \item here, talking about a possible driver, we may want to specify its name and birthday.
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Discount Curve Class}
-  \begin{itemize}
-  \item \textbf{Attributes} (characteristic data for a curve):
-    \begin{itemize}
-      \item list of pillar dates (corresponding to the given discount factors), $t_0,...,t_{n-1}$;
-      \item list of discount factors, $D(t_0),...,D(t_{n-1})$.
-    \end{itemize}
-  \item \textbf{Methods} ("behaviour" of a discount curve):
-    \begin{itemize}
-    \item one single method returning a discount factor at a given date (if necessary it must interpolate between existing factors);
-    \item the method will use a log-linear interpolation.
-    \end{itemize}
-    \begin{equation*}
-      d(t_i)=\log(D(t_i)) = \log(e^{-r(T-t_i)}) = -r(T-t_i) \;\;\textrm{where $i$ is such that}\;t_i \le t \le t_{i+1}$$  
-    \end{equation*}
-  \end{itemize}
-
-\begin{frame}{Class Definition}
-\begin{ipython}
-import numpy as np
-
-from datetime import date
-from scipy.interpolate import interp1d  
-
-class DiscountCurve:
-  def __init__(self, obs_date, pillar_dates, discount_factors):
-#      self.obs_date = obs_date
-      if obs_date not in pillar_dates:
-          pillar_dates = [obs_date] + pillar_dates
-          discount_factors = np.insert(np.array(discount_factors), 0, 1)
-      pillar_dates = [d.toordinal() for d in pillar_dates]
-      self.interpolator = interp1d(pillar_Dates, np.log(discount_factors))
-          #self.log_discount_factors = [np.log(discount_factor) for discount_factor in self.discount_factors]
-    #self.pillar_days = [(pillar_date - obs_date).days for pillar_date in self.pillar_dates]
-\end{ipython}
-\begin{itemize}
-\item Variables whose name starts with \texttt{self.} have \emph{class scope}, i.e. are available within each class method.
-\item Class attributes have to be defined as \texttt{self.variableName = param}
-\item The \texttt{self.} prefix is used to create and access every attribute or method from within the class itself.
-\end{frame}
-
-\begin{frame}{Class Instantiation}
-\begin{itemize}
-  \item Now that we have the class definition that represents a \emph{generic} discount curve we can specialized it to some \emph{real} curve.
-  \item When \emph{instantiating} a class, \texttt{python} first calls the \texttt{__init__} method and initializes the attributes with the parameter we are passing.
-  \item \textbf{To access class attributes and methods the dot (.) operator has to be used.}
-\begin{ipython}
-from finmarkets import generate_dates
-
-pillars = generate_dates(date.today(), "5y")
-dfs = [1, 0.98, 0.97, 0.96, 0.95, 0.94]      
-dc = DiscountCurve(date.today, pillars, dfs)
-print (dc.interpolator.x) # pillars
-print (dc.interpolator.y) # log dfs
-\end{ipython}
-\begin{ioutput}
-<class '__main__.Driver'>
-Matteo
-1974-10-20
-\end{iotuput}
-\end{itemize}
-\end{frame}
-
-\begin{frame}{Class Methods}
-  \begin{itemize}
-  \item We haven't yet defined any \emph{curve behaviour}, so let's add a methods computing the discount factor at a given datep.
-    \begin{iptyhon}
-import numpy as np
-
-from datetime import date
-from scipy.interpolate import interp1d  
-
-class DiscountCurve:
-  def __init__(self, obs_date, pillar_dates, discount_factors):
-      if obs_date not in pillar_dates:
-          pillar_dates = [obs_date] + pillar_dates
-          discount_factors = np.insert(np.array(discount_factors), 0, 1)
-      pillar_dates = [d.toordinal() for d in pillar_dates]
-      self.interpolator = interp1d(pillar_Dates, np.log(discount_factors))
-
-  def df(self, d):
-      d_to = d.toordinal()   
-      if d_to < self.interpolator.x[0] or d_tp > self.interpolator.y[-1]:
-            print (f"Cannot extrapolate discount factors (date: {d}).")
-            return None
-        return np.exp(self.interpolator(d_to)
-\end{ipython}
-
-%* **As the problem complexity increases more lists and helper functions are needed with the latter approach and soon the program becomes difficult to be maintained.**
-
-
-
-
-
-from datetime import date
-from finmarkets import generate_dates
-from scipy.interpolate import interp1d 
-
-pillars = generate_dates(date.today(), "5y")
-dfs = [1, 0.98, 0.97, 0.96, 0.95, 0.94]
-
-def df(d, pillars, dfs):
-  interp = interp1d(pillars, dfs)
-  return interp(d)
-
-print (df(date(2024, 3, 15), pillars, dfs))
----------------------------------------------------------------------------
-ValueError                                Traceback (most recent call last)
-<ipython-input-6-9b45c0e87d11> in <cell line: 12>()
-     10   return interpolator(d)
-     11 
----> 12 print (df(date(2024, 3, 15), pillars, dfs))
-
-3 frames
-/usr/local/lib/python3.10/dist-packages/scipy/_lib/_util.py in _asarray_validated(a, check_finite, sparse_ok, objects_ok, mask_ok, as_inexact)
-    253     if not objects_ok:
-    254         if a.dtype is np.dtype('O'):
---> 255             raise ValueError('object arrays are not supported')
-    256     if as_inexact:
-    257         if not np.issubdtype(a.dtype, np.inexact):
-
-ValueError: object arrays are not supported
-
-pillars = generate_dates(date.today(), "5y")
-dfs = [1, 0.98, 0.97, 0.96, 0.95, 0.94]
-
-def df(d, pillars, dfs):
-  d = d.toordinal()
-  pillars = [d.toordinal() for d in pillars]
-  interp = interp1d(pillars, dfs)
-  return interp(d)
-
-print (df(date(2024, 3, 15), pillars, dfs))
-  
-0.9890710382513661  
-
-
-
-
-
-
-
-
-
-    
 \begin{frame}{Random Variables}
     \begin{columns}
     \column{0.3\textwidth}
@@ -419,6 +203,7 @@ norm.rsv(size=100000)
 Measure probability to get two kings drawing randomly two cards from a deck.
 \begin{equation*}
 P_{\textrm{two kings}} = \frac{4}{40} \cdot \frac{3}{39} = \frac{1}{130} \approx 0.007692
+
 \end{equation*}
 This analytical results can be reproduced with a Monte Carlo simulation by taking a frequentist approach
 \begin{equation*}
