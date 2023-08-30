@@ -2,7 +2,7 @@
 \usetheme{afm}
 
 \title{Introduction}
-\author{\href{mailto:matteo.sani@unisi.it}{Matteo Sani}}
+\author{Matteo Sani - \href{mailto:matteo.sani@unisi.it}{matteo.sani@unisi.it}}
 
 \begin{document}
 \begin{frame}[plain]
@@ -380,7 +380,7 @@ dfs = [1, 0.98, 0.97, 0.96, 0.95, 0.94]
 print (df_v2(date(2024, 3, 15), pillars, dfs))
 \end{ipython}
 \begin{ioutput}
-0.9890710382513661
+0.9887480579548313
 \end{ioutput}
 \end{frame}
 
@@ -486,7 +486,7 @@ print (dc.interpolator.y) # log dfs
 
 \begin{frame}[fragile]{Discount Factor Method}
 \begin{ipython}
-from numpy import log
+from numpy import log, exp
 from datetime import date
 from scipy.interpolate import interp1d  
 	
@@ -504,7 +504,7 @@ class DiscountCurve:
     if dto < self.interpolator.x[0] or dto > self.interpolator.y[-1]:
       print (f"Cannot extrapolate discount factors (date: {d}).")
       return None
-    return np.exp(self.interpolator(dto)
+    return exp(self.interpolator(dto))
 \end{ipython}
 \end{frame}
 
@@ -533,8 +533,7 @@ from dateutil.relativedelta import relativedelta
 
 today = date.today()
 pillars = [today + relativedelta(months=i) for i in df['months']]
-dfs = df['dfs'].values
-dc = DiscountCurve(today, pillars, dfs)
+dc = DiscountCurve(today, pillars, df['dfs'])
 df_date = today + relativedelta(days=195)
 df0 = dc.df(df_date)
 print (f"discount factor at {df_date}: {df0:.4f}")
@@ -544,33 +543,31 @@ discount factor at 2024-03-11: 0.9903
 \end{ioutput}
 \end{frame}
 
-\begin{frame}[fragile]{Checking the Result}
-\begin{columns}
-\column{0.5\linewidth}
-\begin{ipython}
-import matplotlib.pyplot as plt
-
-plt.plot(pillars[:10], dfs[:10], 
-         marker='o', markersize=10, 
-         label="discount factors")
-plt.scatter(df_date, df0, marker='X', 
-            s=100, color='red', 
-            label='interp. df')
-plt.xticks(rotation=45)
-plt.grid(True)
-plt.legend()
-plt.show()
-\end{ipython}
-\column{0.5\linewidth}
-    \begin{figure}[h]	
-        \begin{center}
-        \includegraphics[width=1.\linewidth]{discount_interp}
-        \end{center}
-    \end{figure}
-\end{columns}
-\end{frame}
-
-
+%\begin{frame}[fragile]{Checking the Result}
+%\begin{columns}
+%\column{0.5\linewidth}
+%\begin{ipython}
+%import matplotlib.pyplot as plt
+%
+%plt.plot(pillars[:10], dfs[:10], 
+%         marker='o', markersize=10, 
+%         label="discount factors")
+%plt.scatter(df_date, df0, marker='X', 
+%            s=100, color='red', 
+%            label='interp. df')
+%plt.xticks(rotation=45)
+%plt.grid(True)
+%plt.legend()
+%plt.show()
+%\end{ipython}
+%\column{0.5\linewidth}
+%    \begin{figure}[h]	
+%        \begin{center}
+%        \includegraphics[width=1.\linewidth]{discount_interp}
+%        \end{center}
+%    \end{figure}
+%\end{columns}
+%\end{frame}
 
 \begin{frame}{Forward Rates}
   \begin{itemize}
@@ -613,58 +610,58 @@ plt.show()
   \end{itemize}
 \end{frame}
 
-\begin{frame}[fragile]{Forward Rate Class}
-\begin{ipython}
-from scipy.interpolate import interp1d
-
-class ForwardRateCurve:
-    def __init__(self, obs_date, pillars, rates):
-        self.obs_date = obs_date
-        self.pillar_days = [(p - obs_date).days/365 for p in pillars]
-        self.interpolator = interp1d(self.pillar_days, rates)
-    
-    def interp_rate(self, d):
-        d_frac = (d - self.obs_date).days/365
-        if d < self.obs_date or d_frac > self.pillar_days[-1]:
-            print (f"Cannot extrapolate rates (date: {d}).")
-            return None, None
-        else:
-            return d_frac, self.interpolator(d_frac)
-    ...
-\end{ipython}
-\end{frame}
-
-\begin{frame}[fragile]{Forward Rate Class}
-\begin{ipython}
-    ...
-    def forward_rate(self, d1, d2):
-        d1_frac, r1 = self.interp_rate(d1)
-        d2_frac, r2 = self.interp_rate(d2)
-        if d1_frac is None or d2_frac is None:
-            return None
-        else:
-            return (r2*d2_frac - r1*d1_frac)/(d2_frac - d1_frac)
-\end{ipython}
-\end{frame}
-
-\begin{frame}[fragile]{Testing the Class}
-\begin{ipython}
-from datetime import date
-
-obs_date = date(2020, 1, 1)
-pillars = [date(2020, 1, 1),
-           date(2021, 1, 1),
-           date(2022, 7, 1)]
-rates = [0.0221, 0.0241, 0.0243]
-
-fc = ForwardRateCurve(obs_date, pillars, rates)
-t1 = date(2021, 1, 1)
-t2 = date(2022, 1, 1)
-print (f"F({t1}, {t2}) = {fc.forward_rate(t1, t2):.4f}")
-\end{ipython}
-\begin{ioutput}
-F(2021-01-01, 2022-01-01) = 0.0244
-\end{ioutput}
-\end{frame}
+%\begin{frame}[fragile]{Forward Rate Class}
+%\begin{ipython}
+%from scipy.interpolate import interp1d
+%
+%class ForwardRateCurve:
+%    def __init__(self, obs_date, pillars, rates):
+%        self.obs_date = obs_date
+%        pillars = [(p - obs_date).days/365 for p in pillars]
+%        self.interpolator = interp1d(pillars, rates)
+%    
+%    def interp_rate(self, d):
+%        d_frac = (d - self.obs_date).days/365
+%        if d < self.obs_date or d_frac > self.interpolator.x[-1]:
+%            print (f"Cannot extrapolate rates (date: {d}).")
+%            return None, None
+%        else:
+%            return d_frac, self.interpolator(d_frac)
+%    ...
+%\end{ipython}
+%\end{frame}
+%
+%\begin{frame}[fragile]{Forward Rate Class}
+%\begin{ipython}
+%    ...
+%    def forward_rate(self, d1, d2):
+%        d1_frac, r1 = self.interp_rate(d1)
+%        d2_frac, r2 = self.interp_rate(d2)
+%        if d1_frac is None or d2_frac is None:
+%            return None
+%        else:
+%            return (r2*d2_frac - r1*d1_frac)/(d2_frac - d1_frac)
+%\end{ipython}
+%\end{frame}
+%
+%\begin{frame}[fragile]{Testing the Class}
+%\begin{ipython}
+%from datetime import date
+%
+%obs_date = date(2020, 1, 1)
+%pillars = [date(2020, 1, 1),
+%           date(2021, 1, 1),
+%           date(2022, 7, 1)]
+%rates = [0.0221, 0.0241, 0.0243]
+%
+%fc = ForwardRateCurve(obs_date, pillars, rates)
+%t1 = date(2021, 1, 1)
+%t2 = date(2022, 1, 1)
+%print (f"F({t1}, {t2}) = {fc.forward_rate(t1, t2):.4f}")
+%\end{ipython}
+%\begin{ioutput}
+%F(2021-01-01, 2022-01-01) = 0.0244
+%\end{ioutput}
+%\end{frame}
 
 \end{document}

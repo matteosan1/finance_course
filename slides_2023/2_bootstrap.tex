@@ -27,20 +27,21 @@
 \begin{frame}{OIS Valuation}
 \begin{itemize}
 \item To compute the NPV of such products it is necessary to sum the discounted values of each leg cash flows (full derivation in the notes)
-\begin{tabular}{|c|c|}
-\hline
- Floating Leg & Fixed Leg \\
-\hline
-$\mathrm{NPV}_{\mathrm{float}} = N \cdot [D_{\mathrm{OIS}}(d_0) - D_{\mathrm{OIS}}(d_n)]$ & $\mathrm{NPV}_{\mathrm{fixed}} = N\cdot K\cdot \sum_{i=1}^{n}D_{\mathrm{OIS}}(d_{i})\frac{d_i - d_{i-1}}{360}$ \\
-\hline
-\end{tabular}
-\\\vspace{0.05cm}
-where $D_{\mathrm{OIS}}(d)$ is the discount factors implied by OIS prices (\textbf{we will see how to derive it}).
-\item We will always look at these products from the point of view of the \emph{receiver of the floating leg}
+  \renewcommand{\arraystretch}{1.2}
+  \begin{tabular}{|c|c|}
+    \hline
+    Floating Leg & Fixed Leg \\
+    \hline
+    $\mathrm{NPV}_{\mathrm{float}} = N \cdot [D_{\mathrm{OIS}}(d_0) - D_{\mathrm{OIS}}(d_n)]$ & $\mathrm{NPV}_{\mathrm{fixed}} = N\cdot K\cdot \sum_{i=1}^{n}D_{\mathrm{OIS}}(d_{i})\frac{d_i - d_{i-1}}{360}$ \\
+    \hline
+  \end{tabular}
+  \\\vspace{0.05cm}
+where $D_{\mathrm{OIS}}(d)$ is the discount factor implied by OIS prices (\textbf{we will see how to derive it}).
+\item We always look at OIS from \emph{receiver of the floating leg} view
 \begin{equation}
 \mathrm{NPV}_{\mathrm{OIS}} = \mathrm{NPV}_{\mathrm{float}} - \mathrm{NPV}_{\mathrm{fixed}}
 \end{equation}
-\item The $\frac{1}{360}$ fraction appears because €STR rates are quoted using the ACT/360 day-count convention:
+\item $\frac{1}{360}$ factor appears since €STR rates are quoted with ACT/360
 \begin{itemize} 
   \item other currencies might have different conventions;  
   \item in addition we are making the simplifying assumption of ignoring weekends and holidays: each overnight rate is valid for only one day.
@@ -131,7 +132,7 @@ where $D_{\mathrm{OIS}}(d)$ is the discount factors implied by OIS prices (\text
 %
 %OIS NPV: -2096.44
 
-\begin{frame}{Discount Factor Determination (Bootstrap)}
+\begin{frame}{Discount Factor Determination}
 \begin{itemize}
 \item Our ultimate goal is to take a series of Overnight Index Swap quotations, and determine the discount factors implied by their prices. 
 \item The employed technique is called \emph{bootstrap}: this is the ABC of financial mathematics, since you always need a discount curve to price a contract.
@@ -181,9 +182,9 @@ where $D_{\mathrm{OIS}}(d)$ is the discount factors implied by OIS prices (\text
  \begin{ipython}
 import numpy as np
 np.roots([1, 2, -0.103030])
- \end{ipython}
- \begin{ioutput}
- array([-2.05025235,  0.05025235])
+\end{ipython}
+\begin{ioutput}
+array([-2.05025235,  0.05025235])
 \end{ioutput}
 \item From the third year on we get equation of third order (or more) which are not easily analitically solvable (fifth year):
  \begin{equation*}
@@ -266,46 +267,58 @@ where $r_i$ are the unknown spot rates and $p_i$ the market quotes of the consid
  \item The iterative procedure we have applied before exploits the first equation to find $r_1 = f_1^{-1}(p_1)$, the second to find $r_2 = f_2^{-1}(r_1, p_2)$ and so on...
 \end{itemize}
 \end{frame} 
- 
-\begin{frame}{Minimization Algorithm}
-    \begin{itemize}
- 	\item Find the dimensions that will minimize the costs to manufacture a cylindrical can of volume $330~\mathrm{cm}^3\;(33~\mathrm{cl})$:
-   	 cheaper can $\rightarrow$ less aluminium $\rightarrow$ smaller surface given the volume.
-   	 \begin{columns}
-   	 	\column{0.5\linewidth}
- 	\begin{figure}[htb]
- 		\begin{center}
- 			\includegraphics[width=0.40\linewidth]{cylinder}
- 		\end{center}
- 	\end{figure}
- \column{0.5\linewidth}
- 	\begin{equation*}
- 	S(r, h) = 2\pi rh + 2\cdot(\pi r^2)
- \end{equation*}
- 	\item The volume is fixed to $330~\mathrm{cm}^3$ so we can remove $h$ from the previous equation:
- 	\begin{equation*}
- 	V = \pi r^2 h = 330\quad\implies h = \cfrac{330}{\pi r^2}
- 	\end{equation*}
- \end{columns}
-	\item The surface function to be minimized is:
-	\begin{equation*}
-	S(r) = 2\pi rh + 2\cdot(\pi r^2) = \cfrac{2\cdot 330}{r} + 2\cdot(\pi r^2) 
-\end{equation*}
-\end{itemize}
+
+\begin{frame}{Bootstrap as Minimization Problem}
+  \begin{itemize}
+    \item The previous algorithm can be simplified (and automitized) by seeking for a particular vector of rates $\mathbf{\hat{r}} = (\hat{r_1}, \hat{r_2}, \hat{r_3},\ldots)$ which solves the following equation:
+      \begin{equation}
+        F = f_1^2(\hat{r}_1,p_1) + f_2^2(\hat{r}_1, \hat{r}_2,p_2) + f_3^2(\hat{r}_1, \hat{r}_2, \hat{r}_3,p_3) + f_4^2(\hat{r}_1, \hat{r}_2, \hat{r}_3, \hat{r}_4,p_4) + \ldots = 0
+      \end{equation}
+    \item Under this terms the bootstrap technique can be considered as a \emph{minimization problem};
+    \item we need to find $\mathbf{\hat{r}}$ which makes $F$ as close as possible to 0;
+    \item notice that each $f_i$ is squared since we want all of them to be minimized at the same time and not only $F$ globally (without the squared there may be cancellation effects between the terms of the sum).
+  \end{itemize}
 \end{frame}
 
-\begin{frame}{Minimization Algorithm}
- \begin{enumerate}
-  \item define an \emph{objective function} i.e. the function that is actually minimized to reach our goal (in this example the can area function);
-  \item  set the initial value of the unknown parameters and their range of variability; we are going to start with $r=1~\mathrm{cm}$ and let it varies between $1~\textrm{mm}$ and $1~\textrm{m}$;
-  \item finally run the algorithm (\texttt{scipy.optimize.minimize}):
-  \begin{itemize}
-     \item compute the objective function value;
-     \item move the parameter values ($r$ in our example) to find a smaller value of the objective function (e.g. following the derivative direction w.r.t. each parameter); in case constraints are defined, they will be considered when the parameter values are varied;
-     \item repeat until further variations of the values won’t change significantly the objective function (i.e. we have found a minimum of the function so the minimization process is completed !).
-    \end{itemize}
-\end{enumerate}
-\end{frame}
+%\begin{frame}{Minimization Algorithm}
+%    \begin{itemize}
+% 	\item Find the dimensions that will minimize the costs to manufacture a cylindrical can of volume $330~\mathrm{cm}^3\;(33~\mathrm{cl})$:
+%   	 cheaper can $\rightarrow$ less aluminium $\rightarrow$ smaller surface given the volume.
+%   	 \begin{columns}
+%   	 	\column{0.5\linewidth}
+% 	\begin{figure}[htb]
+% 		\begin{center}
+% 			\includegraphics[width=0.40\linewidth]{cylinder}
+% 		\end{center}
+% 	\end{figure}
+% \column{0.5\linewidth}
+% 	\begin{equation*}
+% 	S(r, h) = 2\pi rh + 2\cdot(\pi r^2)
+% \end{equation*}
+% 	\item The volume is fixed to $330~\mathrm{cm}^3$ so we can remove $h$ from the previous equation:
+% 	\begin{equation*}
+% 	V = \pi r^2 h = 330\quad\implies h = \cfrac{330}{\pi r^2}
+% 	\end{equation*}
+% \end{columns}
+%	\item The surface function to be minimized is:
+%	\begin{equation*}
+%	S(r) = 2\pi rh + 2\cdot(\pi r^2) = \cfrac{2\cdot 330}{r} + 2\cdot(\pi r^2) 
+%\end{equation*}
+%\end{itemize}
+%\end{frame}
+%
+%\begin{frame}{Minimization Algorithm}
+% \begin{enumerate}
+%  \item define an \emph{objective function} i.e. the function that is actually minimized to reach our goal (in this example the can area function);
+%  \item  set the initial value of the unknown parameters and their range of variability; we are going to start with $r=1~\mathrm{cm}$ and let it varies between $1~\textrm{mm}$ and $1~\textrm{m}$;
+%  \item finally run the algorithm (\texttt{scipy.optimize.minimize}):
+%  \begin{itemize}
+%     \item compute the objective function value;
+%     \item move the parameter values ($r$ in our example) to find a smaller value of the objective function (e.g. following the derivative direction w.r.t. each parameter); in case constraints are defined, they will be considered when the parameter values are varied;
+%     \item repeat until further variations of the values won’t change significantly the objective function (i.e. we have found a minimum of the function so the minimization process is completed !).
+%    \end{itemize}
+%\end{enumerate}
+%\end{frame}
 
 \begin{frame}{Back to OIS Bootstrap}
 \begin{itemize} 
