@@ -151,22 +151,24 @@ Similarly to discount curves we implement a class to handle credit curves, \text
 \end{finmarkets}
 
 \begin{ipython}
-from numpy import interp
+from scipy.interpolate import interp1d
 from dateutil.relativedelta import relativedelta
 	
 class CreditCurve:
-    def __init__(self, obs_date, pillar_dates, ndps):
+    def __init__(self, obs_date, pillars, ndps):
         self.obs_date = obs_date
-        self.pillar_dates = [obs_date] + pillar_dates
-        self.pillar_days = [(pd - obs_date).days for pd in self.pillar_dates]
-        self.ndps = np.insert(np.array(ndps), 0, 1)
+        if obs_date not in pillars:
+	        pillars = [obs_date] + pillars
+	        ndps = [1] + ndps
+        pillars = [(pd - obs_date).days for pd in pillars]
+        self.inter = interp1d(pillars, ndps)
 	
     def ndp(self, d):
         d_days = (d - self.obs_date).days
-        if d < self.obs_date or d_days > self.pillar_days[-1]:
-            print ("Cannot extrapolate survival probabilities (date: {}).".format(d))
+        if d < self.obs_date or d_days > self.inter.x[-1]:
+            print (f"Cannot extrapolate survival probabilities (date: {d}).")
             return None
-        return np.interp(d_days, self.pillar_days, self.ndps)
+        return self.inter(d_days)
 	
     def hazard(self, d):
         ndp_1 = self.ndp(d)
@@ -345,9 +347,9 @@ credit_curve = CreditCurve(obs_date, pillars, [0.7])
 cds = CreditDefaultSwap(1e6, start_date, "3y", 0.03)
 
 # check default leg, premium leg and npv
-print ("Premium leg: {:.2f} EUR".format(cds.npv_premium_leg(dc, credit_curve)))
-print ("Default leg: {:.2f} EUR".format(cds.npv_default_leg(dc, credit_curve)))
-print ("NPV: {:.2f} EUR".format(cds.npv(dc, credit_curve)))
+print (f"Premium leg: {cds.npv_premium_leg(dc, credit_curve):.2f} EUR")
+print (f"Default leg: {cds.npv_default_leg(dc, credit_curve):.2f} EUR")
+print (f"NPV: {cds.npv(dc, credit_curve):.2f} EUR")
 \end{ipython}
 \begin{ioutput}
 Premium leg: 303120.25 EUR
@@ -607,7 +609,7 @@ Hazard rate can be estimated from the market quote of a CDS. Going back to the d
   \end{aligned}
 \end{equation}
 
-If the survival probability is described accoring to a Poisson process $P_{\textrm{sur}}(t) = e^{−\lambda t}$ its infinitesimal variation in a time interval $dt$ can be expressed as
+If the survival probability is described according to a Poisson process $P_{\textrm{sur}}(t) = e^{−\lambda t}$ its infinitesimal variation in a time interval $dt$ can be expressed as
 \begin{equation*}
   dP_{\textrm{sur}}(t) = -\lambda e^{−\lambda t} dt = -\lambda P_{\textrm{sur}}(t) dt 
 \end{equation*}
@@ -661,7 +663,7 @@ cdswaps = []
 pillar_dates = []
 for i in range(len(mq)):
     cds = CreditDefaultSwap(1e6, start_date,
-                            "{}m".format(mq.loc[i, 'months']),
+                            f"{mq.loc[i, 'months']}m",
                             mq.loc[i, 'quotes'])
     cdswaps.append(cds)
     pillar_dates.append(cds.payment_dates[-1])
@@ -700,7 +702,7 @@ After the minimization we get the list of non-default probabilities correspondin
 \begin{ipython}
 cc = CreditCurve(obs_date, pillar_dates, r.x)
 for i in range(len(pillar_dates)):
-    print ("S(t<{}): {:.2f}".format(pillar_dates[i], r.x[i]))
+    print (f"S(t<{pillar_dates[i]}): {r.x[i]:.2f}")
 \end{ipython}
 \begin{ioutput}
 S(t<2024-01-13): 0.91
