@@ -30,7 +30,7 @@ Firstly, let's consider the case of a non-dividend paying stock. Imagine a portf
 
 Let be 
 \begin{itemize}
-\item $Q_S$, the number of stoks, each of them with value $S$;
+\item $Q_S$, the number of stocks, each of them with value $S$;
 \item $Q_V$, number of options, each of them with value $V$;
 \item $B$, cash on the account, which is continuously compounded using the risk-free rate $r$.
 \end{itemize}
@@ -146,7 +146,7 @@ In order to have $A=B=0$ to get the heat equation we set
 \end{cases}
 \end{equation}
 
-The solution $u(x,\tau)$ of the resulting PDE is given by hte \emph{Green formula}
+The solution $u(x,\tau)$ of the resulting PDE is given by the \emph{Green formula}
 \begin{equation}
 u(x, \tau)=\cfrac{1}{\sqrt{2\sigma^2\pi\tau}}\int^{+\infty}_{-\infty}e^{-\frac{(x-s)^2}{2\sigma^2\tau}}u(s,0)ds
 \end{equation}
@@ -196,7 +196,7 @@ Figure~\ref{fig:call_option} shows the option price as a function of the stock p
 \section{Asian Options}
 \label{sec:asian_option}
 
-An Asian option is a special option where the payoff is determined by \emph{the average underlying price over some pre-set period of time}; 
+An Asian option is a special option where the payoff is determined by \emph{the average underlying price over some preset-set period of time}; 
 Asian options are thus one of the basic forms of exotic options. 
 
 One advantage of Asian options is that these reduce the risk of market manipulation of the underlying instrument at maturity.
@@ -244,13 +244,13 @@ d_1&={\log {S_0 \over {K}}+\left(b+{1 \over {2}}\sigma _A^2\right)T \over {\sigm
 \end{aligned}
 \end{equation}
 
-The Aritmethic average type instead needs to be estimated with Monte Carlo techniques.
+The arithmetic average type instead needs to be estimated with Monte Carlo techniques.
 
 \subsection{Asian Option Pricing with Monte Carlo}
 
 Every time a Monte Carlo simulation is run, we get an estimate of the quantity we are trying to calculate. It is desirable to quantify how precise our estimate is through the "standard error" (i.e. confidence interval).
 
-As we have seen above an obvious way to make our estimate more precise is to increase the number $N$ of simuations (e.g. random price paths) considered. However this can be computationally expensive therefore different methods have been developed, namely \emph{variance reduction techniques}.
+As we have seen above an obvious way to make our estimate more precise is to increase the number $N$ of simulations (e.g. random price paths) considered. However this can be computationally expensive therefore different methods have been developed, namely \emph{variance reduction techniques}.
 
 \subsubsection{Antithetic Method}
 Let $\theta$ be estimated through $Y$, that is $\theta=\mathbb{E}[Y]$. Let $Y_1$ and $Y_2$ be two samples of $Y$, so the estimate is $\hat{\theta}=\frac{Y_1+Y_2}{2}$. The variance of the estimate is 
@@ -260,7 +260,7 @@ Var(\hat{\theta}) = \frac{Var(Y_1)+Var(Y_2)+2Cov(Y_1,Y_2)}{4}
 
 If $Y_1$ and $Y_2$ are i.i.d. $Var(\hat{\theta})=\frac{Var(Y)}{2}$, and if $Cov(Y_1, Y_2)<0$ the variance is reduced even more. In the extreme case where $\rho=-1$, the variance is reduced to the maximum allowed by this technique. 
 
-Since the path of the stock is defined as a geometric Brownian motion with random normal shocks, $Y_1$ can be a set of normal random numbers and $Y_2 = -Y_1$. Hence the final payoff is given by the average between two sets of payoffs computed respectiely with $Y_1$ and $Y_2$ which by construction are \emph{perfectly anti-correlated}. 
+Since the path of the stock is defined as a geometric Brownian motion with random normal shocks, $Y_1$ can be a set of normal random numbers and $Y_2 = -Y_1$. Hence the final payoff is given by the average between two sets of payoffs computed respectively with $Y_1$ and $Y_2$ which by construction are \emph{perfectly anti-correlated}. 
 
 \subsubsection{Control Variate Variance Reduction Method}
 
@@ -274,7 +274,7 @@ In our case given that $X$ is the payoff of an Asian Option with Arithmetic aver
 In practice we are going to simulate a set of paths for the underlying and compute $Z$ from  $X$, $Y$ and $\mu_Y$.
 
 \begin{finmarkets}
-The following class \texttt{AsianOption} implements all the methods described above besides tha analytical pricing formula of the Geometric average Asian option.
+The following class \texttt{AsianOption} implements all the methods described above besides the analytical pricing formula of the Geometric average Asian option.
 \end{finmarkets}
 
 \begin{ipython}
@@ -329,7 +329,7 @@ class AsianOption:
     else:
       return S
 
-  def aritmethic_payoff(self, S):
+  def arithmetic_payoff(self, S):
     if self.type == 0:
       return np.maximum(0, np.mean(S, axis=0)-self.K)
     else:
@@ -343,7 +343,7 @@ class AsianOption:
 
   def simulate_naive(self, n, timesteps=252, seed=10000):
     S = self.path(n, timesteps, seed=seed)
-    payoffs = np.exp(-self.r*self.ttm) * self.aritmethic_payoff(S)
+    payoffs = np.exp(-self.r*self.ttm) * self.arithmetic_payoff(S)
     price = np.mean(payoffs)
     err = np.std(payoffs)/np.sqrt(n)
     return price, err
@@ -351,14 +351,14 @@ class AsianOption:
   def simulate_antithetic(self, n, timesteps=252, seed=10000):
     S1, S2 = self.path(n, timesteps, anti=True, seed=seed)
     S = np.exp(-self.r*self.ttm) *\\
-        (self.aritmethic_payoff(S1) + self.aritmethic_payoff(S2))/2
+        (self.arithmetic_payoff(S1) + self.aritmethic_payoff(S2))/2
     price = np.mean(S)
     err = np.std(S)/np.sqrt(n)
     return price, err
     
   def simulate_control_variate(self, n, timesteps=252, seed=10000):
     S = self.path(n, timesteps)
-    X = np.exp(-self.r*self.ttm) * self.aritmethic_payoff(S)
+    X = np.exp(-self.r*self.ttm) * self.arithmetic_payoff(S)
     Y = np.exp(-self.r*self.ttm) * self.geometric_payoff(S)
     c = -np.cov(X,Y)[0, 1]/np.var(Y)
     mu = self.geometric_price(timesteps)
