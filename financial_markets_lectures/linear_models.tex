@@ -90,190 +90,190 @@ y = \beta_1 x_1 + \beta_2 x_2 + \ldots + \beta_n x_n + \alpha + \epsilon
 
 It is crucial to keep in mind that the multiple regression model requires \emph{non-collinearity}. This means the independent variables should have a minimal correlation between them. Otherwise, it is difficult to assess the real relationship between the dependent (target) and the independent (predictors) variables.
 
-\subsection{Linear Regression Example}
-
-The Chinese Yuan (CNY) was pegged to the US Dollar (USD) prior to July 2005. Then, China announced that the exchange rate would be set with reference to a basket of other currencies, allowing for a movement of up to 0.3\% within any given day. The actual currencies and their basket weights are unannounced by China. Figure~\ref{fig:yuan_rate} reports the Yuan exchange rate to USD between 1999 and 2013.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.7\textwidth]{figures/yuan_exchange_rate}
-\caption{Yuan exchange rate to USD from January 1999 to December 2013.}
-\label{fig:yuan_rate}
-\end{figure}
-
-From an empirical point of view, there are several important questions:
-\begin{itemize}
-\item for any given period, what is the implicit reference basket for the Chinese currency ?
-\item has the reference basket changed over time ?
-\item has the Chinese currency depreciated with respect to the dollar? If so, how much and when?
-\end{itemize}
-
-A possible approach for evaluating the implicit exchange rate regime of the Yuan involves the regression of the changes in the target currency on changes in the values of possible currencies in the reference basket.
-
-Consider the dataset \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/exchange_rates.csv}{exchange\_rates.csv} containing daily currencies exchange rates in the 1999 to 2013 period (data has been fetched from the Federal Reserve Archive~\cite{bib:fred}).
-
-To apply this methodology the original dollar-based exchange rates have been converted using the Swiss Franc. This allows currency moves of the dollar to be be used to explain moves in the Yuan. The choice of Swiss Franc is consistent with evaluations with respect to a stable currency. The dataframe already has columns with daily variations.
-
-\begin{ipython}
-import pandas as pd
-
-data = pd.read_csv("exchange_rates.csv", index_col="Date")
-print (data.head())
-\end{ipython}
-\begin{ioutput}
-            DEXCHUS  DEXJPUS  DEXKOUS  DEXMAUS  DEXUSEU  DEXUSUK  DEXTHUS  \
-Date                                                                        
-1999-01-05   8.2795   111.15   1166.0      3.8   1.1760   1.6566    36.18   
-1999-01-06   8.2795   112.78   1160.0      3.8   1.1636   1.6547    36.50   
-1999-01-07   8.2798   111.69   1151.0      3.8   1.1672   1.6495    36.30   
-1999-01-08   8.2796   111.52   1174.0      3.8   1.1554   1.6405    36.45   
-...
-                ret_THB_SFR      ret_USD_SFR  
-Date                                          
-1999-01-05        -0.002599        -0.002047  
-1999-01-06        -0.002666        -0.011472  
-1999-01-07        -0.006288        -0.000794  
-1999-01-08        -0.003565        -0.007689  
-
-[5 rows x 24 columns]
-\end{ioutput}
-
-%Figure~\ref{fig:rate_variation} shows CNY and USD daily variation with respect to Swiss Franc (SFR).
+%\subsection{Linear Regression Example}
+%
+%The Chinese Yuan (CNY) was pegged to the US Dollar (USD) prior to July 2005. Then, China announced that the exchange rate would be set with reference to a basket of other currencies, allowing for a movement of up to 0.3\% within any given day. The actual currencies and their basket weights are unannounced by China. Figure~\ref{fig:yuan_rate} reports the Yuan exchange rate to USD between 1999 and 2013.
+%
 %\begin{figure}[htbp]
 %\centering
-%\includegraphics[width=0.7\textwidth]{figures/log_variation_exch}
-%\caption{Daily variation of CNY and USD exchange rates from January 1999 to December 2013 with respect to Swiss Franc.}
-%\label{fig:rate_variation}
+%\includegraphics[width=0.7\textwidth]{figures/yuan_exchange_rate}
+%\caption{Yuan exchange rate to USD from January 1999 to December 2013.}
+%\label{fig:yuan_rate}
 %\end{figure}
-
-To implement the linear regression model it can be used the \texttt{statsmodel} package. It is necessary to define the $X$ vector (i.e. the independent exchange rate variations) and $y$ (i.e. the target Yuan rate to SFR). Then add a constant to the model which represents the rate variation not correlated to other currency variations (i.e. $\alpha$).
-
-First, we fit the regression model for the period prior to July 2005 when the Chinese currency was pegged to the US dollar. 
-
-\begin{ipython}
-import statsmodels.api as sm
-
-X = df.loc[df.index < '2005-06-30' ,
-           ['ret_YEN_SFR', 'ret_EUR_SFR', 
-            'ret_GBP_SFR', 'ret_USD_SFR']]
-y = df.loc[df.index < '2005-06-30' ,'ret_CNY_SFR']
-X = sm.add_constant(X)
-
-est = sm.OLS(y, X).fit()
-print(est.summary())
-\end{ipython} 
-\begin{ioutput}
-                            OLS Regression Results                            
-==============================================================================
-Dep. Variable:            ret_CNY_SFR   R-squared:                       1.000
-Model:                            OLS   Adj. R-squared:                  1.000
-Method:                 Least Squares   F-statistic:                 3.647e+06
-Date:                Tue, 08 Nov 2022   Prob (F-statistic):               0.00
-Time:                        13:46:53   Log-Likelihood:                 13749.
-No. Observations:                1692   AIC:                        -2.749e+04
-Df Residuals:                    1687   BIC:                        -2.746e+04
-Df Model:                           4                                         
-Covariance Type:            nonrobust                                         
-===============================================================================
-                  coef    std err          t      P>|t|      [0.025      0.975]
--------------------------------------------------------------------------------
-const       -1.921e-07   1.74e-06     -0.110      0.912   -3.61e-06    3.23e-06
-ret_YEN_SFR    -0.0001      0.000     -0.477      0.633      -0.001       0.000
-ret_EUR_SFR    -0.0003      0.001     -0.379      0.705      -0.002       0.001
-ret_GBP_SFR    -0.0001      0.000     -0.224      0.823      -0.001       0.001
-ret_USD_SFR     1.0002      0.000   2545.320      0.000       0.999       1.001
-==============================================================================
-Omnibus:                      758.491   Durbin-Watson:                   2.824
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):           889538.472
-Skew:                           0.456   Prob(JB):                         0.00
-Kurtosis:                     115.324   Cond. No.                         486.
-==============================================================================
-\end{ioutput} 
-
-The most interesting (for us) part of the summary is: 
-\begin{itemize}
-\item R-squared: the closer to 1 the higher is the linear correlation between $y$ and $X$;
-\item coef: the estimate of this model parameter (the weight assigned to this feature);
-\item std err: the standard error of our estimate. From these two values we can compute the t-score of our estimate:
-\begin{equation*}
-t = \frac{\textrm{coeff}}{\textrm{std err}}
-\end{equation*}
-which we can find on the third column ($t$); 
-\item t: this value essentially provides us with a metric of how small the error is with respect to the estimated value: the larger the t-score, the smaller the error and the more confident we can be in our estimate.
-\item P>|t|: to better quantify our confidence, it’s usual to compute the p-value associated to the t-score. Under relatively common assumptions, we expect the t-score to follow a standard distribution and the probability of obtaining results at least as extreme as the value observed is simply the area under the curve to the right of the t-score value. This area is known as the p-value.
-There are some nuances to interpreting p-values but briefly, the smaller the p-value, the stronger the evidence that the value we’re estimating is different than zero (if the coefficient of a given feature is indistinguishable from zero then that feature is not relevant for our model).
-
-Typical thresholds for the p-value are:
-\begin{itemize}
-	\item $p<0.05$: moderate evidence;
-	\item $p<0.01$: strong evidence;
-	\item $p<0.001$: very strong evidence.
-\end{itemize}
-\end{itemize}
-
-In our example R-squared is 1, and the only largely significant predictor is USD (p-value 0) confirming that indeed CNY was anchored to US dollar prior July 2005.
-
-Second, we fit the regression model for the first six months following the announcement of the change in currency policy.
-
-\begin{ipython}
-X = df.loc[(df.index > '2005-07-01') & (df.index < '2005-12-31'),
-           ['ret_YEN_SFR', 'ret_EUR_SFR', 
-            'ret_GBP_SFR', 'ret_USD_SFR',
-            'ret_WON_SFR', 'ret_MYR_SFR', 
-            'ret_THB_SFR']]
-y = df.loc[(df.index > '2005-07-01') & (df.index < '2005-12-31'),
-           'ret_CNY_SFR']
-
-X = sm.add_constant(X)
-est = sm.OLS(y, X).fit()
-print(est.summary())
-\end{ipython}
-\begin{ioutput}
-                            OLS Regression Results                            
-==============================================================================
-Dep. Variable:            ret_CNY_SFR   R-squared:                       0.949
-Model:                            OLS   Adj. R-squared:                  0.946
-Method:                 Least Squares   F-statistic:                     326.3
-Date:                Tue, 08 Nov 2022   Prob (F-statistic):           8.41e-76
-Time:                        13:53:28   Log-Likelihood:                 667.58
-No. Observations:                 130   AIC:                            -1319.
-Df Residuals:                     122   BIC:                            -1296.
-Df Model:                           7                                         
-Covariance Type:            nonrobust                                         
-===============================================================================
-                  coef    std err          t      P>|t|      [0.025      0.975]
--------------------------------------------------------------------------------
-const          -0.0001      0.000     -0.920      0.359      -0.000       0.000
-ret_YEN_SFR    -0.0097      0.037     -0.262      0.794      -0.083       0.063
-ret_EUR_SFR     0.0583      0.092      0.636      0.526      -0.123       0.240
-ret_GBP_SFR    -0.0306      0.044     -0.688      0.493      -0.119       0.057
-ret_USD_SFR     0.2122      0.148      1.433      0.154      -0.081       0.505
-ret_WON_SFR     0.1790      0.036      5.041      0.000       0.109       0.249
-ret_MYR_SFR     0.7373      0.142      5.178      0.000       0.455       1.019
-ret_THB_SFR    -0.0655      0.059     -1.110      0.269      -0.182       0.051
-==============================================================================
-Omnibus:                      195.464   Durbin-Watson:                   2.331
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):            15756.757
-Skew:                          -5.874   Prob(JB):                         0.00
-Kurtosis:                      55.639   Cond. No.                     1.57e+03
-==============================================================================
-\end{ioutput}
-
-R-squared is quite close to 1 so there is some correlation between $y$ and $X$.
-During this six-month period, there is evidence of the Yuan departing from a US Dollar peg. The exchange rates with the statistically significant regression parameters (lowest p-values) are for the Korean Won (WON) and the Malaysian Ringgit (MYR).
-
-Similar regressions can be performed to examine for further changes in the implicit reference basket from 2006 through 2013.
-
-Finally it is possible to measure the annualized trend in the Yuan exchange rate relative to the other currencies in the studied period. The annualization is performed on the $\alpha$ coefficient which is the only one not related to other currency variations (i.e. the idiosyncratic part of the rate variation).
-
-\begin{ipython}
-print (f"{(1+est.params[0])**126-1:.4f}")
-\end{ipython}
-\begin{ioutput}
--0.0150
-\end{ioutput}
-\noindent
-So the Yuan depreciated in the studied period.
+%
+%From an empirical point of view, there are several important questions:
+%\begin{itemize}
+%\item for any given period, what is the implicit reference basket for the Chinese currency ?
+%\item has the reference basket changed over time ?
+%\item has the Chinese currency depreciated with respect to the dollar? If so, how much and when?
+%\end{itemize}
+%
+%A possible approach for evaluating the implicit exchange rate regime of the Yuan involves the regression of the changes in the target currency on changes in the values of possible currencies in the reference basket.
+%
+%Consider the dataset \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/exchange_rates.csv}{exchange\_rates.csv} containing daily currencies exchange rates in the 1999 to 2013 period (data has been fetched from the Federal Reserve Archive~\cite{bib:fred}).
+%
+%To apply this methodology the original dollar-based exchange rates have been converted using the Swiss Franc. This allows currency moves of the dollar to be be used to explain moves in the Yuan. The choice of Swiss Franc is consistent with evaluations with respect to a stable currency. The dataframe already has columns with daily variations.
+%
+%\begin{ipython}
+%import pandas as pd
+%
+%data = pd.read_csv("exchange_rates.csv", index_col="Date")
+%print (data.head())
+%\end{ipython}
+%\begin{ioutput}
+%            DEXCHUS  DEXJPUS  DEXKOUS  DEXMAUS  DEXUSEU  DEXUSUK  DEXTHUS  \
+%Date                                                                        
+%1999-01-05   8.2795   111.15   1166.0      3.8   1.1760   1.6566    36.18   
+%1999-01-06   8.2795   112.78   1160.0      3.8   1.1636   1.6547    36.50   
+%1999-01-07   8.2798   111.69   1151.0      3.8   1.1672   1.6495    36.30   
+%1999-01-08   8.2796   111.52   1174.0      3.8   1.1554   1.6405    36.45   
+%...
+%                ret_THB_SFR      ret_USD_SFR  
+%Date                                          
+%1999-01-05        -0.002599        -0.002047  
+%1999-01-06        -0.002666        -0.011472  
+%1999-01-07        -0.006288        -0.000794  
+%1999-01-08        -0.003565        -0.007689  
+%
+%[5 rows x 24 columns]
+%\end{ioutput}
+%
+%%Figure~\ref{fig:rate_variation} shows CNY and USD daily variation with respect to Swiss Franc (SFR).
+%%\begin{figure}[htbp]
+%%\centering
+%%\includegraphics[width=0.7\textwidth]{figures/log_variation_exch}
+%%\caption{Daily variation of CNY and USD exchange rates from January 1999 to December 2013 with respect to Swiss Franc.}
+%%\label{fig:rate_variation}
+%%\end{figure}
+%
+%To implement the linear regression model it can be used the \texttt{statsmodel} package. It is necessary to define the $X$ vector (i.e. the independent exchange rate variations) and $y$ (i.e. the target Yuan rate to SFR). Then add a constant to the model which represents the rate variation not correlated to other currency variations (i.e. $\alpha$).
+%
+%First, we fit the regression model for the period prior to July 2005 when the Chinese currency was pegged to the US dollar. 
+%
+%\begin{ipython}
+%import statsmodels.api as sm
+%
+%X = df.loc[df.index < '2005-06-30' ,
+%           ['ret_YEN_SFR', 'ret_EUR_SFR', 
+%            'ret_GBP_SFR', 'ret_USD_SFR']]
+%y = df.loc[df.index < '2005-06-30' ,'ret_CNY_SFR']
+%X = sm.add_constant(X)
+%
+%est = sm.OLS(y, X).fit()
+%print(est.summary())
+%\end{ipython} 
+%\begin{ioutput}
+%                            OLS Regression Results                            
+%==============================================================================
+%Dep. Variable:            ret_CNY_SFR   R-squared:                       1.000
+%Model:                            OLS   Adj. R-squared:                  1.000
+%Method:                 Least Squares   F-statistic:                 3.647e+06
+%Date:                Tue, 08 Nov 2022   Prob (F-statistic):               0.00
+%Time:                        13:46:53   Log-Likelihood:                 13749.
+%No. Observations:                1692   AIC:                        -2.749e+04
+%Df Residuals:                    1687   BIC:                        -2.746e+04
+%Df Model:                           4                                         
+%Covariance Type:            nonrobust                                         
+%===============================================================================
+%                  coef    std err          t      P>|t|      [0.025      0.975]
+%-------------------------------------------------------------------------------
+%const       -1.921e-07   1.74e-06     -0.110      0.912   -3.61e-06    3.23e-06
+%ret_YEN_SFR    -0.0001      0.000     -0.477      0.633      -0.001       0.000
+%ret_EUR_SFR    -0.0003      0.001     -0.379      0.705      -0.002       0.001
+%ret_GBP_SFR    -0.0001      0.000     -0.224      0.823      -0.001       0.001
+%ret_USD_SFR     1.0002      0.000   2545.320      0.000       0.999       1.001
+%==============================================================================
+%Omnibus:                      758.491   Durbin-Watson:                   2.824
+%Prob(Omnibus):                  0.000   Jarque-Bera (JB):           889538.472
+%Skew:                           0.456   Prob(JB):                         0.00
+%Kurtosis:                     115.324   Cond. No.                         486.
+%==============================================================================
+%\end{ioutput} 
+%
+%The most interesting (for us) part of the summary is: 
+%\begin{itemize}
+%\item R-squared: the closer to 1 the higher is the linear correlation between $y$ and $X$;
+%\item coef: the estimate of this model parameter (the weight assigned to this feature);
+%\item std err: the standard error of our estimate. From these two values we can compute the t-score of our estimate:
+%\begin{equation*}
+%t = \frac{\textrm{coeff}}{\textrm{std err}}
+%\end{equation*}
+%which we can find on the third column ($t$); 
+%\item t: this value essentially provides us with a metric of how small the error is with respect to the estimated value: the larger the t-score, the smaller the error and the more confident we can be in our estimate.
+%\item P>|t|: to better quantify our confidence, it’s usual to compute the p-value associated to the t-score. Under relatively common assumptions, we expect the t-score to follow a standard distribution and the probability of obtaining results at least as extreme as the value observed is simply the area under the curve to the right of the t-score value. This area is known as the p-value.
+%There are some nuances to interpreting p-values but briefly, the smaller the p-value, the stronger the evidence that the value we’re estimating is different than zero (if the coefficient of a given feature is indistinguishable from zero then that feature is not relevant for our model).
+%
+%Typical thresholds for the p-value are:
+%\begin{itemize}
+%	\item $p<0.05$: moderate evidence;
+%	\item $p<0.01$: strong evidence;
+%	\item $p<0.001$: very strong evidence.
+%\end{itemize}
+%\end{itemize}
+%
+%In our example R-squared is 1, and the only largely significant predictor is USD (p-value 0) confirming that indeed CNY was anchored to US dollar prior July 2005.
+%
+%Second, we fit the regression model for the first six months following the announcement of the change in currency policy.
+%
+%\begin{ipython}
+%X = df.loc[(df.index > '2005-07-01') & (df.index < '2005-12-31'),
+%           ['ret_YEN_SFR', 'ret_EUR_SFR', 
+%            'ret_GBP_SFR', 'ret_USD_SFR',
+%            'ret_WON_SFR', 'ret_MYR_SFR', 
+%            'ret_THB_SFR']]
+%y = df.loc[(df.index > '2005-07-01') & (df.index < '2005-12-31'),
+%           'ret_CNY_SFR']
+%
+%X = sm.add_constant(X)
+%est = sm.OLS(y, X).fit()
+%print(est.summary())
+%\end{ipython}
+%\begin{ioutput}
+%                            OLS Regression Results                            
+%==============================================================================
+%Dep. Variable:            ret_CNY_SFR   R-squared:                       0.949
+%Model:                            OLS   Adj. R-squared:                  0.946
+%Method:                 Least Squares   F-statistic:                     326.3
+%Date:                Tue, 08 Nov 2022   Prob (F-statistic):           8.41e-76
+%Time:                        13:53:28   Log-Likelihood:                 667.58
+%No. Observations:                 130   AIC:                            -1319.
+%Df Residuals:                     122   BIC:                            -1296.
+%Df Model:                           7                                         
+%Covariance Type:            nonrobust                                         
+%===============================================================================
+%                  coef    std err          t      P>|t|      [0.025      0.975]
+%-------------------------------------------------------------------------------
+%const          -0.0001      0.000     -0.920      0.359      -0.000       0.000
+%ret_YEN_SFR    -0.0097      0.037     -0.262      0.794      -0.083       0.063
+%ret_EUR_SFR     0.0583      0.092      0.636      0.526      -0.123       0.240
+%ret_GBP_SFR    -0.0306      0.044     -0.688      0.493      -0.119       0.057
+%ret_USD_SFR     0.2122      0.148      1.433      0.154      -0.081       0.505
+%ret_WON_SFR     0.1790      0.036      5.041      0.000       0.109       0.249
+%ret_MYR_SFR     0.7373      0.142      5.178      0.000       0.455       1.019
+%ret_THB_SFR    -0.0655      0.059     -1.110      0.269      -0.182       0.051
+%==============================================================================
+%Omnibus:                      195.464   Durbin-Watson:                   2.331
+%Prob(Omnibus):                  0.000   Jarque-Bera (JB):            15756.757
+%Skew:                          -5.874   Prob(JB):                         0.00
+%Kurtosis:                      55.639   Cond. No.                     1.57e+03
+%==============================================================================
+%\end{ioutput}
+%
+%R-squared is quite close to 1 so there is some correlation between $y$ and $X$.
+%During this six-month period, there is evidence of the Yuan departing from a US Dollar peg. The exchange rates with the statistically significant regression parameters (lowest p-values) are for the Korean Won (WON) and the Malaysian Ringgit (MYR).
+%
+%Similar regressions can be performed to examine for further changes in the implicit reference basket from 2006 through 2013.
+%
+%Finally it is possible to measure the annualized trend in the Yuan exchange rate relative to the other currencies in the studied period. The annualization is performed on the $\alpha$ coefficient which is the only one not related to other currency variations (i.e. the idiosyncratic part of the rate variation).
+%
+%\begin{ipython}
+%print (f"{(1+est.params[0])**126-1:.4f}")
+%\end{ipython}
+%\begin{ioutput}
+%-0.0150
+%\end{ioutput}
+%\noindent
+%So the Yuan depreciated in the studied period.
 
 \section{Capital Asset Pricing Model}
 \label{sec:capm}
@@ -336,7 +336,9 @@ Consider the General Electrics (GE) stock and apply CAPM to the series of its re
 \label{fig:ge_returns}
 \end{figure}
 
-Using \texttt{statsmodel} it is possible to determine $\beta$ and $\alpha$ for GE stock. The model is made of GE excess of returns ($y$) and market excess of returns ($X)$ 
+To implement the linear regression model it can be used the \texttt{statsmodel} package. It is necessary to define the $X$ vector (i.e. the independent exchange rate variations) and $y$ (i.e. the target Yuan rate to SFR). Then add a constant to the model which represents the rate variation not correlated to other currency variations (i.e. $\alpha$).
+
+So to determine $\beta$ and $\alpha$ for GE stock the model is made of its excess of returns ($y$) and market excess of returns ($X)$ 
 
 \begin{ipython}
 X = capm['ret_SP500']
@@ -369,6 +371,27 @@ Skew:                           0.275   Prob(JB):                         0.00
 Kurtosis:                      24.908   Cond. No.                         1.00
 ==============================================================================
 \end{ioutput}
+
+The most interesting (for us) part of the summary is: 
+\begin{itemize}
+\item R-squared: the closer to 1 the higher is the linear correlation between $y$ and $X$;
+\item coef: the estimate of this model parameter (the weight assigned to this feature);
+\item std err: the standard error of our estimate. From these two values we can compute the t-score of our estimate:
+\begin{equation*}
+t = \frac{\textrm{coeff}}{\textrm{std err}}
+\end{equation*}
+which we can find on the third column ($t$); 
+\item t: this value essentially provides us with a metric of how small the error is with respect to the estimated value: the larger the t-score, the smaller the error and the more confident we can be in our estimate.
+\item P>|t|: to better quantify our confidence, it’s usual to compute the p-value associated to the t-score. Under relatively common assumptions, we expect the t-score to follow a standard distribution and the probability of obtaining results at least as extreme as the value observed is simply the area under the curve to the right of the t-score value. This area is known as the p-value.
+There are some nuances to interpreting p-values but briefly, the smaller the p-value, the stronger the evidence that the value we’re estimating is different than zero (if the coefficient of a given feature is indistinguishable from zero then that feature is not relevant for our model).
+
+Typical thresholds for the p-value are:
+\begin{itemize}
+	\item $p<0.05$: moderate evidence;
+	\item $p<0.01$: strong evidence;
+	\item $p<0.001$: very strong evidence.
+\end{itemize}
+\end{itemize}
 
 From the summary results that $\beta$ is statistically significant and equal to 1.187. Fig.~\ref{fig:capm_fit} reports the dataset and the linear regression fit.
 

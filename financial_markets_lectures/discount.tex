@@ -99,6 +99,7 @@ Consider to have few data points, obtained by sampling or experimenting. These p
 It may be necessary to estimate values of the function $f$ at particular $x$ for which samples are not available. Interpolation is a method of "constructing" these "new points" within the range of known data.
 
 Let's clarify the technique with an example.
+
 Assume you are going on holidays by car and that luckily there isn't much traffic so that you can drive at constant speed (which gives a linear relation between travelled space and time i.e.~$s = v \cdot t$). This means that if you plot the distances $s$ as a function of the time $t$ you get a line with slope $v$, see Fig.~\ref{fig:samples_for_interpolation}.
 
 \begin{figure}[hb]
@@ -154,15 +155,16 @@ Instead of reinventing the wheel, \texttt{python} provides a function for interp
 To repeat our previous example:
 
 \begin{ipython}
-import numpy as np
-	
+import scipy.interpolate import interp1d
+
 t = [15, 100, 150]
 s = [25.75, 171.7, 257.7]
 
-np.interp(60, t, s)
+inter = interp1d(t, s)	
+print (f"{inter(60):1.f} km")
 \end{ipython}
 \begin{ioutput}
-103.01764705882351
+103.0 km
 \end{ioutput}
 
 \emph{Always interpret critically your results to guess if they make sense or not and avoid mistakes}. In the previous example we certainly expected something between 25.75 and 171.7~km (our range ends) furthermore since we are looking for the distance at a time which is almost halfway the considered interval, the result will be somehow in the middle, so around 100~km. This is indeed more or less what we have got. This simple kind of reasoning should be applied every time you have a result to quickly judge it.
@@ -190,6 +192,7 @@ If we believe the relation between our variables stays the same ($f(t)$ still li
 t = 180
 w = (t - t_1)/(t_2 - t_1)
 s = (1 - w)*s_1 + w*s_2
+
 print (f"{s:.1f} km")
 \end{ipython}
 \begin{ioutput}
@@ -198,21 +201,21 @@ print (f"{s:.1f} km")
 
 In the given example the extrapolation failed since after minute 150 the traveled space ceased to be a linear function of time.
 
-Notice that \texttt{numpy.interp} has \textbf{not} been designed for extrapolation, so if you ask for a value outside the range of sampled data it returns the closer existing point (the interval ends)
+Notice that \texttt{interp1d} has \textbf{not} been designed for extrapolation, so if you ask for a value outside the range of sampled data it returns an error message.
 
-\begin{ipython}
-import numpy as np
-	
-t = [15, 100, 150]
-s = [25.75, 171.7, 257.7]
-	
-np.interp(180, t, s)
-\end{ipython}
-\begin{ioutput}
-257.7
-\end{ioutput}
-
-Pay attention to this aspect, for example by adding checks on the interpolation parameters, since the program works fine but could lead to weird results.
+%\begin{ipython}
+%import numpy as np
+%	
+%t = [15, 100, 150]
+%s = [25.75, 171.7, 257.7]
+%	
+%np.interp(180, t, s)
+%\end{ipython}
+%\begin{ioutput}
+%257.7
+%\end{ioutput}
+%
+%Pay attention to this aspect, for example by adding checks on the interpolation parameters, since the program works fine but could lead to weird results.
 
 \subsection{Log-linear Interpolation}
 \label{log-linear-interpolation}
@@ -262,15 +265,16 @@ $p_1 = 90~\mathrm{kPa}\;(h_1 = 1000~\mathrm{m})$ and $p_2 = 40~\mathrm{kPa}\;(h_
 
 \begin{ipython}
 # pressure on top of the Mont Blanc (interpolation)
-from math import log, exp
-import numpy as np
+from numpy import log, exp
+from scipy.interpolate import interp1d
 
 # first we take the logarithm of our measurements to use the linear
 # relation to interpolate
 h = [1000, 7000] # height in meters
 s = [log(p) for p in [90, 40]] # logarithm of the pressure
 
-s = np.interp(4812, h, s)
+inter = interp1d(h, s)
+s = inter(4812)
 print (f"{exp(s):.1f} kPa")
 \end{ipython}
 \begin{ioutput}
@@ -358,24 +362,27 @@ Furthermore we also attempted a simple code optimization: compute the input disc
 \end{finmarkets}
 
 \begin{ipython}
-import numpy as np
+from numpy import log, exp
+from scipy.interpolate import interp1d
 from datetime import date
 
 class DiscountCurve:
-    def __init__(self, obs_date, pillar_dates, discount_factors):
-        self.obs_date = obs_date
-        self.pillar_dates = [obs_date] + pillar_dates
-        self.discount_factors = np.insert(np.array(discount_factors), 0, 1)
-        self.log_discount_factors = [np.log(discount_factor) for discount_factor in self.discount_factors]
-        self.pillar_days = [(pillar_date - obs_date).days for pillar_date in self.pillar_dates]
+    def __init__(self, obs_date, pillars, discount_factors):
+#        self.obs_date = obs_date
+        if obs_date not in pillars:
+            pillars = [obs_date] + pillars
+            discount_factors = np.insert(np.array(discount_factors), 0, 1)
+        pillars = [p.toordinal() for p in pillars]
+        log_df = [log(df) for df in self.discount_factors]
+        self.inter = interp1d(pillars, log_df)
         
     def df(self, d):
-        if d < self.obs_date or d > self.pillar_dates[-1]:
+        d = d.toordinal()
+        if d < self.inter.x[0] or d > self.inter.x[-1]:
             print (f"Cannot extrapolate discount factors (date: {d}).")
             return None
-        d_days = (d - self.obs_date).days
         interpolated_log_discount_factor = np.interp(d_days, self.pillar_days, self.log_discount_factors)
-        return np.exp(interpolated_log_discount_factor)
+        return exp(self.interp(d))
 \end{ipython}
 
 Using the discount curve data in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{\texttt{discount\_factors.xlsx}} instantiate the corresponding object and compute a discount factor.
@@ -421,9 +428,9 @@ A very useful way to check the correctness of a result is by plotting it. So let
 from matplotlib import pyplot as plt
 
 plt.plot(pillars[:10], dfs[:10], marker='o', markersize=10, 
-         label="discount factors")
+         label="dfs")
 plt.scatter(df_date, df0, marker='X', s=100, color='red', 
-            label='interp. discount factor')
+            label='interp. df')
 plt.xticks(rotation=45)
 plt.grid(True)
 plt.legend()
@@ -500,22 +507,21 @@ In order to successfully interpolate the rates, dates need to be converted to nu
 \end{finmarkets}
 
 \begin{ipython}
-import numpy as np
+from scipy.interpolate import interp1d
 
 class ForwardRateCurve:
     def __init__(self, obs_date, pillars, rates):
         self.obs_date = obs_date
-        self.pillars = pillars
-        self.pillar_days = [(p - obs_date).days/365 for p in pillars]
-        self.rates = rates
+        pillars = [(p - obs_date).days/365 for p in pillars]
+        self.inter = interp1d(pillars, rates)
 
     def interp_rate(self, d):
         d_frac = (d - self.obs_date).days/365
-        if d < self.obs_date or d_frac > self.pillar_days[-1]:
+        if d < self.obs_date or d_frac > self.inter.x[-1]:
             print (f"Cannot extrapolate rates (date: {d}).")
             return None, None
         else:
-            return d_frac, np.interp(d_frac, self.pillar_days, self.rates)
+            return d_frac, self.inter(d_frac)
 
     def forward_rate(self, d1, d2):
         d1_frac, r1 = self.interp_rate(d1)
@@ -528,6 +534,7 @@ class ForwardRateCurve:
 
 As an example let's compute a forward rate.
 \begin{ipython}
+from finmarkets import ForwardRateCurve
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
@@ -646,6 +653,8 @@ For example, if we want to calculate the net present value (NPV) of a forward 6-
 As an example let's define \euro STR and EURIBOR curves and compute the net present value of the forward 6-month EURIBOR coupon mentioned before.
 
 \begin{ipython}
+from finmarkets import DiscountCurve, ForwardRateCurve
+from numpy import exp
 from dateutil.relativedelta import relativedelta
 from datetime import date
 
@@ -666,7 +675,7 @@ euribor_curve = ForwardRateCurve(obs_date, pillar_dates_euribor, euribor)
 
 C = estr_curve.df(t1) * euribor_curve.forward_rate(t1, t2)
 t1_frac, r1 = euribor_curve.interp_rate(t1)
-C_pre2008 = np.exp(-r1*t1_frac) * euribor_curve.forward_rate(t1, t2)
+C_pre2008 = exp(-r1*t1_frac) * euribor_curve.forward_rate(t1, t2)
 
 print (f"C post 2008: {C:.5f} EUR")
 print (f"C pre 2008: {C_pre2008:.5f} EUR")
