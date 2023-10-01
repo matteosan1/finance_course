@@ -1,7 +1,7 @@
 \chapter{Interpolation, Discount Factors and Forward Rates}
 \label{interpolation}
 
-In this Chapter we will begin to see some \texttt{python} applications to financial calculations, in particular discount curves and forward rates will be involved. In doing so we will review a widely used mathematical tool: \emph{interpolation}.
+In this Chapter we will begin to see some \texttt{python} applications to financial calculations, in particular discount curves and forward rates. In doing so we will review a widely used mathematical tool: \emph{interpolation}.
 
 \section{Discounting}
 \label{discount-factors}
@@ -100,12 +100,12 @@ It may be necessary to estimate values of the function $f$ at particular $x$ for
 
 Let's clarify the technique with an example.
 
-Assume you are going on holidays by car and that luckily there isn't much traffic so that you can drive at constant speed (which gives a linear relation between travelled space and time i.e.~$s = v \cdot t$). This means that if you plot the distances $s$ as a function of the time $t$ you get a line with slope $v$, see Fig.~\ref{fig:samples_for_interpolation}.
+Assume you are going on holidays by car and that luckily there isn't much traffic so that you can drive at constant speed (which gives a linear relation between travelled space and time i.e.~$s = v \cdot t$). This means that if you plot the distance $s$ as a function of the time $t$ you get a line with slope $v$, see Fig.~\ref{fig:samples_for_interpolation}.
 
-\begin{figure}[hb]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=0.7\textwidth]{figures/interp_example1.png}
-  \caption{Samples of traveled distances at some time (black points). The blue and red crosses show an interpolated and an extrapolated point. It is clear how the extrapolation failed since after 150 minutes the relation between time and space changed.}
+  \caption{Samples of travelled distances at some time (black points). The blue and red crosses show interpolated and extrapolated points. It is clear how the extrapolation failed since after 150 minutes the relation between time and space changed.}
   \label{fig:samples_for_interpolation}
 \end{figure}
 
@@ -134,7 +134,7 @@ This formula can also be understood as a weighted average where the weights are 
 \end{attention}
 
 Back to our example, if
-$s_1 = 25.75~\mathrm{km}\;(@t_1 = 15~\mathrm{min})$ and $s_2 = 171.7~\mathrm{km}\;(@t_2 = 100~\mathrm{min})$ let's find the distance traveled in 1 hour:
+$s_1 = 25.75~\mathrm{km}\;(@t_1 = 15~\mathrm{min})$ and $s_2 = 171.7~\mathrm{km}\;(@t_2 = 100~\mathrm{min})$ let's find the distance travelled in 1 hour:
 
 \begin{ipython}
 s_1 = 25.75 # distance in km
@@ -151,7 +151,7 @@ print (f"{s:.1f} km")
 103.0 km
 \end{ioutput}
 
-Instead of reinventing the wheel, \texttt{python} provides a function for interpolation, \texttt{numpy.interp}. 
+Instead of reinventing the wheel, \texttt{python} provides a function for interpolation, \texttt{scipy.interpolate.interp1d}. 
 To repeat our previous example:
 
 \begin{ipython}
@@ -199,7 +199,7 @@ print (f"{s:.1f} km")
 309.1 km
 \end{ioutput}
 
-In the given example the extrapolation failed since after minute 150 the traveled space ceased to be a linear function of time.
+In the given example the extrapolation failed since after minute 150 the travelled space ceased to be a linear function of time. Beware that extrapolation is dangerous, usually it is not safe to assume data trends when there is no data available.
 
 Notice that \texttt{interp1d} has \textbf{not} been designed for extrapolation, so if you ask for a value outside the range of sampled data it returns an error message.
 
@@ -299,10 +299,10 @@ print (f"{exp(s):.1f} kPa")
 
 In this case we check our results by plotting the found pressures on top of the Wikipedia plot, see Fig~\ref{fig:Pvsh}.
 
-\begin{figure}
+\begin{figure}[htbp]
 \centering
 \includegraphics[width=0.7\linewidth]{figures/Atmospheric_Pressure_vs._Altitude.png}
-\caption{Atmospheric pressure versus altitude (Wikipedia). Green points represent our measurements, red points represent interpolation/extrapolation.}
+\caption{Atmospheric pressure versus altitude (Wikipedia). Green points represent our measurements, red ones interpolation/extrapolation.}
 \label{fig:Pvsh}
 \end{figure}
 
@@ -322,7 +322,11 @@ To improve the approximation accuracy with complicated curves, an higher order p
 
 \section{Discount Curve Interpolation}
 \label{discount-curve-interpolation}
-With $D(T)$ (or $D(0,T)$) it is represented the discount factor corresponding to a spot rate $r$, and a time to cash flow $T$ (in years).
+With $D(T)$ (or $D(0,T)$) it is represented the discount factor corresponding to a spot rate $r$, and a future time $T$ (in year fraction). The discount factor can be expressed as
+\begin{equation}
+	D(T)=\frac{1}{(1+r)^T},\quad(D(T)=e^{-rT}\;\textrm{for continuous compounding})
+\label{eq:discount_factor}
+\end{equation}
 
 Discount factors are usually presented as curves (\emph{discount curves}) where each point represents a discount factor relative to a future date. Figure~\ref{fig:example_discount_curve} shows an example of discount curve.
 
@@ -336,7 +340,7 @@ Discount factors are usually presented as curves (\emph{discount curves}) where 
 Since discount curves are made of a discrete set of discount factors derived at some dates, we may need to find the factor at some different times; this is a typical financial application of interpolation.
 
 \begin{finmarkets}
-Since discount factors are an essential part for every financial calculation and we will keep using them everywhere, a \texttt{python} class which manages discount factors and curves is develop, using an object oriented approach.
+Since discount factors are an essential part for every financial calculation and we will keep using them everywhere, a \texttt{python} class which manages discount factors and curves is developed, using an object oriented approach.
 
 This class, that we name \texttt{DiscountCurve}, should have as attributes
 \begin{itemize}
@@ -357,7 +361,7 @@ and at least a method to interpolate discount factors at a generic date. The inp
 \end{equation}
 where $i$ is such that $t_i \le t \le t_{i+1}$
 
-When dealing with discount factors we need to be careful though. \texttt{numpy.interp} only accepts list of numbers as argument (i.e. it doesn't know how to interpolate them). So we need to convert them before passing the dates to the interpolation function. This transformation will be implemented directly in the class constructor by replacing each date with the number of days from the observation date ($t_0$).
+When dealing with discount factors we need to be careful though. \texttt{scipy.interpolate.interp1d} only accepts list of numbers as argument (i.e. it doesn't know how to interpolate them). So we need to convert them before passing the dates to the interpolation function. This transformation will be implemented directly in the class constructor by replacing each date with the number of days from a reference with the method \texttt{toordinal()}.
 Furthermore we also attempted a simple code optimization: compute the input discount factors logarithm directly in the constructor in order to save some computation time with respect to doing the log at every call of the interpolation method. 
 \end{finmarkets}
 
@@ -368,21 +372,19 @@ from datetime import date
 
 class DiscountCurve:
     def __init__(self, obs_date, pillars, discount_factors):
-#        self.obs_date = obs_date
         if obs_date not in pillars:
             pillars = [obs_date] + pillars
             discount_factors = np.insert(np.array(discount_factors), 0, 1)
-        pillars = [p.toordinal() for p in pillars]
-        log_df = [log(df) for df in self.discount_factors]
-        self.inter = interp1d(pillars, log_df)
+        self.pillars = [p.toordinal() for p in pillars]
+        self.log_dfs = [log(df) for df in self.discount_factors]
+        self.inter = interp1d(self.pillars, self.log_dfs)
         
-    def df(self, d):
-        d = d.toordinal()
-        if d < self.inter.x[0] or d > self.inter.x[-1]:
-            print (f"Cannot extrapolate discount factors (date: {d}).")
+    def df(self, adate):
+        d = adate.toordinal()
+        if d < self.pillars[0] or d > self.pillars[-1]:
+            print (f"Cannot extrapolate discount factors (date: {adate}).")
             return None
-        interpolated_log_discount_factor = np.interp(d_days, self.pillar_days, self.log_discount_factors)
-        return exp(self.interp(d))
+        return exp(self.inter(d))
 \end{ipython}
 
 Using the discount curve data in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{\texttt{discount\_factors.xlsx}} instantiate the corresponding object and compute a discount factor.
@@ -480,7 +482,6 @@ Solving for $r_{1,2}$ leads to
 F(T_1, T_2) = r_{1,2} = \frac{1}{T_2 - T_1}\Big(\frac{1+r_2 T_2}{1+r_1 T_1} - 1 \Big)
 \label{eq:forward_rate_simple}
 \end{equation}
-\vspace{1cm}
 The same expression in terms of the discount factor of Eq.~\ref{eq:discount_factor} becomes
 \begin{equation}
 F(T_1, T_2) = \frac{1}{T_2 - T_1}\Big(\frac{D(0, T_1)}{D(0, T_2)} - 1 \Big)
@@ -488,8 +489,8 @@ F(T_1, T_2) = \frac{1}{T_2 - T_1}\Big(\frac{D(0, T_1)}{D(0, T_2)} - 1 \Big)
 Considering continuously compounded rates instead Eq.~\ref{eq:no_arbitrage_r} can be written as
 \begin{equation}
 \begin{gathered}
-e^{r_{2}T_{2}}=e^{r_{1}T_{1}}\cdot \ e^{r_{1,2} (T_{2}-T_{1})} \\
-\textrm{log}\left(e^{r_{2}T_{2}}\right)=\textrm{log}\left(e^{r_{1}T_{1}+ r_{1,2} (T_{2}-T_{1})}\right) \\
+e^{r_{2}T_{2}}=e^{r_{1}T_{1}}\cdot \ e^{r_{1,2} (T_{2}-T_{1})}\quad(\textrm{then equating the exponents})\\
+%\textrm{log}\left(e^{r_{2}T_{2}}\right)=\textrm{log}\left(e^{r_{1}T_{1}+ r_{1,2} (T_{2}-T_{1})}\right) \\
 r_{2}T_{2}=r_{1}T_{1}+r_{1,2}(T_{2}-T_{1})\implies r_{1,2} = \cfrac{r_2 T_2 - r_1 T_1}{T_2 - T_1} 
 \end{gathered}
 \end{equation}
@@ -501,9 +502,9 @@ F(T_1, T_2) = r_{1,2} = \frac {1}{T_{2}-T_{1}}(\ln D(0,T_{1})-\ln D(0,T_{2}))
 \end{equation}
 
 \begin{finmarkets}
-The \texttt{ForwardRateCurve} class of the \texttt{finmarkets} module computes forward rates at any arbitrary date, given a set of spot rates. This class is quite similar to \texttt{DiscountCurve}, it has two methods: one to interpolate spot rates, another to actually compute the forward rates.
+The \texttt{ForwardRateCurve} class of the \texttt{finmarkets} module computes forward rates at any arbitrary date, given a set of spot rates. This class is quite similar to \texttt{DiscountCurve}, but its logic has been split into two methods: one to interpolate spot rates, another to actually compute the forward rates.
 
-In order to successfully interpolate the rates, dates need to be converted to numbers by evaluating the number of days since a reference date (the observation date in this implementation). Also the interpolation date is checked to avoid extrapolations, if it is outside the known range a warning will be printed out and the calculation stopped.
+In order to successfully interpolate the rates, dates need again to be converted to numbers by evaluating the number of days since a reference date. Also the interpolation date is checked to avoid extrapolations, if it is outside the known range a warning will be printed out and the calculation stopped.
 \end{finmarkets}
 
 \begin{ipython}
@@ -512,24 +513,25 @@ from scipy.interpolate import interp1d
 class ForwardRateCurve:
     def __init__(self, obs_date, pillars, rates):
         self.obs_date = obs_date
-        pillars = [(p - obs_date).days/365 for p in pillars]
-        self.inter = interp1d(pillars, rates)
+        self.pillars = [p.toordinal() for p in pillars]
+        self.rates = rates
+        self.inter = interp1d(self.pillars, self.rates)
 
-    def interp_rate(self, d):
-        d_frac = (d - self.obs_date).days/365
-        if d < self.obs_date or d_frac > self.inter.x[-1]:
-            print (f"Cannot extrapolate rates (date: {d}).")
+    def interp_rate(self, adate):
+        d = adate.toordinal()
+        if d < self.pillars[0] or d > self.pillars[-1]:
+            print (f"Cannot extrapolate rates (date: {adate}).")
             return None, None
         else:
-            return d_frac, self.inter(d_frac)
+            return d, self.inter(d)
 
     def forward_rate(self, d1, d2):
-        d1_frac, r1 = self.interp_rate(d1)
-        d2_frac, r2 = self.interp_rate(d2)
-        if d1_frac is None or d2_frac is None:
+        d1, r1 = self.interp_rate(d1)
+        d2, r2 = self.interp_rate(d2)
+        if d1 is None or d2 is None:
             return None
         else:
-            return (r2*d2_frac - r1*d1_frac)/(d2_frac - d1_frac)
+            return (r2*d2 - r1*d1)/(d2 - d1)
 \end{ipython}
 
 As an example let's compute a forward rate.

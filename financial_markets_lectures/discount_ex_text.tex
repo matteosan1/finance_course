@@ -77,10 +77,10 @@ df_dates = [date(2025, 4, 15), date(2031, 4, 15)]
 \end{question}
 
 \cprotEnv\begin{solution}
-To interpolate the given yields the \texttt{interp} function can be used. Before doing that it is necessary to convert the dates into numbers (i.e. the difference between the actual date and "today").
+To interpolate the given yields the \texttt{interp1d} function can be used. Before doing that it is necessary to convert the dates into numbers (i.e. the difference between the actual date and "today").
 \begin{ipython}
 import pandas as pd
-import numpy as np
+from scipy.interpolate import interp1d
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
@@ -92,9 +92,10 @@ obs_date = date.today()
 df_dates = [obs_date + relativedelta(months=66),
             obs_date + relativedelta(months=126)]
 
-num_dates = [(d - obs_date).days for d in df['dates']]
-target = (obs_date + relativedelta(months=18) - obs_date).days
-print (np.interp(target, num_dates, df['yields']))
+num_dates = [d.toordinal() for d in df['dates']]
+interpolator = interp1d(num_dates, df['yields'])
+target = (obs_date + relativedelta(months=18)).toordinal()
+print (interpolator(target)
 \end{ipython}
 \begin{ioutput}
 -0.8077935491803279
