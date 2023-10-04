@@ -372,11 +372,12 @@ from datetime import date
 
 class DiscountCurve:
     def __init__(self, obs_date, pillars, discount_factors):
+    	discount_factors = np.array(discount_factors)
         if obs_date not in pillars:
             pillars = [obs_date] + pillars
-            discount_factors = np.insert(np.array(discount_factors), 0, 1)
+            discount_factors = np.insert(discount_factors, 0, 1)
         self.pillars = [p.toordinal() for p in pillars]
-        self.log_dfs = [log(df) for df in self.discount_factors]
+        self.log_dfs = np.log(discount_factors)
         self.inter = interp1d(self.pillars, self.log_dfs)
         
     def df(self, adate):
@@ -414,9 +415,9 @@ df = pd.read_excel("discount_factors.xlsx")
 
 obs_date = date.today()
 pillars = [today + relativedelta(months=i) for i in df['months']]
-dfs = df['dfs'].values
+dfs = df['dfs']
 dc = DiscountCurve(obs_date, pillars, dfs)
-df_date = obs_date + relativedelta(days=195) #6.5 months
+df_date = obs_date + relativedelta(days=195) # 6.5 months
 df0 = dc.df(df_date)
 print (f"discount factor at {df_date}: {df0:.4f}")
 \end{ipython}
@@ -513,12 +514,12 @@ from scipy.interpolate import interp1d
 class ForwardRateCurve:
     def __init__(self, obs_date, pillars, rates):
         self.obs_date = obs_date
-        self.pillars = [p.toordinal() for p in pillars]
+        self.pillars = [(p - obs_date).days/365 for p in pillars]
         self.rates = rates
         self.inter = interp1d(self.pillars, self.rates)
 
     def interp_rate(self, adate):
-        d = adate.toordinal()
+        d = (adate - self.obs_date)/365
         if d < self.pillars[0] or d > self.pillars[-1]:
             print (f"Cannot extrapolate rates (date: {adate}).")
             return None, None
