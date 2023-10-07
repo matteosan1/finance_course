@@ -136,23 +136,24 @@ norm.rvs(size=100)          # sample 100 times from normal distribution
 
 \begin{frame}[fragile]{Pseudo-Random Numbers}  
 \begin{ipython}
-import random 
+from numpy import uniform, seed, randint
 
-random.seed(1)
-print(random.random())       # 0.13436424411240122
-print(random.random())       # 0.8474337369372327
+seed(1)
+print(uniform())       # 0.13436424411240122
+print(uniform())       # 0.8474337369372327
 
-random.seed(2)
-print(random.random())       # 0.9560342718892494
-print(random.random())       # 0.9478274870593494
+seed(2)
+print(uniform())       # 0.9560342718892494
+print(uniform())       # 0.9478274870593494
 
-random.seed(1)
-print(random.random())       # 0.13436424411240122
-print(random.random())       # 0.8474337369372327
+seed(1)
+print(uniform())       # 0.13436424411240122
+print(uniform())       # 0.8474337369372327
 
-print (random.randint(1, 6)) # 1
+print (randint(1, 6)) # 1
+
 a = ['a', 'b', 'c', 'd']
-print (random.sample(a, 2))  # ['c', 'a']
+print (choice(a, 2, replace=False))  # ['c', 'a']
 \end{ipython}
 \end{frame}
 
@@ -163,8 +164,7 @@ better to use \texttt{scipy}.
 \begin{columns}
 \column{0.5\linewidth}
 \begin{ipython}
-import numpy as np
-from random import randint
+from numpy.random import randint
 from scipy.stats import uniform, norm
 
 # uniform distribution
@@ -172,6 +172,9 @@ numbers = []
 for _ in range(10000):
     numbers.append(randint(0, 5))
 
+# faster and easier solution
+numbers = randint(0, 5, size=10000)    
+    
 # normal distribution
 norm.rsv(size=100000)   
 \end{ipython}
@@ -196,6 +199,7 @@ This analytical results can be reproduced with a Monte Carlo simulation by takin
 \textrm{probability of event} = \cfrac{\textrm{n. successes}}{\textrm{n. experiments}}
 \end{equation*}
 \end{block}
+
 \end{frame}
 
 \begin{frame}{Monte Carlo Simulation Example}
@@ -206,6 +210,7 @@ This analytical results can be reproduced with a Monte Carlo simulation by takin
     \item The lower is the probability for a successful experiment the higher has to be the number of simulations, if the probability is small, we need to try many times.
     \item Monte Carlo Simulation is not always the best approach to follow !
 \end{itemize}
+\href{https://colab.research.google.com/drive/1cQbX7jWk4_pfrm72r3ZiZyDEpevP63z2?authuser=1\#scrollTo=b05dd876\&line=1\&uniqifier=1}{\beamergotobutton{Monte Carlo Simulation}}
 \end{frame}
 
 \begin{frame}{Accuracy of Monte Carlo Simulation}
@@ -219,6 +224,7 @@ has approximately a normal distribution $\mathcal{N}(\mu, \sigma^2/n)$.
 
 This means that if ones repeats a MC experiment (changing the seed of the random number generator) she should obtain results normally distributed around the \emph{true} value $\mu$.
 \end{block}
+\href{https://colab.research.google.com/drive/1cQbX7jWk4_pfrm72r3ZiZyDEpevP63z2?authuser=1\#scrollTo=0ef8c284\&line=7\&uniqifier=1}{\beamergotobutton{Monte Carlo Accuracy}}
 \end{frame}
 
 \begin{frame}{Confidence Interval}
@@ -233,6 +239,7 @@ we can define an interval such that there is a given probability to find $\mu$ i
 \begin{equation*}
 P\left(\mu_n - 1.96\frac{\sigma}{\sqrt{n}}\le \mu \le \mu_n + 1.96\frac{\sigma}{\sqrt{n}}\right) = 0.95
 \end{equation*}
+This is the \emph{95\% confidence interval} since pink area is 95\% of the area under the Gaussian.
 \column{0.5\linewidth}
 \begin{figure}[h]
     \begin{center}
@@ -240,13 +247,13 @@ P\left(\mu_n - 1.96\frac{\sigma}{\sqrt{n}}\le \mu \le \mu_n + 1.96\frac{\sigma}{
     \end{center}
 \end{figure}    
 \end{columns}
-\item This is the \emph{95\% confidence interval} since pink area is 95\% of the area under the Gaussian.
 \item Repeating many times a simulation, the fraction of confidence intervals containing the true $\mu$ would tend toward 95\%.
 \end{itemize}
 \end{frame}
 
 \begin{frame}[fragile]{Confidence Interval}
-The most common intervals are 99\% and 95\% confidence levels and are respectively defined as $\pm \cfrac{2.57\sigma}{\sqrt{n}}$ and $\pm \cfrac{1.96\sigma}{\sqrt{n}}$. 
+  The most common intervals are 99\% and 95\% confidence levels and are respectively defined as $\pm \cfrac{2.57\sigma}{\sqrt{n}}$ and $\pm \cfrac{1.96\sigma}{\sqrt{n}}$.
+ \vspace{1.0 cm} 
 \begin{ipython}
 import numpy as np
 
@@ -258,7 +265,7 @@ print (f"{np.mean(r):.6f} +- {cl:.6f} @ 95% confidence level")
 
 \begin{frame}[fragile]{Standard Deviation of the Mean}
 \begin{itemize}
-\item To get further information about the precision of our estimate $\mu_n$, or about the accuracy of the Monte Carlo simulation in general, we can use the standard deviation of the sampled mean. 
+\item To get further information about the accuracy of the Monte Carlo simulation in general, we can use the standard deviation of the sampled mean. 
 \item Assuming statistical independence of the values in the sample, the standard deviation of the mean is 
 \begin{equation*}
 \sigma _{\text{mean}}={\frac {1}{\sqrt {n}}}\sigma
@@ -269,8 +276,8 @@ where $n$ is the number of observations in the sample used to estimate the mean.
 print (f"{np.mean(r):.6f} +- {np.std(r)/np.sqrt(experiments):.6f}")
 # 0.007689 +- 0.000028
 \end{ipython}
-\item To get one more digit of accuracy (i.e. an error one tenth as large) requires a $\times100$ simulations.
-\item To get three more digits of accuracy requires one million times as much computation: \emph{running 10000 above experiments ($\times10$ more) gives an error 3 times smaller (from 2.8e-5 to about 9e-6)}.
+\item To get \textbf{one more digit of accuracy (i.e. an error one tenth as large) requires a $\times100$ simulations}.
+\item To get \textbf{three more digits of accuracy requires one million times as much computation}:running 10000 above experiments ($\times10$ more) gives an error 3 times smaller (from 2.8e-5 to about 9e-6).
 \end{itemize}
 \end{frame}
 
@@ -394,6 +401,7 @@ the simulation of $X(t)$ is done as follows.
 X(t_{i+1}) = X(t_i) + \mu(t_i,X(t_i))\Delta t + \sigma(t_i,X(t_i))\sqrt{\Delta t}\mathcal{N}(0,1)
 \end{equation*}
 \end{itemize}
+\href{https://colab.research.google.com/drive/1cQbX7jWk4_pfrm72r3ZiZyDEpevP63z2?authuser=1\#scrollTo=1895fa54}{\beamergotobutton{SDE Simulation}}
 \end{frame}
 
 \begin{frame}{Remark on Stochastic Processes}
