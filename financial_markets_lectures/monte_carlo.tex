@@ -42,56 +42,51 @@ The need of generating random inputs during a MC simulation requires large amoun
 
 Nowadays every programming language has libraries that allow to produce huge series of random numbers. These series, which have very large periodicity (e.g. \(2^{20000}\)), are calculated by algorithms that take as input a \emph{seed} which determines them uniquely. This means that choosing the same seed will produce the same set of numbers every time (which is great for debugging purposes though).
 
-In \texttt{python} one of the available modules to generate random numbers is \texttt{random} which has, among others, the following useful functions:
+In \texttt{python} one of the available modules to generate random numbers is \texttt{numpy.random} which has, among others, the following useful functions:
 \begin{itemize}
 \tightlist
 \item \texttt{seed}: set the seed of the random number generator;
-\item \texttt{random}: returns a random number between 0 and 1 (with uniform probability);
+\item \texttt{uniform}: returns a random number between 0 and 1 (with uniform probability);
 \item \texttt{randint(min,\ max)}: returns an integer random number between \texttt{min} and \texttt{max} (with uniform probability);
-\item \texttt{sample(aList,\ k=n)}: samples n elements from the list \texttt{aList}.
+\item \texttt{choice(aList,\ k=n, replace=True)}: samples n elements from the list \texttt{aList} with or without replacement.
+\item \texttt{normal}: throws random numbers sampled from a normal distribution ($\mathcal{N}(0, 1)$).
 \end{itemize}
 
 The following example shows an application of these functions, as can be seen the seed choice completely define the pseudo-random number series.
 
 \begin{ipython}
-import random
+from numpy.random import uniform, randint, choice
 
-random.seed(1)
-print ("seed is 1")
-print(random.random())
-print(random.random())
+seed(1)
+print(uniform())
+print(uniform())
 \end{ipython}
 \begin{ioutput}
-seed is 1
 0.13436424411240122
 0.8474337369372327
 \end{ioutput}
 \begin{ipython}
-random.seed(2)
-print ("seed is 2")
-print(random.random())
-print(random.random())
+seed(2)
+print(uniform())
+print(uniform())
 \end{ipython}
 \begin{ioutput}
-seed is 2
 0.9560342718892494
 0.9478274870593494
 \end{ioutput}
 \begin{ipython}
-random.seed(1)
-print ("seed is 1 again")
-print(random.random())
-print(random.random())
+seed(1)
+print(uniform())
+print(uniform())
 \end{ipython}
 \begin{ioutput}
-seed is 1 again
 0.13436424411240122
 0.8474337369372327
 \end{ioutput}
 \begin{ipython}
-print(random.randint(1, 10))
+print(randint(1, 10))
 aList = ['a', 'b', 'c', 'd', 'f']
-print (random.sample(aList, k=2))
+print (choice(aList, k=2, replace=False))
 \end{ipython}
 \begin{ioutput}
 2
@@ -105,7 +100,7 @@ from matplotlib import pyplot as plt
 
 numbers = []
 for _ in range(10000):
-    numbers.append(random.randint(0, 5))
+    numbers.append(randint(0, 5))
 
 plt.hist(numbers, 6, range=[-0.5, 5.5])
 plt.title("Uniform distribution from randint")
@@ -115,12 +110,11 @@ plt.show()
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.7\textwidth]{figures/uniform}
-\caption{Uniform distribution generated with \texttt{random.randint} function.}
+\caption{Uniform distribution generated with \texttt{randint} function.}
 \label{fig:uniform_dist}
 \end{figure}
     
-Another module that will be used to generate random numbers is \texttt{numpy}. It has similar functionalities to \texttt{random} but in some cases it fits better to our needs.    
-Below an example with \texttt{numpy.random.normal} which throws random numbers sampled from a normal distribution ($\mathcal{N}(0, 1)$), the result is shown in Fig.~\ref{fig:gauss_dist}.
+Below an example which samples 50000 times from a normal distribution  with \texttt{numpy.random.normal}, the result is shown in Fig.~\ref{fig:gauss_dist}.
 
 \begin{ipython}
 from numpy.random import normal
@@ -196,22 +190,23 @@ We draw randomly cards with uniform probability since the deck is fair (all card
 We plan to do one million simulations; each time, with the \texttt{sample} function, we pick up two cards from the virtual deck (for debugging purpose the first ten trials are printed on screen). Check if the card pair is \texttt{['K', 'K']} and in case increase the counter of successes. Finally just print \texttt{successes/trials} which is the sought probability.
 
 \begin{ipython}
-from random import sample, choices, seed
+from numpy.random import choice, seed
 
+def draw_sim(trials=10000):
+    deck = ["A", "2", "3", "4", "5", "6", "7", "J", "Q", "K"] * 4
+    successes = 0
+
+    for i in range(trials):
+        cards = choice(deck, k=2, replace=False)
+        if i < 10:
+            print (cards)
+        if all(cards == "K"):
+            successes += 1
+    return successes/trials
+            
 seed(1)
-deck = ["A", "2", "3", "4", "5", "6", "7", "J", "Q", "K"] * 4
-
-trials = 1000000
-successes = 0
-
-for i in range(trials):
-    cards = sample(deck, k=2)
-    if i < 10:
-        print (cards)
-    if cards == ["K", "K"]:
-        successes += 1
-
-print (f"The probability to draw two kings is {successes/trials:.4f}")
+trials = 1000000        
+print (f"The probability to draw two kings is {draw_sim(trials):.4f}")
 \end{ipython}
 \begin{ioutput}
 ['Q', '7']
@@ -259,21 +254,20 @@ $[-r,r]$;
 \end{itemize}
 
 \begin{ipython}
-from random import random, seed
-from math import sqrt
+import numpy as np
 
-seed(2)
 def simulation(trials):
   r = 1
   in_circle = 0.0
   for _ in range(trials):
-      x1 = -r + random()*2*r
-      x2 = -r + random()*2*r
-      distance = sqrt(x1**2 + x2**2)
+      x1 = np.random.uniform(-r, r)
+      x2 = np.random.uniform(-r, r)
+      distance = np.sqrt(x1**2 + x2**2)
       if distance <= r:
           in_circle += 1
   return in_circle 
 
+np.random.seed(2)
 trials = 10000
 in_circle = simulation(trials)
 print (f"Approx. pi: {in_circle/trials*4}")  
@@ -292,12 +286,9 @@ The only conclusion we can draw is that, despite its undoubted power, Monte Carl
 In the following example it is apparent how increasing the number of simulations in a single experiment the approximation precision improves. In Fig.~\ref{fig:circle_approx} it is shown graphically the results with 100, 1000, 10000, 100000 and 1000000 simulations.
 
 \begin{ipython}
-from random import random, seed
-from math import sqrt
-import numpy as np, time
-
-seed(1)
-trials=[100, 1000, 10000, 100000, 1000000]
+np.random.seed(1)
+  
+trials = [100, 1000, 10000, 100000, 1000000]
 for i, t in enumerate(trials):
     t1 = time.time()
     in_circle = simulation(t)
@@ -327,59 +318,73 @@ In this case the simulation is so simple that even in the larger case ($N=100000
 Let's go back to the card example and imagine that you didn't know how much is the probability of getting two consecutive K from a deck of 40 cards. 
     
 \begin{ipython}
-from random import sample, seed
-
+from numpy.random import seed
+  
 seed(97)
-def deck_sim(trials):
-    successes = 0.0
-    for _ in range(trials):
-        cards = sample(deck, 2)
-        if cards == ['K', 'K']:
-            successes += 1
-    return successes
 
 trials = 10000
-successes = deck_sim(trials)
-print (successes/trials)
+print (draw_sim(trials))
 \end{ipython}
 \begin{ioutput}
 0.0084
 \end{ioutput}
 
 What can be concluded from the result of a single MC experiment ?
+
 Unfortunately not much, but a famous theorem come to rescue us.
-The central limit theorem~\cite{bib:central_limit} states that if we have $Y_1, Y_2,\dots, Y_n$ which are $n$ random samples from a distribution $Y$ with true mean $\mu$ and variance $\sigma^{2}$, then with $n$ sufficiently large,
+The Central Limit Theorem~\cite{bib:central_limit} (CLT) states that if we have $X_1, X_2,\dots, X_n$ which are $n$ random samples from a distribution $X$ with true mean $\mu$ and variance $\sigma^{2}$, then with $n$ sufficiently large,
 
 \begin{equation*} 
-\mu_n = \cfrac{1}{n}\sum_i^n Y_i
+\mu_n = \cfrac{X_1 + X_2 +\ldots + X_n}{n} = \cfrac{1}{n}\sum_i^n X_i
 \end{equation*}
 has approximately a normal distribution $\mathcal{N}(\mu, \sigma^2/n)$.
 
-This means that if one repeats the same MC experiment many times (changing the random number generator seed otherwise we are always repeating the \emph{same} experiment) would obtain results normally distributed around the \emph{true} value $\mu$.
-We can check the central limit theorem by repeating many times the MC experiment with our virtual deck and see how the distribution of $\mu_n$ behaves.
+This means that if one repeats the same MC experiment many times (changing the random number generator seed otherwise we are always repeating the \emph{same} experiment) would obtain results normally distributed around the \emph{true} value $\mu$. \emph{Also the best estimate $\mu_n$ of the unknown parameter $\mu$ is the mean of the MC experiment results.}
+
+Another very important consequence of the CLT is that the standard deviation of our estimate $\mu_n$ is \emph{the standard deviation of the sample ($\sigma_{Y_i}$) divided by the square root of the sample size}. Indeed
+\begin{equation*}
+\begin{gathered}
+\bar{X} = \cfrac{X_1 + X_2 +\ldots +X_n}{n}\\
+Var(\bar{X}) = Var\left(\cfrac{X_1 + X_2 +\ldots +X_n}{n}\right)=\cfrac{Var(X_1)}{n^2}+\cfrac{Var(X_1)}{n^2}+\ldots+\cfrac{Var(X_n)}{n^2} = \\
+=\cfrac{1}{n^2}[\sigma^2+\sigma^2+\ldots+\sigma^2] = \cfrac{\sigma^2}{n}
+\end{gathered}
+\end{equation*}
+
+This is sometimes called the standard deviation of the sample mean (contrary to the standard deviation of a sample). Hence, the sample mean is much less volatile than the sample values themselves. Consequently, the error reduces at the rate of 1 over the square root of the sample size. Notice what this means, for increasing the sample accuracy by increasing the sample size.
+
+Suppose $\sigma$ is the standard deviation of the sample. We first conduct a Monte Carlo simulation using $n_1$ experiments. The standard deviation of our estimate of the unknown value is $\cfrac{\sigma}{\sqrt{n_1}}$. Now suppose we wanted to reduce that uncertainty in half. How much larger must the sample be? Let this new sample size be $n_2$. Then the standard deviation of the estimate becomes $\cfrac{\sigma}{\sqrt{n_2}}$.
+Finally note that,
+\begin{equation*}
+  \cfrac{1}{2}\cfrac{\sigma}{\sqrt{n_1}}  = \cfrac{\sigma}{\sqrt{n_2}} \implies n_2 = 4 n_1
+\end{equation*}
+
+Thus, to achieve a 50\% reduction in error, i.e., a 50\% increase in accuracy, we must \textbf{quadruple} the number of random experiments.
+
+\subsection{Central Limit Theorem in the Kings Example}
+
+We can check the Central Limit Theorem by repeating many times the MC experiment with our virtual deck and see how the distribution of $\mu_n$ behaves.
 
 \begin{ipython}
 import numpy as np
-from random import sample, seed
+import matplotlib.pyplot as plt
 
-experiments = 1000
-trials = 10000
+true_value = 1/130
+experiments = 300
+simulations = 1000
 r = []
-
 for e in range(experiments):
-	seed(e)
-    successes = deck_sim(trials)
-    r.append(successes/trials)
+    seed(e)
+    r.append(draw_sim(simulations))
 
-print (f"Mean: {np.mean(r):.6f}")
-print (f"Std : {np.std(r):.6f}")
+print (f"mu_true: {true_value:.6f}")
+print (f"mu: {np.mean(r):.6f} +- {np.std(r)/np.sqrt(experiments):.6f}")
 \end{ipython}
 \begin{ioutput}
-Mean:  0.007688
-Std :  0.000871
+mu_true: 0.007692
+mu: 0.007640 +- 0.000151
 \end{ioutput}
 
-Looking at Fig.~\ref{fig:repeated_MC} it is clear that the various results are distributed as a Gaussian (in this example the distribution is still a bit asymmetric but it will eventually become Gaussian running more simulations).
+Looking at Fig.~\ref{fig:repeated_MC} it is clear that the various results are distributed as a Gaussian (in this example the distribution is still a bit asymmetric but it will eventually become Gaussian running more simulations). Also playing with the parameter experiments it easy to see how the precision of the estimate increase always staying within the assigned error interval.
 
 \begin{figure}[htb]
 \centering
@@ -388,13 +393,15 @@ Looking at Fig.~\ref{fig:repeated_MC} it is clear that the various results are d
 \label{fig:repeated_MC}
 \end{figure}
 
-From the central limit theorem hence: 
+\subsection{Confidence Interval}
+
+From the Central Limit Theorem we know that: 
 
 \begin{equation}
 \mu_n - \mu \approx \mathcal{N}(0, \sigma^2/n)
 \end{equation}
 
-From the previous equation and remembering the definition of quantiles~\ref{sec:quantile-function} it is possible to define an interval such that there is a certain probability to find $\mu$ in there. Referring to Fig.~\ref{fig:confidence_interval} we can write:
+From the previous equation and remembering the definition of quantiles~\ref{sec:quantile-function} it is then possible to define an interval such that there is a certain probability to find $\mu$ in there. Referring to Fig.~\ref{fig:confidence_interval} we can write:
 
 \begin{equation}
 P\left(\mu_n - 1.96\frac{\sigma}{\sqrt{n}}\le \mu \le \mu_n + 1.96\frac{\sigma}{\sqrt{n}}\right) = 0.95
@@ -440,9 +447,9 @@ print ("{alpha*100:.0f}% confidence int.: {m:.3f} +- {h:.3f}")
 95% confidence int.: 4.437 +- 0.812
 \end{ioutput}
 
-The confidence interval is used to assess the accuracy of a Monte Carlo simulation. From what has been said above the uncertainty on our best estimate of $\mu$ is $\sqrt{\cfrac{\sigma^2}{n}}=\cfrac{\sigma}{\sqrt{n}}$ where \(\sigma^2 = \mathrm{Var}(Y)\).
-
-While it is obvious that the estimate should get worse with increased variance and better with bigger sample size, this equation gives us the exact scaling. Indeed the uncertainty formula tells us that to get one more decimal digit of accuracy (i.e. an error one tenth as large) requires a 100-fold increase in computation. To get three more digits of accuracy requires one million times as much computation. From that it is clear that Monte Carlo is poorly suited for problems that must be answered with high precision.
+%The confidence interval is used to assess the accuracy of a Monte Carlo simulation. From what has been said above the uncertainty on our best estimate of $\mu$ is $\sqrt{\cfrac{\sigma^2}{n}}=\cfrac{\sigma}{\sqrt{n}}$ where \(\sigma^2 = \mathrm{Var}(Y)\).
+%
+%While it is obvious that the estimate should get worse with increased variance and better with bigger sample size, this equation gives us the exact scaling. Indeed the uncertainty formula tells us that to get one more decimal digit of accuracy (i.e. an error one tenth as large) requires a 100-fold increase in computation. To get three more digits of accuracy requires one million times as much computation. From that it is clear that Monte Carlo is poorly suited for problems that must be answered with high precision.
 
 \section{Integration by Monte Carlo}
 \label{sec:integration}
