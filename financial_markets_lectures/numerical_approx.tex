@@ -3,16 +3,16 @@
 
 \section{Pricing Options via the Binomial Model}
 
-Binomial pricing model arises from discrete random walk models of the underlying asset. The idea is to break down the time to expiration into potentially very large number ($N$) of time steps ($0, dt, 2dt,\ldots , ndt$ where $n\leq N$) . First step is to initialize the tree of stock prices by moving forward from today to expiration. At each step it is assumed that the stock price will move up (by the factor of $u$) or down (factor $d$).
+Binomial pricing model arises from discrete random walk models of the underlying asset. The idea is to break down the time to expiration into potentially very large number ($N$) of time steps ($0, dt, 2dt,\ldots , ndt$ where $n\leq N$). First step is to initialize the tree of stock prices by moving forward from today to expiration. At each step it is assumed that the stock price will move up (by the factor of $\upsilon$) or down (by $\delta$).
 
 One should find a way to calibrate the lattice so that it reflects the underlying model which is a continuous-time, continuous-state stochastic differential equation. Following this model, no-arbitrage and risk neutral principles crucial parameters are then obtained.
 
-Risk-neutrality demands: $Se^{rdt} = pSu + (1-p)Sd$ that is $e^{rdt} = pu + (1-p)d$, where $p$ is the probability of an upward movement (and since we are dealing with a binomial tree $(1-p)$ is the probability of a downward movement). The previous equation reflects that discounted expected return equals current price.
+Risk-neutrality demands (i.e. discounted expected return equals current price): $Se^{r\delta t} = pS\upsilon + (1-p)S\delta$ that is $e^{r\delta t} = p\upsilon + (1-p)\delta$, where $p$ is the probability of an upward movement (and since we are dealing with a binomial tree $(1-p)$ is the probability of a downward movement). 
 
 \tikzstyle{bag} = [text width=2em, text centered]
 \tikzstyle{end} = []
 \begin{tikzpicture}[sloped]
-	\node (a) at ( 0,0) [bag] {$\$ A$};
+	\node (a) at ( 0,0) [bag] {A};
 	\node (b) at ( 4,-1.5) [bag] {B};
 	\node (c) at ( 4,1.5) [bag] {C};
 	\node (d) at ( 8,-3) [bag] {D};
@@ -26,34 +26,33 @@ Risk-neutrality demands: $Se^{rdt} = pSu + (1-p)Sd$ that is $e^{rdt} = pu + (1-p
 	\draw [->] (b) to node [above] {$(1-p)^2$} (d);
 \end{tikzpicture}
 
-Using condition introduced by Cox, Ross, Rubbenstein
+\noindent
+Using condition introduced by Cox, Ross and Rubbenstein
 \begin{equation}
-u = \cfrac{1}{d}
+\upsilon = \cfrac{1}{\delta}
 \end{equation}
-
 it can be obtained
-
 \begin{equation}
 \begin{gathered}
-p=\cfrac{e^{rdt}-d}{u-d}\\
-u = e^{\sigma\sqrt{dt}} \\
-d = e^{-\sigma\sqrt{dt}}
+p=\cfrac{e^{rdt}-\delta}{\upsilon-\delta}\\
+\upsilon = e^{\sigma\sqrt{dt}} \\
+\delta = e^{-\sigma\sqrt{dt}}
 \end{gathered}
 \end{equation}
-It can be concluded that tree recombines so that in every time step we have in $i^{th}$ step $i+1$ prices (some are recombined, $i=0\ldots N$), totaling $(N+1)(N+2)/2$ nodes (lattices) in trees of $N$ steps. Also there are $2N+1$ different possible price. Furthermore, as price at time zero is known ($S_0$), all feasible prices are obtained using
+It can be concluded that tree recombines so that in every time step we have in $i^{th}$ step $i+1$ prices (some are recombined, $i=0\ldots N$), resulting in $(N+1)(N+2)/2$ nodes (lattices) in trees of $N$ steps. Also there are $2N+1$ different possible price. Furthermore, as price at time zero is known ($S_0$), all feasible prices are obtained using
 \begin{equation}
-Su^j d^{i-j}\textrm{ or }Su^{2j-i}\textrm{, since }u=\cfrac{1}{d}
+S\upsilon^j \delta^{i-j}\textrm{ or }S\upsilon^{2j-i}\textrm{, since }\upsilon=\cfrac{1}{\delta}
 \end{equation}
 
-Having the tree of stock prices constructed, and the option price can be derived working backward in the tree. %At the final step of the tree, i.e. at expiration of the option, the option values for each possible stock price are known, as they are equal to their intrinsic values. 
+Having the tree of stock prices constructed, the option price can be derived working backward in the tree. %At the final step of the tree, i.e. at expiration of the option, the option values for each possible stock price are known, as they are equal to their intrinsic values. 
 Assuming that the payoff function of the option is determined only by the value of the underlying asset at expiration, the model then works backwards through each time interval, calculating the option value at each step. The final step is at current time and stock price, where the theoretical fair value of the option is calculated. Algebraically it means for call option:
 \begin{equation}
-f_{N,j} = \textrm{max}(S_0 u^{j} d^{N-j} - K, 0),\quad j=0,1,\ldots , N
+f_{N,j} = \textrm{max}(S_0 \upsilon^{j} \delta^{N-j} - K, 0),\quad j=0,1,\ldots , N
 \end{equation}
 \noindent
 and for a put option
 \begin{equation}
-f_{N,j} = \textrm{max}(K - S_0 u^{j} d^{N-j}, 0),\quad j=0,1,\ldots , N
+f_{N,j} = \textrm{max}(K - S_0 \upsilon^{j} \delta^{N-j}, 0),\quad j=0,1,\ldots , N
 \end{equation}
 Followed by working backward through the tree
 \begin{equation}\
@@ -64,8 +63,8 @@ where $j$ denotes lattice position in $i^{th}$ step of the tree, so it can take 
 The main reason for introducing Binomial trees was inability to calculate the price of an American style option using Black-Scholes equation. With Binomial trees it is straightforward to take into account early exercise possibility in American calls and puts:
 \begin{equation}
 \begin{gathered}
-f_{i,j} = \textrm{max}\left(S_0 u^{j} d^{N-j} - K, e^{-rdt}\left(pf_{i+1,j+1} + (1-p)f_{i+1,j}\right)\right) \\
-f_{i,j} = \textrm{max}\left(K - S_0 u^{j} d^{N-j}, e^{-rdt}\left(pf_{i+1,j+1} + (1-p)f_{i+1,j}\right)\right)
+f_{i,j} = \textrm{max}\left(S_0 \upsilon^{j} \delta^{N-j} - K, e^{-rdt}\left(pf_{i+1,j+1} + (1-p)f_{i+1,j}\right)\right) \\
+f_{i,j} = \textrm{max}\left(K - S_0 \upsilon^{j} \delta^{N-j}, e^{-rdt}\left(pf_{i+1,j+1} + (1-p)f_{i+1,j}\right)\right)
 \end{gathered}
 \end{equation}
 
@@ -176,18 +175,17 @@ It can be noticed that binomial tree is not so good at the beginning (small numb
 
 \section{Finite Differences} 
 \label{sec:finite_difference}
-A common method to numerically solve Ordinary Differential Equations (ODE), like heat equation, Black-Scholes equation\ldots is the \emph{finite difference method}. An ODE is a differential equation containing one or more functions of one independent variable and the derivatives of those functions~\cite{bib:ode}. The term ordinary is used in contrast with the term partial differential equation (PDE) which may be with respect to more than one independent variable.
+A common method to numerically solve Ordinary Differential Equations (ODE), like heat equation or Black-Scholes equation, is the \emph{finite difference method}. An ODE is a differential equation containing one or more functions of one independent variable and their derivatives~\cite{bib:ode}. The term ordinary is used in contrast with the term partial differential equation (PDE) which may be with respect to more than one independent variable.
 With this technique a differential equation is transformed into a system of algebraic equations to solve by approximating each derivative with finite difference formulas at evenly spaced grid points.
 
 Imagine to divide the ranges $[0, S_{max}]$ and $[0, T]$ into $M$ and $N$ intervals respectively (e.g. $S = i\Delta S$ with $i\in[0, M]$, $t = j\Delta t$ with $j \in[0,N]$).
 
 The differential equation is enforced only at the grid points, and the first and second derivatives can be obtained as follows.
-With the help of Taylor expansion indeed, we can discretize the derivatives in the ODE ($y(x, t)$) leading to a recursive formula for $y_{i,j}$ (assume $y\in\mathbb{C}^{n+1}$ and the grid spacing is small). For a point $x_i$ between $x$ and $x+h$,
+With the help of Taylor expansion we can discretize the ODE  derivatives ($y(x, t)$) leading to a recursive formula for $y_{i,j}$ (assume $y\in\mathbb{C}^{n+1}$ and the grid spacing is small). For a point $x_i$ between $x$ and $x+h$,
 
 \begin{equation}
 y(x+h)=y(x)+hy'(x)+\cfrac{1}{2}h^2y''(x)+\ldots+\cfrac{h^n}{n!}y^{(n)}(x)+\cfrac{h^{n+1}}{(n+1)!}y^{(n+1)}(ξ)
 \end{equation}
-
 Replacing terms after $h^2$ with $O(h^2)$ and moving $y'(x)=\cfrac{\partial y}{\partial x}$ to the left-hand side, we have the \emph{forward difference}, which has error order 1
 
 \begin{equation}
@@ -226,7 +224,7 @@ Table~\ref{tab:derivative_approximations} reports a summary of derivatives appro
 \label{tab:derivative_approximations}
 \end{table}
 
-These finite difference expressions are used to replace the derivatives of $y$ in the differential equation which leads to a system of $n+1$ linear algebraic equations if the differential equation is linear. If the differential equation is nonlinear, the algebraic equations will also be nonlinear.
+These finite difference expressions are used to replace the derivatives of $y$ in the differential equation which leads to a system of $n+1$ linear algebraic equations if the differential equation is linear. If the differential equation is non-linear, the algebraic equations will also be non-linear.
 
 Depending on which combination of presented schemes for derivatives is used in the discretization of the equation, one can end up with different approaches, \emph{explicit}, \emph{implicit} or \emph{Crank-Nicolson}. Graphical illustration of these methods are shown with the grid in Fig.~\ref{fig:grid_finite_difference}. 
 Table ~\ref{tab:various_methods} summarizes the possibilities.
@@ -256,7 +254,7 @@ Table ~\ref{tab:various_methods} summarizes the possibilities.
 \end{table}
 
 \subsection{Boundary Conditions}
-Before delving into some example applications, we need to discuss the choice of boundary conditions which is an important issue in the construction of these methods. Well chosen boundary conditions contribute to preventing any errors on the boundaries propagated through the rest of the mesh. There are several ways to specify boundary conditions the most common are:
+Before delving into some example applications, we need to discuss the choice of boundary conditions which is an important issue in the construction of these methods. Well chosen boundary conditions contribute to prevent any errors on the boundaries propagated through the rest of the mesh. There are several ways to specify boundary conditions the most common are:
 
 \begin{itemize}
 \item Dirichlet Condition: a Dirichlet boundary condition assigns a value to $y$ at boundary. For example, imagine to price a call option with the finite difference method. At $S_{min}=0$, the option value could be set to zero, since the it is worthless. However, if underlying price reaches $S_{max}$ at time $t$, the option is worth the discounted value of its expected payoff. For a vanilla call option:
@@ -280,11 +278,11 @@ y(S_{max},t)=S_{max}−Ke^{−r(T−t)}
 %In this section, we discretize the B-S PDE using explicit method, implicit method and Crank-Nicolson method and construct the matrix form of the recursive formula to price the European options. 
 
 \subsection{Instabilities}
-When discussing effectiveness of different finite difference methods, we should consider three fundamental properties, which are consistency, stability, and convergence. Furthermore, we have to notice that though numerical method is good for solving PDE, it also brings the truncation error due to the discretization of the variables (e.g. stock price and time).
+When discussing effectiveness of different finite difference methods, we should consider three fundamental properties, which are consistency, stability, and convergence. %Furthermore, we have to notice that though numerical method is good for solving PDE, it also brings the truncation error due to the discretization of the variables (e.g. stock price and time).
 
 \begin{itemize}
 \item stability: a finite difference scheme is said to be stable if the difference between numerical solution and the true solution doesn't grow infinitely as the grid spacing approaches zero; %The stability of numerical scheme is achieved if the spectral radius of A less than 1.
-\item consistency: a finite difference scheme is consistent if the difference between PDE and finite differential equation vanishes as the grid spacing approaches zero. That is, the truncation error tends to 0 as the mesh get infinitely finer.
+\item consistency: a finite difference scheme is consistent if the difference between PDE and finite differential equation vanishes as the grid spacing approaches zero. That is, the truncation error tends to 0 as the mesh gets infinitely finer.
 \item convergence: a finite difference scheme is said to be convergent if solutions derived from a finite difference equation converge point-wise to the true solutions of the original PDE as the grid spacing approaches zero.
 \end{itemize}
 
@@ -412,7 +410,7 @@ Heat equation is a partial differential equation, defined as
 \noindent 
 It represents an important example since the Black-Scholes equation, through appropriate variable transformations, can be put in the same form. So learning to solve it helps in understanding the BS model.
 
-Consider the the two-dimensional case, expliciting nabla the heat equation becomes
+Consider the the two-dimensional case, expliciting $\nabla$ the heat equation becomes
 \begin{equation}
 \cfrac{\partial u}{\partial t} - \alpha\left(\cfrac{\partial^2 u}{\partial x^2}+\cfrac{\partial^2 u}{\partial y^2}\right)= 0
 \end{equation}
@@ -432,13 +430,11 @@ As we can see, $i, j$, and $k$ represent the steps for each difference for $x, y
 \begin{equation}
 u(x, y, t) = u_{i,j}^k
 \end{equation}
-
 We can write the heat equation above using the \emph{explicit} finite difference method like this
 
 \begin{equation}
 \cfrac{u_{i,j}^{k+1}-u_{i,j}^k}{\Delta t} - \alpha\left(\cfrac{u_{i+1,j}^{k}-2u_{i,j}^{k}+u_{i-1,j}^{k}}{\Delta x^2}+\cfrac{u_{i,j+1}^{k}-2u_{i,j}^{k}+u_{i,j-1}^{k}}{\Delta y^2}\right)=0
 \end{equation}
-
 If we arrange the equation above by taking $\Delta x = \Delta y$, we get the final equation
 
 \begin{equation}
@@ -451,6 +447,7 @@ where
 \end{equation}
 
 Now we can solve the heat equation approximated by the algebraic equation above, which is computer-friendly. As an example problem let’s suppose a thin square plate with the side of 50 unit length. The temperature everywhere inside the plate is originally (at $t = 0$) at 0 degree, see Figure~\ref{fig:heat_start_1}.
+At the same time let's put a heat source close to the upper side of the plate.
 
 \begin{figure}[htb]
 	\centering
@@ -568,7 +565,6 @@ In case all values $y$ are calculated for the time level $j$, then the values of
 \begin{equation}
 y_{i,j+1} = y_{i,j} + \cfrac{\Delta t}{\Delta x^2} \left(y_{i+1,j} − 2y_{i,j} + y_{i−1,j}\right)
 \end{equation}
-
 With the notation $\alpha = \Delta t/\Delta x^2$
 \begin{equation}
 y_{i,j+1} = \alpha y_{i−1,j} + (1 − 2\alpha)y_{i,j} + \alpha y_{i+1,j} 
@@ -647,7 +643,7 @@ y_exp = example(y, N, M, alpha)
 print (y[int(0.5/dt), int(0.2/dx)])
 \end{ipython}
 \noindent
-Running with $N=50$ gives
+Running with $N=1000$ gives
 \begin{ioutput}
 0.004349220987439513
 \end{ioutput}

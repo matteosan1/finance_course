@@ -9,7 +9,7 @@ In this Chapter the definition of credit event is introduced together with the C
 \section{Credit curves}
 \label{credit-curves}
 
-A \textbf{credit event} can be a default, the failure to make payments, the issuer entering into bankruptcy proceedings, or the occurrence of other legal events. The exact definition of what constitutes a credit event depends on a series of factors and is usually defined in some kind of ISDA (International Swaps and Derivatives Association) master agreement. In any case, we will generically call with credit event a \emph{default}.
+A \textbf{credit event} can be a default, the failure to make payments, the issuer entering into bankruptcy proceedings, or the occurrence of other legal events. The exact definition of what constitutes a credit event depends on a series of factors and is usually defined in some kind of ISDA (International Swaps and Derivatives Association) master agreement. In any casen in the rest of thsese notes, we will generically call with credit event a \emph{default}.
 
 \textbf{Non-default probability} (NDP or survival probability) is the probability that a company will not suffer a credit event \textbf{before} a given date (i.e. non-default probability is a cumulative probability).
 
@@ -127,7 +127,7 @@ Once the default intensity has been set, we can model the cumulative default pro
 import numpy as np
 from scipy.stats import rv_continuous
 	
-class ExpDefault(rv_continuous):
+class PoissonProcess(rv_continuous):
     def __init__(self, l):
         super().__init__()
         self.l = l
@@ -206,7 +206,7 @@ print(cc.hazard(obs_date + relativedelta(years=1)))
 
 %Once we have implemented a \texttt{CreditCurve} class which allows to interpolate survival probabilities and also to calculate the hazard rate at arbitrary dates, we can use it to price \textbf{Credit Default Swaps} (CDSs).
 
-A Credit Default Swap (CDS) is a financial agreement in which the seller commits to compensate the buyer in case of a default or other credit event. That is, the CDS seller "insures" the buyer against some reference asset defaulting. In exchange the buyer makes a series of payments (the CDS \emph{spread}) to the seller.
+A Credit Default Swap (CDS) is a financial agreement in which the seller commits to compensate the buyer in case of a default or other credit event. That is, the seller of the CDS "insures" the buyer against some reference asset defaulting. In exchange the buyer of the CDS makes a series of payments (the CDS \emph{spread}) to the seller.
 
 \subsection{Valuation of CDS}
 \label{sec:cds_valuation}
@@ -215,8 +215,8 @@ Credit Default Swaps are made up of two legs:
 
 \begin{itemize}
 \tightlist
-\item the \emph{premium} leg: which pays the spread $S$ periodically until a credit event occurs;
-\item the \emph{default} leg: which pays $L = F(1 - R)$, known as the \textbf{loss given default} (LGD), if and when the credit event occurs ($F$ is the notional of the contract, $R$ is the \textbf{recovery rate} or the percentage of the loss recovered from a default. The recovery rate varies by industry, the degree of seniority in the capital structure, the amount of leverage in the capital structure in total, and whether a particular security is secured or otherwise collateralized. A common baseline assumption is to set it to 40\%.
+\item \emph{premium} leg: which pays the spread $S$ periodically until a credit event occurs;
+\item \emph{default} leg: which pays $L = F(1 - R)$, known as the \textbf{loss given default} (LGD), if and when the credit event occurs ($F$ is the notional of the contract, $R$ is the \textbf{recovery rate} or the percentage of the loss recovered from a default. The recovery rate varies by industry, the degree of seniority in the capital structure, the amount of leverage in the capital structure in total, and whether a particular security is secured or otherwise collateralized. A common baseline assumption is to set it to 40\%.
 \end{itemize}
 
 \subsubsection{Premium leg}\label{premium-leg}
@@ -236,7 +236,7 @@ In the valuation of the premium leg, we'll use the following notation:
 At each payment date $d_i$, a cash flow of $F\cdot S$ is paid if and only if the credit event has \emph{not} occurred before that date. Therefore the NPV of each flow is
 
 \begin{equation}
-f_{\textrm{premium}}^i = \mathbb{E}\left[F\times S \times D(d_i) \times \mathbb{1}(\tau > d_i) \right]
+f_{\textrm{premium}}^i = \mathmybb{E}\left[F~S~D(d_i)|\mathbb{1}(\tau > d_i) \right]
 \end{equation}
 where the indicator function $\mathbb{1}(\tau > d_i)$ means that the expectation value has to be evaluated when $\tau > d_i$. 
 
@@ -255,23 +255,22 @@ the premium leg NPV can be expressed as:
 We assume that as soon as a credit event occurs (at a time $\tau$) the LGD is paid out (i.e. on the same date, but could potentially be paid on any date between $d_0$ and $d_n$). Mathematically, therefore, the NPV of the default leg can be expressed as follows:
 
 \begin{equation}
-\mathrm{NPV_{default}} =\mathbb{E}[F(1-R) \times D(\tau) \times \mathbb{1} \{\tau \leq d_n\} ]
+\mathrm{NPV_{default}} =\mathbb{E}[F(1-R)~D(\tau)|\mathbb{1} \{\tau \leq d_n\} ] = \mathbb{E}[F(1-R)~D(\tau)|P_{\textrm{def}}(\tau \leq d_n) ]
 \end{equation}
 
 Also in this case we are dealing with a probabilistic event so the expectation value has to be computed taking into account the payments $F(1-R)\times D(\tau)$ averaged over the default probability $P_{\textrm{def}}(d, \tau)$. 
 
-Using the law of total probability, we can break the previous expression down into the sum of "daily NPVs" calculated as a function of the \emph{daily} default probabilities:
+Using the law of total probability (see~\ref{sec:conditional_prob}), we can break the previous expression down into the sum of "daily NPVs" calculated as a function of the \emph{daily} default probabilities:
 
 \begin{align}
 \begin{split}
-\mathrm{NPV_{default}} &= \mathbb{E}[F(1-R) \times D(\tau) \times \mathbb{1}\{\tau \leq d_n\} ] \\
-&= \sum_{d'=d_0}^{d_n} F(1-R) \cdot D(\tau = d') P_{\textrm{def}}(d, \tau = d') \\
+\mathrm{NPV_{default}} &= \mathbb{E}[F(1-R)~D(\tau)|P_{\textrm{def}}(\tau \leq d_n) ] = \sum_{d'=d_0}^{d_n} \mathbb{E}[F(1-R) \cdot D(d')|P_{\textrm{def}}(d, d')] \\
 &= F(1-R) \sum_{d'=d_0}^{d_n} D(d') \left(P_{\textrm{def}}(\tau \geq d') - P_{\textrm{def}}( \tau \geq d'+1) \right) \\
 &= F(1-R) \sum_{d'=d_0}^{d_n} D(d') \left( P_{\textrm{sur}}(d, d') - P_{\textrm{sur}}(d, d'+1) \right)
 \end{split}
 \end{align}
 where the last step holds since $P_{\textrm{def}}(\tau\geq d') = 1 - P_{\textrm{def}}(\tau < d') = 1 - (1-P_{\textrm{sur}}(d, d')) = P_{\textrm{sur}}(d, d')$. 
-Figure~\ref{fig:default_p} illustrates the steps to convert the daily default probability $P_{\textrm{def}}(d, \tau=d')$.
+Figure~\ref{fig:default_p} illustrates the steps to convert the daily default probability $P_{\textrm{def}}(d, d')$.
 
 \begin{figure}[htb]
 \centering

@@ -227,6 +227,35 @@ This means that if ones repeats a MC experiment (changing the seed of the random
 \href{https://colab.research.google.com/drive/1cQbX7jWk4_pfrm72r3ZiZyDEpevP63z2?authuser=1\#scrollTo=0ef8c284\&line=7\&uniqifier=1}{\beamergotobutton{Monte Carlo Accuracy}}
 \end{frame}
 
+\begin{frame}{Central Limit Theorem}
+\begin{block}{Consequences}
+\begin{enumerate}
+	\item The \emph{mean} of our experiment results is the best estimate of $\mu$;
+	\item the standard deviation of $\mu_n$ is given by the sample standard deviation ($\sigma_{Y_i}$) divided by the square root of the sample size (\emph{standard deviation of the sample mean}). Hence, the sample mean is much less volatile than the sample values themselves.\textbf{ Consequently, the error reduces at the rate of 1 over the square root of the sample size.} 
+\end{enumerate}
+\end{block}
+\vspace{0.5 cm}
+Think for a moment about the implications of point (2).
+\end{frame}
+
+\begin{frame}{Monte Carlo Technique Limits}
+\begin{itemize}
+\item Suppose $\sigma$ is the standard deviation of the experiment results (we did $n_1$ experiments):
+\begin{equation*}
+\sigma_{\mu_{n_1}} = \cfrac{\sigma}{\sqrt{n_1}}
+\end{equation*}
+\item Now suppose we wanted to reduce that uncertainty in half. How much larger must the sample be? Let this new sample size be $n_2$. 
+\begin{equation*}
+	\sigma_{\mu_{n_2}} = \cfrac{\sigma}{\sqrt{n_2}}
+\end{equation*}
+\item Now note that,
+\begin{equation*}
+\cfrac{1}{2}\cfrac{\sigma}{\sqrt{n_1}}  = \cfrac{\sigma}{\sqrt{n_2}} \implies n_2 = 4 n_1
+\end{equation*}
+\item Thus, to achieve a 50\% reduction in error, i.e., a 50\% increase in accuracy, we must \textbf{quadruple} the number of random experiments.
+\end{itemize}
+\end{frame}
+
 \begin{frame}{Confidence Interval}
 \begin{itemize}
 \item Since
@@ -315,29 +344,6 @@ dX(t) = \mu(t,X(t)) dt + \sigma(t,X(t)) dW(t) = \underbrace{\mu(t,X(t))dt}_{\tex
 \end{figure}        
 \end{frame}
 
-\begin{frame}[fragile]{Wiener Process Example}
-  Let's simulate two possible realization of a Wiener process.
-  \begin{columns}
-    \column{0.5\linewidth}
-  \begin{ipython}
-import numpy as np
-
-def wiener(dt, steps):
-    return np.random.normal(size=steps)*np.sqrt(dt)
-
-np.random.seed(10)
-w1 = np.cumsum(wiener(1/365, 1000))
-w2 = np.cumsum(wiener(1/365, 1000))
-\end{ipython}
-  \column{0.5\linewidth}
-  \begin{figure}[h]
-    \begin{center}
-      \includegraphics[width=0.90\linewidth]{wiener}
-    \end{center}
-  \end{figure}
-  \end{columns}
-\end{frame}
-
 \begin{frame}{Geometric Brownian Motion}
 \begin{itemize}
 \item Stock prices changes as a result of the random fluctuations given by the trades. The relative change in its price in a period $dt$ can be decomposed into two parts:
@@ -350,17 +356,17 @@ dS_t = \mu S_tdt + \sigma S_tdW_t;\quad\frac{dS_t}{S_t} = d\textrm{log}(S_t) = \
 \end{equation*}
 \item The solution of this SDE can be derived by applying the It$\hat{o}$'s formula (full derivation in the notes).
 \begin{equation*}
-S_t = S_{t-1}e^{\big(\mu - \frac{1}{2}\sigma^2\big)dt + \sigma Z\sqrt{dt}}
+S_t = S_{t-1}e^{\big(\mu - \frac{1}{2}\sigma^2\big)dt + \sigma \mathcal{N}(0,1)\sqrt{dt}}
 \end{equation*}
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Geometric Brownian Motion}
-\begin{itemize}
-\item The change in $\textrm{log} S_t$ has a constant \emph{drift} $\mu - \frac{1}{2}\sigma^2$ and a constant variance rate $\sigma^2$ (remember that $Z=\mathcal{N}(0,1)$) therefore $\textrm{log} S_t$ at some time $T$ is normally distributed with:
 \begin{equation*}
-\textrm{log}\left(\cfrac{S_t}{S_{t-1}}\right) = \left(\mu - \frac{1}{2}\sigma^2\right)dt + \sigma Z\sqrt{dt} \approx\mathcal{N}\left[\left(\mu-\frac{\sigma^2}{2}\right)T, \sigma^2 T\right]
+	\textrm{log}\left(\cfrac{S_t}{S_{t-1}}\right) = \left(\mu - \frac{1}{2}\sigma^2\right)dt + \sigma \mathcal{N}(0,1)\sqrt{dt} \approx\mathcal{N}\left[\left(\mu-\frac{\sigma^2}{2}\right)T, \sigma^2 T\right]
 \end{equation*}
+\begin{itemize}
+\item  The change in $\textrm{log} S_t$ has a constant \emph{drift} $\mu - \frac{1}{2}\sigma^2$ and a constant variance rate $\sigma^2$ therefore $\textrm{log} S_t$ at some time $T$ is normally distributed with:
 \item A variable whose logarithm is normally distributed is said to be \emph{log-normal}.
 \end{itemize}
 \end{frame}
@@ -372,7 +378,7 @@ S_t = S_{t-1}e^{\big(\mu - \frac{1}{2}\sigma^2\big)dt + \sigma Z\sqrt{dt}}
     \column{0.5\linewidth}
 Looking at the initial $dS$ equation we had that:
 \begin{equation*}
-dS_t = \mu S_tdt + \sigma S_tdB_t
+dS_t = \mu S_tdt + \sigma S_tdW_t
 \end{equation*}
 \column{0.4\linewidth}
 \begin{figure}[h]
@@ -385,7 +391,7 @@ which shows that the closer is $S_t$ to 0 the smaller is the $dS$ variation (so 
 \end{block}
 \end{frame}
 
-\begin{frame}{Simulating SDE}
+\begin{frame}{Simulating SDE (Euler Scheme)}
 \begin{itemize}
 \item  Consider the generic SDE
 \begin{equation*}
@@ -397,7 +403,33 @@ the simulation of $X(t)$ is done as follows.
 X(t_{i+1}) = X(t_i) + \mu(t_i,X(t_i))\Delta t + \sigma(t_i,X(t_i))\sqrt{\Delta t}\mathcal{N}(0,1)
 \end{equation*}
 \end{itemize}
-\href{https://colab.research.google.com/drive/1cQbX7jWk4_pfrm72r3ZiZyDEpevP63z2?authuser=1\#scrollTo=1895fa54}{\beamergotobutton{SDE Simulation}}
+\end{frame}
+
+\begin{frame}[fragile]{Wiener Process Example}
+Let's simulate two possible realization of a Wiener process ($\mu = 0, \sigma=1$)
+\begin{equation*}
+X(t_{i+1}) = X(t_i) + \sqrt{\Delta t}\mathcal{N}(0,1)
+\end{equation*}
+\begin{columns}
+\column{0.5\linewidth}
+\begin{ipython}
+from numpy import sqrt, cumsum
+from numpy.random import seed, normal
+
+def wiener(dt, steps):
+    return normal(size=steps)*sqrt(dt)
+
+seed(10)
+w1 = cumsum(wiener(1/365, 1000))
+w2 = cumsum(wiener(1/365, 1000))
+		\end{ipython}
+		\column{0.5\linewidth}
+		\begin{figure}[h]
+			\begin{center}
+				\includegraphics[width=0.90\linewidth]{wiener}
+			\end{center}
+		\end{figure}
+	\end{columns}
 \end{frame}
 
 \begin{frame}{Remark on Stochastic Processes}
@@ -411,6 +443,7 @@ X(t_{i+1}) = X(t_i) + \mu(t_i,X(t_i))\Delta t + \sigma(t_i,X(t_i))\sqrt{\Delta t
 \item average the results to estimate $\mathbb{E}[f(X)]$.
 \end{enumerate}
 \end{itemize}
+\href{https://colab.research.google.com/drive/1cQbX7jWk4_pfrm72r3ZiZyDEpevP63z2?authuser=1\#scrollTo=1895fa54}{\beamergotobutton{SDE Simulation}}
 \end{frame}
 
 \end{document}
