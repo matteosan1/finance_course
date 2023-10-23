@@ -1,6 +1,6 @@
 \chapter{Credit Risk}\label{credit_default_swaps}
 
-Credit risk is the possibility of a loss resulting from a borrower's failure to repay a loan or meet contractual obligations. Traditionally, it refers to the risk that a lender may not receive the owed principal and interest, which results in an interruption of cash flows and increased costs for collection. 
+Credit risk is the possibility of a loss resulting from a borrower's failure to repay a loan or meet contractual obligations. Traditionally, it refers to the risk that a lender may not receive the owed principal and interests, which results in an interruption of cash-flows and increased costs for collection. 
 
 Although it's impossible to know exactly who will default on obligations, properly assessing and managing credit risk can lessen the severity of a loss. Interest payments from the borrower or issuer of a debt obligation are a lender's or investor's reward for assuming credit risk.
 
@@ -57,7 +57,7 @@ The \emph{hazard rate}~\cite{bib:hazard} represents the instantaneous probabilit
 %.
 %\subsubsection{Hazard Rate Definition}
 %We can now compute the instantaneous default probability conditional to no previous default ($\lambda$), the \emph{hazard rate}~\cite{bib:hazard}.
-The instantaneous default probability conditional to no previous default ($\lambda$) can be expressed as
+The instantaneous default probability conditional to no previous default $\lambda$ can be expressed as
 
 %\[\lambda(t) = \cfrac{\mathbb{P}(A\cap B)}{\mathbb{P}(B)} = \cfrac{\cfrac{DP(\tau\in (t, t+dt))}{dt}}{DP(\tau>t)} = \cfrac{\cfrac{d[1-N(t_0, t)]}{dt}}{N(t_0, t)} = -\cfrac{dN(t_0, t)}{dt}\cdot\frac{1}{N(t_0, t)}\]
 \begin{equation}
@@ -85,16 +85,16 @@ The simplest possible survival distribution is obtained by assuming a constant r
 
 \subsection{Poisson Process}
 \label{sec:poisson_process}
-This kind of default (or survival) distributions belongs to a class of models called \emph{Poisson processes}. 
+This kind of default (or survival) distribution belongs to a class of models called \emph{Poisson processes}. 
 They can be used to model the frequency of events during a certain period of time assuming that one knows the average occurrence of those events over some period of time. 
 Their general form is
 
 \begin{equation}
-P_X(k) = \frac{e^{-\lambda} \lambda)^{k}}{k!}
+P_X(k) = \frac{e^{-\lambda} \lambda^{k}}{k!}
 \label{eq:poisson_distribution}
 \end{equation}
 
-The Poisson process has a remarkable substructure. Even though the number of occurrence of events is modeled using a \emph{discrete} Poisson distribution, Eq.~\ref{eq:poisson_distribution}, the interval of time between consecutive events can be modeled using an exponential distribution, which is a \emph{continuous} distribution.
+The Poisson process has a remarkable substructure. Even though the number of event occurrences is modelled using a \emph{discrete} Poisson distribution, Eq.~\ref{eq:poisson_distribution}, the interval of time between consecutive events can be modelled using an exponential distribution, which is \emph{continuous}.
 
 The probability density function of the random variable describing the time to the next event is:
 
@@ -108,7 +108,6 @@ and its cumulative distribution function is:
 F_X(t) = P(X<=t) = \int_{0}^{t}\lambda e^{-\lambda x} dx = 1 - e^{-\lambda t}
 \label{eq:inter-arrival}
 \end{equation}
-
 which is the same function obtained for the default probability in case of constant hazard rate, see~\ref{sec:constant_hazard_rate}.
 Recollect that CDF of $X$ returns the probability that the interval of time between consecutive events will be less than or equal to some value $t$.
 Finally the inverse function of the CDF is:
@@ -117,16 +116,16 @@ F^{-1}(X) = -\frac{\log(1-X)}{\lambda}
 \end{equation}
 
 \begin{finmarkets}
-We now have enough information to simulate events (i.e. defaults) according to Poisson process. 
+We now have enough information to simulate credit events according to Poisson process. 
 
-The following class is an \emph{extension} of \texttt{scipy.stats} that implements distributions of the form $\lambda e^{-\lambda t}$. This is another example of \emph{sub-classing} an existing class (inheritance, see Section~\ref{inheritance-and-overriding-methods}) since its parent is \texttt{rv\_continuous} the starting point for each continuous distribution in \texttt{scipy}.
+The following class is an \emph{extension} of \texttt{scipy.stats} that implements distributions of the form $\lambda e^{-\lambda t}$. This is another example of \emph{sub-classing} an existing class (for inheritance, see Section~\ref{inheritance-and-overriding-methods}) since its parent is \texttt{rv\_continuous} the starting point for each continuous distribution in \texttt{scipy}.
 
 Once the default intensity has been set, we can model the cumulative default probability over a certain period of time using the \texttt{cdf} method. Contrary feeding different probability values, using the inverse-CDF (the \texttt{ppf} method), gives us the corresponding default times for the respective probabilities.
 \end{finmarkets}
 
 \begin{ipython}
-from scipy.stats import rv_continuous
 import numpy as np
+from scipy.stats import rv_continuous
 	
 class ExpDefault(rv_continuous):
     def __init__(self, l):
@@ -145,12 +144,13 @@ class ExpDefault(rv_continuous):
         return -np.log(1-x)/self.l
 \end{ipython}
 
-
 \begin{finmarkets}
-Similarly to discount curves we implement a class to handle credit curves, \texttt{CreditCurve}. It is characterized by a list of pillar dates with the corresponding survival probabilities. Like the \texttt{DiscountCurve} object you don't need to pass the curve today's values (survivial probability 1) since it is done automatically by the class constructor. Two methods are available: one to interpolate survival probabilities and the second to compute the hazard rate at any arbitrary date (beware that extrapolation is not allowed so the input date must be within the pillar dates range).
+Similarly to discount curves we implement a class to handle credit curves, \texttt{CreditCurve}. It is characterized by a list of pillar dates with the corresponding survival probabilities. Like the \texttt{DiscountCurve} object you don't need to pass the observation date value (surviv
+al probability 1) since it is done automatically by the class constructor. Two methods are available: one to interpolate survival probabilities and the second to compute the hazard rate at any arbitrary date (beware that extrapolation is not allowed so the input date must be within the pillar dates range).
 \end{finmarkets}
 
 \begin{ipython}
+import numpy as np
 from scipy.interpolate import interp1d
 from dateutil.relativedelta import relativedelta
 	
@@ -158,21 +158,24 @@ class CreditCurve:
     def __init__(self, obs_date, pillars, ndps):
         self.obs_date = obs_date
         if obs_date not in pillars:
-	        pillars = [obs_date] + pillars
-	        ndps = [1] + ndps
-        pillars = [(pd - obs_date).days for pd in pillars]
-        self.inter = interp1d(pillars, ndps)
-	
+            pillars = [obs_date] + pillars
+            ndps = np.insert(ndps, 0, 1)
+        self.pillars = [d.toordinal() for d in pillars]
+        self.ndps = ndps
+        self.interpolator = (self.pillars, self.ndps)
+
     def ndp(self, d):
-        d_days = (d - self.obs_date).days
-        if d < self.obs_date or d_days > self.inter.x[-1]:
+        d_days = d.toordinal()
+        if d < self.pillars[0] or d > self.pillar[-1]:
             print (f"Cannot extrapolate survival probabilities (date: {d}).")
             return None
-        return self.inter(d_days)
-	
+        return self.interpolator(d_days)
+
     def hazard(self, d):
         ndp_1 = self.ndp(d)
         ndp_2 = self.ndp(d + relativedelta(days=1))
+        if ndp_1 is None or ndp_2 is None:
+            return None
         delta_t = 1.0 / 365.0
         h = -1.0 / ndp_1 * (ndp_2 - ndp_1) / delta_t
         return h
@@ -203,7 +206,7 @@ print(cc.hazard(obs_date + relativedelta(years=1)))
 
 %Once we have implemented a \texttt{CreditCurve} class which allows to interpolate survival probabilities and also to calculate the hazard rate at arbitrary dates, we can use it to price \textbf{Credit Default Swaps} (CDSs).
 
-A Credit Default Swap (CDS) is a financial agreement in which the seller commit to compensate the buyer in case of a default or other credit event. That is, the seller of the CDS "insures" the buyer against some reference asset defaulting. In exchange the buyer of the CDS makes a series of payments (the CDS \emph{spread}) to the seller.
+A Credit Default Swap (CDS) is a financial agreement in which the seller commits to compensate the buyer in case of a default or other credit event. That is, the CDS seller "insures" the buyer against some reference asset defaulting. In exchange the buyer makes a series of payments (the CDS \emph{spread}) to the seller.
 
 \subsection{Valuation of CDS}
 \label{sec:cds_valuation}
@@ -278,7 +281,7 @@ Figure~\ref{fig:default_p} illustrates the steps to convert the daily default pr
 \end{figure}
 
 \begin{finmarkets}
-As for the other kind of contracts we develop also a \texttt{CreditDefaultSwap} class. In this case the class has methods to compute NPVs for the premium and default legs. 
+As for the other kind of contracts we develop also a \texttt{CreditDefaultSwap} class. In this case the class has methods to compute NPVs for two legs and the break-even spread.
 
 The break-even spread of a credit default swap is the value of the fixed rate paid in the premium leg that makes the CDS net present value equal to 0.
 
@@ -337,8 +340,7 @@ from dateutil.relativedelta import relativedelta
 from datetime import date
 
 dc_data = pd.read_excel("discount_factors_2022-10-05.xlsx")
-obs_date = date.today() 
-start_date = obs_date
+obs_date = start_date = date.today() 
 dates = [obs_date + relativedelta(months=i) for i in dc_data['months']]
 dc = DiscountCurve(obs_date, dates, dc_data['dfs'])
 
@@ -604,7 +606,7 @@ Imagine for example a bond that yields 150 basis points more than a similar risk
 Hazard rate can be estimated from the market quote of a CDS. Going back to the definition of the CDS leg NPV's indeed, and assuming that the premium is paid \emph{continuously} we can write
 \begin{equation}
   \begin{aligned}
-    \mathrm{NPV_{default}} &= F(1-R) \int_{d_0}^{d_n} D(t) -dP_{\textrm{sur}}(t) dt \\
+    \mathrm{NPV_{default}} &= F(1-R) \int_{d_0}^{d_n} D(t) (-dP_{\textrm{sur}}(t)) dt \\
     \textrm{NPV}_{premium} &= F\cdot S \cdot \int_{d_0}^{d_n} D(t) \cdot P_{\textrm{sur}}(t) dt 
   \end{aligned}
 \end{equation}
@@ -618,7 +620,7 @@ Considering the market value of the CDS spread $S^{mkt}$, by definition, it make
 
 \begin{equation*}
   \begin{gathered}
-    \cancel{F}(1-R) \int_{d_0}^{d_n} D(t) \underbrace{-dP_{\textrm{sur}}(t) dt}_{-\lambda  P_{\textrm{sur}}(t) dt} =  \cancel{F}\cdot S^{mkt} \cdot \int_{d_0}^{d_n} D(t) \cdot P_{\textrm{sur}}(t) dt \\
+    \cancel{F}(1-R) \int_{d_0}^{d_n} D(t) \underbrace{(-dP_{\textrm{sur}}(t)) dt}_{-\lambda  P_{\textrm{sur}}(t) dt} =  \cancel{F}\cdot S^{mkt} \cdot \int_{d_0}^{d_n} D(t) \cdot P_{\textrm{sur}}(t) dt \\
     (1-R) \lambda \cancel{\int_{d_0}^{d_n} D(t) P_{\textrm{sur}}(t) dt} =  S^{mkt} \cdot \cancel{\int_{d_0}^{d_n} D(t) \cdot P_{\textrm{sur}}(t) dt} \\
     (1-R) \lambda = S^{mkt} \implies  \lambda = \frac{ S^{mkt}}{(1-R)}
   \end{gathered}
