@@ -119,7 +119,7 @@ In the left plot of Fig.~\ref{fig:uniform_and_gauss} the resulting distribution 
 x = uniform(0, 1).rvs(10000)
 \end{ipython}
 
-Next we want to transform these samples so that they are normally distributed. As we have just seen the transformation to use is the quantile function of the normal distribution, or $(\tt{ppf(x))}$ in \texttt{python}. All the methods of \texttt{scipy.stats} take in input \texttt{numpy.array} and each function is applied to each item of the array without the need to make explicit for-loops.
+Next we want to transform these samples so that they are normally distributed. As we have just seen the transformation to use is the quantile function of the normal distribution, or $(\tt{ppf(x))}$ in \texttt{python}. %All the methods of \texttt{scipy.stats} take in input \texttt{numpy.array} and each function is applied to each item of the array without the need to make explicit for-loops.
 
 In the right plot of Fig.~\ref{fig:uniform_and_gauss} the Gaussian obtained with the code below is shown
 
@@ -360,14 +360,31 @@ The comparison between the two multivariate distributions in Figure~\ref{fig:bmw
     
 Using the uniform distribution as a common base for our transformations we can easily introduce correlations and flexibly construct complex probability distributions. Everything discussed in this Section could be easily generalized to higher dimensions.
 
+\begin{finmarkets}
+It may be useful to create a \texttt{python} object to handle copulas. In \texttt{finmarkets} this class is \texttt{GaussianCopula} and has a method \texttt{sample} which generates a sample from the Gaussian copula with the proper correlation.
+\end{finmarkets}
+\begin{ipython}
+import numpy as np
+from scipy.stats import multivariate_normal, norm
+
+class GaussianCopula:
+    def __init__(self, n, cov):
+        self.mv = multivariate_normal(mean=np.zeros(n), cov=cov)
+
+    def sample(self, simulations):
+        x = self.mv.rvs(size=simulations)
+        return norm.cdf(x)
+\end{ipython}
+
 \subsubsection{Remarks on Gaussian Copula}
 Extreme, synchronized rises and falls in financial markets occur infrequently but they do occur. The problem with Gaussian models is that they did not assign a high enough likelihood of occurrence to the scenario in which many things go wrong (or right) at the same time the “perfect storm” scenario.
 
-To make this statement a little bit more quantitative we can determine the probability of a $5\sigma$ event and then compare it with the actual distribution of such events in finance.
+To make this statement a little bit more quantitative we can determine the probability of a $5\sigma$ event and then compare it with the actual distribution of such events in finance. Notice that if $P$ is the probability of an event, $1/P$ represents its occurrence frequency, e.g. $P=0.5$ means the events is going to happen once every 2 trials.
 
 \begin{attention}
 A $n\sigma$ event has a probability to happen equivalent to that of sampling a value bigger than $n$ from a normal distribution.
-To compute the occurrence frequency (in years) of such an event consider the probability to get $n\sigma$ so it is 1 over $365\cdot P(|x| \ge n\sigma$) (the 365 factor comes from the number of working days in a year).
+To compute the occurrence frequency (in years) of such an event consider the probability to get $n\sigma$ so it is 1 over $(
+[365\cdot P(|x| \ge n\sigma)]$ (the 365 factor comes from the number of working days in a year).
 
 \begin{attpython}
 from scipy.stats import norm
@@ -536,32 +553,29 @@ P_{\mathrm{uncorr}} = 10\% \cdot 10\% \cdot 10\% = 0.1 \%
 \end{equation}
 
 \begin{ipython}
-from scipy.stats import multivariate_normal, norm
+import numpy as np
 
-mvnorm = multivariate_normal(mean=[0,0,0], cov=[[1, 0, 0],
-                                                [0, 1, 0],
-                                                [0, 0, 1]])
+from finmarkets import GaussianCopula
+
 Pdef = 0.1
 samples = 100000
 successes = 0.
-x = mvnorm.rvs(size=samples)
-print ("Original 3D normal distribution (first two samples only)")
-print (x[:2])
-copula = norm.cdf(x)
-print ("\n3D copula distribution (first two samples only)")
-print (copula[:2])
+cov = np.array([[1, 0, 0],
+                [0, 1, 0],
+                [0, 0, 1]])
+g = GaussianCopula(3, cov)
+copula_sample = g.sample(samples)
 
-for v in copula:
-  if v[0] <= Pdef and v[1] <= Pdef and v[2] <= Pdef:
-    successes += 1
+print ("\n3D copula distribution (first two samples only)")
+print (copula_sample[:2])
+
+for v in copula_sample:
+    if all(v <= Pdef):
+        successes += 1
         
 print (f"\n{successes/samples}")
 \end{ipython}
 \begin{ioutput}
-Original 3D normal distribution (first two samples only)
-[[ 0.61020032  0.35559925 -0.07745997]
- [-0.06012274  0.41173185  0.54149979]]
-
 3D copula distribution (first two samples only)
 [[0.72913544 0.63892965 0.46912882]
  [0.47602894 0.65973201 0.70591843]]
@@ -575,33 +589,23 @@ The result is 0.1\% as expected.
 If we repeat the same Monte Carlo experiment with perfectly correlated default probabilities we have (notice that the covariance matrix has non-diagonal 0.99999999 entries to avoid numerical errors, they should be 1)
 
 \begin{ipython}
-from scipy.stats import multivariate_normal, norm
-
-mvnorm = multivariate_normal(mean=[0, 0, 0], cov=[[1, 0.9999999, 0.9999999],
-                                                  [0.9999999, 1, 0.9999999],
-                                                  [0.9999999, 0.9999999, 1]])  
-
-samples = 100000
 successes = 0.
-Pdef = 0.1
-x = mvnorm.rvs(size=samples)
-print ("Original 3D normal distribution (first two samples only)")
-print (x[:2])
-copula = norm.cdf(x)
-print ("\n3D copula distribution (first two samples only)")
-print (copula[:2])
+cov = np.array([[1, 0.9999999, 0.9999999],
+                [0.9999999, 1, 0.9999999],
+                [0.9999999, 0.9999999, 1]])
+g = GaussianCopula(3, cov)
+copula_sample = g.sample(samples)
 
-for v in copula:
-    if max(v) < Pdef:
+print ("\n3D copula distribution (first two samples only)")
+print (copula_sample[:2])
+
+for v in copula_sample:
+    if all(v <= Pdef):
         successes += 1
         
 print (f"\n{successes/samples}")
 \end{ipython}
 \begin{ioutput}
-Original 3D normal distribution (first two samples only)
-[[-0.23662482 -0.23685281 -0.23649724]
- [ 0.4301145   0.43059364  0.42970863]]
-
 3D copula distribution (first two samples only)
 [[0.40647393 0.40638549 0.40652342]
  [0.66644382 0.66661807 0.6662962 ]]
