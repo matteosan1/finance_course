@@ -84,19 +84,23 @@ The following code implements the \texttt{VasicekModel} referring to the process
 \begin{ipython}
 import numpy as np
 
+from finmarkets import maturity_from_str
+
 class VasicekModel:
     def __init__(self, k, theta, sigma):
         self.k = k
         self.theta = theta
         self.sigma = sigma
 
-    def r_generator(self, r0, T, m=100):
-        dt = T/m
+    def r_generator(self, r0, dates, seed=1):
+        np.random.seed(seed)
+        dt = (dates[1] - dates[0]).days/365
+        m = len(dates)
         r = np.zeros(shape=(m,))
         r[0] = r0
         for i in range(1, m):
-            r[i] = r[i-1] + self.k*(self.theta - r[i-1])*dt \   
-                   + self.sigma*np.random.normal()*np.sqrt(dt)
+            r[i] = r[i-1] + self.k*(self.theta - r[i-1])*dt +
+                   self.sigma*np.random.normal()*np.sqrt(dt)
         return r
 \end{ipython}
 
@@ -267,6 +271,7 @@ class VasicekModel:
         return (1-np.exp(-self.k*T))/self.k
 
     def ZCB(self, T, r0):
+        T = maturity_from_str(T, "y")
         return np.exp(self._A(T)-r0*self._B(T))
 \end{ipython}
 
@@ -282,20 +287,20 @@ To demonstrate some of the possible curve shapes allowed by the Vasicek model so
 Just to cross check the bond pricing formula was implemented correctly, the price using Eq.~\ref{eq:zcb_vasicek} versus the price using Monte Carlo simulation of $\mathbb{E}\left[e^{\int_0^T r_s ds}\right]$ have been compared. The prices are in excellent agreement.
 
 \begin{ipython}
+from finmarkets import generate_dates
 from finmarkets.short_rates.vasicek import VasicekModel
   
 r0 = 0.03
 v = VasicekModel(0.3, 0.10, 0.03)
 
 n = 1000
-T = 1
-m = 100
-dt = T/m
+maturity = "1y"
+dates = generate_dates(start_date, maturity, "1m")
+dt = 1/12
 
 res = []
 for i in range(n):
-    np.random.seed(i)
-    r = v.r_generator(r0, T, m)
+    r = v.r_generator(r0, dates, i)
     I = np.sum(r[1:])*dt
     res.append(np.exp(-I))
 
@@ -454,7 +459,9 @@ class CIRModel:
         self.gamma = np.sqrt(self.k**2 + 2*self.sigma**2)
 
     def r_generator(self, r0, T, m=100):
-        dt = T/m
+        np.random.seed(seed)
+        dt = (dates[1] - dates[0]).days/365
+        m = len(dates)
         r = np.zeros(shape=(m,))
         r[0] = r0
         for i in range(1, m):
@@ -473,6 +480,7 @@ class CIRModel:
         return np.power(num/den, 2*self.k*self.theta/self.sigma**2)
 
     def ZCB(self, T, r0):
+        maturity_from_str(T, "y")
         return self._A(T)*np.exp(-r0*self._B(T))
 \end{ipython}
 

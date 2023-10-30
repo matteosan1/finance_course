@@ -9,7 +9,7 @@ In this Chapter the definition of credit event is introduced together with the C
 \section{Credit curves}
 \label{credit-curves}
 
-A \textbf{credit event} can be a default, the failure to make payments, the issuer entering into bankruptcy proceedings, or the occurrence of other legal events. The exact definition of what constitutes a credit event depends on a series of factors and is usually defined in some kind of ISDA (International Swaps and Derivatives Association) master agreement. In any casen in the rest of thsese notes, we will generically call with credit event a \emph{default}.
+A \textbf{credit event} can be a default, the failure to make payments, the issuer entering into bankruptcy proceedings, or the occurrence of other legal events. The exact definition of what constitutes a credit event depends on a series of factors and is usually defined in some kind of ISDA (International Swaps and Derivatives Association) master agreement. In any case in the rest of these notes, we will generically call with credit event a \emph{default}.
 
 \textbf{Non-default probability} (NDP or survival probability) is the probability that a company will not suffer a credit event \textbf{before} a given date (i.e. non-default probability is a cumulative probability).
 
@@ -246,7 +246,7 @@ Remembering the definition of expected value (see Section~\ref{sec:expected-valu
 the premium leg NPV can be expressed as:
 
 \begin{equation}
-\textrm{NPV}_{premium} = F\cdot S \cdot \sum_{i=1}^{n} D(d_i) \cdot P_{\textrm{sur}}(d, d_i)
+\textrm{NPV}_{premium} = F\cdot S \cdot \sum_{i=1}^{n} D(d_i) \cdot P_{\textrm{sur}}(d, d_i)\frac{d_i-d_{i-1}}{365}
 \end{equation}
 
 \subsubsection{Default leg}
@@ -274,7 +274,7 @@ Figure~\ref{fig:default_p} illustrates the steps to convert the daily default pr
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=0.7\textwidth]{figures/timeline.png}
+\includegraphics[width=0.7\textwidth]{figures/timeline}
 \caption{The probability that a default occurs at a time $\tau = d+\Delta t$ is equivalent to the default probability at $\tau > d$ minus the default probability at $\tau>d+\Delta t$.}
 \label{fig:default_p}
 \end{figure}
@@ -311,8 +311,9 @@ class CreditDefaultSwap:
     def npv_premium_leg(self, discount_curve, credit_curve):
         npv = 0
         for i in range(1, len(self.payment_dates)):
-            npv += (discount_curve.df(self.payment_dates[i]) *
-                    credit_curve.ndp(self.payment_dates[i]))
+            tau = (self.payment_dates[i]-self.payment_dates[i-1]).days/365
+            npv += discount_curve.df(self.payment_dates[i]) *
+                   credit_curve.ndp(self.payment_dates[i]) * tau
         return self.fixed_spread * npv * self.nominal
 
     def npv_default_leg(self, discount_curve, credit_curve):
