@@ -134,121 +134,134 @@ x3 = norm.cdf(x2)
 \end{frame}
 
 \begin{frame}[fragile]{Example}
-  Consider the daily returns of BMW and Siemens stocks $(2010-2022)$, \href{https:\/\/github.com\/matteosan1\/finance\_course\/raw\/develop\/input\_files\/bmw\_siemens.csv}{bmw\_siemens.csv}.
-  \begin{ipython}
-import pandas as pd
-
-data = pd.read_csv("bmw_siemens.csv", index_col="Date")
-
-bmw = data.loc[:, 'BMW.DE']
-sie = data.loc[:, 'SIE.DE']
-
-print (data[['BMW.DE', 'SIE.DE']].corr())
-\end{ipython}
-  \begin{ioutput}
-          BMW.DE    SIE.DE
-BMW.DE  1.000000  0.664654
-SIE.DE  0.664654  1.000000    
-\end{ioutput}
+\begin{itemize}
+	\item Image you have modelled the seasonal water level of a river and the flood probability of the same river.
+	\begin{figure}[h]
+		\begin{center}
+		    \includegraphics[width=0.4\linewidth]{floods}
+		\end{center}
+	\end{figure}
+	\item Clearly the two distributions are correlated, i.e. the higher the level of water the higher the flood probability.
+	\item How can we express the joint distribution to be able to answer a question like "what is the probability to have a flood given the river is at $X~m$ ?". 
+\end{itemize}
 \end{frame}
 
-\begin{frame}{Example}
-  \begin{itemize}
-    \item \emph{It's reasonable to assume that the returns of the two are correlated}: same country and similar sector.
-    \item Imagine you want to model the joint distribution of their returns to know what is the probability both shares go negative at the same time.
-    \item \emph{Copula} can simplify the model (the joint probability distribution) by splitting it into marginals (by definition no correlation) and a function which \emph{couples} them together.
-    \item By fitting the historical histograms we can determine the marginal distributions (t-student).
-  \end{itemize}
- \begin{figure}[h]
-   \begin{center}
-     \includegraphics[width=0.65\linewidth]{bmw_siemens_dist}
-   \end{center}
- \end{figure}
-\end{frame}
-
-\begin{frame}[fragile]{Modeling Correlation with Copulas (1)}
-  Sample from a \emph{multivariate normal} (2D) with a 0.66 correlation (the covariance matrix is $
-      \Sigma = \begin{bmatrix}
-        \sigma^2 (X_0) & \mathrm{Cov}(X_0, X_1)\\
-        \mathrm{Cov}(X_1, X_0) & \sigma^2 (X_1)
-      \end{bmatrix}$
-  \begin{columns}
-    \column{0.65\linewidth}
-    \begin{ipython}
-from scipy.stats import multivariate_normal
-import numpy as np
-      
-np.random.seed(1)
-N = 100000
-mv = multivariate_normal(mean=[0,0],
-         cov=data[['BMW.DE', 'SIE.DE']].corr())
-x = mv.rvs(size=N)
-\end{ipython}
-\column{0.35\linewidth}
-  \begin{figure}[h]
-    \begin{center}
-      \includegraphics[width=0.9\linewidth]{3d_gauss_corr}
-    \end{center}
-  \end{figure}
-  \end{columns}
-\end{frame}
-
-\begin{frame}[fragile]{Modeling Correlation with Copulas (2)}
-  Now transform the marginals to uniform using the \texttt{cdf} method. 
-  \begin{ipython}
-from scipy.stats import norm
-
-copula = norm.cdf(x)    
-\end{ipython}
-  \begin{figure}[h]
-    \begin{center}
-      \includegraphics[width=0.4\linewidth]{copula_2d} \quad
-      \includegraphics[width=0.4\linewidth]{copula_3d}
-    \end{center}
-  \end{figure}
-  \emph{Since we used a multivariate standard normal to model correlation this is also called a Gaussian Copula.}
-\end{frame}
-
-\begin{frame}[fragile]{Modeling Correlation with Copulas (3)}
- Finally we can just transform the marginals from uniform to what we want (i.e. the two t-students in our example):
-\begin{ipython}
-from scipy.stats import t
-
-bmw_fit = t.fit(bmw[1:])
-sie_fit = t.fit(sie[1:])
-
-bmw_f = t(*bmw_fit)
-sie_f = t(df=sie_fit[0], loc=sie_fit[1], scale=sie_fit[2])
-
-# convert uniform marginals with fitted functions
-bmw_corr = bmw_f.ppf(copula[:, 0])
-sie_corr = sie_f.ppf(copula[:, 1])
-
-# uncorrelated
-bmw_uncorr = bmw_f.rvs(size=100000)
-sie_uncorr = sie_f.rvs(size=100000)
-\end{ipython}
-\end{frame}
-
-\begin{frame}[fragile]{Results}
-  Now that we have a model for the joint distribution of the share returns we can compute the probability to have both of them negative.
-  \begin{ipython}
-# correlated
-n1, n2, N = 0, 0, 100000 
-for i in range(N):
-  if bmw_corr[i] < 0 and sie_corr[i] < 0:
-    n1 += 1
-  if bmw_uncorr[i] < 0 and sie_uncorr[i] < 0:
-    n2 += 1
-
-print ("corr: ", n1/N)
-print ("uncorr: ", n2/N)
-\end{ipython}
-\begin{ioutput}
-corr: 0.353726
-uncorr: 0.23536
-\end{ioutput}
-\end{frame}
+%\begin{frame}[fragile]{Example}
+%  Consider the daily returns of BMW and Siemens stocks $(2010-2022)$, \href{https:\/\/github.com\/matteosan1\/finance\_course\/raw\/develop\/input\_files\/bmw\_siemens.csv}{bmw\_siemens.csv}.
+%  \begin{ipython}
+%import pandas as pd
+%
+%data = pd.read_csv("bmw_siemens.csv", index_col="Date")
+%
+%bmw = data.loc[:, 'BMW.DE']
+%sie = data.loc[:, 'SIE.DE']
+%
+%print (data[['BMW.DE', 'SIE.DE']].corr())
+%\end{ipython}
+%  \begin{ioutput}
+%          BMW.DE    SIE.DE
+%BMW.DE  1.000000  0.664654
+%SIE.DE  0.664654  1.000000    
+%\end{ioutput}
+%\end{frame}
+%
+%\begin{frame}{Example}
+%  \begin{itemize}
+%    \item \emph{It's reasonable to assume that the returns of the two are correlated}: same country and similar sector.
+%    \item Imagine you want to model the joint distribution of their returns to know what is the probability both shares go negative at the same time.
+%    \item \emph{Copula} can simplify the model (the joint probability distribution) by splitting it into marginals (by definition no correlation) and a function which \emph{couples} them together.
+%    \item By fitting the historical histograms we can determine the marginal distributions (t-student).
+%  \end{itemize}
+% \begin{figure}[h]
+%   \begin{center}
+%     \includegraphics[width=0.65\linewidth]{bmw_siemens_dist}
+%   \end{center}
+% \end{figure}
+%\end{frame}
+%
+%\begin{frame}[fragile]{Modeling Correlation with Copulas (1)}
+%  Sample from a \emph{multivariate normal} (2D) with a 0.66 correlation (the covariance matrix is $
+%      \Sigma = \begin{bmatrix}
+%        \sigma^2 (X_0) & \mathrm{Cov}(X_0, X_1)\\
+%        \mathrm{Cov}(X_1, X_0) & \sigma^2 (X_1)
+%      \end{bmatrix}$
+%  \begin{columns}
+%    \column{0.65\linewidth}
+%    \begin{ipython}
+%from scipy.stats import multivariate_normal
+%import numpy as np
+%      
+%np.random.seed(1)
+%N = 100000
+%mv = multivariate_normal(mean=[0,0],
+%         cov=data[['BMW.DE', 'SIE.DE']].corr())
+%x = mv.rvs(size=N)
+%\end{ipython}
+%\column{0.35\linewidth}
+%  \begin{figure}[h]
+%    \begin{center}
+%      \includegraphics[width=0.9\linewidth]{3d_gauss_corr}
+%    \end{center}
+%  \end{figure}
+%  \end{columns}
+%\end{frame}
+%
+%\begin{frame}[fragile]{Modeling Correlation with Copulas (2)}
+%  Now transform the marginals to uniform using the \texttt{cdf} method. 
+%  \begin{ipython}
+%from scipy.stats import norm
+%
+%copula = norm.cdf(x)    
+%\end{ipython}
+%  \begin{figure}[h]
+%    \begin{center}
+%      \includegraphics[width=0.4\linewidth]{copula_2d} \quad
+%      \includegraphics[width=0.4\linewidth]{copula_3d}
+%    \end{center}
+%  \end{figure}
+%  \emph{Since we used a multivariate standard normal to model correlation this is also called a Gaussian Copula.}
+%\end{frame}
+%
+%\begin{frame}[fragile]{Modeling Correlation with Copulas (3)}
+% Finally we can just transform the marginals from uniform to what we want (i.e. the two t-students in our example):
+%\begin{ipython}
+%from scipy.stats import t
+%
+%bmw_fit = t.fit(bmw[1:])
+%sie_fit = t.fit(sie[1:])
+%
+%bmw_f = t(*bmw_fit)
+%sie_f = t(df=sie_fit[0], loc=sie_fit[1], scale=sie_fit[2])
+%
+%# convert uniform marginals with fitted functions
+%bmw_corr = bmw_f.ppf(copula[:, 0])
+%sie_corr = sie_f.ppf(copula[:, 1])
+%
+%# uncorrelated
+%bmw_uncorr = bmw_f.rvs(size=100000)
+%sie_uncorr = sie_f.rvs(size=100000)
+%\end{ipython}
+%\end{frame}
+%
+%\begin{frame}[fragile]{Results}
+%  Now that we have a model for the joint distribution of the share returns we can compute the probability to have both of them negative.
+%  \begin{ipython}
+%# correlated
+%n1, n2, N = 0, 0, 100000 
+%for i in range(N):
+%  if bmw_corr[i] < 0 and sie_corr[i] < 0:
+%    n1 += 1
+%  if bmw_uncorr[i] < 0 and sie_uncorr[i] < 0:
+%    n2 += 1
+%
+%print ("corr: ", n1/N)
+%print ("uncorr: ", n2/N)
+%\end{ipython}
+%\begin{ioutput}
+%corr: 0.353726
+%uncorr: 0.23536
+%\end{ioutput}
+%\end{frame}
 
 \begin{frame}[fragile]{Results}
   \begin{figure}[h]

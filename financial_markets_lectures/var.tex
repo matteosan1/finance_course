@@ -38,7 +38,7 @@ The problem is summarized in Figure~\ref{fig:var_vs_badvar}. It shows the probab
 
 A measure that produces better incentives for traders than $VaR$ is \emph{expected shortfall} ($ES$). This is also sometimes referred to as conditional $VaR$. Where $VaR$ asks the question 'how bad can things get?', expected shortfall asks 'if things do get bad, what is our expected loss?'. It is the expected loss during an N-day period, conditional that the loss is greater than the $X^{th}$ percentile of the loss distribution
 \begin{equation}
-ES_{\alpha}(X) = \frac{1}{\alpha}\int_0^\alpha VarR_p(X) dp
+ES_{\alpha}(X) = \frac{1}{\alpha}\int_0^\alpha VaR_p(X) dp
 \label{eq:es}
 \end{equation}
 
@@ -246,36 +246,40 @@ Credit VaR is actually either the difference of the percentile from the mean, or
 Credit VaR can be calculated through a simulation of the evolution of a portfolio up to the risk horizon; the simulation must of course include possible defaults of the counter-parties. 
 In each experiment the portfolio is priced obtaining a number of scenarios to draw the loss distribution. It is then straightforward to derive the Credit VaR.
 
-Consider, for example, a portfolio of five fixed coupon bonds (coupons respectively 0.01, 0.02, 0.03, 0.04, 0.05) each one with the same default probability (a Poisson process with $\lambda=0.5$) and the same face value (100 EUR). The recovery rate in case of default is $R=40\%$ and the discount curve is the one stored in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{discount\_curve.xlsx}.
+Consider, for example, a portfolio of five fixed coupon bonds (0.1) each one with the same default probability (a Poisson process with $\lambda=0.5$) and the same face value (100 EUR). The recovery rate in case of default is $R=40\%$ and the discount curve is the one stored in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{discount\_curve.xlsx}.
 
 In order to better simulate the evolution of the portfolio a helper function \texttt{Bond} is implemented: it is just able to compute the bond NPV at a given date. Also a set of default times has been calculated using \texttt{PoissonProcess} distribution.
 Notice that in this simple example there is no need to run multiple scenarios since any market parameters of the portfolio is changing and no evolution is required (e.g. interest rate is fixed).
  
 \begin{ipython}
+from finmarkets import generate_dates, maturity_from_str
+
+class Bond:
+    def __init__(self, face_value, start_date, tenor, maturity):
+        self.FV = face_value
+        self.tau = maturity_from_str(tenor, "y")
+        self.payment_dates = generate_dates(start_date, maturity, tenor)
+
+    def npv(self, d, dc, fc):
+        val = 0
+        for i in range(1, len(self.payment_dates)):
+            C = fc.forward_rate(self.payment_dates[i-1], self.payment_dates[i])
+            if self.payment_dates[i-1] <= d < self.payment_dates[i]:
+                rateo = (self.payment_dates[i] - d).days/
+                (self.payment_dates[i] - self.payment_dates[i-1]).days
+                val += C*rateo*self.tau*dc.df(d)
+            elif self.payment_dates[i] > d:
+                val += C*self.tau*dc.df(self.payment_dates[i])
+                val += dc.df(self.payment_dates[-1])
+        return self.FV*val
+\end{ipython}
+\begin{ipython}
 import pandas as pd
 import numpy as np
 from datetime import date
 from dateutil.relativedelta import relativedelta
-from finmarkets import DiscountCurve, CreditCurve, PoissonProcess, generate_dates
-
-class Bond:
-  def __init__(self, face_value, start_date, coupon, tenor_months, maturity_years):
-    self.FV = face_value
-    self.C = coupon
-    self.tau = tenor_months/12
-    self.payment_dates = generate_dates(start_date, maturity_years*12, tenor_months)
-
-  def npv(self, dc, def_date):
-    val = 0
-    for i in range(1, len(self.payment_dates)):
-      if self.payment_dates[i-1] <= def_date < self.payment_dates[i]:
-        rateo = (self.payment_dates[i] - def_date).days/ \
-                (self.payment_dates[i] - self.payment_dates[i-1]).days
-        val += self.C*rateo*self.tau*dc.df(def_date)
-      elif def_date < self.payment_dates[i]:  
-        val += self.C*self.tau*dc.df(self.payment_dates[i])
-    val += dc.df(self.payment_dates[-1])
-    return self.FV*val
+from finmarkets import DiscountCurve, CreditCurve, ForwardRateCurve
+from finmarkets import PoissonProcess, generate_dates
     
 start_date = date.today()
 df = pd.read_excel("discount_curve.xlsx")
@@ -283,18 +287,25 @@ pillars = [start_date + relativedelta(months=i) for i in df['months']]
 dc = DiscountCurve(pillars, df['dfs'])
 
 bonds = []
-maturity = 2
-coupons = [0.01, 0.02, 0.03, 0.04, 0.05]
+maturity = "2y"
+
+fc_dates = generate_dates(start_date, maturity, "1y")
+rates = [0.1 for _ in range(len(fc_dates))]
+fc = ForwardRateCurve(start_date, fc_dates, rates)
+
 for i in range(len(coupons)):
     bonds.append(Bond(100, start_date, coupons[i], 1, maturity))
 
 np.random.seed(1)
 N = 100000
-l = 0.5
 R = 0.4
 horizon = 1
-pd = PoissonProcess(l)
-taus = pd.rvs(size=N*len(bonds)).reshape(N, len(bonds))
+
+Q = PoissonProcess(l=0.5)
+cov = np.ones(shape=(len(bonds), len(bonds)))*rho
+np.fill_diagonal(cov, 1)
+g = GaussianCopula(len(bonds), cov)
+taus = Q.ppf(g.sample(N))
 
 L = []
 for n in range(N):
@@ -306,10 +317,10 @@ for n in range(N):
     if EE != 0:
         L.append((1-R)*EE)
   
-print (np.percentile(L, [99.9]))
+print (np.percentile(L, [95.0]))
 \end{ipython}
 \begin{ioutput}
-300.8841179439165
+338.0718924883006
 \end{ioutput}
 \noindent
 Figure~\ref{fig:credit_var} shows the loss distribution of the portfolio. Each peak corresponds to scenarios where there is an increasing number of defaults and is located roughly at multiple of 60 since each bond value is around 100 which gives a loss of that size (i.e. $1-R$ with $R\simeq$40\%). 
@@ -467,47 +478,75 @@ First calculate the portfolio value at each time point for each MC scenario. The
 
 In case of zero coupon bonds the computation of the CVA can be further simplified. Indeed in this case the investor exposure is equal to the bond face value, so it is enough to loop through each day from the pricing date to the bond maturity and compute the CVA using Eq.~\ref{eq:cva_discrete}.
 
-Imagine a 3-years fixed coupon bond (3\%) with a face value of $FV=$~\euro{100}. The bond issuer has the following default probabilities 10\%, 20\% and 30\% for 1, 2 and 3 years respectively and the recovery rate is 40\%. The discount factors can be determined from \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{discount\_curve.xlsx}. 
+Imagine a 3-years coupon bond with a face value of $FV=$~\euro{100}. The bond issuer has the following default probabilities 10\%, 20\% and 30\% for 1, 2 and 3 years respectively and the recovery rate is 40\%. The discount factors can be determined from \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{discount\_curve.xlsx}.
+In order to simulate the interest rate evolution the Vasicek model~\ref{vasicek-model} has been used with parameters: $\kappa=-0.137$, $\theta=-0.00179$ and $\sigma=0.00187$. 
 
-To calculate the CVA we need to first define a discount curve and the issuer credit curve. Then we perform a daily loop to sum up all the contributions to the CVA and finally set the price of the bond to the default-risk-free price minus the CVA.
+\begin{ipython}
+import numpy as np
+from datetime import date
+
+from finmarkets import generate_dates
+from finmarkets.short_rates.vasicek import VasicekModel
+
+M = 1000
+rates = []
+start_date = date.today()
+
+v = VasicekModel(-0.137, -0.00179, 0.00187)
+dates = generate_dates(start_date, "3y", "3m")
+for i in range(M):
+    rates.append(v.r_generator(0.035, dates, i))
+\end{ipython}
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/vasicek_simulation}
+\caption{Simulation of 1000 interest rate paths with Vasicek model, only few of them are reported. The dashed line shows the average path. The spot rate is assumed to be 3.5\%.}
+\label{fig:vasicek_simulation}
+\end{figure} 
+
+To calculate the CVA we need to first define a discount curve and the issuer credit curve. Then we perform a daily loop to sum up all the contributions to the CVA (averaged over the interest rate paths) and finally set the price of the bond to the default-risk-free price minus the CVA.
 Notice that the code below is relying on the \texttt{Bond} class implemented in~\ref{sec:credit-var-sim}.
 
 \begin{ipython}
 import pandas as pd
-import numpy as np
+
 from dateutil.relativedelta import relativedelta
-from finmarkets import DiscountCurve, CreditCurve
+from finmarkets import DiscountCurve, CreditCurve, ForwardRateCurve
 
-FV = 100
-r = 0.03
-R = 0.4
-maturity = "3y"
-
-obs_date = date.today()
-start_date = obs_date
 df = pd.read_excel("discount_curve.xlsx")
-pillars = [obs_date + relativedelta(months=i) for i in df['months']]
-dc = DiscountCurve(obs_date, pillars, df['dfs'])
+pillars = [start_date + relativedelta(months=i) for i in df['months']]
+dc = DiscountCurve(start_date, pillars, df['dfs'])
 
-pillar_dates = [obs_date + relativedelta(years=i) for i in range(1, maturity+1)]
-S = [0.9, 0.8, 0.7]
-cc = CreditCurve(obs_date, pillar_dates, S)
+pillar_dates = [start_date + relativedelta(years=i) for i in range(4)]
+S = [1, 0.9, 0.8, 0.7]
+cc = CreditCurve(start_date, pillar_dates, S)
 
-bond = Bond(FV, start_date, r, 1, maturity)
-PV = bond.npv(dc, start_date)
+fc = ForwardRateCurve(start_date, fc_dates, avg)
 
+bond = Bond(100, start_date, "3m", "3y")
+PV = bond.npv(start_date, dc, fc)
+
+R = 0.4
 cva = 0
 d = start_date
-while d <= pillar_dates[-1]:
-    cva += (1-R)*max(0, bond.npv(dc, d))*(cc.ndp(d)-cc.ndp(d+relativedelta(days=1)))
-    d += relativedelta(days=1)
+while d < pillar_dates[-1]:
+    cvas = 0
+    if d+relativedelta(months=1) > pillar_dates[-1]:
+        break
+    dP = cc.ndp(d)-cc.ndp(d+relativedelta(months=1))
+    for i in range(M):
+        fc = ForwardRateCurve(start_date, fc_dates, rates[i])
+        cvas += (1-R)*max(0, bond.npv(d, dc, fc))*dP
+    cva += cvas/M
+    d += relativedelta(months=1)
 
-print (f"CVA: {cva:.2f} EUR")
+print ("CVA: {:.2f}".format(cva))	
 print (f"Adjusted Price: {PV-cva:.2f} EUR")
 \end{ipython}
 \begin{ioutput}
-CVA: 17.50 EUR
-Adjusted Price: 84.14 EUR
+CVA: 18.28 EUR
+Adjusted Price: 90.05 EUR
 \end{ioutput}
 
 \section*{Exercises}
