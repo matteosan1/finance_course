@@ -80,34 +80,116 @@ The training of a multilayered NN follows these steps:
 \item re-adjust the network weights such that the loss decreases;
 \item continue the process for the entire sample (and also for several epochs), until the loss is not changing too much (i.e. the process converged).
 \end{itemize}
-In Figure~\ref{fig:training} an example of training is shown.
+This entire algorithm is called \emph{gradient descent optimization process} and in Figure~\ref{fig:training} an example network is shown.
 
 \begin{figure}[htb]
 \centering
 \includegraphics[width=0.9\textwidth]{figures/training_nn}
-\caption{Training example of a multilayered neural network.}
+\caption{An example of a multilayered neural network, showing the inputs $x_i$, the neuron weights $w^{(l)}_{ij}$, hidden layer output $h_i$, the network predictions $y_i$, and the target outputs $t_i$.}
 \label{fig:training}
 \end{figure}
 
-\subsubsection{Loss Function}
+\subsection{Loss Function}
 The NN loss (or error) is computed by the \emph{loss function}. Different loss functions will give different error estimates for the same prediction, and thus they have a considerable effect on the performance of any model. Two are the main choices:
 
 \begin{itemize}
 \tightlist
 \item Mean Absolute Error (MAE): the average of the absolute value of the differences between the predictions and true values. It shows how far off we are on average from the correct value;
-\item Root Mean Squared Error (MSE): the square root of the average of the squared differences between the predictions and true values. It instead penalizes larger errors more heavily and is commonly used in regression tasks. 
+\item Mean Squared Error (MSE): the average of the squared differences between the predictions and true values. It instead penalizes larger errors more heavily and is commonly used in regression tasks. Sometimes it is also referred to as \emph{L2-norm}, or squared norm
+\begin{equation}
+	L2 = \frac{1}{2}\sum_i (y_i - t_i)^2
+\end{equation} 
 \end{itemize}
 Either metrics may be appropriate depending on the situation and you can use both for comparison. More information about loss function can be found in~\cite{bib:loss_function}.
 
-\subsubsection{Back-propagation}
-The loss is a function of the internal parameters of the model (i.e neuron weights) and for an accurate prediction it has to be minimized. In practice this is done using the \emph{back-propagation} algorithm~\cite{bib:backpropagation}.
+\subsection{Back-propagation}
+The machine learning process is iterative. Data is fed into the model, then is accuracy is measured through the loss function. Then, with the help of optimization algorithms, the model’s parameters (weights and biases) are varied until the desired outputs are reached.
 
-Here the current loss is "propagated" backwards from the output to previous layers, where it is used to modify the weights in such a way that the error is minimized. The weights are modified with a function called \emph{optimization function} (we will use \emph{Adam} in the following but there are more).
+\emph{Forward-propagation} is the process of pushing inputs through the net. At the end of each epoch, the obtained outputs is compared to the targets to form the errors. In the \emph{back-propagation}~\cite{bib:backpropagation}, the process is reversed and weights and biases are adjusted based on the obtained errors, minimizing the loss, thus improving the accuracy of artificial neural networks.
+Referring to the network in Figure~\ref{fig:training} which contains an input layer, a hidden layer, and an output layer let's describe how it works.
+
+Two inputs, $(x_1, x_2)$, are fed into the network and passed to the hidden nodes, whose ouputs, $a_i$, are finally sent to the output layer which produces the prediction $y_i$. The arrows that connect the nodes represents the weights, e.g. $w^{(l)}_{ij}$ is the weights connecting the $i$th node of the $l$th layer to the $j$th node in the next layer. Finally the predictions are compared to the target outputs $t_i$. 
+
+Without loss of generality, we are going to assume that the used loss function is the L2-norm, and that each node activation function is a \emph{sigmoid} (logistic function)
+
+\begin{equation}
+  \sigma(x) = \frac{1}{1+e^{-x}}
+\end{equation} 
+and its derivative (will be useful later on)
+\begin{equation}
+  \frac{\partial\sigma(x)}{\partial x} = \sigma(x)(1-\sigma(x))
+  \label{eq:sigmoid_derivative}
+\end{equation} 
+
+\subsubsection{Back-propagation for the Output Layer}
+The idea of back-propagation is to compute the gradient of the loss function concerning the weights and biases of each neuron in the network. Then, we use the gradients obtained to update the parameters such that the loss computed at the new value is less than the loss at the current value. The loss decreases by iteratively adjusting the weights and biases based on the obtained gradients, and the network gradually learns to make better predictions.
+
+The updates are directly related to the partial derivatives of the loss and to the errors (the differences between targets and outputs). The update rule can be written as
+\begin{equation}
+  w \leftarrow w - \eta\nabla_w L(w)
+\end{equation}
+where $\eta$ is the algorithm's \emph{learning rate}.
+
+To compute the right hand side of the previous expression we can use the chain rule. Considering for simplicity just one weight 
+\begin{equation}
+  \frac{\partial L}{\partial w^{(2)}_{ij}} = \frac{\partial L}{\partial y_j}\frac{\partial y_j}{\partial a^{(2)}_j}\frac{\partial a^{(2)}_j}{\partial w^{(2)}_{ij}}
+\label{eq:backprop_output}
+\end{equation}
+where $i$ corresponds to the hidden layer, $j$ corresponds to the output layer, and $a^{(2)}$ represents the input to the activation function (the linear combination of the neuron input) of a node in the second layer.
+The first the three terms is the loss derivative, since we are using the L2-norm it becomes
+\begin{equation}
+  \frac{\partial L}{\partial y_j} = (y_j - t_j)
+\end{equation}
+The second one is the sigmoid derivative (see Eq.~\ref{eq:sigmoid_derivative}):
+\begin{equation}
+  \frac{\partial y_j}{\partial a^{(2)}_j} = \sigma(a^{(2)}_j)(1-\sigma(a^{(2)}_j)) = y_j(1 - y_j)
+\end{equation}
+where the last step is due to the fact we are considering the output layer.
+Finally, the third one is the derivative of $a_j$ (i.e. the input value of the activation function) which equals
+\begin{equation}
+  \frac{\partial a^{(2)}_j}{\partial w^{(2)}_{ij}} = h_i
+\end{equation}
+where $h_i$ is the output of the $i$th node of the hidden layer.
+
+Replacing the partial derivatives into Eq.~\ref{eq:backprop_output} above, we get
+\begin{equation}
+  \frac{\partial L}{\partial w^{(2)}_{ij}} = (y_j - t_j) y_j(1 - y_j) h_i
+\end{equation}
+
+This is the update rule for a single weight for the output layer in our example network.
+
+\subsubsection{Back-propagation for a Hidden Layer}
+Similarly to the back-propagation of the output layer $\frac{\partial L}{\partial w^{(1)}_{ij}}$, the update rule for a single weight in a hidden layer, is given by Eq.~\ref{eq:backprop_output}, and again it can be computed following the chain rule.
+
+The calculation of the last two terms of the right hand side are the same as in the output layer case, but the calculation of the first component is more complex.
+The problem is that we don’t have targets for the hidden layers’ outputs, so we can’t calculate the errors as we did for the output layers.
+Instead, we solve this issue by tracing the contribution of each neuron (hidden or not) to the outputs’ errors. Let’s illustrate this with the following back-propagation example.
+
+The weight $w^{(1)}_{11}$ contributes to $h_1$. But $h_1$ is connected to the weights $w^{(2)}_{11}$ and $w^{(2)}_{12}$, contributing to two outputs. This means we can trace the contribution of $w^{(1)}_{11}$ to two outputs ($y_1$ and $y_2$) and errors ($e_1$ and $e_2$).
+
+We take the errors and back-propagate them through the net using the $w^{(2)}_{1j}$ weights. This allows us to measure the contribution of the hidden layers to the respective errors and use it to update the $w^{(1)}$ weights.
+
+Let’s take the solution for weight $w^{(1)}_{11}$ as an example:
+\begin{align}
+	\frac{\partial L}{\partial h_1} &= \frac{\partial L}{\partial y_1}\frac{\partial y_1}{\partial a^{(2)}_1}\frac{\partial a^{(2)}_1}{\partial h_1} + \frac{\partial L}{\partial y_2}\frac{\partial y_2}{\partial a^{(2)}_2}\frac{\partial a^{(2)}_2}{\partial h_1} \\ 
+	& = (y_1 - t_1)y_1(1-y_1)w^{(2)}_{11} + (y_2 - t_2)y_2(1-y_2)w^{(2)}_{12}
+\end{align}
+
+Now, we can calculate $\frac{\partial L}{\partial w^{(1)}_{11}}$ %, which was the only missing part of the update rule for the hidden layer.
+whose final expression is
+\begin{equation}
+  \frac{\partial L}{\partial w^{(1)}_{11}} = [(y_1-t_1)y_1(1-y_1)w^{(2)}_{11}+(y_2-t_2)y_2(1-y_2)w^{(2)}_{12}]h_1(1-h_1)x_1	
+\end{equation}
+The generalized form of this equation is:
+\begin{equation}
+  \frac{\partial L}{\partial w^{(l)}_{ij}} = \sum_k(y_k-t_k)y_k(1-y_k)w^{(l+1)}_{ij}h_j(1-h_j)x_i
+\end{equation}
+In our programs the \emph{optimization function} that we will be used is \emph{Adam}.
 
 \subsection{Regression and Classification}
 \label{regression-and-classification}
 
-Neural network applications can be categorized into two main classes: \emph{classification} and \emph{regression}. Let's see their c5characteristics and differences.
+Neural network applications can be categorized into two main classes: \emph{classification} and \emph{regression}. Let's see their characteristics and differences.
 
 \subsubsection{Classification}
 \label{classification}
