@@ -87,61 +87,40 @@ Answer the questions in the spaces provided. If you run out of room for an answe
 
 \section*{Questions}
 \vspace{.5cm}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\question
-Consider different bonds with a face value of \$ 100, with the following coupon rates.
 
-\begin{table}[h]
-  \begin{center}
-    \begin{tabular}{|l|c|c|c|c|}
-      \hline
-      \textbf{Maturity}    & 6M    & 1Y     & 1.5Y   & 2Y  \\ \hline
-      \textbf{Coupon (\%)} & 3     & 3.50   & 4.50   & 6 \\ \hline
-      \textbf{Price (\$)}  & 98.53 & 103.39 & 105.90 & 110.74 \\ \hline
-    \end{tabular}
-    \end{center}
-  \end{table}
-Each bond has a semi-annual payment schedule. Applying the bootstrap technique determine the implied yield curve.
-\fillwithlines{3cm}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\question Consider that the spot yield on government bonds are 4\%, 5\% and 5\% for 1-year, 2-year and 3-year maturity respectively. For corporate BBB bonds, the spot yields are 5\%, 7\% and 8\% respectively. If the recovery rate is 0\%, what is the implied cumulative probability that companies issuing BBB bonds will default after 3 years? What if the recovery rate is 10\%?
 \begin{solution}
-Considering the first bond we can deduce that
-\begin{equation*}
-  P_1 = \frac{FV + C_1}{(1+r_{6M})^{\frac{1}{2}}} \implies r_{6M} = \left(\frac{100}{98.53}\right)^{2} -1 = 3.00\%
-\end{equation*}
+The forward rates are respectively:
+F(0;1,2) = 0.06
+F(0;2,3) = 0.05
 
-The second bond has an intermediate copoun (at 6M) before expiry so previous formula becomes
+F_c(0;1,2) = 0.09
+F_c(0;2,3) = 0.1
+ 
+Call $p_{01}$ the probability that the corporate bond will not default between year 0 and year 1.
+\begin{equation}
+p_{01} = \cfrac{1.04}{1.05} = 0.9905 \Rightarrow 1-p_{01} = 0.95\%
+\end{equation}
+For further periods:
+\begin{equation}
+p_{12} = \cfrac{1.06}{1.09} = 0.9724 \Rightarrow 1-p_{12} = 2.76\%
+p_{23} = \cfrac{1.05}{1.1} = 0.9545 \Rightarrow 1-p_{23} = 4.55\%
+\end{equation}
+ 
+The cumulative probability of default is then around 8.26\%.
+If the recovery rate is 10\%, we get:
+\begin{equation}
+p_{01}(1+r_{c1}) + 0.1(1-p_{01})(1+r_{c1} = 1+r_1 \Rightarrow (1+r_{c1})(0.9p_{01}+0.1) = 1+r_1 
+\Rightarrow 0.9p_{01} = \cfrac{1+r_1}{1+r_{c1}}-0.1 = 1.04/1.05 - 0.1 \Rightarrow 1-p_{01} = 1.06\%
+\end{equation}
+The same way we find:
+ \begin{equation}
+0.9p_{12}= 1.06/1.09 - 0.1 \Rightarrow 1-p_{12} = 3.05\%
+0.9p_{23}= 1.05/1.1 - 0.1 \Rightarrow 1-p_{23} = 5.05\%
+\end{equation}
+The  cumulative probability of default is then around 9.16\%. Intuitively, the more the bond pays in case of default, the lower are the required yields. Hence, if yields are high despite the recovery rate of 10\%, it must be that the default probability is higher. 
 
-\begin{equation*}
-  \begin{gathered}
-    P_2 =  \frac{C_2}{(1+r_{6M})^{\frac{1}{2}}} + \frac{FV + C_2}{(1+r_{1Y})} = \frac{3.5}{(1+0.03)^{\frac{1}{2}}} + \frac{103.5}{(1+r_{1Y})} = 3.4486 + \frac{103.5}{(1+r_{1Y})}\\
-    r_{1Y} = \left(\frac{103.5}{103.39-3.4486}\right)-1 = 3.56\%
-  \end{gathered}
-\end{equation*}
-
-Analogously for the third bond
-
-\begin{equation*}
-  \begin{gathered}
-    P_3 =  \frac{C_3}{(1+r_{6M})^{\frac{1}{2}}} + \frac{C_3}{(1+r_{1Y})} +  \frac{FV+C_3}{(1+r_{1.5Y})^{\frac{2}{3}}} \\
-    r_{1.5Y} = \left(\frac{104.5}{105.9-8.7793}\right)^{\frac{2}{3}}-1 = 5.00\%
-  \end{gathered}
-\end{equation*}
-
-A different programmatical approach relies on the usage of root finding algorithms on the bond pricing equation to determine the unknown rate:
-\begin{ipython}
-from scipy.optimize import brentq
-
-rate = [0.03, 0.0356, 0.05]
-def price(r, F, C, P):
-    return C/(1+rate[0])**0.5 + C/(1+rate[1]) + C/(1+rate[2])**1.5 \\
-        + (F+C)/(1+r)**2 - P
-
-r = brentq(price, 0, 0.2, args=(100, 100*0.06, 110.74)
-print ("{:.3f}".format(r))
-\end{ipython}
-\begin{ioutput}
-0.065
-\end{ioutput}
 \end{solution}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -174,20 +153,7 @@ In particular buying 7 $B_{1Y}$, 7 $B_{2Y}$ and 107 $B_{3Y}$ the profit is \$ 2.
 \begin{solution}
 The second answer is the correct one.
 \end{solution}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\question
-Suppose \texttt{my\_list} is \texttt{[3, 6, 12, 24, 5, 10, 15, 20]}.
-Which of the following statements returns the following list \texttt{[6, 24, 10, 20]} ?
 
-\begin{checkboxes}
-\choice \texttt{print (my\_list[1:8])}
-\choice \texttt{print (my\_list[::2])}
-\choice \texttt{print (my\_list[1::2])}
-\choice \texttt{print (my\_list[-1:-7:-2])}
-\end{checkboxes}
-\begin{solution}
-Choice 3 is the correct one, since the operator params are \texttt{[start:end:step]}
-\end{solution}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \question
@@ -203,6 +169,7 @@ print (d["peach"])
 \texttt{KeyError: 'peach'}
 \end{solution}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \question
 What should we put instead of the \texttt{?} to make the following boolean expression \texttt{True} ?
 \begin{ipython}
@@ -268,16 +235,6 @@ Neural network initialization means initialized the values of the parameters i.e
 Weight initialization is one of the crucial factors in neural networks since bad weight initialization can prevent a neural network from learning the patterns.
 
 On the contrary, a good weight initialization helps in giving a quicker convergence to the global minimum. As a rule of thumb, the rule for initializing the weights is to be close to zero without being too small.
-\end{solution}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\question
-What is the use of the Loss functions in a Neural Network model ?
-\fillwithlines{3cm}
-\begin{solution}
-The loss function is used as a measure of accuracy to identify whether our neural network has learned the patterns accurately or not with the help of the training data.
-This is completed by comparing the training data with the testing data.
 \end{solution}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -519,29 +476,40 @@ loss to the financial institution ? Assume that 6-month LIBOR was 9\% per annum 
 
 \fillwithlines{3cm}
 \begin{solution}
-At the end of year 3 the financial institution was due to receive 500,000 (\% of 10 million) and pay 450,000 (\% of 10 million). The immediate loss is therefore 50,000. To value the remaining swap we assume than forward rates rates are 8\% per annum. The remaining cash áows are therefore valued on the assumption that the floating payment is and the net payment that would be received is . The total cost of default is therefore the cost of foregoing the following cash flows :
+At the end of year 3 the financial institution was due to receive 500,000 (\% of 10 million) and pay 450,000 (\% of 10 million). The immediate loss is therefore 50,000. To value the remaining swap we assume than forward rates rates are 8\% per annum. The remaining cash flows are therefore valued on the assumption that the floating payment is and the net payment that would be received is . The total cost of default is therefore the cost of foregoing the following cash flows:
 3 year : 50; 000
 3.5 year : 100; 000
 4 year : 100; 000
 4.5 year : 100; 000
 5 year : 100; 000
-Discounting these cash áows to year 3 at 4\% per six months, we obtain the cost of the default as 413,000.
+Discounting these cash flows to year 3 at 4\% per six months, we obtain the cost of the default as 413,000.
 \end{solution}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\question
-Company A finances itself by issuing a 5 year zero-coupon bond. Knowing that the bond is currently sold at \$ 83.75 and that similar riskless ZCB value is \$ 86.07, determine Company A default probability (assume the recovery rate to be 40\%).
-\fillwithlines{3cm}
-\begin{solution}
-The bond price is related to the default probability $\delta$ through the following formula
-\begin{equation*}
-  P_{bond} = (1-\delta)P_{rf} + \delta P_{rf} R \implies \delta = \frac{P_{bond}-P_{rf}}{P_{rf}(R-1)}
-\end{equation*}
+\question 
 
-Applying previous result to the problem gives a default probability of
-\begin{equation*}
-  \delta = \frac{83.75-86.07}{86.07\cdot(0.4-1)} \approx 4.5\% 
-\end{equation*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\question
+What value is printed by the following code ?
+\begin{ipython}
+import math
+
+def f(x):
+  y = math.exp(-math.sin(2*math.pi*x))
+
+print (f(0.1234))
+\end{ipython}
+
+\begin{checkboxes}
+\choice None
+\choice 0
+\choice 1
+\choice False
+\end{checkboxes}
+\begin{solution}
+\texttt{None}
 \end{solution}
 
 
