@@ -668,7 +668,7 @@ Truth: [7 2 1 0 4 1 4 9 5 9]
 Since the last but one digit has lower probability let's check the returned list to see which other number have non-zero probability.
 
 \begin{ipython}
-for i, p in enumerate(predictions[-2])])
+for i, p in enumerate(predictions[-2]):
     print("9th digit:", [f"dig {i}: {p:.3f}"])
 \end{ipython}
 \begin{ioutput}
@@ -681,31 +681,33 @@ for i, p in enumerate(predictions[-2])])
 
 The NN performance can be checked using your own calligraphy. 
 
-Open your favorite image editor (e.g. Paint, GIMP,\ldots) and create a black-white 200x200 pixels canvas. With the help of the mouse draw a digit and save it as a png file.
-Before passing the image to the NN it has to be resized and this is done with an ad-hoc function, \texttt{transform\_image}, which can be imported from \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/digit_converter.py}{\texttt{digit\_converter.py}}.
+Open your favorite image editor (e.g. Paint, GIMP,\ldots) and create a 200x200 pixels canvas. With the help of the mouse (or a pen) draw a digit and save it as a png file.
+Before passing the image to the NN it has to be transformed to match the size and characteristics of those used in the training. This is done with an ad-hoc function, \texttt{transform\_image}, shown below.
 
 \begin{ipython}
-from digit_converter import transform_image
+import numpy as np
+from PIL import Image
+
+def transform_image(image_filename, size=(28,28)):
+    image = Image.open(image_filename)
+    grayscale_image = image.convert('L')
+    grayscale_image = grayscale_image.resize(size, resample=Image.LANCZOS)
+    return np.array(grayscale_image)
 
 filenames = ['four.png', 'five.png']
 for f in filenames:
-    test_images = np.array(transform_image(f))
-test_images = np.expand_dims(test_images, axis=3)
-predict = model.predict(test_images)
-
-print ("Tesing on custom digits...")
-print ("Predicted: ", np.argmax(predict, axis=1))
-print("%:", [f"{p[np.argmax(p)]) for p in predict]:.3f}")
-print(["f{p:.2f}" for p in predict[0]])
+    test_image = np.expand_dims(transform_image(f), axis=3)
+    predict = model.predict(test_image)
+    print ("Predicted: ", np.argmax(predict, axis=1))
+    print("%:", [f"{p[np.argmax(p)]) for p in predict]:.3f}")
+    print(["f{p:.2f}" for p in predict[0]])
 \end{ipython}
 \begin{ioutput}
-Tesing on custom digits...
 Predicted:  [4]
 %: ['0.802']
 ['0.00', '0.00', '0.00', '0.00', '0.80', '0.00', '0.00', '0.20', '0.00', 
 '0.00']
 
-Testing on custom digits...
 Predicted:  [5]
 %: ['0.981']
 ['0.00', '0.00', '0.00', '0.01', '0.00', '0.98', '0.00', '0.01', '0.00', 
