@@ -1,0 +1,210 @@
+\documentclass[]{article}
+
+\title{Basket Default Swap}
+\author{}
+\input{header}
+
+\begin{document}
+
+\maketitle
+
+\section{Derivative Definition}
+A \emph{basket default swap} (BDS) is a credit derivative on a portfolio of $n$ reference entities.
+The simplest basket default swaps are first-to-default, second-to-default, \ldots, $n$th-to-default swaps. It is very similar to a standard CDS except for the protection it can offer, indeed:
+\begin{itemize}
+\item a first-to-default swap provides insurance for only the first default happening;
+\item a second-to-default swap provides insurance for only the second default
+\item \ldots
+\end{itemize}
+
+For example, in a $n$th-to-default swap, the contract seller does not make any payment to the protection buyer for the first $n - 1$ defaulted entities, but makes it only for the $n$th default. Like in a CDD once there has been this payment the swap terminates.
+
+\subsection{Valuation}
+Let's assume that the principals and the expected recovery rates are the same for all the underlying reference assets. Let's also consider that all the assets have the same default probability.
+
+The valuation procedure is quite similar to that for a regular CDS:
+\begin{itemize}
+\item the value of a CDS depends on the probability of default ($P_{\textrm{def}}$) of the reference asset within the life of the contract;
+\item the value of a BDS depends on the probability $P^{(n)}_{\textrm{def}}$ that $n$ assets, among those of the reference basket, defaulted within the life of the contract.
+\end{itemize}
+
+Similarly to the CDS, the protection buyer makes quarterly payments at a specified rate until the $n$th default occurs or the end of the contract is reached. In case the $n$th default occurred, the seller will pay $F\cdot(1 − R)$, the \emph{loss given default}.
+
+\subsection{Algorithm Implementation}
+
+BDS valuation implementation follows closely the code written for the CDS, except that we are not going to consider the credit curve of a single asset but rather the joint default probability of the entire basket focusing on the $n$th default according to the BDS definition.
+So we can reuse entirely the CDS code and focus on the new credit curve definition.
+Since we have already implemented a \texttt{CreditCurve} class which takes as parameters a set of pillar dates and the corresponding non-default probabilities, we are going to define the relevant credit curve for our BDS in a discrete way.
+
+Without loss of generality we can assume Gaussian correlation among the $P_{\textrm{def}}$ of the entities and that each $P_{\textrm{def}}$ is modelled according to a Poisson process with a constant hazard rate $\lambda$. So we proceed as follows:
+\begin{enumerate}
+\item create a $N$ dimensional Gaussian copula, with $N$ being the number of entities in the basket. Then sample $m$ times from the distribution to get a $N\times m$ array of correlated $P_{def}$;
+\begin{ipython}
+import numpy as np
+from finmarkets import GaussianCopula
+
+m = 100000
+N = 5
+rho = 0.5
+cov = np.ones(shape=(N, N))*rho
+np.fill_diagonal(cov, 1)
+g_copula = GaussianCopula(N, cov)
+copula_sample = g_copula.sample(m)
+
+print ("copula sample shape: ", copula_sample.shape)
+print (copula_sample)
+\end{ipython}
+\begin{ioutput}
+copula sample shape: (100000, 5)
+[[0.60480404 0.79241128 0.7922326  0.58344479 0.45601573]
+[0.97967882 0.47501304 0.70409046 0.14648779 0.33119248]
+[0.5197925  0.90746284 0.71911478 0.64719254 0.42531869]
+...
+[0.20182568 0.05399022 0.6359692  0.40018493 0.11124106]
+[0.05005798 0.60204771 0.08187652 0.91139689 0.10944598]
+[0.60788262 0.34598408 0.57910356 0.10051283 0.60155192]]
+\end{ioutput}
+Notice that the covariance matrix used in the multivariate Gaussian distribution has been defined into two steps:
+\begin{equation*}
+	cov = \begin{bmatrix}
+		1 & 1 & 1 & 1 & 1 \\
+		1 & 1 & 1 & 1 & 1 \\
+		1 & 1 & 1 & 1 & 1 \\
+		1 & 1 & 1 & 1 & 1 \\
+		1 & 1 & 1 & 1 & 1 \\
+	\end{bmatrix}\cdot \rho = 
+	\begin{bmatrix}
+		\rho & \rho & \rho & \rho & \rho \\
+		\rho & \rho & \rho & \rho & \rho \\
+		\rho & \rho & \rho & \rho & \rho \\
+		\rho & \rho & \rho & \rho & \rho \\
+		\rho & \rho & \rho & \rho & \rho \\
+	\end{bmatrix}
+\end{equation*}
+Then the diagonal elements have been replaced with 1s with \texttt{np.fill\_diagonal};
+\item applying the PPF transformation of the Poisson process, convert the copula sample into a set of default times (an $N\times m$ array of $\tau_{def}$). Each row of this matrix represents a set default times, one for each of the $N$ entities of the basket;
+
+\begin{ipython}
+from finmarkets import PoissonProcess
+
+poisson = PoissonProcess(l=0.06)
+tau_def = poisson.ppf(copula_sample)
+
+print (f"tau_def shape: {tau_def.shape}")
+print (tau_def)
+\end{ipython}
+\begin{ioutput}
+tau_def shape: (100000, 5)
+[[15.47289228 26.20327421 26.18893479 14.59560447 10.14724927]
+[64.93486319 10.73969756 20.29502463  2.63992387  6.7043162 ]
+[12.22561614 39.669083   21.16348612 17.36388026  9.23232736]
+...
+[ 3.75713756  0.92503952 16.8419465   8.51889812  1.9654874 ]
+[ 0.8559054  15.35705259  1.42372316 40.39313865  1.93185857]
+[15.603234    7.07705965 14.42280786  1.76550815 15.33630145]]
+\end{ioutput}
+
+\item define a set of pillar dates $\{d_i\}$, in this example 1 to 6 years from the observation date;
+\begin{ipython}
+pillars = [i for i in range(1, 6)]
+\end{ipython}
+
+\item for each pillar $d_i$ and for each simulation of default times, count how many entities defaulted before the pillar date ($\tau_{def}\leq d_i$) in that particular simulation. In such a way we get a $N$ vector of number of defaults $e_{defs}$), one for each simulation;
+\begin{ipython}
+entity_defs = np.sum(tau_def <= pillars[0], axis=1)
+
+print (f"entity_defs shape: {entity_defs.shape}")
+print (entity_defs)
+\end{ipython}
+\begin{ioutput}
+entity_defs shape: (100000,)
+[0 0 0 ... 1 1 0]
+\end{ioutput}
+To compute the number of defaulted entities before the considered pillar date per simulation, we have first checked element-wise if the default time is earlier than the pillar date with \texttt{tau\_def <= pillars[0]}. Then with \texttt{np.sum} (with the parameter \texttt{axis=1} we have aggregated the results by simulation.
+\item calculate the number of simulations in which there are at least $n$ defaulted entities \texttt{entity\_defs};
+\begin{ipython}
+nth_default = 3
+
+n_defs = np.sum(entity_defs>=nth_default)
+print (f"simulations with {nth_default} defaults: {n_defs}")
+\end{ipython}
+\begin{ioutput}
+simulations with 3 defaults: 2505
+\end{ioutput}
+Again we have used \texttt{np.sum} this time to aggregate the results for the entire set of simulations. 
+\item finally compute the nth-to-default survival probability for the pillar $d_i$ as ($P_{\textrm{sur}} = 1 - n_{defs}/m$);
+\begin{ipython}
+P_sur = 1 - n_defs/m
+print (f"surv. prob.: {P_sur}")
+\end{ipython}
+\begin{ioutput}
+surv. prob.: 0.97495
+\end{ioutput}
+\end{enumerate}
+Putting all together we can define a \texttt{BasketDefaultSwap} class:
+\begin{ipython}
+import numpy as np
+from finmarkets import CreditCurve, CreditDefaultSwap, PoissonProcess
+from scipy.stats import multivariate_normal, norm
+
+class BasketDefaultSwaps:
+    def __init__(self, nominal, N, start_date, maturity, spread, 
+                 tenor="3m", recovery=0.4):
+        self.cds = CreditDefaultSwap(nominal, start_date, maturity, spread, tenor, recovery)
+        self.N = N
+        self.cc = None
+
+    def credit_curve(self, n_defaults, copula_func, default_prob, 
+                     obs_date, pillars, simulations=100000):
+        copula_sample = copula_func.sample(simulations)
+        default_times = default_prob.ppf(copula_sample)
+
+        Ts = [(p-obs_date).days/365 for p in pillars]
+        ndps = []
+        for t in Ts:
+            entity_defs_per_sim = np.sum(default_times <= t, axis=1)
+            tot_defs = np.sum(entity_defs_per_sim >= n_defaults)
+            ndps.append(1 - tot_defs/simulations)
+        self.cc = CreditCurve(obs_date, pillars, ndps)
+
+    def npv(self, dc):
+        if self.cc is None:
+            print ("Need to call credit_curve method first !")
+            return None
+        return self.cds.npv(dc, self.cc)
+\end{ipython}
+
+\section{Testing}
+Consider a 2-years 3rd-to-default BDS on 10 reference entities with a Gaussian copula correlation of 0.3. The expected recovery rate, $R$, is $40\%$ and the spread of the contract is 0.01. The term structure of interest rates is assumed to be flat at 5%.
+
+The 10 entities default probabilities are modelled by Poisson processes with constant hazard rates, $\lambda_i = 0.01$, such that
+\begin{equation*}
+Q(t) = 1 - e^{-\lambda t}	
+\end{equation*}
+
+\begin{ipython}
+from finmarkets import DiscountCurve, CreditCurve
+from datetime import date
+from dateutil.relativedelta import relativedelta
+
+n_cds = 10
+rho = 0.3
+cov = np.ones(shape=(n_cds, n_cds))*rho
+np.fill_diagonal(cov, 1)
+copula = GaussianCopula(n_cds, cov)
+
+obs_date = date.today()
+pillar_dates = [obs_date + relativedelta(years=i) for i in range(6)]
+dfs = [1/(1+0.05)**i for i in range(6)]
+dc = DiscountCurve(obs_date, pillar_dates, dfs)
+
+np.random.seed(1)
+basket = BasketDefaultSwaps(1, n_cds, obs_date, "2y", 0.01, "3m")
+basket.credit_curve(n_defaults=3, copula_func=copula, default_prob=poisson, 
+                    obs_date=obs_date, pillars=pillar_dates)
+print (basket.npv(dc))
+\end{ipython}
+\begin{ioutput}
+0.070757976355211
+\end{ioutput}
+\end{document}

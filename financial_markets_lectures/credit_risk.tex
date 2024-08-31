@@ -76,6 +76,7 @@ Also remember that $P_{\textrm{def}}(t_0, t) = 1 - P_{\textrm{sur}}(t_0, t)$. Gi
 \lambda(t) = -\cfrac{1}{dt}\cdot\cfrac{dP_{\textrm{sur}}(t_0, t)}{P_{\textrm{sur}}(t_0, t)} = -\cfrac{d(\textrm{log}P_{\textrm{sur}}(t_0, t))}{dt} \implies d(\textrm{log}P_{\textrm{sur}}(t_0, t)) = -\lambda dt\\[5pt]
 P_{\textrm{sur}}(t_0, t) = \mathrm{exp}\left(-\int_{t_0}^{t}\lambda(s) ds\right)
 \end{gathered}
+\label{eq:constant_hazard_rate_prob}
 \end{equation}
 
 In practice hazard rate will be calculated numerically, and therefore we will consider the \emph{annualized} conditional probability of the issuer defaulting between a date and the next.
@@ -83,36 +84,125 @@ In practice hazard rate will be calculated numerically, and therefore we will co
 \label{sec:constant_hazard_rate}
 The simplest possible survival distribution is obtained by assuming a constant risk over time, so the hazard is $\lambda (t)=\lambda$ for all $t$. The corresponding survival function is $P_{\textrm{sur}}(t_0, t) = e^{−\lambda (t-t_0)}$.
 
+\begin{finmarkets}
+	Similarly to discount curves we implement a class to handle credit curves, \texttt{CreditCurve}. It is characterized by a list of pillar dates with the corresponding survival probabilities. Like the \texttt{DiscountCurve} object you don't need to pass the observation date value (surviv
+	al probability 1) since it is done automatically by the class constructor. Two methods are available: one to interpolate survival probabilities and the second to compute the hazard rate at any arbitrary date (beware that extrapolation is not allowed so the input date must be within the pillar dates range).
+\end{finmarkets}
+
+\begin{ipython}
+	import numpy as np
+	from scipy.interpolate import interp1d
+	from dateutil.relativedelta import relativedelta
+	
+	class CreditCurve:
+	def __init__(self, obs_date, pillars, ndps):
+	self.obs_date = obs_date
+	if obs_date not in pillars:
+	pillars = [obs_date] + pillars
+	ndps = np.insert(ndps, 0, 1)
+	self.pillars = [d.toordinal() for d in pillars]
+	self.ndps = ndps
+	self.interpolator = (self.pillars, self.ndps)
+	
+	def ndp(self, d):
+	d_days = d.toordinal()
+	if d < self.pillars[0] or d > self.pillar[-1]:
+	print (f"Cannot extrapolate survival probabilities (date: {d}).")
+	return None
+	return self.interpolator(d_days)
+	
+	def hazard(self, d):
+	ndp_1 = self.ndp(d)
+	ndp_2 = self.ndp(d + relativedelta(days=1))
+	if ndp_1 is None or ndp_2 is None:
+	return None
+	delta_t = 1.0 / 365.0
+	h = -1.0 / ndp_1 * (ndp_2 - ndp_1) / delta_t
+	return h
+\end{ipython}
+
+Let's test the class with some inputs.
+\begin{ipython}
+	from datetime import date
+	from dateutil.relativedelta import relativedelta
+	
+	obs_date = date.today()
+	cc = CreditCurve(obs_date, [obs_date + relativedelta(years=2)], [0.8])
+	
+	print (cc.ndp(obs_date + relativedelta(years=1)))
+\end{ipython}
+\begin{ioutput}
+	0.9001367989056088
+\end{ioutput}
+\begin{ipython}
+	print(cc.hazard(obs_date + relativedelta(years=1)))
+\end{ipython}
+\begin{ioutput}
+	0.11094224924016097
+\end{ioutput}
+
 \subsection{Poisson Process}
 \label{sec:poisson_process}
-This kind of default (or survival) distribution belongs to a class of models called \emph{Poisson processes}. 
-They can be used to model the frequency of events during a certain period of time assuming that one knows the average occurrence of those events over some period of time. 
-Their general form is
+The kind of processes described by Eqs.~\ref{eq:constant_hazard_rate_prob} belong to a class of models called \emph{Poisson processes}. 
+They can be used to model the frequency of events during a certain period of time assuming that one knows the average occurrence of those events. An alternative derivation of the same formulas will give us interesting insights on how it would be possible to simulate default times.
 
+Consider random events such as the arrival of customer at a shop, or the arrival of emails to a mail server or the arrival of calls to a call-center. These events can be described by a counting function $N(t)$ defined for all $t\ge 0$.
+
+This counting function represents the number of events that occurred in $[0, t]$. For each interval $[0,t]$ the value $N(t)$ is an observation of a random variable where the only possible values are the integers $0, 1, 2\ldots$
+
+The counting process $\{N(t):t\ge 0\}$ is said to be a \emph{Poisson process} with mean rate $\lambda$ if the following assumptions are fulfilled:
+\begin{itemize}
+\item $N(0)=0$;
+\item it has independent increments: that is the number of arrivals during non-overlapping time intervals are independent random variables;
+\item the number of events in any interval of length $t$ is a Poisson random variable with parameter $\lambda t$.
+\end{itemize}
+
+Therefore
 \begin{equation}
-P_X(k) = \frac{e^{-\lambda} \lambda^{k}}{k!}
-\label{eq:poisson_distribution}
+P(N(t)=n)=\cfrac{e^{-\lambda t}(\lambda t)^n}{n!}
+\label{eq:poisson_pdf}
 \end{equation}
 
-The Poisson process has a remarkable substructure. Even though the number of event occurrences is modelled using a \emph{discrete} Poisson distribution, Eq.~\ref{eq:poisson_distribution}, the interval of time between consecutive events can be modelled using an exponential distribution, which is \emph{continuous}.
-
-The probability density function of the random variable describing the time to the next event is:
-
+The last assumption implies that the distribution of the number of arrivals between, say, $t$ and $t+s$ depends only on the length of the interval $s$ and not on the starting point $t$. This property is usually called *stationarity*. Consequently:
 \begin{equation}
-P_X(t) = \lambda e^{-\lambda t}
-\label{eq:inter-arrival}
+P(N(t)-N(s)=n)=\cfrac{e^{-\lambda (t-s)}(\lambda (t-s))^n}{n!}
 \end{equation}
-and its cumulative distribution function is:
 
+and because of the properties of the Poisson distribution:
 \begin{equation}
-F_X(t) = P(X<=t) = \int_{0}^{t}\lambda e^{-\lambda x} dx = 1 - e^{-\lambda t}
-\label{eq:inter-arrival}
+\mathbb{E}[N(t)-N(s)]=\lambda (t-s)
+\end{equation}
+
+Now consider the time at which arrivals occurs in a Poisson process. Let the first arrival occur at time $T_1$, the second occur at time $T_1 + T_2$ and so on. Thus $T_1$, $T_2, \ldots$ are successive \emph{inter-arrival times}. The first arrival occurs after time $t$ if and only if there are no arrivals in the interval $[0,t]$ so 
+\begin{equation}
+\{T_1>t\}=\{N(t)=0\}
+\end{equation}
+and consequently
+\begin{equation}
+%P(T_1>t)=P(N(t)=0)=e^{-\lambda t}
+\end{equation}
+
+Thus the probability that the first arrival will occur in $[0,t]$ is given by
+\begin{equation}
+P(T_1\le t)= 1-P(T_1>t)=1-e^{-\lambda t}
 \end{equation}
 which is the same function obtained for the default probability in case of constant hazard rate, see~\ref{sec:constant_hazard_rate}.
 Recollect that CDF of $X$ returns the probability that the interval of time between consecutive events will be less than or equal to some value $t$.
+
+%which is the cumulative density function of an exponential distribution with parameter $\lambda$. 
+Hence, $T_1$ is distributed exponentially
+\begin{equation}
+P_{T_1}(t) = \cfrac{d}{dt}(1-e^{-\lambda t}) = \lambda e^{-\lambda t}
+\end{equation}
+with mean  
+\begin{equation}
+\mathbb{E}[P_{T_1}(t)] = \cfrac{1}{\lambda}
+\end{equation}
+It can also be shown that all inter-arrival times $T_1, T_2,\ldots$ are exponentially distributed and independent with mean $1/\lambda$.
+
 Finally the inverse function of the CDF is:
 \begin{equation}
-F^{-1}(X) = -\frac{\log(1-X)}{\lambda}
+	F^{-1}(X) = -\frac{\log(1-X)}{\lambda}
 \end{equation}
 
 \begin{finmarkets}
@@ -121,11 +211,13 @@ We now have enough information to simulate credit events according to Poisson pr
 The following class is an \emph{extension} of \texttt{scipy.stats} that implements distributions of the form $\lambda e^{-\lambda t}$. This is another example of \emph{sub-classing} an existing class (for inheritance, see Section~\ref{inheritance-and-overriding-methods}) since its parent is \texttt{rv\_continuous} the starting point for each continuous distribution in \texttt{scipy}.
 
 Once the default intensity has been set, we can model the cumulative default probability over a certain period of time using the \texttt{cdf} method. Contrary feeding different probability values, using the inverse-CDF (the \texttt{ppf} method), gives us the corresponding default times for the respective probabilities.
+Default times can also be obtained by sampling from the distribution as shown in the next example.
 \end{finmarkets}
 
 \begin{ipython}
-import numpy as np
+import numpy as np, matplotlib.pyplot as plt
 from scipy.stats import rv_continuous
+from scipy.stats import expon
 	
 class PoissonProcess(rv_continuous):
     def __init__(self, l):
@@ -142,64 +234,26 @@ class PoissonProcess(rv_continuous):
 	
     def _ppf(self, x):
         return -np.log(1-x)/self.l
+
+p = PoissonProcess(5)
+t = p.rvs(size=500)
+
+p1 = expon.fit(t)
+
+xplot = np.linspace(0.01, 1.5, 100)
+plt.hist(t, bins=20, density=True, color="xkcd:lightblue")
+plt.plot(xplot, expon.pdf(xplot, *p1), color="xkcd:red")
+plt.title("Inter-arrival time distribution")
+plt.show()
 \end{ipython}
 
-\begin{finmarkets}
-Similarly to discount curves we implement a class to handle credit curves, \texttt{CreditCurve}. It is characterized by a list of pillar dates with the corresponding survival probabilities. Like the \texttt{DiscountCurve} object you don't need to pass the observation date value (surviv
-al probability 1) since it is done automatically by the class constructor. Two methods are available: one to interpolate survival probabilities and the second to compute the hazard rate at any arbitrary date (beware that extrapolation is not allowed so the input date must be within the pillar dates range).
-\end{finmarkets}
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/default_time_simulation}
+	\caption{Default times simulated through the sampling from a Poisson process with $\lambda=5$ and time interval $t=100$. An exponential fit shows that the decay rate is about $1/\lambda=0.2$.}
+	\label{fig:default_time_simulation}
+\end{figure}
 
-\begin{ipython}
-import numpy as np
-from scipy.interpolate import interp1d
-from dateutil.relativedelta import relativedelta
-	
-class CreditCurve:
-    def __init__(self, obs_date, pillars, ndps):
-        self.obs_date = obs_date
-        if obs_date not in pillars:
-            pillars = [obs_date] + pillars
-            ndps = np.insert(ndps, 0, 1)
-        self.pillars = [d.toordinal() for d in pillars]
-        self.ndps = ndps
-        self.interpolator = (self.pillars, self.ndps)
-
-    def ndp(self, d):
-        d_days = d.toordinal()
-        if d < self.pillars[0] or d > self.pillar[-1]:
-            print (f"Cannot extrapolate survival probabilities (date: {d}).")
-            return None
-        return self.interpolator(d_days)
-
-    def hazard(self, d):
-        ndp_1 = self.ndp(d)
-        ndp_2 = self.ndp(d + relativedelta(days=1))
-        if ndp_1 is None or ndp_2 is None:
-            return None
-        delta_t = 1.0 / 365.0
-        h = -1.0 / ndp_1 * (ndp_2 - ndp_1) / delta_t
-        return h
-\end{ipython}
-
-Let's test the class with some inputs.
-\begin{ipython}
-from datetime import date
-from dateutil.relativedelta import relativedelta
-	
-obs_date = date.today()
-cc = CreditCurve(obs_date, [obs_date + relativedelta(years=2)], [0.8])
-	
-print (cc.ndp(obs_date + relativedelta(years=1)))
-\end{ipython}
-\begin{ioutput}
-0.9001367989056088
-\end{ioutput}
-\begin{ipython}
-print(cc.hazard(obs_date + relativedelta(years=1)))
-\end{ipython}
-\begin{ioutput}
-0.11094224924016097
-\end{ioutput}
 
 \section{Credit Default Swaps}
 \label{sec:credit-default-swaps}
@@ -382,7 +436,7 @@ NPV: -122216.74 EUR
 \section{Determine Default Probabilities from Market Quotes}
 In this Section we find out how to derive default probabilities implied by market quotes, checking how it can be done both from bonds and Credit Default Swaps.
 
-\subsection{Implied Probability of Default from Coupon Bonds}
+\subsection{Default Probability from Bonds}
 \label{default-probabilities-and-bond-prices}
 
 The price of a bond issued by a party is directly linked to the credit rating of that party, since there is always an associated default risk (the borrower might not be able to repay fully or partially the amount of the taken loan). 
@@ -600,8 +654,10 @@ Imagine for example a bond that yields 150 basis points more than a similar risk
 %\end{ioutput}
 %\end{attention}
 
-\subsection{Implied Probability of Default from CDS Spread}
+\subsection{Default Probability from CDS}
 \label{default-probabilities-and-cds-spread}
+
+\subsubsection*{Default Probability and CDS Spread}
 
 Hazard rate can be estimated from the market quote of a CDS. Going back to the definition of the CDS leg NPV's indeed, and assuming that the premium is paid \emph{continuously} we can write
 \begin{equation}
@@ -630,7 +686,7 @@ So given the market quote of a CDS and the corresponding recovery rate we could 
 
 As an example if the recovery rate is 40\% a CDS spread of 200~bp would translate into an implied probability of default of about 3.3\%.
 
-\subsection{Implied Probability of Default from CDS}
+\subsubsection*{Default Probability with Bootstrapping}
 \label{default-probabilities-and-cds}
 
 To derive default probabilities from Credit Default Swap market quotes we can exploit again the \emph{bootstrap technique}. If we consider the parallelism between discount and credit curves indeed we can follow the same steps applied in Chapter~\ref{sec:swaps-and-bootstrapping} when deriving the discount factors from Overnight Index Swaps.

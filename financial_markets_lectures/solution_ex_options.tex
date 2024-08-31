@@ -1,0 +1,91 @@
+\documentclass[]{article}
+
+\title{European Options}
+\author{}
+\input{header}
+
+\begin{document}
+
+\maketitle
+
+\section{Calls and Puts}
+The goal of this exercise is to implement, possibly in an efficient way, a couple of functions to compute European Option prices using the Black-Scholes formula
+
+\begin{equation}
+C_{\textrm{BS}}(S,t)=S_{t}\Phi(d_{1})-Ke^{-r(T-t)}\Phi(d_{2})
+\label{eq:call}
+\end{equation}
+
+\begin{equation}
+P_{\textrm{BS}}(S,t)=Ke^{-r(T-t)}\Phi(-d_{2}) - S_{t}\Phi(-d_{1})
+\label{eq:put}
+\end{equation}
+
+\begin{equation}
+d_{1}={\frac  {\ln {\frac  {S_{t}}{K}}+\left(r+{\frac{1}{2}}\sigma^{2}\right)(T-t)}{\sigma \sqrt{T-t}}};\quad d_{{2}}=d_{1}-\sigma \sqrt{T-t}
+\label{eq:d12}
+\end{equation}
+where $\Phi$ is the CDF of the normal distribution.
+
+Previous equations provide a quite natural way to implement the code. In the spirit of reducing the amount of code in each function (to ease debugging) we are going to write four functions: two respectively for $d_1$ and $d_2$ and two for call and put prices.
+Also it is wise to implement the code using \texttt{numpy} objects.
+
+The actual code is a pretty straightforward copy of Eqs.~\ref{eq:call},~\ref{eq:put} and ~\ref{eq:d12}.
+
+\begin{ipython}
+import numpy as np
+
+def d_plus(St, K, r, sigma, ttm):
+    num = np.log(St/K) + (r + 0.5*sigma**2)*(ttm)
+    den = sigma*np.sqrt(ttm)
+    return num/den
+
+def d_minus(St, K, r, sigma, ttm):
+    return d_plus(St, K, r, sigma, ttm) - sigma*np.sqrt(ttm)
+\end{ipython}
+
+\begin{ipython}
+import numpy as np
+from scipy.stats import norm
+	
+def call(St, K, r, sigma, ttm):
+    d1 = d_plus(St, K, r, sigma, ttm)
+    d2 = d_minus(St, K, r, sigma, ttm)
+    return (St*norm.cdf(d1) - K * np.exp(-r*(ttm))*norm.cdf(d2))
+            
+def put(St, K, r, sigma, ttm):
+    d1 = d_plus(St, K, r, sigma, ttm)
+    d2 = d_minus(St, K, r, sigma, ttm)
+    return (K * np.exp(-r*(ttm))*norm.cdf(-d2) - St*norm.cdf(-d1))
+\end{ipython}
+
+\section{Testing}
+The class can be tested on a fictional Call Option with the following characteristic:
+\begin{itemize}
+	\item $S_0$ = 107, underlying value;
+	\item $\sigma$ = 0.12, underlying volatility;
+	\item $r$ = 0.03, risk-free rate;
+	\item $K$ = 100, strike;
+	\item $(T - t_0)$ = 1 y, time to maturity.
+\end{itemize}
+
+\begin{ipython}
+C_BS = call(S0, K, r, sigma, T)
+print (f"BS call price: {C_BS:.3f}")
+\end{ipython}
+\begin{ioutput}
+BS call price: 11.388
+\end{ioutput}
+
+Now imagine to have to compute call prices for a set of options on the same underlying but with different time to maturities. Thanks to \texttt{numpy} \emph{vectorialization} ability we can pass to the function a \texttt{numpy.array} of maturities and easily get the corresponding \texttt{numpy.array} of prices. 
+
+\begin{ipython}
+ttms = np.array([1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5])
+C_BS = call(S0, K, r, sigma, ttms)
+print (f"BS call prices: {C_BS}")
+\end{ipython}
+\begin{ioutput}
+BS call prices: [11.3883508  13.29186985 15.0448157  16.69079691 18.25501318 
+                 19.75343935 21.19691682 22.59318955 23.94801322]
+\end{ioutput}
+\end{document}

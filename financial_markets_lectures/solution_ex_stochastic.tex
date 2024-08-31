@@ -1,0 +1,60 @@
+\documentclass[]{article}
+
+\title{Stochastic Processes}
+\author{}
+\input{header}
+
+\begin{document}
+	
+	\maketitle
+	
+	\section{Geometric Brownian Motion}
+	
+	The solution of the Geometric Brownian Motion stochastic differential equation (SDE) is given by
+	\begin{equation}
+S_{t+1} = S_{t}\exp\left[\left(\mu-\frac{\sigma^2}{2}\right)dt+\sigma\sqrt{dt}\mathcal{N}(0,1)\right]
+\label{eq:gbm}
+	\end{equation}
+	The simulation of such a process, actually of every process, can be carried out using the so called \emph{Euler Scheme}.
+	The approximation works as follows: imagine to have a generic process with SDE
+	\begin{equation}
+dX(t) = \mu(t,X(t))dt + \sigma(t,X(t))dW(t)
+	\end{equation}
+	where $dW=\mathcal{N}(0,1)\sqrt{dt}$ is a Wiener process. Starting from the value of $X(t_i)$, $X(t_{i+1})$ can be computed using the \emph{discretized} version of the given $dX$, i.e. replacing $dt$ setting $\Delta t = t_{i+1} - t_{i}$, and sampling from a standard normal $\mathcal{N}(0,1)$. The algorithm can be repeated for as many steps as needed by our simulation. Hence 
+	\begin{equation}
+		X(t_{i+1}) = X(t_i) + \mu(t_i,X(t_i))\Delta t + \sigma(t_i,X(t_i))\sqrt{\Delta t}\mathcal{N}(0,1)
+		\label{eq:euler}
+	\end{equation}
+	
+	The \texttt{numpy} implementation of the Euler scheme for the Geometric Brownian Motion can be done with a function that computes $\Delta S$ according to Eqs.~\ref{eq:euler} and~\ref{eq:gbm}. Using \texttt{normal()} function we can sample directly a "number of steps" times from the normal distribution and obtain at once a list of \emph{variations} for each step.  
+\begin{ipython}
+from numpy import exp, sqrt
+from numpy.random import seed, normal
+
+def gbm(mu, sigma, dT, steps):
+    return exp((mu-0.5*sigma**2)*dT+sigma*sqrt(dT)*normal(size=steps))
+\end{ipython}
+	
+	The returned array of variations can be iteratively aggregated, starting from the initial value of the stock price $S_0$ with the \texttt{numpy.cumprod} function. This utility takes in input a list and returns another list whose $i^{th}$ item is the product of the all the previous. In such a way with a single function we can compute the entire stock price evolution (path), indeed
+	\begin{gather*}
+		S_1 = S_0\cdot \Delta S_1,\quad\mathrm{where}~\Delta S = \exp\left[\left(\mu -\frac{\sigma^2}{2}\right)\ldots\right]\\
+		S_2 = S_1\cdot \Delta S_2 = S_0\cdot \Delta S_1 \cdot \Delta S_2\\
+		\vdots\\
+		S_n = S_{n-1}\cdot \Delta S_{n-1} = S_0 \prod_{i=1}^{n}\Delta S_i
+	\end{gather*}  
+	where each $\Delta S_i$ is an item of the list returned by \texttt{gbm} function.
+	\newpage
+	The complete implementation is as follows
+\begin{ipython} 
+seed(1)
+
+dT = 1
+steps = 120
+S0 = 100
+mu = -0.01
+sigma = 0.15
+
+DeltaS = gbm(mu, sigma, dT, steps)
+path = S0*np.cumprod(DeltaS)
+\end{ipython}
+\end{document}
