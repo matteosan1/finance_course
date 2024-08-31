@@ -1,0 +1,117 @@
+\documentclass[]{article}
+
+\title{Bootstrapping}
+\author{}
+\input{header}
+
+\begin{document}
+
+\maketitle
+
+\section{Bootstrapping the ESTR Curve}
+The \emph{bootstrap algorithm} is a technique that allows to derive interest rates (or discount factors) from market quotes of traded products, e.g. bonds, FRA, swaps.
+In this exercise we would like to bootstrap the ESTR discount curve from a set of Overnight Index Swaps quotes. The algorithm relies on the fact that the market quotes (prices) of the swaps are the \emph{fair} quotes, i.e. those that makes the NPV of the contract 0. Note that the market quotes of an OIS are the \emph{rate} of the fixed leg ($K$). 
+
+In the case of the Overnight Index Swaps the NPV is a function of the fixed rate (market quote) and the discount curve $NPV(K, dc)=0$, the bootstrap provides a way to "invert" that function to get the discount factors of the discount curve given $K$: $dc = NPV^{-1}(K)$.
+In order to simplify the entire procedure, instead of inverting each NPV function for each OIS, we are going to do that simultaneously by looking for the minimum of the function 
+\begin{equation}
+\sum_{i=1}^{N}\mathrm{NPV}^\mathrm{OIS}_i( \mathcal{C}(\mathbf{x}))^2
+\label{eq:obj}
+\end{equation}
+with respect to the unknown discount factors ($x$).
+
+The \texttt{python} implementation follows these steps:
+\begin{enumerate}
+	\item define the set of Overnight Index Swaps according to the available market quotes;
+\begin{ipython}
+from finmarkets import generate_dates, OvernightIndexSwap
+
+def make_swaps(data, start_date):
+    pillar_dates = []
+    swaps = []
+    for i in range(len(data)):
+        swap = OvernightIndexSwap(1e5, start_date,
+                                  "{}M".format(data.loc[i, 'months']),
+                                  data.loc[i, 'quotes']*0.01)
+        swaps.append(swap)
+        pillar_dates.append(swap.payment_dates[-1])
+    return swaps, pillar_dates
+\end{ipython}
+	
+	\item define the objective function for the minimization problem from Eq.~\ref{eq:obj};
+\begin{ipython}
+from finmarkets import DiscountCurve
+
+def of(dfs, obs_date, pillars, swaps):
+    dc = DiscountCurve(obs_date, pillars, dfs)
+    val = 0
+    for s in swaps:
+        val += s.npv(dc)**2
+    return val
+\end{ipython}
+	\item set the initial guesses for the discount factors and their boundaries;
+	\item run the minimization algorithm.
+\end{enumerate}
+
+\section{Testing}
+The bootstrap algorithm can be tested from the market quotes of October 2021 in \href{"https://github.com/matteosan1/finance\_course/raw/develop/input\_files/ois\_2021_10_14.xlsx"}{ois\_2021\_10\_14.xlsx}.
+\begin{ipython}
+import pandas as pd
+from datetime import date
+
+dataframe = pd.read_excel("ois_2021_10_14.xlsx")
+print (dataframe.head())
+\end{ipython}
+\begin{ioutput}
+   months   quotes
+0       1  0.70575
+1       2  1.03170
+2       3  1.23200
+3       4  1.42975
+4       5  1.59400
+\end{ioutput}
+
+Then we can create the OIS, set the parameters and finally to run the minimization.
+\begin{ipython}
+from scipy.optimize import minimize
+
+obs_date = date.today()
+swaps, pillar_dates = make_swaps(dataframe, obs_date)
+
+dfs0 = [0.5 for _ in range(len(swaps))]
+bounds = [(0.01, 10) for _ in range(len(swaps))]
+	
+res = minimize(of, dfs0, bounds=bounds, args=(obs_date, pillar_dates, swaps))
+print res()
+\end{ipython}
+\begin{ioutput}
+ message: CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL
+ success: True
+  status: 0
+     fun: 1.5567916515678768e-12
+       x: [ 9.994e-01  9.983e-01 ...  4.428e-01  3.901e-01]
+     nit: 7
+     jac: [ 2.641e-07  4.092e-07 ...  1.840e-07  4.270e-07]
+    nfev: 279
+    njev: 9
+hess_inv: <30x30 LbfgsInvHessProduct with dtype=float64>
+\end{ioutput}
+
+Finally we can create the discount curve implied by the market quote of our swaps and, if needed, determine the
+corresponding yield curve using the relation between rate and discount factor
+\begin{equation}
+\mathrm{df} = e^{-rt} \quad\implies \mathrm{log(df)} = -rt\quad\implies r = -\mathrm{log(df)}/t
+\end{equation}
+
+\begin{ipython}
+from dateutil.relativedelta import relativedelta
+from finmarkets import DiscountCurve, ForwardRateCurve
+
+dc = DiscountCurve(obs_date, pillars, res.x)
+
+dates = [date.today() + relativedelta(months=i) for i in range(600)]
+yields = [-np.log(dc.df(d))/((d-date.today()).days/365) for d in dates]
+
+fc = ForwardRateCurve(obs_date, dates, yields)
+\end{ipython}
+\end{document}

@@ -1,0 +1,113 @@
+\documentclass[]{article}
+
+\title{Implementation of \texttt{ForwardRateCurve} Class}
+\author{}
+\input{header}
+
+\begin{document}
+
+\maketitle
+
+\section{\texttt{ForwardRateCurve} Class}
+The class should provide a way to store spot rates for different maturities and compute the forward rate for a generic time interval using the definition:
+\begin{equation}
+F(t, t_1, t_2) = \frac{r_2*t_2 - r_1*t_1}{t_2 - t_1}
+\label{eq:forward_rate}
+\end{equation}
+Typically the design of a class follows these steps:
+\begin{enumerate}
+	\item the "constructor" (i.e. \texttt{\_\_init\_\_} method) takes in input all the parameters needed to set the initial state of the class. It is the first method that is run under the wood as soon as an object of this type is \emph{instatiated};
+	\item in the "constructor" itself we need to store the \emph{attributes} i.e. the parameters that are needed to the class to work, which must be saved in variables whose name starts with \texttt{self.}. If some parameter needs to be "manipulated" in some way it can be done at this stage;
+	\item the functionalities of the class have to be implemented in the \emph{methods}, functions that work with the class attributes and optionally with external parameters.
+\end{enumerate}
+
+Let's see how this can be implemented in our case. Concerning the first step we need to provide: $t$ (the observation date), a set of pillar dates (the maturities of the spot rates) and the rates themselves.
+
+\begin{ipython}
+class ForwardRateCurve:
+    def __init__(self, obs_date, pillars, rates):
+\end{ipython}
+
+Next in the same method we can manipulate and store whatever is needed to compute the forward rates. Since we accept generic dates for the calculation, most likely we will need to interpolate between the pillars so we have to convert the dates into numbers. In the case of the discount curve we used the \texttt{toordinal()} function (returns the number of days since 00-01-01) because we didn't care about the offsetting date, i.e the result wouldn't change by referring the number of days to a different date. Now instead we have a precise observation date to be compliant to so we need to use it to transform the all the dates involved in the calculation. So to summarize, we are going to store, as class attributes: the observation date $t$, the set of pillars converted in fractions of years since $t$ and the rates (we can simply use a linear interpolation, so no log). Also since we may need to interpolate we can define in the constructor also the interpolator.
+
+\begin{ipython}
+from scipy.interpolate import interp1d
+
+class ForwardRateCurve:
+	def __init__(self, obs_date, pillars, rates):
+	    self.obs_date = obs_date
+	    self.pillars = [(d-self.obs_date).days/365 for d in pillars]
+	    self.rates = rates
+	    self.interpolator = interp1d(self.pillars, self.rates)
+\end{ipython}
+
+Finally we need to implement the functionality of the class, i.e. the ability to compute forward rates. It can be done in various way, but a useful way is to split composite calculations into multiple smaller methods to keep the code simpler to debug. In our problem we can for example define a method to interpolate to get $r_1$ and $r_2$ and another one to compute the actual forward rate. 
+The first method takes in input a date and returns a pair of values with the date transformed into fraction of years since $t$ and the interpolated rate. To avoid troubles with \emph{extrapolations} we are going to check if the provided date is within the pillars range, contrary we return a fake rate i.e. \texttt{None}.
+
+\begin{ipython}
+from scipy.interpolate import interp1d
+	
+class ForwardRateCurve:
+	def __init__(self, obs_date, pillars, rates):
+	    self.obs_date = obs_date
+	    self.pillars = [(d-self.obs_date).days/365 for d in pillars]
+	    self.rates = rates
+	    self.interpolator = interp1d(self.pillars, self.rates)
+	    
+	def interpolate(self, d):
+	    d_frac = (d - self.obs_date).days/365
+	    if d_frac < self.pillars[0] or d_frac > self.pillars[-1]:
+	        print (f"Cannot extrapolate rate for date {d}.")
+	        return None, None
+	    return d_frac, self.interpolator(d_frac)
+\end{ipython}
+
+The last method, \texttt{forward\_rate}, takes as parameters the two dates $t_1$ and $t_2$, uses \texttt{self.interpolate} to get the corresponding rates and compute Eq.~\ref{eq:forward_rate}. Before returning the result it checks that $r_1$ and $r_2$ are valid rates otherwise returns \texttt{None}. Also to be pedantic the method requires $t_2 > t_1$, or that the two dates have been passed in the correct order. 
+
+\begin{ipython}
+from scipy.interpolate import interp1d
+	
+class ForwardRateCurve:
+	def __init__(self, obs_date, pillars, rates):
+	    self.obs_date = obs_date
+	    self.pillars = [(d-self.obs_date).days/365 for d in pillars]
+	    self.rates = rates
+	    self.interpolator = interp1d(self.pillars, self.rates)
+	
+	def interpolate(self, d):
+	    d_frac = (d - self.obs_date).days/365
+	    if d_frac < self.pillars[0] or d_frac > self.pillars[-1]:
+	        print (f"Cannot extrapolate rate for date {d}.")
+	        return None, None
+	    return d_frac, self.interpolator(d_frac)
+	    
+	def forward_rate(self, d1, d2):
+	    if d1 > d2:
+	        print(f"t1 ({d1}) has to be lower than t2 ({d2})")
+	        return None
+	    d1_frac, r1 = self.interpolate(d1)
+	    d2_frac, r2 = self.interpolate(d2)
+	    if r1 is None or r2 is None:
+	        return None
+	    else:
+	        return ((r2*d2_frac-r1*d1_frac)/(d2_frac-d1_frac))
+\end{ipython}
+
+\section{Testing}
+To test the class is enough to define a fake set of inputs and compute the forward rate.
+\begin{ipython}
+from datetime import date
+
+obs_date = date(2023, 1, 1)
+pillars = [date(2023, 1, 1), date(2024, 1, 1), date(2025, 7, 1)]
+rates = [0.02, 0.03, 0.04]
+
+fc = ForwardRateCurve(obs_date, pillars, rates)
+t1 = date(2024, 1, 1)
+t2 = date(2025, 1, 1)
+print (f"F({t1}, {t2}) = {fc.forward_rate(t1, t2):.4f}")	
+\end{ipython}
+\begin{ioutput}
+F(2024-01-01, 2025-01-01) = 0.0434
+\end{ioutput}
+\end{document}
