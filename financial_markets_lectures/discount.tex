@@ -6,7 +6,36 @@ In this Chapter we will begin to see some \texttt{python} applications to financ
 \section{Discounting}
 \label{discount-factors}
 
-%\subsection{Time Value of Money}
+The core principle of \emph{time value of money} states that a dollar today is worth more than a dollar tomorrow. This is because money has the potential to earn interest over time.
+
+The concept acknowledges that the ability to invest and grow your money today holds more value than receiving the same amount later.
+
+\emph{Discounting} is the process of determining the present value of a future cash flow. It essentially takes the future amount and adjusts it downward to reflect its current worth based on the time value of money, i.e. a chosen discount rate.
+
+With $D(T)$ (or $D(0,T)$) it is represented the discount factor corresponding to a spot rate $r$, and a future time $T$ (in year fraction). 
+
+Consider a payment $N$ that is to be made $T$ years in the future, we calculate the present value ($PV$) as
+
+\begin{equation}
+PV = N\cdot D(T) = N \cdot \cfrac{1}{(1 + r)^t}~~~~~
+(N \cdot e^{-rt}~~~\text{continuous compounding})
+\label{eq:discount_factor}
+\end{equation}
+
+The discount rate $r$ which is used in financial calculations is usually chosen to be equal to the cost of capital, i.e. risk-free rate.
+
+\subsection{Risk Neutral Pricing Formula}
+
+Given a derivative providing a payoff $H(t)$ at time $t$ it can be demonstrated that its value (NPV, net present value) can be expressed as
+
+\begin{equation}
+NPV = \mathbb{E}[e^{-rt} H(t)]
+\end{equation}
+
+In words we can states that the value of the derivative is given by the \textbf{sum of the discounted value of the future cash-flows}.
+
+It is then apparent how important is to know the proper discount factors for pricing purposes.
+
 %Imagine a bank that offers a guaranteed return of 10\% on whichever amount of money a client put in her account as long as that amount stays in the account for one full year (no withdrawals possible). If the client knows would need \$11000 at the end of one year, how much money does she need to put in today so that the $X$ amount (principal) at the claimed 10\% a year interest rate will grow to the desired amount ?
 %
 %We know that at 10\% $X$ dollar today grows to
@@ -91,30 +120,35 @@ In this Chapter we will begin to see some \texttt{python} applications to financ
 %D(0, T) = e^{-rT}
 %\end{equation}
 
-\section{Linear Interpolation}
+\section{Discount Curve Interpolation}
+\label{discount-curve-interpolation}
+
+Discount factors are usually presented as curves (\emph{discount curves}) where each point represents a discount factor relative to a future date. 
+
+%Figure~\ref{fig:example_discount_curve} shows an example of discount curve.
+%
+%\begin{figure}[htbp]
+%    \centering
+%	\includegraphics[width=0.7\linewidth]{figures/discount_curve}
+%	\caption{Example of discount curve.}
+%	\label{fig:example_discount_curve}
+%\end{figure}
+
+Since discount curves are made of a discrete set of discount factors derived at some dates, we may need to find the factor at some different times: this is a typical financial application of interpolation.
+
+\subsection{Linear Interpolation}
 \label{linear-interpolation}
 
-Consider to have few data points, obtained by sampling or experimenting. These points represent the values of a not well known function $f(x)$, where $x$ is an independent variable (e.g. in recording a trip: distances at certain times, $d = f(t)$).
-
-It may be necessary to estimate values of the function $f$ at particular $x$ for which samples are not available. Interpolation is a method of "constructing" these "new points" within the range of known data.
-
-Let's clarify the technique with an example.
-
-Assume you are going on holidays by car and that luckily there isn't much traffic so that you can drive at constant speed (which gives a linear relation between travelled space and time i.e.~$s = v \cdot t$). This means that if you plot the distance $s$ as a function of the time $t$ you get a line with slope $v$, see Fig.~\ref{fig:samples_for_interpolation}.
+Consider to have a discount curve made of three points as in Fig.~\ref{fig:samples_for_interpolation}.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\textwidth]{figures/interp_example1.png}
-  \caption{Samples of travelled distances at some time (black points). The blue and red crosses show interpolated and extrapolated points. It is clear how the extrapolation failed since after 150 minutes the relation between time and space changed.}
+  \includegraphics[width=0.7\textwidth]{figures/interp_example1}
+  \caption{Plot of the discount curve described in the text.}
   \label{fig:samples_for_interpolation}
 \end{figure}
 
-Given two samples of the distance $s_1$ and $s_2$ taken at two different times $t_1$ and $t_2$ you can linearly interpolate to find the distance at an intermediate time using the following relation:
-
-\begin{equation}
-s = (1 - w)\cdot s_1 + w \cdot s_2
-\end{equation}
-where $t$ is the generic time at which we want to know the distance $s$ and $w = \cfrac{t - t_1}{t_2 - t_1}$.
+Given two discount factors $d_1$ and $d_2$ taken at two different times $t_1$ and $t_2$ a new factor between the two can be found as the point laying on the line connecting $d_1$ and $d_2$ at the desired time. 
 
 \begin{attention}
 \subsubsection{Derivation}
@@ -133,41 +167,23 @@ Setting $w = \cfrac{t - t_1}{t_2 - t_1}$ and solving for $s$ we find the desired
 This formula can also be understood as a weighted average where the weights are inversely related to the distance from the end points to the unknown point ($w_1 = (1 - w) = \cfrac{t_2 - t}{t_2 -t_1}, w_2 = w$), which means that the closer point has more "influence" than the farther point on the result.
 \end{attention}
 
-Back to our example, if
-$s_1 = 25.75~\mathrm{km}\;(@t_1 = 15~\mathrm{min})$ and $s_2 = 171.7~\mathrm{km}\;(@t_2 = 100~\mathrm{min})$ let's find the distance travelled in 1 hour:
+You don't need to implement the interpolation formula from scratch, instead it can be used the one provided in \texttt{scipy.interpolate.interp1d}. 
+
 
 \begin{ipython}
-s_1 = 25.75 # distance in km
-t_1 = 15 	# elapsed time in minutes
-s_2 = 171.7
-t_2 = 100
+from scipy.interpolate import interp1d
 
-t = 60
-w = (t - t_1)/(t_2 - t_1)
-s = (1 - w)*s_1 + w*s_2
-print (f"{s:.1f} km")
+t = [1, 2, 4]
+dfs = [0.994, 0.982, 0.965]
+
+inter = interp1d(t, dfs)	
+print (f"{inter(1.5):.3f}")
 \end{ipython}
 \begin{ioutput}
-103.0 km
+0.988
 \end{ioutput}
 
-Instead of reinventing the wheel, \texttt{python} provides a function for interpolation, \texttt{scipy.interpolate.interp1d}. 
-To repeat our previous example:
-
-\begin{ipython}
-import scipy.interpolate import interp1d
-
-t = [15, 100, 150]
-s = [25.75, 171.7, 257.7]
-
-inter = interp1d(t, s)	
-print (f"{inter(60):1.f} km")
-\end{ipython}
-\begin{ioutput}
-103.0 km
-\end{ioutput}
-
-\emph{Always interpret critically your results to guess if they make sense or not and avoid mistakes}. In the previous example we certainly expected something between 25.75 and 171.7~km (our range ends) furthermore since we are looking for the distance at a time which is almost halfway the considered interval, the result will be somehow in the middle, so around 100~km. This is indeed more or less what we have got. This simple kind of reasoning should be applied every time you have a result to quickly judge it.
+\emph{Always interpret critically your results to guess if they make sense or not and avoid mistakes}. In the previous example we certainly expected something between 0.994 and 0.982 (our range ends) furthermore since we are looking for the discount factor at a time which is halfway the considered interval, the result will be somehow in the middle of $d_1$ and $d_2$. This simple kind of reasoning should be applied every time you have a result to quickly judge it.
 
 \begin{curiosity}
 \subsubsection{Epic Failure}
@@ -184,130 +200,23 @@ The primary cause of this discrepancy was found in one piece of software (suppli
 NASA took the entire responsibility for having vaporized about 300~M\$ in the Martian atmosphere, mainly for failing to make the appropriate checks and tests that would have caught this unit discrepancy~\cite{bib:mars}.	
 \end{curiosity}
 
-\subsubsection{Extrapolation}
+\subsubsection{Extrapolation Risk}
 
-If we believe the relation between our variables stays the same ($f(t)$ still linear), we can use the same formula to \emph{extrapolate} values \emph{outside} the range of the sample. For example if we keep the same constant velocity in our trip we could check the distance traveled after 3 hours:
-
-\begin{ipython}
-t = 180
-w = (t - t_1)/(t_2 - t_1)
-s = (1 - w)*s_1 + w*s_2
-
-print (f"{s:.1f} km")
-\end{ipython}
-\begin{ioutput}
-309.1 km
-\end{ioutput}
-
-In the given example the extrapolation failed since after minute 150 the travelled space ceased to be a linear function of time. Beware that extrapolation is dangerous, usually it is not safe to assume data trends when there is no data available.
-
-Notice that \texttt{interp1d} has \textbf{not} been designed for extrapolation, so if you ask for a value outside the range of sampled data it returns an error message.
-
-%\begin{ipython}
-%import numpy as np
-%	
-%t = [15, 100, 150]
-%s = [25.75, 171.7, 257.7]
-%	
-%np.interp(180, t, s)
-%\end{ipython}
-%\begin{ioutput}
-%257.7
-%\end{ioutput}
-%
-%Pay attention to this aspect, for example by adding checks on the interpolation parameters, since the program works fine but could lead to weird results.
+Interpolation is primarily designed to estimate values within the range of known data points. Attempting to extrapolate beyond the range of the data can lead to inaccurate results and is generally discouraged. Extrapolation assumes that the relationship between data points remains constant outside the known range, which may not be valid
 
 \subsection{Log-linear Interpolation}
 \label{log-linear-interpolation}
-When the function $f$ that we want to interpolate is an exponential we can fall back to the previous case by a simple variable transformation. 
-Assume the following relationship between $p$ and $h$:
+When there is an exponential relationship between the two variables we can fall back to the linear case by a simple variable transformation. 
+
+Consider the discount factor in case of continuous compounding $D=e^{-rt}$. Applying the logarithm to both sides of the equation gives:
 
 \begin{equation}
-p = \mathrm{exp}(c \cdot h)
+f = \log(D) = \log(\exp(-rt)) = -rt
 \end{equation}
-Applying the logarithm to both sides of the equation gives:
-
-\begin{equation}
-s = \mathrm{log}(p) = \mathrm{log}(\mathrm{exp}(c \cdot h)) = c \cdot h
-\end{equation}
-so there is linear relation between the new variable $s$ and $h$. At this point we can use the results of the previous Section to interpolate for values of $s$, just remember to exponentiate the final result to get the correct $p$. In formulas:
-
-\begin{align}
-\label{eq:log_interp}
-\begin{gathered}
-w = \frac{h - h_1}{h_2 - h_1} \\
-s = (1 - w)\cdot s_1 + w \cdot s_2\qquad (\textrm{now } s = \textrm{log}(p))\\
-p = \textrm{exp}(s)
-\end{gathered}
-\end{align}
-
-Let's see an example. Atmospheric pressure decreases with the altitude (i.e. the highest you flight the lower is the pressure) following an exponential law:
-
-\begin{equation}
-p = p_0\cdot e^{-\alpha h}
-\end{equation}
-where
-\begin{itemize}
-\tightlist
-\item $h$ is the altitude
-\item $p_0$ is the pressure at sea level
-\item $\alpha$ is a constant
-\end{itemize}
-
-Taking the logarithm of each side of the equation we get a linear relation which can be interpolated as seen before:
-
-\begin{equation}
-s = \mathrm{log}(p) = \mathrm{log}(p_0\cdot e^{-\alpha h})\propto - \alpha \cdot h
-\end{equation}
-
-Now assume that we have measured
-$p_1 = 90~\mathrm{kPa}\;(h_1 = 1000~\mathrm{m})$ and $p_2 = 40~\mathrm{kPa}\;(h_1 = 7000~\mathrm{m})$ what will be the atmospheric pressure on top of Mont Blanc ($4812~\mathrm{m}$) ? and on top of Mount Everest ($8848~\mathrm{m}$) ?
-
-\begin{ipython}
-# pressure on top of the Mont Blanc (interpolation)
-from numpy import log, exp
-from scipy.interpolate import interp1d
-
-# first we take the logarithm of our measurements to use the linear
-# relation to interpolate
-h = [1000, 7000] # height in meters
-s = [log(p) for p in [90, 40]] # logarithm of the pressure
-
-inter = interp1d(h, s)
-s = inter(4812)
-print (f"{exp(s):.1f} kPa")
-\end{ipython}
-\begin{ioutput}
-53.8 kPa
-\end{ioutput}
-
-If you want to extrapolate you need to use the homemade version of the interpolation algorithm
-\begin{ipython}
-h = 8848
-h_1 = 1000
-h_2 = 7000
-s_1 = log(90)
-s_2 = log(40)
-w = (h - h_1)/(h_2 - h_1)
-s = (1 - w)*s_1 + w*s_2
-
-print (f"{exp(s):.1f} kPa")
-\end{ipython}
-\begin{ioutput}
-31.2 kPa
-\end{ioutput}
-
-In this case we check our results by plotting the found pressures on top of the Wikipedia plot, see Fig~\ref{fig:Pvsh}.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.7\linewidth]{figures/Atmospheric_Pressure_vs._Altitude.png}
-\caption{Atmospheric pressure versus altitude (Wikipedia). Green points represent our measurements, red ones interpolation/extrapolation.}
-\label{fig:Pvsh}
-\end{figure}
+so there is linear relation between the new variable $f$ and $t$. At this point we can use the results of the previous Section to interpolate for values of $f$, just remember to exponentiate the final result to get the correct $D$.
 
 \subsection{Limitations of Interpolation}
-Interpolation is just an approximation and works well when either the function $f$ is linear or we are trying to interpolate between two points that are close enough to believe that $f$ is almost linear in that interval.
+Interpolation is just an approximation and works well when we are trying to interpolate between two points that are close enough to believe that the function is almost linear in that interval.
 
 It can be easily demonstrated that the linear approximation between two points of a given function $f(x)$ gets worse with the second derivative of the function that is approximated ($f''(x)$). This is intuitively correct: the "curvier" the function is, the worse the approximation made with simple linear interpolation becomes, see Fig.~\ref{fig:sine_interp} where we try to interpolate a sine function.
 
@@ -320,24 +229,9 @@ It can be easily demonstrated that the linear approximation between two points o
 
 To improve the approximation accuracy with complicated curves, an higher order polynomial can be used ($p(x)=a_0 + a_1\cdot x + a_2\cdot x^2+\cdots$), for example in the evaluation of natural logarithm or trigonometric functions. It has to be clear however that going to higher degrees does not always help~\cite{bib:runge}.
 
-\section{Discount Curve Interpolation}
-\label{discount-curve-interpolation}
-With $D(T)$ (or $D(0,T)$) it is represented the discount factor corresponding to a spot rate $r$, and a future time $T$ (in year fraction). The discount factor can be expressed as
-\begin{equation}
-	D(T)=\frac{1}{(1+r)^T},\quad(D(T)=e^{-rT}\;\textrm{for continuous compounding})
-\label{eq:discount_factor}
-\end{equation}
+Some interpolation methods, particularly higher-order polynomial interpolation, can result in \emph{overfitting}. This means the interpolating function fits the data points very closely but may not generalize well to unseen data. It can lead to excessive fluctuations between data points.
 
-Discount factors are usually presented as curves (\emph{discount curves}) where each point represents a discount factor relative to a future date. Figure~\ref{fig:example_discount_curve} shows an example of discount curve.
-
-\begin{figure}[htbp]
-    \centering
-	\includegraphics[width=0.7\linewidth]{figures/discount_curve}
-	\caption{Example of discount curve.}
-	\label{fig:example_discount_curve}
-\end{figure}
-
-Since discount curves are made of a discrete set of discount factors derived at some dates, we may need to find the factor at some different times; this is a typical financial application of interpolation.
+\subsection{Discount Curve}
 
 \begin{finmarkets}
 Since discount factors are an essential part for every financial calculation and we will keep using them everywhere, a \texttt{python} class which manages discount factors and curves is developed, using an object oriented approach.
@@ -362,6 +256,7 @@ and at least a method to interpolate discount factors at a generic date. The inp
 where $i$ is such that $t_i \le t \le t_{i+1}$
 
 When dealing with discount factors we need to be careful though. \texttt{scipy.interpolate.interp1d} only accepts list of numbers as argument (i.e. it doesn't know how to interpolate them). So we need to convert them before passing the dates to the interpolation function. This transformation will be implemented directly in the class constructor by replacing each date with the number of days from a reference with the method \texttt{toordinal()}.
+To protect against extrapolation problems an exception is raised if the provided date is outside the range of known discount factor dates.
 Furthermore we also attempted a simple code optimization: compute the input discount factors logarithm directly in the constructor in order to save some computation time with respect to doing the log at every call of the interpolation method. 
 \end{finmarkets}
 
@@ -371,21 +266,21 @@ from scipy.interpolate import interp1d
 from datetime import date
 
 class DiscountCurve:
-    def __init__(self, obs_date, pillars, discount_factors):
-    	discount_factors = np.array(discount_factors)
-        if obs_date not in pillars:
-            pillars = [obs_date] + pillars
+    def __init__(self, obs_date, pillar_dates, discount_factors):
+        discount_factors = np.array(discount_factors)
+        if obs_date not in pillar_dates:
+            pillar_dates = [obs_date] + pillar_dates
             discount_factors = np.insert(discount_factors, 0, 1)
-        self.pillars = [p.toordinal() for p in pillars]
-        self.log_dfs = np.log(discount_factors)
-        self.inter = interp1d(self.pillars, self.log_dfs)
+        self.pillar_dates = pillar_dates
+        self.pillars = [p.toordinal() for p in pillar_dates] 
+        self.log_discount_factors = np.log(discount_factors)
+        self.interpolator = interp1d(self.pillars, self.log_discount_factors)
         
     def df(self, adate):
         d = adate.toordinal()
         if d < self.pillars[0] or d > self.pillars[-1]:
-            print (f"Cannot extrapolate discount factors (date: {adate}).")
-            return None
-        return exp(self.inter(d))
+            raise ValueError(f"Cannot extrapolate (date: {adate}).")
+        return np.exp(self.interpolator(d))
 \end{ipython}
 
 Using the discount curve data in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{\texttt{discount\_factors.xlsx}} instantiate the corresponding object and compute a discount factor.
@@ -398,26 +293,28 @@ To install it in your working area just type
 pip install --index-url https://test.pypi.org/simple finmarkets
 \end{ioutput}
 
-(if you want to install it on Colab just prepend an exclamation mark to the previous command). The tool \texttt{pip} will take care of picking up the latest version of the package and of all the dependencies. You can explore the module with \texttt{help} command and in your program just import what you need with
+(if you want to install it on Colab just prepend an exclamation mark to the previous command). The tool \texttt{pip} will take care of picking up the latest version of the package and of all the required dependencies. You can explore the module with \texttt{help} command and in your program just import what you need with
 
 \begin{ipython}
 from finmarkets import DiscountCurve
 \end{ipython}
 \end{finmarkets}
 
+The following example is going to use also the \texttt{TimeInterval} utility which converts strings like "10d" or "5y" into actual time deltas to be used with python dates.
+
 \begin{ipython}
 import pandas as pd
+
 from datetime import date
-from finmarkets import DiscountCurve
-from dateutil.relativedelta import relativedelta
+from finmarkets import TimeInterval, DiscountCurve
 
 df = pd.read_excel("discount_factors.xlsx")
 
 obs_date = date.today()
-pillars = [today + relativedelta(months=i) for i in df['months']]
-dfs = df['dfs']
-dc = DiscountCurve(obs_date, pillars, dfs)
-df_date = obs_date + relativedelta(days=195) # 6.5 months
+pillars = [today + TimeInterval(i) for i in df['months']]
+
+dc = DiscountCurve(obs_date, pillars, df['dfs'])
+df_date = obs_date + TimeInterval("195d") # about 6.5 months
 df0 = dc.df(df_date)
 print (f"discount factor at {df_date}: {df0:.4f}")
 \end{ipython}
@@ -428,7 +325,7 @@ discount factor at 2023-04-21: 0.9902
 A very useful way to check the correctness of a result is by plotting it. So let's see what the discount factor and the discount curve look like, Fig.~\ref{fig:linear_discount_curve}.
 
 \begin{ipython}
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 
 plt.plot(pillars[:10], dfs[:10], marker='o', markersize=10, 
          label="dfs")
@@ -503,7 +400,7 @@ F(T_1, T_2) = r_{1,2} = \frac {1}{T_{2}-T_{1}}(\ln D(0,T_{1})-\ln D(0,T_{2}))
 \end{equation}
 
 \begin{finmarkets}
-The \texttt{ForwardRateCurve} class of the \texttt{finmarkets} module computes forward rates at any arbitrary date, given a set of spot rates. This class is quite similar to \texttt{DiscountCurve}, but its logic has been split into two methods: one to interpolate spot rates, another to actually compute the forward rates.
+The \texttt{TermStructure} class of the \texttt{finmarkets} module computes forward rates at any arbitrary date, given a set of spot rates. This class is quite similar to \texttt{DiscountCurve}, but its logic has been split into two methods: one to interpolate spot rates, another to actually compute the forward rates.
 
 In order to successfully interpolate the rates, dates need again to be converted to numbers by evaluating the number of days since a reference date. Also the interpolation date is checked to avoid extrapolations, if it is outside the known range a warning will be printed out and the calculation stopped.
 \end{finmarkets}
@@ -511,50 +408,45 @@ In order to successfully interpolate the rates, dates need again to be converted
 \begin{ipython}
 from scipy.interpolate import interp1d
 
-class ForwardRateCurve:
+class TermStructure:
     def __init__(self, obs_date, pillars, rates):
         self.obs_date = obs_date
-        self.pillars = [(p - obs_date).days/365 for p in pillars]
+        self.pillars = [(p-self.obs_date).days/365 for p in pillars]
         self.rates = rates
-        self.inter = interp1d(self.pillars, self.rates)
+        self.interpolator = interp1d(self.pillars, self.rates)
 
     def interp_rate(self, adate):
-        d = (adate - self.obs_date)/365
-        if d < self.pillars[0] or d > self.pillars[-1]:
-            print (f"Cannot extrapolate rates (date: {adate}).")
-            return None, None
-        else:
-            return d, self.inter(d)
+        yf = (adate-self.obs_date).days/365
+        if yf < self.pillars[0] or yf > self.pillars[-1]:
+            raise ValueError(f"Cannot extrapolate rates (date: {adate}).")
+        return yf, self.interpolator(yf)
 
     def forward_rate(self, d1, d2):
-        d1, r1 = self.interp_rate(d1)
-        d2, r2 = self.interp_rate(d2)
-        if d1 is None or d2 is None:
-            return None
-        else:
-            return (r2*d2 - r1*d1)/(d2 - d1)
+        yf1, r1 = self.interp_rate(d1)
+        yf2, r2 = self.interp_rate(d2)
+        return (r2*yf2 - r1*yf1)/(yf2 - yf1)
 \end{ipython}
 
 As an example let's compute a forward rate.
 \begin{ipython}
-from finmarkets import ForwardRateCurve
+from finmarkets import TermStructure, TimeInterval
 from datetime import date
-from dateutil.relativedelta import relativedelta
 
-obs_date = data.today()
+today = date.today()
+pillars = [today + TimeInterval(i) for i in ['1y', '2y', '3y']]
+spot_rates = [0.09, 0.095, 0.1]
+ts = TermStructure(today, pillars, spot_rates)
+t1 = today + TimeInterval('1y')
+t2 = today + TimeInterval('2y')
+t3 = today + TimeInterval('3y')
 
-pillar_dates = [obs_date,
-                obs_date + relativedelta(months=12),
-                obs_date + relativedelta(months=30)]
-rates = [0.0221, 0.0241, 0.025]
-
-fc = ForwardRateCurve(obs_date, pillar_dates, rates)
-t1 = obs_date + relativedelta(months=12)
-t2 = obs_date + relativedelta(months=24)
-print (f"F({t1}, {t2}) = {fc.forward_rate(t1, t2):.4f}")
-\end{ipython}
+print (f"f_12 = {ts.forward_rate(t1, t2):.3f}")
+print (f"f_23 = {ts.forward_rate(t2, t3):.3f}")
+print (f"f_13 = {ts.forward_rate(t1, t3):.3f}")\end{ipython}
 \begin{ioutput}
-F(2021-01-01, 2022-01-01) = 0.0253
+f_12 = 0.100
+f_23 = 0.110
+f_13 = 0.105
 \end{ioutput}
 
 \section{Multi-curve Framework}
@@ -653,40 +545,40 @@ For example, if we want to calculate the net present value (NPV) of a forward 6-
 %            (365.0 / ((d2 - d1).days))
 %\end{ipython}
 
-As an example let's define \euro STR and EURIBOR curves and compute the net present value of the forward 6-month EURIBOR coupon mentioned before.
-
-\begin{ipython}
-from finmarkets import DiscountCurve, ForwardRateCurve
-from numpy import exp
-from dateutil.relativedelta import relativedelta
-from datetime import date
-
-obs_date = date.today()
-t1 = obs_date + relativedelta(months=3)
-t2 = obs_date + relativedelta(months=9)
-pillar_dates_estr = [obs_date, 
-                     obs_date + relativedelta(months=12),
-                     obs_date + relativedelta(months=34)]
-estr_rates = [1.0, 0.97, 0.72]
-pillar_dates_euribor = [obs_date, 
-                        obs_date + relativedelta(months=5), 
-                        obs_date + relativedelta(months=12)]
-euribor = [0.005, 0.01, 0.015]
-
-estr_curve = DiscountCurve(obs_date, pillar_dates_estr, estr_rates) 
-euribor_curve = ForwardRateCurve(obs_date, pillar_dates_euribor, euribor) 
-
-C = estr_curve.df(t1) * euribor_curve.forward_rate(t1, t2)
-t1_frac, r1 = euribor_curve.interp_rate(t1)
-C_pre2008 = exp(-r1*t1_frac) * euribor_curve.forward_rate(t1, t2)
-
-print (f"C post 2008: {C:.5f} EUR")
-print (f"C pre 2008: {C_pre2008:.5f} EUR")
-\end{ipython}
-\begin{ioutput}
-C post 2008: 0.01513 EUR
-C pre 2008: 0.01522 EUR
-\end{ioutput}
+%As an example let's define \euro STR and EURIBOR curves and compute the net present value of the forward 6-month EURIBOR coupon mentioned before.
+%
+%\begin{ipython}
+%from finmarkets import DiscountCurve, ForwardRateCurve
+%from numpy import exp
+%from dateutil.relativedelta import relativedelta
+%from datetime import date
+%
+%obs_date = date.today()
+%t1 = obs_date + relativedelta(months=3)
+%t2 = obs_date + relativedelta(months=9)
+%pillar_dates_estr = [obs_date, 
+%                     obs_date + relativedelta(months=12),
+%                     obs_date + relativedelta(months=34)]
+%estr_rates = [1.0, 0.97, 0.72]
+%pillar_dates_euribor = [obs_date, 
+%                        obs_date + relativedelta(months=5), 
+%                        obs_date + relativedelta(months=12)]
+%euribor = [0.005, 0.01, 0.015]
+%
+%estr_curve = DiscountCurve(obs_date, pillar_dates_estr, estr_rates) 
+%euribor_curve = ForwardRateCurve(obs_date, pillar_dates_euribor, euribor) 
+%
+%C = estr_curve.df(t1) * euribor_curve.forward_rate(t1, t2)
+%t1_frac, r1 = euribor_curve.interp_rate(t1)
+%C_pre2008 = exp(-r1*t1_frac) * euribor_curve.forward_rate(t1, t2)
+%
+%print (f"C post 2008: {C:.5f} EUR")
+%print (f"C pre 2008: {C_pre2008:.5f} EUR")
+%\end{ipython}
+%\begin{ioutput}
+%C post 2008: 0.01513 EUR
+%C pre 2008: 0.01522 EUR
+%\end{ioutput}
 
 %\subsection{Transitioning away from LIBOR~\cite{bib:str}}
 %A working group on euro risk-free rates was established to identify and recommend risk free rates that could serve as a basis for an alternative to current benchmarks used in a variety of financial instruments and contracts in the euro area, such as the euro overnight index average (EONIA) and the euro inter-bank offered rate (EURIBOR). 

@@ -82,7 +82,7 @@ P_{\textrm{sur}}(t_0, t) = \mathrm{exp}\left(-\int_{t_0}^{t}\lambda(s) ds\right)
 In practice hazard rate will be calculated numerically, and therefore we will consider the \emph{annualized} conditional probability of the issuer defaulting between a date and the next.
 
 \label{sec:constant_hazard_rate}
-The simplest possible survival distribution is obtained by assuming a constant risk over time, so the hazard is $\lambda (t)=\lambda$ for all $t$. The corresponding survival function is $P_{\textrm{sur}}(t_0, t) = e^{−\lambda (t-t_0)}$.
+The simplest possible survival distribution is obtained by assuming a constant risk over time, so the hazard is $\lambda (t)=\lambda$ for all $t$. The corresponding survival function is $P_{\textrm{sur}}(t_0, t) = e^{-\lambda (t-t_0)}$.
 
 \begin{finmarkets}
 	Similarly to discount curves we implement a class to handle credit curves, \texttt{CreditCurve}. It is characterized by a list of pillar dates with the corresponding survival probabilities. Like the \texttt{DiscountCurve} object you don't need to pass the observation date value (surviv
@@ -90,55 +90,51 @@ The simplest possible survival distribution is obtained by assuming a constant r
 \end{finmarkets}
 
 \begin{ipython}
-	import numpy as np
-	from scipy.interpolate import interp1d
-	from dateutil.relativedelta import relativedelta
-	
-	class CreditCurve:
-	def __init__(self, obs_date, pillars, ndps):
-	self.obs_date = obs_date
-	if obs_date not in pillars:
-	pillars = [obs_date] + pillars
-	ndps = np.insert(ndps, 0, 1)
-	self.pillars = [d.toordinal() for d in pillars]
-	self.ndps = ndps
-	self.interpolator = (self.pillars, self.ndps)
-	
-	def ndp(self, d):
-	d_days = d.toordinal()
-	if d < self.pillars[0] or d > self.pillar[-1]:
-	print (f"Cannot extrapolate survival probabilities (date: {d}).")
-	return None
-	return self.interpolator(d_days)
-	
-	def hazard(self, d):
-	ndp_1 = self.ndp(d)
-	ndp_2 = self.ndp(d + relativedelta(days=1))
-	if ndp_1 is None or ndp_2 is None:
-	return None
-	delta_t = 1.0 / 365.0
-	h = -1.0 / ndp_1 * (ndp_2 - ndp_1) / delta_t
-	return h
+import numpy as np
+
+from scipy.interpolate import interp1d
+from dateutil.relativedelta import relativedelta
+
+class CreditCurve:
+    def __init__(self, obs_date, pillars, ndps):
+        self.obs_date = obs_date
+        if obs_date not in pillars:
+            pillars = [obs_date] + pillars
+            ndps = np.insert(ndps, 0, 1)
+        self.pillars = [d.toordinal() for d in pillars]
+        self.ndps = ndps
+        self.interpolator = interp1d(self.pillars, self.ndps)
+        
+    def ndp(self, d):
+        d_days = d.toordinal()
+        if d_days < self.pillars[0] or d_days > self.pillars[-1]:
+            raise ValueError(f"Cannot extrapolate survival probabilities (date: {d}).")
+        return self.interpolator(d_days)
+    
+    def hazard(self, d):
+        ndp_1 = self.ndp(d)
+        ndp_2 = self.ndp(d + relativedelta(days=1))
+        if ndp_1 is None or ndp_2 is None:
+            return None
+        delta_t = 1.0 / 365.0
+        h = -1.0 / ndp_1 * (ndp_2 - ndp_1) / delta_t
+        return h
 \end{ipython}
 
 Let's test the class with some inputs.
 \begin{ipython}
-	from datetime import date
-	from dateutil.relativedelta import relativedelta
-	
-	obs_date = date.today()
-	cc = CreditCurve(obs_date, [obs_date + relativedelta(years=2)], [0.8])
-	
-	print (cc.ndp(obs_date + relativedelta(years=1)))
+from datetime import date
+from dateutil.relativedelta import relativedelta
+
+obs_date = date.today()
+cc = CreditCurve(obs_date, [obs_date + relativedelta(years=2)], [0.8])
+
+print (cc.ndp(obs_date + relativedelta(years=1)))
+print (cc.hazard(obs_date + relativedelta(years=1)))
 \end{ipython}
 \begin{ioutput}
-	0.9001367989056088
-\end{ioutput}
-\begin{ipython}
-	print(cc.hazard(obs_date + relativedelta(years=1)))
-\end{ipython}
-\begin{ioutput}
-	0.11094224924016097
+0.9
+0.11111111111112416
 \end{ioutput}
 
 \subsection{Poisson Process}
@@ -202,7 +198,7 @@ It can also be shown that all inter-arrival times $T_1, T_2,\ldots$ are exponent
 
 Finally the inverse function of the CDF is:
 \begin{equation}
-	F^{-1}(X) = -\frac{\log(1-X)}{\lambda}
+F^{-1}(X) = -\frac{\log(1-X)}{\lambda}
 \end{equation}
 
 \begin{finmarkets}
@@ -215,23 +211,23 @@ Default times can also be obtained by sampling from the distribution as shown in
 \end{finmarkets}
 
 \begin{ipython}
-import numpy as np, matplotlib.pyplot as plt
-from scipy.stats import rv_continuous
-from scipy.stats import expon
-	
+import numpy as np
+
+from scipy.stats import expon, rv_continuous
+
 class PoissonProcess(rv_continuous):
     def __init__(self, l):
         super().__init__()
         self.l = l
-	
+
     def _cdf(self, x):
         x[x < 0] = 0
         return (1 - np.exp(-self.l*x))
-	
+
     def _pdf(self, x):
         x[x < 0] = 0
         return self.l*np.exp(-self.l*x)
-	
+
     def _ppf(self, x):
         return -np.log(1-x)/self.l
 
@@ -253,7 +249,6 @@ plt.show()
 	\caption{Default times simulated through the sampling from a Poisson process with $\lambda=5$ and time interval $t=100$. An exponential fit shows that the decay rate is about $1/\lambda=0.2$.}
 	\label{fig:default_time_simulation}
 \end{figure}
-
 
 \section{Credit Default Swaps}
 \label{sec:credit-default-swaps}
@@ -356,61 +351,66 @@ from finmarkets import generate_dates
 
 class CreditDefaultSwap:
     def __init__(self, nominal, start_date, maturity, fixed_spread,
-                 tenor="3m", recovery=0.4):
+                 frequency="3m", recovery=0.4, side=SwapSide.Buyer):
         self.nominal = nominal
-        self.payment_dates = generate_dates(start_date, maturity, tenor)
+        self.payment_dates = generate_dates(start_date, maturity, frequency)
         self.fixed_spread = fixed_spread
         self.recovery = recovery
+        self.side = side
 
-    def npv_premium_leg(self, discount_curve, credit_curve):
+    def npv_premium_leg(self, dc, cc):
         npv = 0
         for i in range(1, len(self.payment_dates)):
-            tau = (self.payment_dates[i]-self.payment_dates[i-1]).days/365
-            npv += discount_curve.df(self.payment_dates[i]) *
-                   credit_curve.ndp(self.payment_dates[i]) * tau
+            tau = (self.payment_dates[i] - self.payment_dates[i-1]).days/365
+            npv += dc.df(self.payment_dates[i]) * cc.ndp(self.payment_dates[i]) * tau
         return self.fixed_spread * npv * self.nominal
 
-    def npv_default_leg(self, discount_curve, credit_curve):
+    def npv_default_leg(self, dc, cc):
         npv = 0
         d = self.payment_dates[0]
         while d < self.payment_dates[-1]:
-            npv += discount_curve.df(d) * (
-                   credit_curve.ndp(d) -
-                   credit_curve.ndp(d + relativedelta(days=1)))
+            npv += dc.df(d) * (
+                   cc.ndp(d) -
+                   cc.ndp(d + relativedelta(days=1)))
             d += relativedelta(days=1)
         return npv * self.nominal * (1 - self.recovery)
 
-    def npv(self, discount_curve, credit_curve):
-        return self.npv_default_leg(discount_curve, credit_curve) - \
-               self.npv_premium_leg(discount_curve, credit_curve)
+    def npv(self, dc, cc):
+        return self.side*(self.npv_default_leg(dc, cc) - self.npv_premium_leg(dc, cc))
+
+    def breakeven_rate(self, dc, cc):
+        num = self.npv_default_leg(dc, cc)
+        den = self.npv_premium_leg(dc, cc)/self.fixed_spread
+        return num/den
 \end{ipython}
 
 To test the class data contained in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{discount\_factors\_2022-10-05.xlsx} is used.
 
 \begin{ipython}
 import pandas as pd
-from finmarkets import DiscountCurve
-from dateutil.relativedelta import relativedelta
+
 from datetime import date
 
-dc_data = pd.read_excel("discount_factors_2022-10-05.xlsx")
-obs_date = start_date = date.today() 
-dates = [obs_date + relativedelta(months=i) for i in dc_data['months']]
+from finmarkets import DiscountCurve, TimeInterval, CreditDefaultSwap, SwapSide
+
+dc_data = pd.read_excel("discount_curve.xlsx")
+start_date = obs_date = date.today()
+dates = [obs_date + TimeInterval(i) for i in dc_data['maturities']]
 dc = DiscountCurve(obs_date, dates, dc_data['dfs'])
 
-pillars = [obs_date + relativedelta(months=36)]
+pillars = [obs_date + TimeInterval('36m')]
 credit_curve = CreditCurve(obs_date, pillars, [0.7])
 cds = CreditDefaultSwap(1e6, start_date, "3y", 0.03)
 
-# check default leg, premium leg and npv
-print (f"Premium leg: {cds.npv_premium_leg(dc, credit_curve):.2f} EUR")
-print (f"Default leg: {cds.npv_default_leg(dc, credit_curve):.2f} EUR")
-print (f"NPV: {cds.npv(dc, credit_curve):.2f} EUR")
+
+print (f"{cds.npv_premium_leg(dc, credit_curve):.2f}")
+print (f"{cds.npv_default_leg(dc, credit_curve):.2f}")
+print (f"{cds.npv(dc, credit_curve):.2f}")
 \end{ipython}
 \begin{ioutput}
-Premium leg: 303120.25 EUR
-Default leg: 180903.50 EUR
-NPV: -122216.74 EUR
+75761.20
+180902.43
+105141.23
 \end{ioutput}
 	
 %\section{Credit Ratings}\label{credit-ratings}
@@ -667,9 +667,9 @@ Hazard rate can be estimated from the market quote of a CDS. Going back to the d
   \end{aligned}
 \end{equation}
 
-If the survival probability is described according to a Poisson process $P_{\textrm{sur}}(t) = e^{−\lambda t}$ its infinitesimal variation in a time interval $dt$ can be expressed as
+If the survival probability is described according to a Poisson process $P_{\textrm{sur}}(t) = e^{-\lambda t}$ its infinitesimal variation in a time interval $dt$ can be expressed as
 \begin{equation*}
-  dP_{\textrm{sur}}(t) = -\lambda e^{−\lambda t} dt = -\lambda P_{\textrm{sur}}(t) dt 
+  dP_{\textrm{sur}}(t) = -\lambda e^{-\lambda t} dt = -\lambda P_{\textrm{sur}}(t) dt 
 \end{equation*}
 
 Considering the market value of the CDS spread $S^{mkt}$, by definition, it makes the contract value null so we can equal the two NPV expression above to get
@@ -705,54 +705,52 @@ We now implement the code to bootstrap for the survival probabilities using the 
 So first load market data and create a discount curve and the swaps.
 
 \begin{ipython}
+import pandas as pd, numpy as np
+
 from scipy.optimize import minimize
-import pandas as pd
-import numpy as np
+from finmarkets import TimeInterval
 
 obs_date = date.today()
-start_date = obs_date
 dc = pd.read_excel("discount_factors_2022-10-05.xlsx")
 mq = pd.read_excel("cds_quotes.xlsx")
 
-dates = [obs_date + relativedelta(months=i) for i in dc['months']]
-discount_curve = DiscountCurve(dates, dc['dfs'])
+dates = [obs_date + TimeInterval(i) for i in dc['maturities']]
+discount_curve = DiscountCurve(obs_date, dates, dc['dfs'])
 
 cdswaps = []
 pillar_dates = []
 for i in range(len(mq)):
-    cds = CreditDefaultSwap(1e6, start_date,
-                            f"{mq.loc[i, 'months']}m",
-                            mq.loc[i, 'quotes'])
-    cdswaps.append(cds)
-    pillar_dates.append(cds.payment_dates[-1])
+  cds = CreditDefaultSwap(1e6, start_date, mq.loc[i, 'maturities'], mq.loc[i, 'quotes'])
+  cdswaps.append(cds)
+  pillar_dates.append(cds.payment_dates[-1])
 
 def objective_function(ndps, obs_date, pillar_dates, discount_curve):
-	credit_curve = CreditCurve(obs_date, pillar_dates, ndps)
-    sum_sq = 0
-    for cds in cdswaps:
-        sum_sq += cds.npv(discount_curve, credit_curve)**2
-    return sum_sq
+  credit_curve = CreditCurve(obs_date, pillar_dates, ndps)
+  sum_sq = 0
+  for cds in cdswaps:
+      sum_sq += cds.npv(discount_curve, credit_curve)**2
+  return sum_sq
 
-ndp_guess = [1 for _ in range(len(cds))]
-bounds = [(0.01, 1) for _ in range(len(cds))]
+ndp_guess = [1 for _ in range(len(cdswaps))]
+bounds = [(0.01, 1) for _ in range(len(cdswaps))]
 
-r = minimize(objective_function, ndp_guess, bounds=bounds, 
+r = minimize(objective_function, ndp_guess, bounds=bounds,
              args=(obs_date, pillar_dates, discount_curve))
 print (r)
 \end{ipython}
 \begin{ioutput}
-      fun: 3.0599549245618235e-05
- hess_inv: <6x6 LbfgsInvHessProduct with dtype=float64>
-      jac: array([-0.60629869, -0.22322257, -0.06638979,  0.5269553 ,  1.01386238,
-        1.55896194])
-  message: 'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH'
-     nfev: 161
-      nit: 13
-     njev: 23
-   status: 0
+  message: CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH
   success: True
-        x: array([0.90793109, 0.80383824, 0.70835319, 0.47934782, 0.29074158,
-       0.0654834 ])
+   status: 0
+      fun: 3.185490060079406e-05
+        x: [ 9.760e-01  9.467e-01  9.173e-01  8.335e-01  7.371e-01
+             5.395e-01]
+      nit: 11
+      jac: [ 1.713e+01  2.725e+01  5.384e+01  2.231e+01 -3.634e+01
+            -8.419e+01]
+     nfev: 126
+     njev: 18
+ hess_inv: <6x6 LbfgsInvHessProduct with dtype=float64>
 \end{ioutput}
 
 After the minimization we get the list of non-default probabilities corresponding to the expiry dates of our CDSs.
@@ -760,15 +758,15 @@ After the minimization we get the list of non-default probabilities correspondin
 \begin{ipython}
 cc = CreditCurve(obs_date, pillar_dates, r.x)
 for i in range(len(pillar_dates)):
-    print (f"S(t<{pillar_dates[i]}): {r.x[i]:.2f}")
+    print ("S(t<{}): {:.2f}".format(pillar_dates[i], r.x[i]))
 \end{ipython}
 \begin{ioutput}
-S(t<2024-01-13): 0.91
-S(t<2025-01-13): 0.80
-S(t<2026-01-13): 0.71
-S(t<2029-01-13): 0.48
-S(t<2033-01-13): 0.29
-S(t<2043-01-13): 0.07
+S(t<2025-08-10): 0.98
+S(t<2026-08-10): 0.95
+S(t<2027-08-10): 0.92
+S(t<2030-08-10): 0.83
+S(t<2034-08-10): 0.74
+S(t<2044-08-10): 0.54
 \end{ioutput}
 
 %\section{Bayes Theorem}

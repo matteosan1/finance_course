@@ -5,27 +5,32 @@ In this Chapter the Overnight Index Swap contract is reviewed. Besides the finan
 \section{Payment Dates Generator}
 Before going to describe the Overnight Index Swap we need to develop a tool which helps us to generate list of dates (e.g. payment dates), a task that we need to do often from now on. 
 
-\begin{finmarkets}
-This function takes in input the initial date of the series (\texttt{start\_date}) and the maturity. An optional parameter allows to define the frequency of the list of dates, its default value being 12 months.
-In order to avoid confusion in the definition of maturity and frequency those are specified as strings bringing the units, e.g \texttt{"10y"} or \texttt{"7m"}.
-The strings are converted to integers in months with a simple utility \texttt{maturity\_from\_str} already available in \texttt{finmarkets} module.
-\end{finmarkets}
+%\begin{finmarkets}
+%This function takes in input the initial date of the series (\texttt{start\_date}) and the maturity. An optional parameter allows to define the frequency of the list of dates, its default value being 12 months.
+%In order to avoid confusion in the definition of maturity and frequency those are specified as strings bringing the units, e.g \texttt{"10y"} or \texttt{"7m"}.
+%The strings are converted to integers in months with a simple utility \texttt{maturity\_from\_str} already available in \texttt{finmarkets} module.
+%\end{finmarkets}
 
 \begin{ipython}
 from datetime import date
 from dateutil.relativedelta import relativedelta
 
-from finmarkets import maturity_from_str
+from finmarkets import TimeInterval
 
-def generate_dates(start_date, maturity, tenor="1y"):
-    maturity_months = int(round(maturity_from_str(maturity), 0))
-    tenor_months = int(round(maturity_from_str(tenor), 0))
-    dates = []
-    for d in range(0, maturity_months, tenor_months):
-        dates.append(start_date + relativedelta(months=d))
-    dates.append(start_date + relativedelta(months=maturity_months))
+def generate_dates(start_date, end_date, frequency="1y"):
+    if isinstance(end_date, str):
+        end_date = start_date + TimeInterval(end_date)
+    d = start_date
+    dates = [start_date]
+    while True:
+        d += TimeInterval(frequency)
+        if d < end_date:
+            dates.append(d)
+        else:
+            dates.append(end_date)
+            break
     return dates
-
+    
 print (generate_dates(date.today(), "25M"))
 \end{ipython}
 \begin{ioutput}
@@ -142,17 +147,17 @@ K = \cfrac{[D(d_0) - D(d_n)]}{\sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}}
 \end{finmarkets}
 
 \begin{ipython}
-from finmarkets import generate_dates
+from finmarkets import generate_dates, SwapSide
 
 class OvernightIndexSwap:
-    def __init__(self, nominal, start_date, maturity, fixed_rate):
+    def __init__(self, nominal, start_date, maturity, fixed_rate, side=SwapSide.Receiver):
         self.nominal = nominal
         self.fixed_rate = fixed_rate
         self.payment_dates = generate_dates(start_date, maturity)
+        self.side = side
       
     def npv_floating(self, dc):
-        return self.nominal * (dc.df(self.payment_dates[0]) - \
-                               dc.df(self.payment_dates[-1]))
+        return self.nominal * (dc.df(self.payment_dates[0]) - dc.df(self.payment_dates[-1]))
   
     def npv_fixed(self, dc):
         val = 0
@@ -162,7 +167,7 @@ class OvernightIndexSwap:
         return self.nominal*self.fixed_rate*val
   
     def npv(self, dc):
-        return self.npv_floating(dc) - self.npv_fixed(dc)
+        return self.side*(self.npv_floating(dc) - self.npv_fixed(dc))
 
     def fair_value_strike(self, dc):
         den = self.npv_fixed_leg(dc)/self.fixed_rate
@@ -175,18 +180,15 @@ Let's test the class using the following discount curve: \href{https://github.co
 \begin{ipython}
 import pandas as pd
 from datetime import date
-from finmarkets import DiscountCurve
-from dateutil.relativedelta import relativedelta
+from finmarkets import DiscountCurve, TimeInterval
 
-obs_date = date.today()
-start_date = obs_date
+obs_date = start_date = date.today()
 ois = OvernightIndexSwap(1e6, start_date, "3y", 0.025)
 
 df = pd.read_excel("discount_factors_2022-10-05.xlsx")
-pillars = [obs_date + relativedelta(months=i) for i in df['months']]
-dfs = df['dfs']
+pillars = [obs_date + TimeInterval(i) for i in df['months']]
 
-curve = DiscountCurve(pillars, dfs)
+curve = DiscountCurve(obs_date, pillars, df['dfs'])
 print (f"OIS NPV: {ois.npv(curve):.2f} EUR")
 \end{ipython}
 \begin{ioutput}
@@ -195,10 +197,6 @@ print (f"OIS NPV: {ois.npv(curve):.2f} EUR")
 
 \section{Bootstrap Technique}
 \label{bootstrapping-technique}
-
-%In order to determine a discount curve (hence an yield curve) from market data a technique called \emph{bootstrap} will be used.
-
-%We are going to concentrate on \euro STR swaps in order to build an EUR discount curve.
 
 \subsection{Constructing the Yield Curve}
 \label{the-bootstrapping-technique}
@@ -615,16 +613,17 @@ The resulting dateset is stored in (\href{https://github.com/matteosan1/finance_
 \begin{ipython}
 import pandas as pd
 
-mq = pd.read_excel('ois_2022_09_30.xlsx')
+mq = pd.read_excel('ois_2022_09_30.xlsx', index_col='maturities')
 print (mq.head())
 \end{ipython}
 \begin{ioutput}
-   months   quotes
-0       1  0.70575
-1       2  1.03170
-2       3  1.23200
-3       4  1.42975
-4       5  1.59400
+             quotes
+maturities
+        1M  0.70575
+        2M  1.03170
+        3M  1.23200
+        4M  1.42975
+        5M  1.59400
 \end{ioutput}
 
 As an example let's build the 18 months swap. Be careful when doing this operation and always double check the units of rates and quotes. In this case for example quotes are expressed in percent so you need to multiply them by 0.01. Another possible source of mistakes could be the quote index, e.g. the 18 months quote is not the eighteenth entry in the dataframe but rather the twelfth.
@@ -633,9 +632,9 @@ As an example let's build the 18 months swap. Be careful when doing this operati
 from finmarkets import OvernightIndexSwap
 from datetime import date
 
-obs_date = date.today()
-ois = OvernightIndexSwap(1e6, obs_date, "18m",
-                         mq.loc[mq['months']==18, 'quotes']*0.01)
+obs_date = start_date = date.today()
+ois = OvernightIndexSwap(1e6, start_date, "18m",
+                         mq['quotes']['18M']*0.01)
 	
 ois.fixed_rate
 \end{ipython}
@@ -680,10 +679,10 @@ from datetime import date
 pillar_dates = []
 swaps = []
 for i in range(len(mq)):
-    start_date = obs_date
+    maturity = mq.index[i]
     swap = OvernightIndexSwap(1e5, start_date,
-                              f"{data.loc[i, 'months']}M",
-                              0.01 * mq.loc[i, 'quotes'])
+                              maturity,
+                              0.01 * mq['quotes'][maturity])
     swaps.append(swap)
     pillar_dates.append(swap.payment_dates[-1])
 
@@ -696,6 +695,7 @@ import numpy as np
 from finmarkets import DiscountCurve 
 
 def objective_function(dfs, obs_date, pillars, swaps):
+    dfs = np.concatenate(([1], dfs))
     curve = DiscountCurve(obs_date, pillars, dfs)
     sum_sq = 0.0
     for swap in swaps:
@@ -717,29 +717,16 @@ result = minimize(objective_function, x0, bounds=bounds,
 print (result)
 \end{ipython}
 \begin{ioutput}
-      fun: 6.013612670431716e-06
- hess_inv: <30x30 LbfgsInvHessProduct with dtype=float64>
-      jac: array([  0.04434611,   1.36917983,   2.29552162,   2.5711866 ,
-         2.16690915,   1.32810603,   0.30645228,  -0.5974601 ,
-        -1.13748197,  -1.27599895,  -1.00129447,  -9.80350707,
-        -1.74136091,   4.02268735,   2.72203981,   2.03794119,
-         1.56284007,   1.77433427,   1.94559823,   2.27940774,
-         2.62049768,   3.02952444,   2.92352974,  -0.99744574,
-        -1.32504836, -14.21784677,   0.69443698,   5.40812762,
-        -7.85010772,  -1.33104848])
-  message: 'CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH'
-     nfev: 713
-      nit: 10
-     njev: 23
-   status: 0
+  message: CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL
   success: True
-        x: array([0.99939263, 0.99831201, 0.99692945, 0.99525677, 0.99335846,
-       0.99136706, 0.9892002 , 0.98691644, 0.98469213, 0.98233439,
-       0.98001276, 0.97763573, 0.9638143 , 0.95044587, 0.92527826,
-       0.90036952, 0.8752759 , 0.85061109, 0.8265085 , 0.80234949,
-       0.77842018, 0.75456742, 0.73127098, 0.70888994, 0.64940464,
-       0.58284654, 0.54160531, 0.50880545, 0.44281208, 0.39008517])
-\end{ioutput}
+   status: 0
+      fun: 1.547769660487322e-12
+        x: [ 9.994e-01  9.983e-01 ...  4.428e-01  3.901e-01]
+      nit: 7
+      jac: [ 2.598e-07  4.056e-07 ...  1.766e-07  4.188e-07]
+     nfev: 279
+     njev: 9
+ hess_inv: <30x30 LbfgsInvHessProduct with dtype=float64>\end{ioutput}
 
 A useful cross-check to perform to understand if everything went fine, is the comparison of the objective function value at the beginning and at the end of minimization.
 
@@ -768,15 +755,14 @@ The objective function at the end of the minimization is not exactly 0 (and rare
 Finally we can create the discount curve implied by the market quotes of our swaps (see Fig.~\ref{fig:discount_curve}) and try to compute some implied rates (remember to add back the first discount factor to the vector of parameters).
 
 \begin{ipython}
-from math import log
-from dateutil.relativedelta import relativedelta
+from numpy import log
+from finmarkets import TimeInterval
 
-dfs = result.x
-curve = DiscountCurve(obs_date, pillar_dates, dfs)
-d = observation_date + relativedelta(years=40)
+dc = DiscountCurve(today, pillars, np.concatenate(([1], result.x)))
+d = obs_date + TimeInterval("40y")
 
-print (f"40y df: {curve.df(d):.3f}")
-print (f"40y rate: {curve.annualized_yield(d):.4f}")
+print (f"40y df: {dc.df(d):.3f}")
+print (f"40y rate: {dc.rate(d):.4f}")
 \end{ipython}
 \begin{ioutput}
 40y df: 0.622

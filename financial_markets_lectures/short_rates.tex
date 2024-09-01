@@ -10,8 +10,8 @@ Let $Z(R, t, T)$ be the price of a zero coupon bond with maturity $T$ at time $t
 
 \begin{equation}
 \begin{gathered}
-Z(R, t, T) = e^{−R(T)(T−t)} \\
-R(T) = -\cfrac{\ln Z(R, t, T)}{T − t}
+Z(R, t, T) = e^{-R(T)(T-t)} \\
+R(T) = -\cfrac{\ln Z(R, t, T)}{T-t}
 \end{gathered}
 \label{eq:zcb}
 \end{equation}
@@ -44,7 +44,7 @@ Short rate models have been introduced in order to be able to explore the develo
 In particular, the stochastic evolution of short rate models is identified by the following generalized SDE
 
 \begin{equation}
-dr(t) = (\theta(t) − \alpha(t)r(t)) dt + \sigma(t)r(t)^{\gamma} dW
+dr(t) = (\theta(t)-\alpha(t)r(t)) dt + \sigma(t)r(t)^{\gamma} dW
 \label{eq:short_rate_sde}
 \end{equation}
 This equation denotes a generic Gaussian Markov process where $\theta$, $\alpha$ and $\sigma$ that in general are all deterministic functions of time and $dW$ is a Brownian motion.
@@ -84,25 +84,48 @@ The following code implements the \texttt{VasicekModel} referring to the process
 \begin{ipython}
 import numpy as np
 
-from finmarkets import maturity_from_str
+from scipy.stats import norm
+
+from finmarkets.utils import OptionType
 
 class VasicekModel:
     def __init__(self, k, theta, sigma):
-        self.k = k
         self.theta = theta
+        self.k = k
         self.sigma = sigma
-
+        
     def r_generator(self, r0, dates, seed=1):
+        if len(dates) < 2:
+            print ("You need to pass at least two dates")
+            return None
         np.random.seed(seed)
         dt = (dates[1] - dates[0]).days/365
         m = len(dates)
         r = np.zeros(shape=(m,))
         r[0] = r0
         for i in range(1, m):
-            r[i] = r[i-1] + self.k*(self.theta - r[i-1])*dt +
+            r[i] = r[i-1] + self.k*(self.theta-r[i-1])*dt +\
                    self.sigma*np.random.normal()*np.sqrt(dt)
         return r
-\end{ipython}
+            
+    def B(self, t, T):
+        return 1/self.k*(1-np.exp(-self.k*(T-t)))
+
+    def A(self, t, T):
+        return np.exp((self.theta-self.sigma**2/(2*self.k**2))*\
+               (self.B(t, T)-T+t)-self.sigma**2/(4*self.k)*self.B(t, T)**2)
+    
+    def ZCB(self, r, t, T):
+        return self.A(t, T)*np.exp(-self.B(t, T)*r)
+
+    def ZBO(self, r, K, t, T, S, option_type=OptionType.Call):
+        sigma_p = self.sigma*np.sqrt((1-np.exp(-2*self.k*(T-t)))/(2*self.k))*\
+                  self.B(T, S)
+        h = 1/sigma_p*np.log((self.ZCB(r, t, S))/(self.ZCB(r, t, T)*K))+sigma_p/2
+        arg1 = option_type*h
+        arg2 = option_type*(h-sigma_p)
+        return option_type*(self.ZCB(r, t, S)*norm.cdf(arg1)-\
+               K*self.ZCB(r, t, T)*norm.cdf(arg2))\end{ipython}
 
 Figure~\ref{fig:vasicek_path} shows just various realizations of the short rate using the following parameters: $r_0=0.01875$, $k=0.3$, $\theta=0.1$ and $\sigma=0.03$. 
 Two facts can be noticed by this plot: each process starts at $r_0$, but is pulled towards 0.10 which is the value of $\theta$ (dashed red line), and the interest rate can drop below 0\%. The Figure also shows the expected value of the process.
@@ -202,7 +225,7 @@ So let's set up a portfolio containing two bonds with different maturities $T_1$
 and $Z_2(r, t, T_2)$. We hold one of the former and a number $\Delta$ of the latter
 
 \begin{equation*}
-\Pi = Z_1 − \Delta Z_2
+\Pi = Z_1-\Delta Z_2
 \end{equation*}
 The change in this portfolio in a time $dt$ is given by
 
@@ -230,9 +253,9 @@ Since the two sides of the equation depend on $T_1$ and $T_2$ separately the onl
 \begin{equation*}
 \cfrac{\cfrac{\partial Z}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial r^2} - rZ}{\cfrac{\partial Z}{\partial r}}= a(r, t)
 \end{equation*}
-for some function $a(r, t)$. A convenient definition for $a$ is $a(r, t) = \sigma(r, t )\lambda(r, t) − u(r, t)$ which leads to the bond pricing equation
+for some function $a(r, t)$. A convenient definition for $a$ is $a(r, t) = \sigma(r, t)\lambda(r, t)-u(r, t)$ which leads to the bond pricing equation
 \begin{equation}
-\cfrac{\partial Z}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial r^2} + (u - \lambda\sigma)\cfrac{\partial Z}{\partial r} - rZ = 0
+\cfrac{\partial Z}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial r^2} + (u-\lambda\sigma)\cfrac{\partial Z}{\partial r}-rZ = 0
 \label{eq:bond_pricing_equation}
 \end{equation}
 
@@ -244,9 +267,9 @@ The value of a zero-coupon bond according to Eq.~\ref{eq:bond_pricing_equation} 
 
 \begin{equation} 
 \begin{gathered}
-Z(0, T) = e^{A(0,T)−r_0 B(0,T)} \\
-B(0, T) = \cfrac{1 - e^{-kT}}{k}\\
-A(0, T) = \cfrac{(B(0, T) - T)(k^2\theta - \sigma^2/2)}{k^2} - \cfrac{\sigma^2 B(0, T)^2}{4k}
+Z(0, T) = e^{A(0,T)-r_0 B(0,T)} \\
+B(0, T) = \cfrac{1-e^{-kT}}{k}\\
+A(0, T) = \cfrac{(B(0, T)-T)(k^2\theta - \sigma^2/2)}{k^2} - \cfrac{\sigma^2 B(0, T)^2}{4k}
 \label{eq:zcb_vasicek}
 \end{gathered}
 \end{equation}
@@ -257,23 +280,7 @@ R(t, T) = \cfrac{1}{T-t} A(t,T)+\cfrac{1}{T-t}B(t, T)r(t)
 \end{equation}
 showing that the entire term structure can be determined as a function of $r(t)$ once the model parameters have been chosen.
 
-In the following code we have extended the \texttt{VasicekModel} class with new methods to compute the zero coupon bound price as described by Equations~\ref{eq:zcb_vasicek}.
-
-\begin{ipython}
-class VasicekModel:
-    ...
-
-    def _A(self, T):
-        return ((self._B(T) - T)*(self.k**2*self.theta-self.sigma**2/2)/self.k**2) \
-                - (self.sigma**2*self._B(T))/(4*self.k)
-
-    def _B(self, T):
-        return (1-np.exp(-self.k*T))/self.k
-
-    def ZCB(self, T, r0):
-        T = maturity_from_str(T, "y")
-        return np.exp(self._A(T)-r0*self._B(T))
-\end{ipython}
+All the formulas discussed in the previous Sections have been implemented in the \texttt{VasicekModel}.
 
 To demonstrate some of the possible curve shapes allowed by the Vasicek model solving Eq.~\ref{eq:zcb}, Figure~\ref{fig:yield_vasicek} shows yield curves with different spot rates. Notice that the yield curve can be both increasing or decreasing with maturity.
 
@@ -745,9 +752,10 @@ Figures~\ref{fig:cir_path} and~\ref{fig:cir_yields} show respectively one simula
 %%A second model, which was proposed by Mercurio and Moraleda [78], derives an interest rate model within the HJM framework which explicitly assumes a humped volatility structure in the instantaneous forward rate dynamics and thus is also analytically tractable. They motivate their assumption of a humped volatility structure by the fact that forward rates themselves commonly exhibit humped volatility functions that are generally implied by simple market quotes. They have shown that their model consequently outperforms similar existing models, which do not explicitly contain such a humped shape in volatilities [20, 78, p.191f, p.213].
 %%      
     
-\section*{Exercises}
-\input{short_rates_ex_text}
+%\section*{Exercises}
+%\input{short_rates_ex_text}
 
+\newpage
 \begin{thebibliography}{9}
 \bibitem{bib:vasicek}O.A. Vasicek \emph{An Equilibrium Characterization of the Term Structure},
 Journal of Financial Economics, 5 (1977); 177-188

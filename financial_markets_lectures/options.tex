@@ -67,7 +67,7 @@ We eliminate the randomness
 \end{equation}
 
 \begin{equation}
-\cfrac{\partial V}{\partial t} + \cfrac{1}{2} \sigma^2 S^2 \cfrac{\partial^2 V}{\partial S^2}+ rS \cfrac{\partial V}{\partial S} − rV = 0
+\cfrac{\partial V}{\partial t} + \cfrac{1}{2} \sigma^2 S^2 \cfrac{\partial^2 V}{\partial S^2}+ rS \cfrac{\partial V}{\partial S} - rV = 0
 \end{equation}
 
 \section{Solutions of Black-Scholes PDE}
@@ -81,7 +81,7 @@ How to price the derivatives with the following payoffs:
 \begin{itemize}
 \tightlist
 \item $V(S, T) = S$, it is in fact a stock so $V(S, t) = S$
-\item $V(S, T) = E$ with a certainty we obtain the cash $E$ ($V(S, t) = Ee^{−r(T−t)}$)
+\item $V(S, T) = E$ with a certainty we obtain the cash $E$ ($V(S, t) = Ee^{-r(T-t)}$)
 \end{itemize}
 by substitution into the PDE it is possible to check that they are indeed solutions.
 %EXERCISES:
@@ -111,7 +111,7 @@ The first step is to apply the transformation $x = \textrm{ln}(S/K)$ and a new f
 The PDE for $Z(x, \tau)$ becomes:
 \begin{equation}
 \begin{gathered}
-\cfrac{\partial Z}{\partial \tau} -\cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial x^2}+\left(\cfrac{\sigma^2}{2}−r\right)  \cfrac{\partial Z}{\partial x} + rZ = 0\\ \\
+\cfrac{\partial Z}{\partial \tau}-\cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial x^2}+\left(\cfrac{\sigma^2}{2}-r\right)  \cfrac{\partial Z}{\partial x} + rZ = 0\\ \\
 Z(x, 0) =V(Ee^x, T)
 \end{gathered}
 \end{equation}
@@ -245,16 +245,16 @@ As we have seen above an obvious way to make our estimate more precise is to inc
 \subsubsection{Antithetic Method}
 Let $\theta$ be estimated through $Y$, that is $\theta=\mathbb{E}[Y]$. Let $Y_1$ and $Y_2$ be two samples of $Y$, so the estimate is $\hat{\theta}=\frac{Y_1+Y_2}{2}$. The variance of the estimate is 
 \begin{equation*}
-Var(\hat{\theta}) = \frac{Var(Y_1)+Var(Y_2)+2Cov(Y_1,Y_2)}{4}
+\text{Var}(\hat{\theta}) = \frac{\text{Var}(Y_1)+\text{Var}(Y_2)+2\text{Cov}(Y_1,Y_2)}{4}
 \end{equation*}
 
-If $Y_1$ and $Y_2$ are i.i.d. $Var(\hat{\theta})=\frac{Var(Y)}{2}$, and if $Cov(Y_1, Y_2)<0$ the variance is reduced even more. In the extreme case where $\rho=-1$, the variance is reduced to the maximum allowed by this technique. 
+If $Y_1$ and $Y_2$ are i.i.d. $\text{Var}(\hat{\theta})=\frac{\text{Var}(Y)}{2}$, and if $\text{Cov}(Y_1, Y_2)<0$ the variance is reduced even more. In the extreme case where $\rho=-1$, the variance is reduced to the maximum allowed by this technique. 
 
 Since the path of the stock is defined as a geometric Brownian motion with random normal shocks, $Y_1$ can be a set of normal random numbers and $Y_2 = -Y_1$. Hence the final payoff is given by the average between two sets of payoffs computed respectively with $Y_1$ and $Y_2$ which by construction are \emph{perfectly anti-correlated}. 
 
 \subsubsection{Control Variate Variance Reduction Method}
 
-Say desired simulation quantity is $\mathbb{E}[X]$, and there is another known random variable $Y$ with known analytical expectation $\mu_Y = \mathbb{E}[Y]$. For any constant $c$ one can see that $Z = X + c(Y -\mu_Y)$ is an unbiased estimator of $X$, by linearity of expectation. Also it can be shown that $Var(Z) = Var(X) + c\cdot 2 Var(Y) + 2c Cov(X; Y)$ is minimized when $c = -\frac{Cov(X;Y)^2}{Var(Y)}$. 
+Say desired simulation quantity is $\mathbb{E}[X]$, and there is another known random variable $Y$ with known analytical expectation $\mu_Y = \mathbb{E}[Y]$. For any constant $c$ one can see that $Z = X + c\cdot(Y -\mu_Y)$ is an unbiased estimator of $X$, by linearity of expectation. Also it can be shown that $\text{Var}(Z) = \text{Var}(X) + c\cdot 2 \text{Var}(Y) + 2c\cdot\text{Cov}(X; Y)$ is minimized when $c = -\frac{\text{Cov}(X;Y)^2}{\text{Var}(Y)}$. 
 $Y$ is called a \textbf{control variate} of $X$. 
 
 To reduce variance, $Y$ can be chosen as much correlated as possible with $X$. In practice, we can select a $Y$ which is approximately equal to $X$, easy to simulate and whose expectation is known. 
@@ -270,92 +270,95 @@ The following class \texttt{AsianOption} implements all the methods described ab
 \begin{ipython}
 import numpy as np
 
+from finmarkets import OptionType
 from scipy.stats.mstats import gmean
 from scipy.stats import norm
 
 class AsianOption:
-  def __init__(self, S0, K, ttm, sigma, r, type=0):
-    # type: 0=call, 1=put
-    self.S0 = S0
-    self.K = K
-    self.ttm = ttm
-    self.sigma = sigma
-    self.r = r
-    self.type = type
+    def __init__(self, S0, K, r, sigma, ttm, otype=OptionType.Call):
+        self.S0 = S0
+        self.K = K
+        if type(ttm) == list:
+            self.ttm = np.array([t for t in ttm])
+        else:
+            self.ttm = ttm
+        self.sigma = sigma
+        self.r = r
+        self.otype = otype
 
-  def geometric_price(self, timesteps=252):
-    adj_sigma = self.sigma*np.sqrt((2*timesteps+1)/(6*(timesteps+1)))
-    rho = 0.5*(self.r-(self.sigma**2)*0.5 + adj_sigma**2)
-    d1 = (np.log(self.S0/self.K)+(rho+0.5*adj_sigma**2)*self.ttm)/\\
-         (adj_sigma*np.sqrt(self.ttm))
-    d2 = (np.log(self.S0/self.K)+(rho-0.5*adj_sigma**2)*self.ttm)/\\
-         (adj_sigma*np.sqrt(self.ttm))
-    if self.type == 0:
-      return np.exp(-self.r*self.ttm)*\\
-             (self.S0*np.exp(rho*self.ttm)*norm.cdf(d1)-self.K*norm.cdf(d2))
-    else:
-      return np.exp(-self.r*self.ttm)*\\
-             (self.K*norm.cdf(-d2)-self.S0*np.exp(rho*self.ttm)*norm.cdf(-d1))
+    def geometric_price(self, timesteps=252):
+        adj_sigma = self.sigma*np.sqrt((2*timesteps+1)/(6*(timesteps+1)))
+        rho = 0.5*(self.r-(self.sigma**2)*0.5 + adj_sigma**2)
+        d1 = (np.log(self.S0/self.K)+(rho+0.5*adj_sigma**2)*self.ttm)/\
+             (adj_sigma*np.sqrt(self.ttm))
+        d2 = (np.log(self.S0/self.K)+(rho-0.5*adj_sigma**2)*self.ttm)/\
+             (adj_sigma*np.sqrt(self.ttm))
+        if self.otype == OptionType.Call:
+            return np.exp(-self.r*self.ttm)*(self.S0*np.exp(rho*self.ttm)*\
+            norm.cdf(d1)-self.K*norm.cdf(d2))
+        else:
+            return np.exp(-self.r*self.ttm)*(self.K*norm.cdf(-d2)-self.S0*\
+                   np.exp(rho*self.ttm)*norm.cdf(-d1))
 
-  def path(self, n, timesteps, anti=False, seed=10000):
-    np.random.seed(seed)
-    dt = self.ttm/timesteps
+    def path(self, n, timesteps, anti=False, seed=10000):
+        np.random.seed(seed)
+        dt = self.ttm/timesteps
   
-    S = np.zeros(shape=(timesteps, n))
-    S[0] = self.S0
-    w = norm.rvs(size=(timesteps-1)*n).reshape(((timesteps-1), n))
-    for i in range(0, timesteps-1):
-        S[i+1] = S[i] * (1 + self.r*dt  + self.sigma*np.sqrt(dt)*w[i])
+        S = np.zeros(shape=(timesteps, n))
+        S[0] = self.S0
+        w = norm.rvs(size=(timesteps-1)*n).reshape(((timesteps-1), n))
+        for i in range(0, timesteps-1):
+            S[i+1] = S[i] * (1 + self.r*dt  + self.sigma*np.sqrt(dt)*w[i])
 
-    if anti:
-      S1 = np.zeros(shape=(timesteps, n))
-      S1[0] = self.S0
-      w = -w
-      for i in range(0, timesteps-1):
-          S1[i+1] = S1[i] * (1 + self.r*dt  + self.sigma*np.sqrt(dt)*w[i])
+        if anti:
+            S1 = np.zeros(shape=(timesteps, n))
+            S1[0] = self.S0
+            w = -w
+            for i in range(0, timesteps-1):
+                S1[i+1] = S1[i] * (1 + self.r*dt  + self.sigma*np.sqrt(dt)*w[i])
 
-    if anti:
-      return S, S1
-    else:
-      return S
+        if anti:
+            return S, S1
+        else:
+            return S
 
-  def arithmetic_payoff(self, S):
-    if self.type == 0:
-      return np.maximum(0, np.mean(S, axis=0)-self.K)
-    else:
-      return np.maximum(0, self.K - np.mean(S, axis=0))
+    def aritmethic_payoff(self, S):
+        if self.otype == OptionType.Call:
+            return np.maximum(0, np.mean(S, axis=0)-self.K)
+        else:
+            return np.maximum(0, self.K - np.mean(S, axis=0))
 
-  def geometric_payoff(self, S):
-    if self.type == 0:
-      return np.maximum(0, gmean(S, axis=0)-self.K)
-    else:
-      return np.maximum(0, self.K-gmean(S, axis=0))
+    def geometric_payoff(self, S):
+        if self.otype == OptionType.Call:
+            return np.maximum(0, gmean(S, axis=0)-self.K)
+        else:
+            return np.maximum(0, self.K-gmean(S, axis=0))
 
-  def simulate_naive(self, n, timesteps=252, seed=10000):
-    S = self.path(n, timesteps, seed=seed)
-    payoffs = np.exp(-self.r*self.ttm) * self.arithmetic_payoff(S)
-    price = np.mean(payoffs)
-    err = np.std(payoffs)/np.sqrt(n)
-    return price, err
+    def simulate_naive(self, n, timesteps=252, seed=10000):
+        S = self.path(n, timesteps, seed=seed)
+        payoffs = np.exp(-self.r*self.ttm) * self.aritmethic_payoff(S)
+        price = np.mean(payoffs)
+        err = np.std(payoffs)/np.sqrt(n)
+        return price, err
 
-  def simulate_antithetic(self, n, timesteps=252, seed=10000):
-    S1, S2 = self.path(n, timesteps, anti=True, seed=seed)
-    S = np.exp(-self.r*self.ttm) *\\
-        (self.arithmetic_payoff(S1) + self.aritmethic_payoff(S2))/2
-    price = np.mean(S)
-    err = np.std(S)/np.sqrt(n)
-    return price, err
+    def simulate_antithetic(self, n, timesteps=252, seed=10000):
+        S1, S2 = self.path(n, timesteps, anti=True, seed=seed)
+        S = np.exp(-self.r*self.ttm) * (self.aritmethic_payoff(S1) +\
+            self.aritmethic_payoff(S2))/2
+        price = np.mean(S)
+        err = np.std(S)/np.sqrt(n)
+        return price, err
     
-  def simulate_control_variate(self, n, timesteps=252, seed=10000):
-    S = self.path(n, timesteps)
-    X = np.exp(-self.r*self.ttm) * self.arithmetic_payoff(S)
-    Y = np.exp(-self.r*self.ttm) * self.geometric_payoff(S)
-    c = -np.cov(X,Y)[0, 1]/np.var(Y)
-    mu = self.geometric_price(timesteps)
-    Z = X + c*(Y-mu)
-    price = np.mean(Z)
-    err = (np.std(Z)/np.sqrt(n))
-    return price, err
+    def simulate_control_variate(self, n, timesteps=252, seed=10000):
+        S = self.path(n, timesteps)
+        X = np.exp(-self.r*self.ttm) * self.aritmethic_payoff(S)
+        Y = np.exp(-self.r*self.ttm) * self.geometric_payoff(S)
+        c = -np.cov(X,Y)[0, 1]/np.var(Y)
+        mu = self.geometric_price(timesteps)
+        Z = X + c*(Y-mu)
+        price = np.mean(Z)
+        err = (np.std(Z)/np.sqrt(n))
+        return price, err
 \end{ipython}
 
 \subsubsection{An Example}
@@ -544,8 +547,8 @@ One can see also that with control variates, the option value is almost constant
   \label{fig:asian_mc_results}
 \end{figure}
 
-\section*{Exercises}
-\input{options_ex_text}
+%\section*{Exercises}
+%\input{options_ex_text}
 
 \begin{thebibliography}{9}
 \end{thebibliography}
