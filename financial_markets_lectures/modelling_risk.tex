@@ -15,38 +15,22 @@ Correlation is a precise mathematical concept that has only meaning in reference
 \end{equation}
 where $\mu$ and $\sigma$ denote the corresponding mean and standard deviation, and $\mathbb{E}$ the expected value.
 
-Statements such as "company $A$ and company $B$ are correlated" are meaningless unless you refer to a quantifiable variable associated with the two companies (e.g. stock price, revenue growth or credit default spread).
-%In the same spirit, stating that the default behavior of companies $A$ and $B$ is correlated does not carry a lot of meaning unless one specifies a random variable that captures what \emph{default behavior} means. %In summary, before
-%we can talk about default correlation, we need to define a random variable
-%that somehow captures \emph{default behavior}.
-
-%Consider two assets. Two random variables $P_1$ and $P_2$ (e.g. the default probabilities) can be used to generate default scenarios for each asset. If $n$ of such possible default scenario are generated two index variables $v_1$ and $v_2$ capture the default pattern of each asset: each variable, actually a vector, will be a sequence of $n$ 1’s and 0’s according to the default state of the corresponding asset.
-%
-%Using an appropriate random sample it is possible to determine the correlation coefficient between $v_1$ and $v_2$ to then estimate the default correlation ($\rho_D$) between asset 1 and 2.
-%
-%\begin{equation}
-%\rho_D = \cfrac{n\sum (v_{1i} v_{2i}) - \sum v_{1i} \sum v_{2i}}{\sqrt{(n\sum v_{1i}^2 - (\sum v_{1i})^2)(n\sum v_{2i}^2 - (\sum v_{2i})^2)}}
-%\label{eq:discrete_correlation_coefficient}
-%\end{equation}
-%Equation~\ref{eq:discrete_correlation_coefficient} is just a discrete version of Eq.~\ref{eq:correlation_coefficient}.
+%Statements such as "company $A$ and company $B$ are correlated" are meaningless unless you refer to a quantifiable variable associated with the two companies (e.g. stock price, revenue growth or credit default spread).
+Stating that the default behavior of companies $A$ and $B$ is correlated does not carry a lot of meaning unless one specifies a random variable that captures what \emph{default behavior} means.
 
 The challenge to do a good Monte Carlo simulation to model asset defaults relies on the ability to generate realistic scenarios. That is, being able to be loyal to the average default probability of the pool and to the assets’ default correlation $\rho$. Note that if we are dealing with two assets, the default correlation is captured by one number. In the case of $N>2$ assets, $\rho$ is a symmetric matrix (sometimes also indicated by $\Sigma$).
 
 \begin{equation*}
 \Sigma = \begin{bmatrix}
-\sigma^2 (X_0) & \mathrm{Cov}(X_0, X_1) & \mathrm{Cov}(X_0, X_2)\\
- \mathrm{Cov}(X_1, X_0) & \sigma^2 (X_1) & \mathrm{Cov}(X_1, X_2)\\
- \mathrm{Cov}(X_2, X_0) & \mathrm{Cov}(X_2, X_1) & \sigma^2 (X_2)\\
+\sigma^2 (X_0) & \text{Cov}(X_0, X_1) & \text{Cov}(X_0, X_2)\\
+ \text{Cov}(X_1, X_0) & \sigma^2 (X_1) & \text{Cov}(X_1, X_2)\\
+ \text{Cov}(X_2, X_0) & \text{Cov}(X_2, X_1) & \sigma^2 (X_2)\\
 \end{bmatrix}
 \end{equation*}
  
 Diagonal terms report the variance of each random variable, while the non-diagonal terms represent the correlation between each pair of variables. The matrix is symmetric since the correlation between $X_i$ and $X_j$ is the same as between $X_j$ and $X_i$.
 
-\section{Copula}
-
-%Copulas (or copul\ae~in Latin) are an interesting mathematical tool to represent correlations between probability distributions. They can be used to describe complex dependencies in multivariate risk models and to sample from correlated distributions.
-
-\subsection{Distribution Transformation}
+\section{Distribution Transformation}
 \label{distribution-transformation}
 
 Distribution transformation is a very useful tool which will be extensively used with the copula. This technique allows to transform every random variable distribution into uniform and vice versa and is called \emph{inverse transform} (or \emph{probability integral transform}).
@@ -77,126 +61,66 @@ x = F_{X}^{-1}(u)\quad\mathrm{and}\quad u = F_X(x)
 \label{fig:inverse_transform}
 \end{figure}
 
-Let's see few examples of how this can be done in \texttt{python}. Imagine we want to transform a uniform distribution into Gaussian. The transformation takes uniform samples $u$ between 0 and 1, interpreted as a probabilities, and then returns $F_{\textrm{normal}}^{-1}(u)$. 
+Imagine we want to transform a uniform distribution into Gaussian. The transformation takes uniform samples $u$between 0 and 1, interpreted as a probabilities, and then returns $F_{\textrm{normal}}^{-1}(u)$. The following code hows how this can be done in \texttt{python}. 
 
-Table~\ref{tab:transformation} shows samples of $U$ and their representation on the standard normal distribution.
+\pythoncode{code/modelling_risk_1.py}
 
-\begin{ipython}
-from scipy.stats import uniform, norm
-
-uniform_samples = [0.5, .975, 0.995, 0.999999]
-for u in uniform_samples:
-    print (norm.ppf(u))
-\end{ipython}
-
-\begin{table}[h]
-\centering
-\begin{tabular}{|c|c|}
-\hline
-$\mathbf{u}$ & $\mathbf{F^{-1}(u)}$ \\
-\hline
-0.5 & 0 \\
-\hline
-.975 & 1.95996 \\
-\hline
-.995 & 2.5758 \\
-\hline
-.999999 & 4.75342 \\
-\hline
-\(1-2^{-52}\) & 8.12589 \\
-\hline
-\end{tabular}
-\caption{Table of samples from the uniform distribution and their corresponding Gaussian quantiles.}
-\label{tab:transformation}
-\end{table}
-
-Now let's see how this can be done directly with an entire distribution rather than with few samples one by one. Let's start again from the uniform distribution. This can be sampled either using \texttt{random.random} like in Section~\ref{pseudo-random-numbers} or with \texttt{scipy.stats.uniform}. Usually the second method is preferred since it exploits \texttt{numpy.array} and let us avoid a lot of for-loop cycles. 
+We start by generating a sample from the uniform distribution using \texttt{scipy.stats.uniform}. We can then exploits the \texttt{numpy.array} functionality to avoid a lot of for-loop cycles. 
 Each distribution defined in \texttt{scipy.stats} has a convenient method \texttt{rvs(size=aSize)} (random variable sample) to sample as many time as specified by the argument \texttt{size}. 
+In the left plot of Fig.~\ref{fig:a_to_b_to_a} the resulting distribution is shown.
 
-In the left plot of Fig.~\ref{fig:uniform_and_gauss} the resulting distribution is shown.
+Next we want to transform the sample so that it becomes normally distributed. The transformation to use is the quantile function of the normal distribution, or $(\tt{ppf(x))}$. Remember that all the methods of \texttt{scipy.stats} applied to \texttt{numpy.array} works on each item of the array without the need to make explicit for-loops.
+In the center plot of Fig.~\ref{fig:a_to_b_to_a} the Gaussian obtained with the code below is shown
 
-\begin{ipython}
-x = uniform(0, 1).rvs(10000)
-\end{ipython}
-
-Next we want to transform these samples so that they are normally distributed. As we have just seen the transformation to use is the quantile function of the normal distribution, or $(\tt{ppf(x))}$ in \texttt{python}. %All the methods of \texttt{scipy.stats} take in input \texttt{numpy.array} and each function is applied to each item of the array without the need to make explicit for-loops.
-
-In the right plot of Fig.~\ref{fig:uniform_and_gauss} the Gaussian obtained with the code below is shown
-
-\begin{ipython}
-x_trans = norm.ppf(x)
-\end{ipython}
-
-\begin{figure}[htb]
-\centering
-\includegraphics[width=1.\textwidth]{figures/uniform_gauss}
-\caption{On the left the generated uniform distribution, on the right its Gaussian transform.}
-\label{fig:uniform_and_gauss}
-\end{figure}
+%\begin{figure}[htb]
+%\centering
+%\includegraphics[width=1.\textwidth]{figures/uniform_gauss}
+%\caption{On the left the generated uniform distribution, on the right its Gaussian transform.}
+%\label{fig:uniform_and_gauss}
+%\end{figure}
 
 If we plot them together in 2D we can get a sense of what is going on using the inverse CDF transformation. Indeed it stretches the outer regions of the uniform to yield a normal distribution. This is shown in Fig.~\ref{fig:uniform_to_gauss}. 
     
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.5\textwidth]{figures/uniform_to_gauss}
+\includegraphics[width=0.65\textwidth]{figures/uniform_to_gauss}
 \caption{2D plot showing the transformation that maps our initial uniform distribution to the resulting Gaussian.}
 \label{fig:uniform_to_gauss}
 \end{figure}
     
-The nice thing of this technique is that it can be used for any arbitrary (univariate) probability distribution. 
-%A similar transformation from uniform to t-Student~\cite{bib:t_student} is shown in Fig.~\ref{fig:uniform_to_tstudent}.
-
-%\begin{ipython}
-%from scipy.stats import t
-
-%x_trans = t(4).ppf(x)
-%\end{ipython}
-
-%\begin{figure}[htbp]
-%\centering
-%\includegraphics[width=0.5\textwidth]{figures/tstudent_to_uniform}
-%\caption{2D plot showing the transformation that maps a uniform distribution to a t-Student.}
-%\label{fig:uniform_to_tstudent}
-%\end{figure}
-
 Clearly to do the opposite transformation, that is from an arbitrary distribution to uniform, we can just apply the inverse of the inverse CDF, that is the CDF itself.
-
-In such a way we can go from distribution A to B passing through the uniform rather quickly. An example is shown in Fig.~\ref{fig:a_to_b_to_a}.
+In such a way we can go from distribution A to B passing through the uniform rather quickly as shown in three plots of Fig.~\ref{fig:a_to_b_to_a}.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.7\textwidth]{figures/a_to_b_to_a}
+\includegraphics[width=0.8\textwidth]{figures/a_to_b_to_a}
 \caption{Example of transformation, it starts with a uniform distribution, goes into a Gaussian and back to the initial uniform.}
 \label{fig:a_to_b_to_a}
 \end{figure}
-%\newpage
 
-\section{Copula Definition}
+Notice that this technique can be used for any arbitrary (univariate) probability distribution so you can test it with different samples. 
+
+\section{Copula}
 \label{copula}
 
-%A \emph{copula} is a multivariate distribution which examines the association or the dependences between many variables. It allows the joining of multiple univariate distributions to a single multivariate distribution.
+A \emph{copula} $\mathcal{C}(F_1, F_2, \ldots, F_n, \rho)$ is a multivariate distribution which examines the association or the dependences between many variables. It allows the joining of multiple univariate distributions to a single multivariate distribution.
+Copulas are used to describe the dependencies between random variables and have been widely used in quantitative finance to model risk. 
 
-%Copula provide risk managers and market analysts with a measure of the dependence between various financial variables that is not subject to the same limitations as correlation. Correlation only works well with the normal distribution, but financial markets don't always exhibit properties of the normal distribution.
+Its exact definition from probability theory is the following: a multivariate (or multidimensional) cumulative distribution function whose \emph{marginal} probability distributions (i.e. the probability distribution of each dimension) are uniform ($F_i = U_i =\mathrm{uniform}(0,1)$), $\rho$ represents the correlation between each variable.
 
-%To create a copula, two or more unknown distributions are mapped to a well-known distribution, such as the normal, whose properties are well established. As a result, a joint probability distribution is created while still maintaining the individual (constituent) marginal distributions
+A key part of copulas is the \emph{Sklar’s theorem}. It states that any multivariate joint distribution can be written in terms of the marginal distributions and a copula which describes the dependence structure between the variables. This property makes them very popular since allow to easily model the distribution of correlated random variables by representing marginals and correlation separately: essentially allow to split a complicated problem into simpler components.
 
-In probability theory a copula $\mathcal{C}(F_1, F_2, \ldots, F_n, \rho)$ is a multivariate (or multidimensional) cumulative distribution function whose \emph{marginal} probability distributions (i.e. the probability distribution of each dimension) are uniform ($F_i = U_i =\mathrm{uniform}(0,1)$), $\rho$ represents the correlation between each variable.
+\begin{attention}
+Mathematically, the theorem can be stated as follows: suppose we have only two random variables, $X$ and $Y$. If $F(x,y)$ is a joint distribution function with continuous marginals $f_x(x)=u$ and $f_y(y)=v$, then the joint distribution $F(x,y)$ can be written in terms of a unique function $\mathcal{C}(u,v)$:
+\begin{equation}
+F(x,y)=\mathcal{C}(u,v)
+\end{equation}
+\noindent
+where $\mathcal{C}(u,v)$ is the copula of $F(x,y)$.
+The copula function describes how the multivariate function $F(x,y)$ is derived from or coupled with the marginal distribution functions $f_x(x)$ and $f_y(y)$.
+\end{attention}
 
-%Copulas are used to describe the dependencies between random variables and have been widely used in quantitative finance to model risk. 
-Copulas are popular since allow to easily model the distribution of correlated random variables by representing marginals and their correlation separately: essentially allow to split a complicated problem into simpler components.
-A key part of copulas is the \emph{Sklar’s theorem}. It states that any multivariate joint distribution can be written in terms of the marginal distributions and a copula which describes the dependence structure between the variables. 
-
-%Mathematically, the theorem can be stated as follows: suppose we have only two random variables, $X$ and $Y$. If $F(x,y)$ is a joint distribution function with continuous marginals 
-%$f_x(x)=u$ and $f_y(y)=v$, then the joint distribution $F(x,y)$ can be written in terms of a unique function $\mathcal{C}(u,v)$:
-%\begin{equation}
-%F(x,y)=\mathcal{C}(u,v)
-%\end{equation}
-%\noindent
-%where $\mathcal{C}(u,v)$ is the copula of $F(x,y)$.
-
-%The copula function describes how the multivariate function $F(x,y)$ is derived from or coupled with the marginal distribution functions $f_x(x)$ and $f_y(y)$.
-
-Despite the probably obscure and daunting definition given above the concept of copula is quite simple so it will be clarified with a couple of practical examples.
+Despite the probably obscure and daunting definition given above the concept of copula is quite simple so it will be clarified with a practical example.
 
 \section{Working with Correlated Distributions}
 \label{sec:generate-correlated-distributions}
@@ -204,29 +128,21 @@ Despite the probably obscure and daunting definition given above the concept of 
 \subsection{Stock Returns}
 \label{sec:correlated_stock_returns}
 
-In this example we are going to consider the daily returns of two assets like BMW and Siemens in the period between 2010 and 2022. 
-The corresponding closing prices can be found in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/bmw_siemens.csv}{bmw\_siemens.csv}.
+In this example we are going to consider the closing prices of two assets like BMW and Siemens in the period between 2010 and 2022. 
+The corresponding daily returns can be found in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/bmw_siemens.csv}{bmw\_siemens.csv}.
 Since the two companies belongs to the same sector and to the same market it is plausible to assume that their returns are correlated, and in particular we would like to estimate the probability that both of them are negative.
 
 From the historical series of the two assets we can determine the distributions of the individual returns irrespective of the other one (i.e. the marginals) but we don't know how we could model the correlated probability distribution, \emph{joint distribution}, with which we should work to answer our question. And here is where copula comes in hand, since it bridges the marginal distributions (which by definition have no correlation) into a joint probability distribution. 
 
-First of all let's load the historical series and check if there is some correlation between the two.
+\pythoncode{code/modelling_risk_2.py}
 
-\begin{ipython}
-import pandas as pd
-
-data = pd.read_csv("bmw_siemens.csv", index_col='Date')
-print (data[['BMW.DE', 'SIE.DE']].corr())
-
-bmw = data['BMW.DE'].values
-sie = data['SIE.DE'].values
-\end{ipython}
+In the code we first load the historical series and check the correlation between the two assets.
 \begin{ioutput}
           BMW.DE    SIE.DE
 BMW.DE  1.000000  0.664654
 SIE.DE  0.664654  1.000000
 \end{ioutput}
-Indeed the returns are correlated with a coefficient of about 0.6646 and Figure~\ref{fig:bmw_sie_returns} shows the corresponding returns.
+Indeed the returns are correlated with a coefficient of about 0.6646 as shown in Figure~\ref{fig:bmw_sie_returns}.
 
 \begin{figure}[htbp]
 \centering
@@ -235,25 +151,8 @@ Indeed the returns are correlated with a coefficient of about 0.6646 and Figure~
 \label{fig:bmw_sie_returns}
 \end{figure}
 
-By fitting the return histograms we can determine the marginal distributions (e.g. using t-student~\cite{bib:t_student} functions).
+By fitting the return histograms (e.g. using t-student~\cite{bib:t_student} functions) we can determine the parametric for the marginal distributions.
 The resulting functions are shown in Fig.~\ref{fig:bmw_sie_fit}.
-
-\begin{ipython}
-from scipy.stats import t
-
-bmw_fit = t.fit(bmw)
-sie_fit = t.fit(sie)
-
-print (bmw_fit)
-print (sie_fit)
-
-f_bmw = t(*bmw_fit)
-f_sie = t(df=sie_fit[0], loc=sie_fit[1], scale=sie_fit[2])
-\end{ipython}
-\begin{ioutput}
-(3.696476285796134, 0.00045425428617591355, 0.012991211105350065)
-(4.140251044170165, 0.0003757750350156429, 0.011661741107299076)
-\end{ioutput}
 
 \begin{figure}[htbp]
 \centering
@@ -262,10 +161,7 @@ f_sie = t(df=sie_fit[0], loc=sie_fit[1], scale=sie_fit[2])
 \label{fig:bmw_sie_fit}
 \end{figure}
 
-%\subsection{Modelling Correlation with Copulas}
-%\label{adding-correlation-with-gaussian-copulas}
-
-To model the joint probability distribution we could:
+To model the joint probability distribution we have to:
 \begin{itemize}
 \tightlist
 \item simulate a sample from a multivariate distribution with the specific correlation structure;
@@ -273,37 +169,18 @@ To model the joint probability distribution we could:
 \item finally transform each uniform marginal to whatever we need to (t-student functions in our example).
 \end{itemize}
 
-To keep thing simple we are going to assume a Gaussian correlation,this is not mandatory though, since we could have modeled correlations with different distribution either.
+To keep thing simple we are going to assume a Gaussian correlation, this is not mandatory though, since we could have modeled it with different distribution either.
+It is important to understand that correlation doesn't affect the distribution of each component, but it rather changes how given a sample the second is determined.
 
-%So first sample from such a distribution, then transform the marginals to uniform using the \texttt{cdf} function of the normal distribution (the copula).
-
-\begin{ipython}
-from scipy.stats import multivariate_normal
-
-mvnorm = multivariate_normal(mean=[0, 0], cov=data[['BMW.DE', 'SIE.DE']].corr())
-x = mvnorm.rvs(100000)
-print (x[0:5])
-
-copula = norm.cdf(x)
-\end{ipython}
-\begin{ioutput}
-[[-0.03120891 -0.24918657]
- [-0.17677523 -1.01992715]
- [-0.60572525  0.95517049]
- [-0.79814057  0.69339518]
- [ 0.11990304  0.0947739 ]]
-\end{ioutput}
-
-It is important to understand that correlation doesn't affect the distribution of each column of the array, but it rather changes how given a sample the second is determined, see Fig.~\ref{fig:multivariate_with_correlation}.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.5\textwidth]{figures/multivariate_2d_corr_bmw_sie}
-\caption{2D normal distribution with a correlation factor of about 0.66.}
-\label{fig:multivariate_with_correlation}
-\end{figure}
+%, see Fig.~\ref{fig:multivariate_with_correlation}.
+%\begin{figure}[htbp]
+%\centering
+%\includegraphics[width=0.5\textwidth]{figures/multivariate_2d_corr_bmw_sie}
+%\caption{2D normal distribution with a correlation factor of about 0.66.}
+%\label{fig:multivariate_with_correlation}
+%\end{figure}
     
-In the last line of the previous code we applied the \texttt{cdf} transformation to convert the marginal distributions to uniform and 
+We then apply the \texttt{cdf} transformation to convert the marginal distributions to uniform and 
 the result is shown in Fig.~\ref{fig:copula}. Plots like this are how copulas are usually visualized. Since we have used a multivariate standard normal to model the correlation this is an example of \textbf{Gaussian Copula}.
 
 \begin{figure}[htbp]
@@ -316,36 +193,12 @@ the result is shown in Fig.~\ref{fig:copula}. Plots like this are how copulas ar
 \end{figure}
 
 At this point we can just transform the uniform marginals to the appropriate t-students to have the desired correlated distributions (using the corresponding \texttt{ppf} transformations).
-To see that it is actually working as expected we can compare the two joint distributions with and without correlation and compute the probability to have both stocks going down at the same time in two cases.
+To see that it is actually working as expected we have compared the two joint distributions (with and without correlation) and computed the probability to have both stocks going down at the same time in the two cases.
+Note that to compute the probability, ignoring the correlation between the returns, we have just sampled from the two marginals and counted how many times they both are negative.
 
-\begin{ipython}
-bmw_corr = f_bmw.ppf(x_unif[:, 0])
-sie_corr = f_sie.ppf(x_unif[:, 1])
-
-n = 0
-for i in range(N):
-  if bmw_corr[i] < 0.0 and sie_corr[i] < 0.0:
-    n += 1
-print (f"{n/N:.4f}")
-\end{ipython}
 \begin{ioutput}
-0.3537
-\end{ioutput}
-
-To compute the same probability, bu ignoring the correlation between the returns, just sample from the two marginals and count how many times they both are negative or not.
-
-\begin{ipython}
-bmw_uncorr = f_bmw.rvs(size=N)
-sie_uncorr = f_sie.rvs(size=N)
-
-n = 0
-for i in range(N):
-  if bmw_uncorr[i] < 0. and sie_uncorr[i] < 0.:
-    n += 1
-print (f"{n/N:.4f}")
-\end{ipython}
-\begin{ioutput}
-0.2377
+Probability w/ correlation: 0.3537
+Probability w/o correlation: 0.2377
 \end{ioutput}
 
 The comparison between the two multivariate distributions in Figure~\ref{fig:bmw_sie_with_corr} clearly shows the different populations in the area of interest (shaded in yellow).
@@ -364,18 +217,7 @@ Using the uniform distribution as a common base for our transformations we can e
 \begin{finmarkets}
 It may be useful to create a \texttt{python} object to handle copulas. In \texttt{finmarkets} this class is \texttt{GaussianCopula} and has a method \texttt{sample} which generates a sample from the Gaussian copula with the proper correlation.
 \end{finmarkets}
-\begin{ipython}
-import numpy as np
-from scipy.stats import multivariate_normal, norm
-
-class GaussianCopula:
-    def __init__(self, n, cov):
-        self.mv = multivariate_normal(mean=np.zeros(n), cov=cov)
-
-    def sample(self, simulations):
-        x = self.mv.rvs(size=simulations)
-        return norm.cdf(x)
-\end{ipython}
+\pythoncode{code/modelling_risk_3.py}
 
 \subsubsection{Remarks on Gaussian Copula}
 Extreme, synchronized rises and falls in financial markets occur infrequently but they do occur. The problem with Gaussian models is that they did not assign a high enough likelihood of occurrence to the scenario in which many things go wrong (or right) at the same time the “perfect storm” scenario.
@@ -387,13 +229,7 @@ A $n\sigma$ event has a probability to happen equivalent to that of sampling a v
 To compute the occurrence frequency (in years) of such an event consider the probability to get $n\sigma$ so it is 1 over $(
 [365\cdot P(|x| \ge n\sigma)]$ (the 365 factor comes from the number of working days in a year).
 
-\begin{attpython}
-from scipy.stats import norm
-
-prob = norm.cdf(-5) * 2 # e.g. consider +- 5sigma movements
-nyears = 1/prob/365
-print (nyears)
-\end{attpython}
+\pythoncodenon{code/modelling_risk_4.py}
 \begin{ioutput}
 4778.843544161504
 \end{ioutput}

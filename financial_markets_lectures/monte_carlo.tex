@@ -67,58 +67,21 @@ In \texttt{python} one of the available modules to generate random numbers is \t
 The following example show few simple applications.
 %san application of these functions, as can be seen the seed choice completely define the pseudo-random number series.
 
-\begin{ipython}
-from numpy.random import seed, uniform, randint, choice
-
-seed(1)
-print(uniform())
-print(uniform())
-\end{ipython}
+\pythoncode{code/monte_carlo_1.py}
 \begin{ioutput}
-0.417022004702574
-0.7203244934421581
-\end{ioutput}
-\begin{ipython}
-seed(2)
-print(uniform())
-print(uniform())
-\end{ipython}
-\begin{ioutput}
-0.43599490214200376
-0.025926231827891333
-\end{ioutput}
-\begin{ipython}
-seed(1)
-print(uniform())
-print(uniform())
-\end{ipython}
-\begin{ioutput}
-0.417022004702574
-0.7203244934421581
-\end{ioutput}
-\begin{ipython}
-print(randint(1, 10))
-aList = ['a', 'b', 'c', 'd', 'f']
-print (choice(aList, k=2, replace=False))
-\end{ipython}
-\begin{ioutput}
-6
-['d', 'a']
+uniform distributed floats with seed 1
+0.417022004702574, 0.7203244934421581
+uniform distributed floats with seed 2
+0.43599490214200376, 0.025926231827891333
+uniform distributed floats with seed 1 again
+0.417022004702574, 0.7203244934421581
+random integer between 1-9: 6
+choose two items among aList: ['c' 'd']
 \end{ioutput}
 
 The next lines of code show instead how to draw a uniform distribution. Figure~\ref{fig:uniform_dist} reports the result.
 
-\begin{ipython}
-import matplotlib.pyplot as plt
-
-from numpy.random import randint
-
-dist = randint(0, 5, size=10000)
-
-plt.hist(dist, 6, range=[-0.5, 5.5])
-plt.title("Uniform distribution from randint")
-plt.show()
-\end{ipython}
+\pythoncode{code/monte_carlo_2.py}
 
 \begin{figure}[h]
 \centering
@@ -129,17 +92,7 @@ plt.show()
     
 Below an example which samples 50000 times from a normal distribution  with \texttt{numpy.random.normal}, the result is shown in Fig.~\ref{fig:gauss_dist}.
 
-\begin{ipython}
-import matplotlib.pyplot as plt
-
-from numpy.random import normal
-
-gauss = normal(size=50000)
-
-plt.hist(gauss, 100, range=[-4, 4])
-plt.title("Example of Gaussian distribution from numpy")
-plt.show()
-\end{ipython}
+\pythoncode{code/monte_carlo_3.py}
 
 \begin{figure}
 \centering
@@ -147,41 +100,6 @@ plt.show()
 \caption{Normal distribution generated with \texttt{numpy.random.normal} function.}
 \label{fig:gauss_dist}
 \end{figure}
-
-%\hypertarget{acceptance-rejection-method}{%
-%\subsubsection{Acceptance-Rejection
-%	Method}\label{acceptance-rejection-method}}
-%
-%The acceptance-rejection method was proposed by von Neumann in 1951 and
-%is used in order to generate random variables that follow a probability
-%density function denoted by \(f(x)\).
-%
-%Given a target distribution \(f(x)\), the acceptance-rejection
-%method generates samples according to \(f(x)\) by first of all
-%generating samples from a more suitable distribution \(g(y)\).
-%Afterwards a random subset of these generated samples is rejected
-%according to certain rejection rules. Thereby the choice of this
-%rejection rule, or let us call it rejection approach, will be decisive
-%if the accepted samples will eventually be distributed according to
-%\(f(x)\). The property \(f(x) \leq c\cdot g(x)\), for some constant
-%\(c\), tells us now how to generate samples from \(g(y)\). Therefore, we
-%conclude that in the acceptance-rejection method a sample \(Y\) is
-%generated from \(g\) and at the same time accepted with probability
-%\(f(Y)/cg(Y)\). The generic implementation, i.e.~the algorithm of the
-%acceptance-rejection method that we can use to sample from density \(f\)
-%using candidates from \(g\), can be stated as follows:
-%
-%\begin{enumerate}
-%\def\labelenumi{\arabic{enumi}.}
-%\tightlist
-%\item
-%generate the sample \(Y\) from the distribution with density \(g\)
-%\item
-%generate \(u\) from \(U[0,1]\), which must be independent of \(Y\)
-%\item
-%if \(u\leq f(Y)/cg(Y)\), then deliver \(X = Y\), otherwise return to
-%step 1.
-%\end{enumerate}
 
 \section{Monte Carlo Simulation Examples}
 \label{example-of-monte-carlo-simulation}
@@ -203,25 +121,7 @@ In this case the domain is a deck of cards. To create a virtual deck we can defi
 We draw randomly cards with uniform probability since the deck is fair (all cards have the same probability to be drawn). 
 We plan to do one million simulations; each time, with the \texttt{sample} function, we pick up two cards from the virtual deck (for debugging purpose the first ten trials are printed on screen). Check if the card pair is \texttt{['K', 'K']} and in case increase the counter of successes. Finally just print \texttt{successes/trials} which is the sought probability.
 
-\begin{ipython}
-from numpy.random import choice, seed
-
-def draw_sim(trials=10000, debug=False):
-    deck = ["A", "2", "3", "4", "5", "6", "7", "J", "Q", "K"] * 4
-    successes = 0
-
-    for i in range(trials):
-        cards = choice(deck, k=2, replace=False)
-        if debug and i < 10:
-            print (cards)
-        if all(cards == "K"):
-            successes += 1
-    return successes/trials
-            
-seed(1)
-trials = 1000000        
-print (f"The probability to draw two kings is {draw_sim(trials, True):.4f}")
-\end{ipython}
+\pythoncode{code/monte_carlo_4.py}
 \begin{ioutput}
 ['3' '2']
 ['2' '3']
@@ -267,33 +167,7 @@ $[-r,r]$;
 \item multiply the approximated area by 4 to get $\pi$.
 \end{itemize}
 
-\begin{ipython}
-from numpy.random import uniform, seed
-from numpy import sqrt, power
-
-def simulation(trials):
-  r = 1
-  in_circle = 0
-  for _ in range(trials):
-      x1 = -r + uniform()*2*r
-      x2 = -r + uniform()*2*r
-      distance = sqrt(x1**2 + x2**2)
-      if distance <= r:
-          in_circle += 1
-  return in_circle 
-  
-def simulation_v2(trials):
-    r = 1
-    x1 = uniform(-r, r, trials)
-    x2 = uniform(-r, r, trials)
-    distances = sqrt(power(x1, 2) + power(x2, 2))
-    return (distance <= r).sum()
-	
-seed(2)
-trials = 10000
-in_circle = simulation(trials)
-print (f"Approx. pi: {in_circle/trials*4}")  
-\end{ipython}
+\pythoncode{code/monte_carlo_5.py}
 \begin{ioutput}
 Approx. pi: 3.1524
 \end{ioutput}
@@ -307,17 +181,7 @@ The only conclusion we can draw is that, despite its undoubted power, Monte Carl
 
 In the following example it is apparent how increasing the number of simulations in a single experiment the approximation precision improves. In Fig.~\ref{fig:circle_approx} it is shown graphically the results with 100, 1000, 10000, 100000 and 1000000 simulations.
 
-\begin{ipython}
-import time
-
-seed(1)
-trials = [100, 1000, 10000, 100000, 1000000]
-for i, t in enumerate(trials):
-    t1 = time.time()
-    in_circle = simulation(t)
-    t2 = time.time() - t1
-    print (f"pi={in_circle/t*4:.6f} {t2:.4f}s")
-\end{ipython}
+\pythoncode{code/monte_carlo_5_2.py}
 \begin{ioutput}
 pi=3.120000 0.0001s
 pi=3.096000 0.0012s
@@ -339,15 +203,8 @@ In this case the simulation is so simple that even in the larger case ($N=100000
 \label{sec:confidence_interval}
 
 Let's go back to the card example and imagine that you didn't know how much is the probability of getting two consecutive K from a deck of 40 cards. 
-    
-\begin{ipython}
-from numpy.random import seed
-  
-seed(97)
 
-trials = 10000
-print (draw_sim(trials))
-\end{ipython}
+\pythoncode{code/monte_carlo_4_2.py}
 \begin{ioutput}
 0.0084
 \end{ioutput}
@@ -387,21 +244,7 @@ Thus, to achieve a 50\% reduction in error, i.e., a 50\% increase in accuracy, w
 
 We can check the Central Limit Theorem by repeating many times the MC experiment with our virtual deck and see how the distribution of $\mu_n$ behaves.
 
-\begin{ipython}
-import numpy as np
-import matplotlib.pyplot as plt
-
-true_value = 1/130
-experiments = 300
-simulations = 1000
-r = []
-for e in range(experiments):
-    seed(e*experiments)
-    r.append(draw_sim(simulations))
-
-print (f"mu_true: {true_value:.6f}")
-print (f"mu: {np.mean(r):.6f} +- {np.std(r)/np.sqrt(experiments):.6f}")
-\end{ipython}
+\pythoncode{code/monte_carlo_4_3.py}
 \begin{ioutput}
 mu_true: 0.007692
 mu: 0.007640 +- 0.000151
@@ -454,18 +297,7 @@ P(\mu - A\sigma \le X \le \mu+ A\sigma) = \alpha
 
 Below an example of how to compute a confidence level in \texttt{python} given a set of simulation results (the inverse of the Gaussian CDF $\Phi^{-1}$, used in Eq.~\ref{for:A}, is computed with the method \texttt{norm.ppf()}, see Section~\ref{sec:quantile-function}).
 
-\begin{ipython}
-import numpy as np
-from scipy.stats import norm
-
-samples = [1.,2.,3.,4.,4.,4.,5.,5.,5.,5.,4.,4.,4.,6.,7.,8.]
-alpha = 0.95
-X = np.array(samples)
-A = norm.ppf((1 + alpha)/2)
-m, se = np.mean(X), np.std(X)
-h = A*se/np.sqrt(len(samples))
-print (f"{alpha*100:.0f}% confidence int.: {m:.3f} +- {h:.3f}")
-\end{ipython}
+\pythoncode{code/monte_carlo_6.py}
 \begin{ioutput}
 95% confidence int.: 4.437 +- 0.812
 \end{ioutput}
@@ -485,16 +317,7 @@ f(x) = \int_{0}^{\infty}\frac{e^{-x}}{\left(a + (x-1)^2\right)}~dx
 \end{equation*}
 for $a=3$.
 
-\begin{ipython}
-import numpy as np
-from scipy.integrate import quad
-	
-def f(x, a):
-    return np.exp(-x)/(a+(x-1)**2)
-	
-s = quad(f, 0, np.inf, args=(3,))
-print (s)
-\end{ipython}
+\pythoncode{code/monte_carlo_7.py}
 \begin{ioutput}
 (0.2802620835548487, 1.5887625490132047e-09)
 \end{ioutput}
@@ -513,23 +336,7 @@ Then the integral can be computed by sampling values of $x$ from a uniform distr
 
 Considering the previous integral
 
-\begin{ipython}
-import numpy as np
-
-from numpy.random import random
-
-def myrand(llim, ulim, n):
-    return random(size=n)*(ulim-llim) + llim
-
-def f(x, a):
-    return np.exp(-x)/(a+(x-1)**2)
-
-def integration_mc(f, args, llim, ulim, iter=10000):
-    vals = f(myrand(llim, ulim, iter), *args)
-    return (ulim-llim)*np.mean(vals)
-
-print (integration_mc(f, (3,), 0, 5, 1000000))
-\end{ipython}
+\pythoncode{code/monte_carlo_8.py}
 \begin{ioutput}
 0.28061306413101306
 \end{ioutput} 
