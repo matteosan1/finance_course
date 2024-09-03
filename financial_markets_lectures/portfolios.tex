@@ -82,27 +82,7 @@ Hence the Markowitz model requires two major information:
 In the following examples we are going to use real data
 from:  AAPL (Apple), AMZN (Amazon), FB (Facebook), GOOG (Google), NFLX (Netflix). It can be downloaded with \texttt{yfinance}. Otherwise it can be directly used from \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/portfolio_data.csv}{portfolio\_data.csv}.
 
-\begin{ipython}
-import yfinance as yf
-
-proxy = yf.Tickers(['AAPL', 'AMZN', 'FB', 'GOOG', 'NFLX'])
-df = proxy.history(start='2014-03-27', end='2018-03-27')['Close']
-# uncomment the following line if reading from file
-# df = pd.read_csv("portfolio_data.csv", index_col="date")
-
-print (df.head())
-\end{ipython}
-\begin{ioutput}
-                AAPL       AMZN        FB       GOOG      NFLX
-date
-2014-03-27 17.202097 338.470001 60.970001 556.930969 52.025715
-2014-03-28 17.182892 338.290009	60.009998 558.456787 51.267143
-2014-03-31 17.179056 336.369995	60.240002 555.445007 50.290001
-2014-04-01 17.336205 342.989990	62.619999 565.607117 52.098572
-2014-04-02 17.365013 341.959991	62.720001 565.447571 51.840000
-\end{ioutput}
- 
-Data, shown in Figure~\ref{fig:stocks}, is made of the historical series of the closing prices in the last 5 years. 
+The data, shown in Figure~\ref{fig:stocks}, is made of the historical series of the closing prices in the last 5 years. 
 
 \begin{figure}[htbp]
 \centering
@@ -120,33 +100,6 @@ This relationship can be used to “annualize” risk, i.e. standardize risk num
 \sigma_{yearly} = \sigma_{daily}\cdot\sqrt{252}
 \end{equation}
 
-\begin{ipython}
-daily_returns = df.pct_change()
-returns = daily_returns.mean()*252
-print (returns)
-\end{ipython}
-\begin{ioutput}
-AAPL    0.240921
-AMZN    0.414775
-FB      0.263708
-GOOG    0.173464
-NFLX    0.527628
-dtype: float64
-\end{ioutput}
-
-\begin{ipython}
-covariance = daily_returns.cov()*252
-print (covariance)
-\end{ipython}
-\begin{ioutput}
-          AAPL      AMZN        FB      GOOG      NFLX
-AAPL  0.051967  0.025182  0.026075  0.022764  0.028064
-AMZN  0.025182  0.085876  0.041196  0.039654  0.048576
-FB    0.026075  0.041196  0.069723  0.036337  0.044753
-GOOG  0.022764  0.039654  0.036337  0.052001  0.040630
-NFLX  0.028064  0.048576  0.044753  0.040630  0.178332
-\end{ioutput}
-    
 \subsection{Portfolio Simulation}
 In order to "simulate" a portfolio of $n$ assets it is enough to throw $n$ random weights with the only constraint that they had to sum up to 1. 
 In Figure~\ref{fig:mc_portfolio} a large number of simulated portfolios, each made of different proportion of the five assets mentioned above, are shown in a return vs volatility plot. 
@@ -182,30 +135,10 @@ In \texttt{python} we have already seen how to solve minimization problems (see 
 \item run the algorithm with \texttt{scipy.optimize.minimize}.
 \end{itemize}
 
-\begin{ipython}
-import numpy as np
-from scipy.optimize import minimize
+\pythoncode{code/portfolios_1.py}
 
-def sum_weights(w): 
-    return np.sum(w) - 1
+The optimization recommends to devote about 44\% of the portfolio to AAPL, about 10\% to AMZN, 12\% to FB and so on\ldots The expected return is 25\% as desired, with a variance of about 0.036 or, equivalently, a standard deviation of 0.19.
 
-def min_risk(w, cov):
-    return w.T.dot(cov.dot(w))
-
-def target_return(w, returns, target_return): 
-    return (returns.dot(w) - target_return)
-
-num_assets = 5
-constraints = [{'type': 'eq', 'fun': sum_weights},
-               {'type': 'eq', 'fun': target_return, 'args':(returns, 0.25)}] 
-bounds = tuple((0, 1) for _ in range(num_assets))
-weights = [1./num_assets for _ in range(num_assets)]
-
-opts = minimize(min_risk, weights, args=(covariance,),
-                bounds=bounds, constraints=constraints)
-print (opts)
-print (f"Expected portfolio return: {returns.dot(opts.x):.3f}")
-\end{ipython}
 \begin{ioutput}
      fun: 0.03636340858846002
      jac: array([0.07251946, 0.07721784, 0.07324787, 0.07043841, 0.08025067])
@@ -220,27 +153,12 @@ print (f"Expected portfolio return: {returns.dot(opts.x):.3f}")
 Expected portfolio return: 0.250
 \end{ioutput}
 
-The optimization recommends to devote about 44\% of the portfolio to AAPL, about 10\% to AMZN, 12\% to FB and so on\ldots The expected return is 25\% as desired, with a variance of about 0.036 or, equivalently, a standard deviation of 0.19.
-
-%In this example we based the model simply on straightforward statistical data derived from daily returns. However it could be possible, rather than just use historical data, to base this estimate on information about expected future performance of the asset.
-
 There is no precise way for an investor to determine the “correct” trade off between risk and return. The desired higher expected return needs to be paid for with higher risk. Thus, one is frequently interested in looking at the relative distribution of the two.
 In finance terminology, means to trace the \emph{efficient frontier of return and risk}. This can be done by solving the previous minimization for a variety of target returns.
 
 The following example computes the efficient frontier plot (shown in Fig.~\ref{fig:efficient_frontier}) with the return ranging from 0.20 to 0.45.
 
-\begin{ipython}
-results = []    
-for target in np.arange(0.20, 0.45, 0.005):
-    constraints = ({'type': 'eq', 'fun': sum_weights},
-                   {'type': 'eq', 'fun': target_return, 'args':(returns, target)})
-    weights = [1./num_assets for _ in range(num_assets)]
-    opts = minimize(min_risk, weights, args=(covariance,), 
-                    bounds=bounds, constraints=constraints) 
-    
-    results.append((np.sqrt(opts.x.T.dot(covariance.dot(opts.x))),
-                    returns.dot(opts.x))) 
-\end{ipython}
+\pythoncode{code/portfolios_2.py}
 
 \begin{figure}[htb]
 \centering
@@ -301,35 +219,7 @@ If you plot these three points they lay on a line.
 
 If we added a risk-free asset, with an expected return of 10\%, to the five risky ones considered so far we could repeat the Markowitz minimization to determine the efficient frontier of the resulting portfolio. 
 
-\begin{ipython}
-num_assets = 6
-returns_rf = np.append(returns.values, 0.10)
-cov_rf = np.column_stack((covariances.values, np.array([0, 0, 0, 0, 0])))
-cov_rf = np.row_stack((cov_rf, np.array([0, 0, 0, 0, 0, 0])))
-print (cov_rf)
-
-result_rf = []
-
-for t_ret in np.arange(0.1, 0.4, 0.01):
-    weights = [1/n_assets for _ in range(num_assets)]
-    bounds = [(0, 1) for _ in range(num_assets)]
-    constraints = [{'type':'eq', 'fun':sum_weights},
-                   {'type':'eq', 'fun':target_return, 'args':(returns_rf, t_ret)}]
-
-    opts = minimize(min_risk, weights, bounds=bounds, 
-                    constraints=constraints, args=(cov_rf))
-
-    result_rf.append((np.sqrt(risk(opts.x, covariance)),
-                      returns.dot(opts.x)))
-\end{ipython}
-\begin{ioutput}
-[[0.05190222 0.02503721 0.02573699 0.02245413 0.02775968 0.        ]
- [0.02503721 0.08583929 0.04102487 0.03950122 0.04841167 0.        ]
- [0.02573699 0.04102487 0.06955025 0.03612685 0.04452847 0.        ]
- [0.02245413 0.03950122 0.03612685 0.05179662 0.04038995 0.        ]
- [0.02775968 0.04841167 0.04452847 0.04038995 0.17829826 0.        ]
- [0.         0.         0.         0.         0.         0.        ]]
-\end{ioutput}
+\pythoncode{code/portfolios_3.py}
 
 \begin{figure}[htb]
 \centering
@@ -406,24 +296,8 @@ So, regardless of investor risk/return preference, \emph{the investment should g
 
 Let's compute the Sharpe portfolio with our sample.
 
-\begin{ipython}
-num_assets = 5
-rf_asset_return = 0.10
+\pythoncode{code/portfolios_4.py}
 
-def sharpe_ratio(w, returns, rf_asset_return, cov): 
-    p_ret = returns.dot(w)
-    p_var = np.sqrt(w.T.dot(cov.dot(w)))
-    ratio = -(p_ret - rf_asset_return) / p_var
-    return ratio
-
-constraints = ({'type': 'eq', 'fun': sum_weights})
-bounds = tuple((0, 1) for asset in range(num_assets))
-weights = [1./num_assets for _ in range(num_assets)]
-opts = minimize(sharpe_ratio, weights, args=(returns, rf_asset_return, covariance),
-                bounds=bounds, constraints=constraints)
-print (opts)
-print ("Sharpe ratio: ", -opts.fun)
-\end{ipython}
 \begin{ioutput}
      fun: -1.259317843917775
      jac: array([-0.37875983, -0.37936528, -0.26915939,  0.02855796, -0.37932488])
@@ -502,7 +376,6 @@ Figure~\ref{fig:diversification} shows the risk of a portfolio made up of IBM an
 %As we have already seen no measure of unsystematic risk appears in the risk premium, of CAPM model, since it is assumed that diversification has eliminated it.
 %
 %In the Markowitz model instead diversification is achieved by seeking to combine in a portfolio assets with returns that are less than perfectly positively correlated, in an effort to lower portfolio risk (variance) without sacrificing return, through the reduction of the correlation matrix $\Sigma$.
-
 
 An \emph{utility function} $u(x)$ is a function of wealth ($x$) that quantifies the ``happiness'' level of the investor. Typically this function has $u'(x) > 0$ and $u''(x) < 0$. The first condition reflects the simple concept that ``the more I have the happier I am''. The latter instead will be described later on in this Section.
 
@@ -695,80 +568,6 @@ In the absence of constraints, the Black-Litterman model only recommends a depar
 
 Having specified $\tau$ and the covariance matrix of the error term $\Omega$, all inputs are entered into the Black-Litterman formula and the New Combined Return Vector ($\mathbb{E}[R]$) is derived. 
 
-%The process of combining the two sources of information is depicted in Figure 1. The New Recommended Weights (wˆ ) are calculated by solving the unconstrained maximization problem, Formula 2. The covariance matrix of historical excess returns (Σ ) is presented in Table 5.
-
-%A single view causes the return of every asset in the portfolio to change from its Implied Equilibrium return, since each individual return is linked to the other returns via the covariance matrix of excess returns ($\Sigma$).
-
-%One of the strongest features of the Black-Litterman model is illustrated in the final column of Table 6. Only the weights of the 7 assets for which views were expressed changed from their original market capitalization weights and the directions of the changes are intuitive. No views were expressed on International Emerging Equity and its weights are unchanged.
-    
-%From a macro perspective, the new portfolio can be viewed as the sum of two portfolios, where Portfolio 1 is the original market capitalization-weighted portfolio, and Portfolio 2 is a series of long and short positions based on the views. As discussed earlier, Portfolio 2 can be subdivided into mini-portfolios, each associated with a specific view. The relative views result in mini-portfolios with offsetting long and short positions that sum to 0. View 1, the absolute view, increases the weight of International Developed Equity without an offsetting position, resulting in portfolio weights that no longer sum to 1.
-
-%The intuitiveness of the Black-Litterman model is less apparent with added investment constraints, such as constraints on unity, risk, beta, and short selling. 
-
-%\subsection{Derivation of Black-Litterman Model Under a Bayesian Framework}
-%Assume that the investment universe is composed of $k$ assets and the vector of asset returns $r$ is modeled as a random variable, following a multivariate normal distribution $r\approx\mathcal{N}(\mu,\Sigma)$. $\Sigma$ is the covariance from historical asset returns. The unknown model parameter is the expected return $\mu$. From the perspective of Bayesian statistics, the Black-Litterman model attempts to estimate $\mu$ by combining the investment analyst views (or "observations of the future") and some prior knowledge about $\mu$.
-%
-%In addition, assume the prior knowledge that $\mu$ is a normally distributed random variable $\mu\approx\mathcal{N}(\pi,C)$. In the absence of any views (observations), the prior mean $\pi$ is likely to be the equilibrium returns, implied from the equilibrium portfolio holding.
-%In practice, the applicable equilibrium portfolio holding is not necessarily the equilibrium portfolio, but rather a target optimal portfolio that the investment analyst would use in the absence of additional views on the market, such as the portfolio benchmark, an index, or even the current portfolio. $C$ represents the uncertainty in the prior and the Black-Litterman model makes the assumption that the structure of $C$ is $\tau\Sigma$. $\tau$ is a small constant, and many authors use different values. % A detailed discussion about τ can be found in [3].
-%
-%Observations are necessary to perform a statistical inference on $mu$. In the Black-Litterman model, the observations are views about future asset returns expressed at the portfolio level. A view is the expected return of a portfolio composed of the universe of $k$ assets. Usually, the portfolio return has uncertainty, so an error term is added to catch the departure. Assume that there is a total of $v$ views. For a view $i$, $p_i$
-%is a row vector with dimension $1\times k$, and $q_i$ is a scalar.
-%\begin{equation}
-%  q_i = \mathbb{Ε}[p_i\cdot r|\mu]+\epsilon_i,\quad i=1,2,...,v
-%\end{equation}
-%
-%You can stack the $v$ views vertically, and $\Omega$ is the covariance of the uncertainties from all views. Assume that the uncertainties are independent.
-%\begin{equation}
-%q = \mathbb{Ε}[P\cdot r| \mu]+ \epsilon,  \epsilon\approx\mathcal{N}(0, \Omega),  \Omega= \text{diag}(\omega_1, \omega_2,\ldots,\omega_v)
-%\end{equation}
-%
-%Note that $\Omega$ does not necessarily need to be a diagonal matrix. The investment analyst can choose the structure of $\Omega$ to account for their uncertainties in the views.
-%
-%Under the previous assumption $r\approx\mathcal{N}(\mu,\Sigma)$, it follows that
-%\begin{equation}
-%q = P\cdot \mu + \epsilon,  \epsilon\approx\mathcal{N}(0, \Omega),  \Omega=\text{diag}(\omega_1, \omega_2,\ldots,\omega_v)
-%\end{equation}
-%
-%%\subsubsection{The Bayesian Definition of the Black-Litterman Model}
-%Based on Bayesian statistics, it is known that: $posterior\propto likelihood∗prior$.
-%In the context of the Black-Litterman model this is expressed as $f(\mu∣q)\propto(q∣\mu)\cdot f(\mu)$, where each Bayesian term is defined as follows
-%\begin{itemize}
-%  \item The likelihood is how likely it is for the views to happen given $\mu$ and is expressed as $f(q∣\mu)\propto\exp[−\frac{1}{2}(P\mu-q)^T\Omega^{-1}(P\mu−q)]$.
-%  \item The prior assumes the prior knowledge that $\mu\approx\mathcal{N}(\pi, C)$ and is expressed as $f(\mu)\propto\exp[−\frac{1}{2}(\mu−\pi)^T C^{-1}(\mu−\pi)]$
-%  \item The posterior is the distribution of $\mu$ given views and is expressed as $f(\mu∣q)\propto\exp[−\frac{1}{2}(P\mu−q)^T \Omega^{-1}(P\mu−q)−\frac{1}{2}(\mu−\pi)^T C^{-1}(\mu−\pi)]$.
-%\end{itemize}
-%
-%As previously stated, the posterior distribution of $\mu$ is also a normal distribution. By completing the squares, you can derive the posterior mean and covariance as
-%\begin{equation}
-%  \mu=[P^T\Omega^{-1}P+C^{-1}]^{-1}[P^T\Omega^{-1}q+C^{-1}\pi], cov(\mu)=[P^T\Omega^{-1}P+C^{-1}]^{-1}
-%\end{equation}
-%
-%Finally, by combining the Bayesian posterior distribution of $\mu$ and the model of asset returns $r\approx\mathcal{N}(\mu,\Sigma)$, you then have the posterior prediction of asset returns as $r\approx\mathcal{N}(\mu,\Sigma+cov(\mu)]$
-%
-%\begin{figure}[h]
-%  \begin{center}
-%    \includegraphics[width=0.6\linewidth]{figures/replica_portfolio}
-%  \end{center}
-%  \caption{Prob}
-%  \label{fig:replica_portfolio_return}
-%\end{figure}
-%
-%\begin{figure}[h]
-%  \begin{center}
-%    \includegraphics[width=0.6\linewidth]{figures/replica_portfolio_weights}
-%  \end{center}
-%  \caption{Prob}
-%  \label{fig:replica_portfolio_weights}
-%\end{figure}
-%
-%\begin{figure}[h]
-%  \begin{center}
-%    \includegraphics[width=0.6\linewidth]{figures/black_litterman_weights}
-%  \end{center}
-%  \caption{Prob}
-%  \label{fig:black_litterman_weights}
-%\end{figure}
-
 \section{Risk Parity Portfolio}
 \label{risk-parity-portfolio}
 
@@ -841,55 +640,7 @@ where ideally it is required to be 0 the difference between the squared sum of t
 
 Going back to our data sample let's find out the weights to give us a risk parity portfolio.
 
-\begin{ipython}
-num_assets = 5
-def risk_parity(w, cov):
-    variance = w.T.dot(cov.dot(w))
-    *@sum@* = 0
-    N = len(w)
-    for i in range(N):
-        *@sum@* += (w[i] - (variance/(N*cov.dot(w)[i])))**2
-    return *@sum@*
-	
-args = (covariance,)
-constraints = ({'type': 'eq', 'fun': sum_weights})
-bounds = tuple((0, 1) for asset in range(num_assets))
-weights = [1./num_assets for _ in range(num_assets)]
-opts = minimize(risk_parity, weights, args=(covariance,),
-                bounds=bounds, constraints=constraints)
-print (opts)
-\end{ipython}
-\begin{ioutput}
-    fun: 2.2881862766486147e-07
-    jac: array([-6.98851511e-04,  1.92391042e-04, -4.08403758e-05, 
-                -2.54432521e-05,  1.13250609e-03])
-message: 'Optimization terminated successfully.'
-   nfev: 38
-    nit: 5
-   njev: 5
- status: 0
-success: True
-x: array([0.25863039, 0.18154282, 0.19666705, 0.22190633, 
-          0.14125342])
-\end{ioutput}
-
-\begin{ipython}
-sigma_i = []
-std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
-for i in range(num_assets):
-    a = opts.x[i]*covariance.dot(opts.x)[i]
-	sigma_i.append(a/std)
-	
-for i in range(num_assets):
-    print (f"Risk contribution for asset {i}: {sigma_i[i]/sum(sigma_i)*100:.3f}%")
-\end{ipython}
-\begin{ioutput}
-Risk contribution for asset 0: 19.974%
-Risk contribution for asset 1: 19.999%
-Risk contribution for asset 2: 19.990%
-Risk contribution for asset 3: 19.992%
-Risk contribution for asset 4: 20.045%
-\end{ioutput}
+\pythoncode{code/portfolios_5.py}
 
 Figure~\ref{fig:risk_parity} shows the fraction of risk allocated to each asset with the corresponding weight within the portfolio.
 
@@ -920,54 +671,8 @@ so that the relation to minimize becomes
 \end{equation}
 \noindent
 Translating it into \texttt{python} we get:
-\begin{ipython}
-def risk_budget(w, target_risk, cov):
-    variance = w.T.dot(cov.dot(w))
-    *@sum@* = 0
-    N = len(w)
-    for i in range(N):
-        *@sum@* += (w[i] - (target_risk[i]*variance)/(cov.dot(w)[i]))**2
-    return *@sum@*
-	
-f_i = [0.3, 0.2, 0.2, 0.15, 0.15]
-args = (f_i, covariance)
-constraints = ({'type': 'eq', 'fun': sum_weights})
-bounds = tuple((0, 1) for asset in range(num_assets))
-weights = [1./num_assets for _ in range(num_assets)]
-opts = minimize(risk_budget, weights, args=(f_i, covariance),
-                bounds=bounds, constraints=constraints)
-print (opts)
-\end{ipython}
-\begin{ioutput}
-    fun: 4.058673684147486e-08
-    jac: array([-2.64817707e-04,  3.30937403e-04,  2.14530647e-05, 
-                -7.65372775e-05,  3.67853561e-04])
-message: 'Optimization terminated successfully.'
-   nfev: 45
-    nit: 6
-   njev: 6
- status: 0
-success: True
-      x: array([0.3459366 , 0.1800917 , 0.19394454, 0.16890483, 
-                0.11112233])
-\end{ioutput}
-\begin{ipython}  
-sigma_i = []
-std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
-for i in range(num_assets):
-    a = opts.x[i]*covariance.dot(opts.x)[i]
-    sigma_i.append(a/std)
-	
-for i in range(num_assets):
-    print (f"Risk contribution for asset {i}: {sigma_i[i]/sum(sigma_i)*100:.3f}%")    
-\end{ipython}
-\begin{ioutput}
-Risk contribution for asset 0: 29.988%
-Risk contribution for asset 1: 20.010%
-Risk contribution for asset 2: 19.996%
-Risk contribution for asset 3: 14.993%
-Risk contribution for asset 4: 15.012%
-\end{ioutput}
+
+\pythoncode{code/portfolios_6.py}
 
 Figure~\ref{fig:risk_allocation} shows the amount of risk associated to each asset and its weight within the portfolio. 
 Indeed for each stock we have allocated the desired amount of risk.
@@ -1042,6 +747,7 @@ Indeed for each stock we have allocated the desired amount of risk.
 %\label{fig:max_div}
 %\end{figure}
 
+\newpage
 \section*{Exercises}
 \input{portfolio_ex_text}
 

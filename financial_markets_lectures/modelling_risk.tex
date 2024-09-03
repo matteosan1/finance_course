@@ -245,108 +245,7 @@ From the above calculation we expect to have a $5\sigma$ movement of our stock o
 \label{fig:5sigma_contour}
 \end{figure}
 
-When using a Gaussian copula, naturally assigns very little \emph{weight} to the tails. Hence it is often used the t-student copula  
-which has fatter tails but preserves the same (bell shaped, non-skewed) characteristics of the Gaussian, see Section~\ref{sec:t-student_copula}.
-Indeed a $5\sigma$ movement under a t-student PDF is expected to happen once every 6 months. 
-
-% Imagine to look at the maximum water level of various rivers over a certain time period. In addition, you count how many times each river caused floods in the same time period.
-
-% From independent studies it is known that the maximum water level probability is distributed as a Gumbel~\cite{bib:gumbel}, while the number of floods can be modeled according to a Beta~\cite{bib:beta} distribution.
-
-% It is reasonable to assume that the two quantities are  correlated, however we don't know how we could model the correlated probability distribution.
-% Indeed above we only specified the distributions for individual variables, irrespective of the other one (i.e. the marginals), but in reality we would like to work with the \emph{joint distribution} of both together. And here is where copula comes in hand, since it bridges the marginal distributions (which by definition have no correlation) into a joint probability distribution. 
-
-% \subsection{Modelling Correlation with Copulas}
-% \label{adding-correlation-with-gaussian-copulas}
-
-% To determine this joint probability distribution we could:
-% \begin{itemize}
-% \tightlist
-% \item simulate a sample from a multivariate distribution with the specific correlation structure;
-% \item transform the sample so that the marginals are uniform with the technique outlined above (obtaining the copula function);
-% \item finally transform each uniform marginal to whatever we need to.
-% \end{itemize}
-
-% Imagine that the correlation between water level and number of floods is Gaussian with $\rho=0.5$. This is not mandatory though, since we could have modeled correlations with different distribution either.
-
-% So first sample from such a distribution, then transform the marginals to uniform using the \texttt{cdf} function of the normal distribution (the copula).
-% It is important to understand that correlation doesn't affect the distribution of each column of the array, but it rather changes how given a sample the second is determined, see Fig.~\ref{fig:multivariate_with_correlation}.
-
-% \begin{ipython}
-% from scipy.stats import multivariate_normal
-
-% mvnorm = multivariate_normal(mean=[0, 0] , cov=[[1, 0.5],
-%                                                 [0.5, 1]])
-% x = mvnorm.rvs(100000)
-% print (x[0:5])
-
-% copula = norm.cdf(x)
-% \end{ipython}
-% \begin{ioutput}
-% [[-0.03120891 -0.24918657]
-%  [-0.17677523 -1.01992715]
-%  [-0.60572525  0.95517049]
-%  [-0.79814057  0.69339518]
-%  [ 0.11990304  0.0947739 ]]
-% \end{ioutput}
-
-% \begin{figure}[htbp]
-% \centering
-% \includegraphics[width=0.5\textwidth]{figures/multivariate_2d}
-% \caption{2D normal distribution with a correlation factor of 0.5.}
-% \label{fig:multivariate_with_correlation}
-% \end{figure}
-    
-% Plots like the one shown in Fig.~\ref{fig:copula} are how copulas are usually visualized. Since we have used a multivariate standard normal to model the correlation this is an example of \textbf{Gaussian Copula}.
-
-% When using a Gaussian copula, naturally assigns very little \emph{weight} to the tails. In reality, within the financial markets, tail events occur much more
-% frequently. So we would like a joint distribution which has fatter tails but preserves the same (bell
-% shaped, non-skewed) characteristics of the Gaussian, hence it is often used the t-Student copula.
-
-% \begin{figure}[htbp]
-% \centering
-% \includegraphics[width=0.45\textwidth]{figures/copula_2d}
-% \quad
-% \includegraphics[width=0.5\textwidth]{figures/copula_3d}
-% \caption{Graphical representations of the copula, 2D on the left, 3D on the right.}
-% \label{fig:copula}
-% \end{figure}
-
-% At this point we can just transform the uniform marginals to Gumbel and Beta to have the desired correlated distributions.
-% To see that it is actually working as expected we can compare the two joint distributions with and without correlation.
-
-% \begin{ipython}
-% from scipy.stats import gumbel_l, beta
-
-% m1 = gumbel_l()
-% m2 = beta(a=10, b=3)
-
-% # correlated 
-% x1_corr = m1.ppf(copula)[:, 0])
-% x2_corr = m2.ppf(copula[:, 1])
-
-% # uncorrelated
-% x1 = m1.rvs(10000)
-% x2 = m2.rvs(10000)
-% \end{ipython}
-
-% Comparing left to right plots of Figure~\ref{fig:gumbel_beta_with_corr} it is apparent the difference between the two.
-
-% \begin{ipython}
-% \end{ipython}
-
-% \begin{figure}[htbp]
-% \centering
-% \includegraphics[width=0.45\textwidth]{figures/gumbel_beta_uncorr}
-% \quad
-% \includegraphics[width=0.45\textwidth]{figures/gumbel_beta_corr}
-% \caption{Marginalized Gumbel and Beta distributions with their joint when they is are (left) and are not (right) correlated.}
-% \label{fig:gumbel_beta_with_corr}
-% \end{figure}
-    
-% Using the uniform distribution as a common base for our transformations we can easily introduce correlations and flexibly construct complex probability distributions. 
-
-% Everything discussed in this Section could be easily generalized to higher dimensions.
+When using a Gaussian copula, naturally assigns very little \emph{weight} to the tails. Hence it is often used the t-student copula which has fatter tails but preserves the same (bell shaped, non-skewed) characteristics of the Gaussian, see Section~\ref{sec:t-student_copula}. Indeed a $5\sigma$ movement under a t-student PDF is expected to happen once every 6 months. 
 
 \subsection{Correlated Defaults}
 
@@ -358,99 +257,45 @@ To simulate the credit event by Monte Carlo simulation it can be thrown a random
 \item if it is higher no default happened.
 \end{itemize}
 
+\pythoncode{code/modelling_risk_5.py}
+
 In such a way we have a "successful" experiment with the desired probability.
 
-\begin{ipython}
-from random import seed, random
-
-seed(1)
-Pdef = 0.2
-trials = 10000
-defaults = 0
-for _ in range(trials):
-    credit_event = random()
-    if credit_event <= Pdef:
-        defaults += 1
-
-print (defaults/trials)
-\end{ipython}
 \begin{ioutput}
-0.02058
+0.2058
 \end{ioutput}
 
-To generate samples from correlated distributions it is enough to determine the copula function as described in the previous Section.
-At the end of the computation each component of the sample is now converted to a set of random numbers drawn from the proper joint distribution.
+To generate samples from correlated distributions it is enough to determine the copula function as described in the previous Section. At the end of the computation each component of the sample is now converted to a set of random numbers drawn from the proper joint distribution.
 
 Imagine three companies ($A$, $B$ and $C$) which have a cumulative probability of defaulting within the next two years of 10\%.
 Let's compare the probability to have the three of them all defaulting within the next two years in two cases: independent and perfectly correlated default probabilities.
 
-In the first case (independent probabilities), the odds to get three defaults within two years will be the product of the single probabilities, hence:
-\begin{equation}
-P_{\mathrm{uncorr}} = 10\% \cdot 10\% \cdot 10\% = 0.1 \%
-\end{equation}
+\pythoncode{code/modelling_risk_6.py}
 
-\begin{ipython}
-import numpy as np
+In the first case (independent probabilities), the odds to get three defaults within two years is equivalent to the product of the single probabilities, hence $P_{\mathrm{uncorr}} = 10\% \cdot 10\% \cdot 10\% = 0.1 \%
+$.
 
-from finmarkets import GaussianCopula
-
-Pdef = 0.1
-samples = 100000
-successes = 0.
-cov = np.array([[1, 0, 0],
-                [0, 1, 0],
-                [0, 0, 1]])
-g = GaussianCopula(3, cov)
-copula_sample = g.sample(samples)
-
-print ("\n3D copula distribution (first two samples only)")
-print (copula_sample[:2])
-
-for v in copula_sample:
-    if all(v <= Pdef):
-        successes += 1
-        
-print (f"\n{successes/samples}")
-\end{ipython}
 \begin{ioutput}
+Uncorrelated defaults
 3D copula distribution (first two samples only)
-[[0.72913544 0.63892965 0.46912882]
- [0.47602894 0.65973201 0.70591843]]
-
-0.00106
+[[0.91972954 0.72719545 0.95619535]
+ [0.7409053  0.81691954 0.5108085 ]]
+Measured P_def: 0.00096
 \end{ioutput}
-\noindent
-Since in this case, the marginal probability distributions were not known, the 10\% threshold has been directly compared to the copula samples without applying the last \texttt{ppf} transformation.
-The result is 0.1\% as expected.
 
 If we repeat the same Monte Carlo experiment with perfectly correlated default probabilities we have (notice that the covariance matrix has non-diagonal 0.99999999 entries to avoid numerical errors, they should be 1)
 
-\begin{ipython}
-successes = 0.
-cov = np.array([[1, 0.9999999, 0.9999999],
-                [0.9999999, 1, 0.9999999],
-                [0.9999999, 0.9999999, 1]])
-g = GaussianCopula(3, cov)
-copula_sample = g.sample(samples)
-
-print ("\n3D copula distribution (first two samples only)")
-print (copula_sample[:2])
-
-for v in copula_sample:
-    if all(v <= Pdef):
-        successes += 1
-        
-print (f"\n{successes/samples}")
-\end{ipython}
-\begin{ioutput}
-3D copula distribution (first two samples only)
-[[0.40647393 0.40638549 0.40652342]
- [0.66644382 0.66661807 0.6662962 ]]
-
-0.0985
-\end{ioutput}
 In this case the result is close to 10\%, like we had only one single company defaulting. 
 Indeed given the perfect correlation either there is no default or three "simultaneous" defaults with 10\% probability.
+
+\begin{ioutput}
+Correlated defaults
+3D copula distribution (first two samples only)
+[[0.94531087 0.94533677 0.94534905]
+ [0.3477901  0.347964   0.3478019 ]]
+Measured P_def: 0.10233
+\end{ioutput}
+
 
 %\subsubsection{Independent Defaults}\label{independent-defaults}
 %
@@ -503,36 +348,7 @@ Indeed given the perfect correlation either there is no default or three "simult
 %
 %To convert it into \texttt{python} we can use \texttt{scipy.integrate.quad} to
 %perform the integral and \texttt{numpy.interp} to determine the
-%intermediate default probabilities.
-%
-%\begin{codebox}
-%	\begin{Verbatim}[commandchars=\\\{\}]
-%	\PY{k+kn}{from} \PY{n+nn}{scipy}\PY{n+nn}{.}\PY{n+nn}{integrate} \PY{k}{import} \PY{n}{quad}
-%	\PY{k+kn}{from} \PY{n+nn}{numpy} \PY{k}{import} \PY{n}{interp}
-%	
-%	\PY{n}{default\PYZus{}rates} \PY{o}{=} \PY{p}{\PYZob{}}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{A}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{0.022032}\PY{p}{,} \PY{l+m+mf}{0.046242}\PY{p}{,} \PY{l+m+mf}{0.07266}\PY{p}{,} \PY{l+m+mf}{0.101233}\PY{p}{,} \PY{l+m+mf}{0.131885}\PY{p}{)}\PY{p}{,}
-%	\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{B}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{0.0317}\PY{p}{,} \PY{l+m+mf}{0.0655}\PY{p}{,} \PY{l+m+mf}{0.1022}\PY{p}{,} \PY{l+m+mf}{0.142}\PY{p}{,} \PY{l+m+mf}{0.1752}\PY{p}{)}\PY{p}{,}
-%	\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{C}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,} \PY{l+m+mf}{0.035}\PY{p}{,} \PY{l+m+mf}{0.075}\PY{p}{,} \PY{l+m+mf}{0.121}\PY{p}{,} \PY{l+m+mf}{0.153}\PY{p}{,} \PY{l+m+mf}{0.205}\PY{p}{)}\PY{p}{\PYZcb{}}
-%	
-%	\PY{k}{def} \PY{n+nf}{func}\PY{p}{(}\PY{n}{x}\PY{p}{,} \PY{n}{default}\PY{p}{,} \PY{n}{companies}\PY{p}{,} \PY{n}{t}\PY{p}{)}\PY{p}{:}
-%	\PY{n}{m} \PY{o}{=} \PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{]}\PY{p}{[}\PY{n}{t}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{]}\PY{p}{[}\PY{n}{t}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]}
-%	\PY{n}{q} \PY{o}{=} \PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{]}\PY{p}{[}\PY{n}{t}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{]} \PY{o}{\PYZhy{}} \PY{n}{m} \PY{o}{*} \PY{p}{(}\PY{n}{t}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{)}
-%	\PY{n}{t} \PY{o}{=} \PY{p}{(}\PY{n}{x}\PY{o}{\PYZhy{}}\PY{n}{q}\PY{p}{)}\PY{o}{/}\PY{n}{m}
-%	\PY{n}{F2} \PY{o}{=} \PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{interp}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{]}\PY{p}{)}
-%	\PY{n}{F3} \PY{o}{=} \PY{l+m+mi}{1} \PY{o}{\PYZhy{}} \PY{n}{interp}\PY{p}{(}\PY{n}{t}\PY{p}{,} \PY{n+nb}{range}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{]}\PY{p}{)}\PY{p}{)}\PY{p}{,} \PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{]}\PY{p}{)}
-%	\PY{k}{return} \PY{n}{F2}\PY{o}{*}\PY{n}{F3}
-%	
-%	\PY{k}{def} \PY{n+nf}{integral}\PY{p}{(}\PY{n}{default}\PY{p}{,} \PY{n}{companies}\PY{p}{,} \PY{n}{t}\PY{p}{)}\PY{p}{:}
-%	\PY{k}{return} \PY{n}{quad}\PY{p}{(}\PY{n}{func}\PY{p}{,} \PY{l+m+mi}{0}\PY{p}{,} \PY{n}{default}\PY{p}{[}\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{]}\PY{p}{[}\PY{n}{t}\PY{p}{]}\PY{p}{,} 
-%	
-%	\PY{n}{args}\PY{o}{=}\PY{p}{(}\PY{n}{default}\PY{p}{,} \PY{n}{companies}\PY{p}{,} \PY{n}{t}\PY{p}{)}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
-%	\PY{k}{for} \PY{n}{companies} \PY{o+ow}{in} \PY{p}{[}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{A}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{B}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{C}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}\PY{p}{,} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{B}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{A}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{C}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}\PY{p}{,} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{C}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{A}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{B}\PY{l+s+s2}{\PYZdq{}}\PY{p}{)}\PY{p}{]}\PY{p}{:}
-%	\PY{n}{prob} \PY{o}{=} \PY{l+m+mi}{0}
-%	\PY{k}{for} \PY{n}{t} \PY{o+ow}{in} \PY{n+nb}{range}\PY{p}{(}\PY{l+m+mi}{1}\PY{p}{,} \PY{l+m+mi}{6}\PY{p}{)}\PY{p}{:}
-%	\PY{n}{prob} \PY{o}{=} \PY{n}{integral}\PY{p}{(}\PY{n}{default\PYZus{}rates}\PY{p}{,} \PY{n}{companies}\PY{p}{,} \PY{n}{t}\PY{p}{)}
-%	\PY{n+nb}{print} \PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{P(1st def) at time (}\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{) for company }\PY{l+s+si}{\PYZob{}\PYZcb{}}\PY{l+s+s2}{: }\PY{l+s+si}{\PYZob{}:.5f\PYZcb{}}\PY{l+s+s2}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{t}\PY{p}{,} 
-%	\PY{n}{companies}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,} \PY{n}{prob}\PY{p}{)}\PY{p}{)}
-%	
+%intermediate default probabilities.	
 %	First to default prob at time (1) for company A: 0.02131
 %	First to default prob at time (2) for company A: 0.04301
 %	First to default prob at time (3) for company A: 0.06460
@@ -556,29 +372,15 @@ Now immagine that $X$ is sampled from a standard $n$-dimensional normal distribu
 If you now want $Y$ to be distributed as $Y\approx\mathcal{N}(\mu,\Sigma)$, then you need to choose some transformation matrix $A$, such that $AA^{T}=\Sigma$. A good choice for that is the Cholesky decomposition because it is explicitly structured to fulfill this condition and there are standard functions in lots of libraries which compute it for you.
 
 As a practical example, suppose that $X$ is a vector of independent standard normal variables. The matrix $[L]$ can be used to create a new vector $Z$ such that the covariance of $Z$ equals $[\Sigma]$.
-Figure~\ref{fig:cholesky_norm} shows the original uncorrelated variable $X$ (left), and the transformed variable $Z$ with correlation $[\Sigma]$ (right).
 
-\begin{ipython}
-from scipy.stats import multivariate_normal
-import numpy as np
+\pythoncode{code/modelling_risk_7.py}
 
-np.random.seed(10)
-
-trials = 1000
-m_norm = multivariate_normal(mean=[0, 0], cov=[[1,0],
-                                               [0,1]])
-
-X = m_norm.rvs(size=trials)
-
-sigma = np.array([[3, 1], [1, 1]])
-L = np.linalg.cholesky(sigma)
-print (L)
-Z = X.dot(L)
-\end{ipython}
 \begin{ioutput}
 [[1.73205081 0.        ]
  [0.57735027 0.81649658]]
 \end{ioutput}
+
+Figure~\ref{fig:cholesky_norm} shows the original uncorrelated variable $X$ (left), and the transformed variable $Z$ with correlation $[\Sigma]$ (right).
 
 \begin{figure}[htbp]
 \centering
@@ -614,24 +416,7 @@ It is a symmetrical copula and has larger tails than the Gaussian. The following
 \item finally, $U = CDF_{t-student(\nu)}(Z)$.
 \end{itemize}
 
-\begin{ipython}
-import numpy as np
-from scipy.stats import chi2, t, multivariate_normal
-
-n_samples = 1000000
-nu = 2
-
-sigma = np.array([[1, 0.1],[0.1, 1]])
-L = np.linalg.cholesky(sigma)
-mv = multivariate_normal(mean=[0, 0], cov=[[1, 0], [0, 1]])
-Y = mv.rvs(size=n_samples)
-Z = Y.dot(L)
-S = chi2(nu).rvs(size=n_samples)
-Z[:, 0] = np.sqrt(nu/S)*Z[:, 0]
-Z[:, 1] = np.sqrt(nu/S)*Z[:, 1]
-
-U = t(nu).cdf(Z)
-\end{ipython}
+\pythoncode{code/modelling_risk_8.py}
 
 \begin{figure}[htbp]
 \centering

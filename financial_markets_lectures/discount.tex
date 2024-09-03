@@ -36,104 +36,6 @@ In words we can states that the value of the derivative is given by the \textbf{
 
 It is then apparent how important is to know the proper discount factors for pricing purposes.
 
-%Imagine a bank that offers a guaranteed return of 10\% on whichever amount of money a client put in her account as long as that amount stays in the account for one full year (no withdrawals possible). If the client knows would need \$11000 at the end of one year, how much money does she need to put in today so that the $X$ amount (principal) at the claimed 10\% a year interest rate will grow to the desired amount ?
-%
-%We know that at 10\% $X$ dollar today grows to
-%
-%\begin{equation}
-%X * (1 + 0.1) = Y
-%\end{equation}
-%in one year, so the needed investment $X$ can be found by inverting the previous formula:
-%
-%\begin{equation*}
-%X \cdot (1 + 10\%) = 11000 \implies X = \cfrac{11000}{(1 + 10\%)}
-%\end{equation*}
-%
-%\begin{ipython}
-%11000 / (1 + 0.1)
-%\end{ipython}
-%\begin{ioutput}
-%10000
-%\end{ioutput}
-%
-%What this says is that to have \$11000 in one year from now, the client needs to invest \$10000.
-%What about 11000 dollars in two years from now ? Taking the approach used above
-%
-%\begin{equation*}
-%	X = \cfrac{11000}{\left((1 + 10\%) \cdot (1 + 10\%)\right)} =  \cfrac{11000}{(1+10\%)^ 2}
-%\end{equation*}
-%
-%\begin{ipython}
-%11000 / (1 + 0.1)**2
-%\end{ipython}
-%\begin{ioutput}
-%9090.90909090909
-%\end{ioutput}
-%
-%In other words this means the \$11000 we need in two years from now are valued about 9090 dollars today.
-%
-%What we have just done above is called \emph{discounting}. We are adjusting a future value to bring it to its present value (PV or NPV). The rate used to adjust the future payment is called the \emph{discount rate}.
-%
-%The idea behind discounting is also known as \emph{time value of money}. Since a dollar will grow in any bank account at that certain rate, if it is invested in an alternative opportunity, it should at least earn that same rate to even consider the alternative worth thinking about. 
-%The bottom line is that if you fail to earn the discount rate, you have actually lost money, anything less than that would mean you have not put your money to its best use.
-%
-%When we calculate the value of future payments today, we are doing a present value calculation. When we calculate the value of anything in the future we do a \emph{future value} calculation.
-%
-%A positive NPV denotes that at a certain cost of capital the returns or inflows from an investment opportunity outweigh the outflows and vice-versa. Obviously, when comparing various alternatives available for investment, the option with the most positive NPV or least negative NPV will be favoured. 
-%
-%As an example imagine that you have the chance to invest in a project, that will pay \$100 in year 1, and \$200 in year 2. How much are you willing to pay for this opportunity ? (assume an annual discount rate of 10\%).
-%
-%The answer is that you will be willing to pay at most an amount that is equal to the present value of this payments stream. To calculate it you need to scale each payment by its respective discount factors ($D(0, T)$ discount factor for year $T$)
-%\begin{equation}
-%D(0, T) = \cfrac{1}{(1 + r)^T}
-%\label{eq:discount_factor}
-%\end{equation}
-%
-%\begin{ipython}
-%d1 = 1/(1 + 0.1)**1
-%d2 = 1/(1 + 0.1)**2
-%
-%print ("discount factor for year 1: {:.2f}".format(d1))
-%print ("discount factor for year 2: {:.2f}".format(d2))
-%
-%pv = 100*d1 + 200*d2
-%
-%print ("Total PV: {:.2f}".format(pv))
-%\end{ipython}
-%\begin{ioutput}
-%discount factor for year 1: 0.91
-%discount factor for year 2: 0.83
-%Total PV: 256.20
-%\end{ioutput}
-%\noindent
-%Hence, you would be willing to pay \$256.2 for this opportunity.
-%
-%%If there are $Y$ payments each year the discount factor formula becomes
-%%
-%%\begin{equation}
-%%D(0, T) = \left(1+\cfrac{r}{Y}\right)^{-T}
-%%\end{equation}
-%%\noindent
-%When the continuously-compounded hypothesis is used the discount factor becomes
-%
-%\begin{equation}
-%D(0, T) = e^{-rT}
-%\end{equation}
-
-\section{Discount Curve Interpolation}
-\label{discount-curve-interpolation}
-
-Discount factors are usually presented as curves (\emph{discount curves}) where each point represents a discount factor relative to a future date. 
-
-%Figure~\ref{fig:example_discount_curve} shows an example of discount curve.
-%
-%\begin{figure}[htbp]
-%    \centering
-%	\includegraphics[width=0.7\linewidth]{figures/discount_curve}
-%	\caption{Example of discount curve.}
-%	\label{fig:example_discount_curve}
-%\end{figure}
-
 Since discount curves are made of a discrete set of discount factors derived at some dates, we may need to find the factor at some different times: this is a typical financial application of interpolation.
 
 \subsection{Linear Interpolation}
@@ -169,16 +71,8 @@ This formula can also be understood as a weighted average where the weights are 
 
 You don't need to implement the interpolation formula from scratch, instead it can be used the one provided in \texttt{scipy.interpolate.interp1d}. 
 
+\pythoncode{code/discount_1.py}
 
-\begin{ipython}
-from scipy.interpolate import interp1d
-
-t = [1, 2, 4]
-dfs = [0.994, 0.982, 0.965]
-
-inter = interp1d(t, dfs)	
-print (f"{inter(1.5):.3f}")
-\end{ipython}
 \begin{ioutput}
 0.988
 \end{ioutput}
@@ -260,28 +154,7 @@ To protect against extrapolation problems an exception is raised if the provided
 Furthermore we also attempted a simple code optimization: compute the input discount factors logarithm directly in the constructor in order to save some computation time with respect to doing the log at every call of the interpolation method. 
 \end{finmarkets}
 
-\begin{ipython}
-from numpy import log, exp
-from scipy.interpolate import interp1d
-from datetime import date
-
-class DiscountCurve:
-    def __init__(self, obs_date, pillar_dates, discount_factors):
-        discount_factors = np.array(discount_factors)
-        if obs_date not in pillar_dates:
-            pillar_dates = [obs_date] + pillar_dates
-            discount_factors = np.insert(discount_factors, 0, 1)
-        self.pillar_dates = pillar_dates
-        self.pillars = [p.toordinal() for p in pillar_dates] 
-        self.log_discount_factors = np.log(discount_factors)
-        self.interpolator = interp1d(self.pillars, self.log_discount_factors)
-        
-    def df(self, adate):
-        d = adate.toordinal()
-        if d < self.pillars[0] or d > self.pillars[-1]:
-            raise ValueError(f"Cannot extrapolate (date: {adate}).")
-        return np.exp(self.interpolator(d))
-\end{ipython}
+\pythoncode{code/discount_2.py}
 
 Using the discount curve data in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{\texttt{discount\_factors.xlsx}} instantiate the corresponding object and compute a discount factor.
 
@@ -302,58 +175,13 @@ from finmarkets import DiscountCurve
 
 The following example is going to use also the \texttt{TimeInterval} utility which converts strings like "10d" or "5y" into actual time deltas to be used with python dates.
 
-\begin{ipython}
-import pandas as pd
+\pythoncode{code/discount_3.py}
 
-from datetime import date
-from finmarkets import TimeInterval, DiscountCurve
-
-df = pd.read_excel("discount_factors.xlsx")
-
-obs_date = date.today()
-pillars = [today + TimeInterval(i) for i in df['months']]
-
-dc = DiscountCurve(obs_date, pillars, df['dfs'])
-df_date = obs_date + TimeInterval("195d") # about 6.5 months
-df0 = dc.df(df_date)
-print (f"discount factor at {df_date}: {df0:.4f}")
-\end{ipython}
 \begin{ioutput}
 discount factor at 2023-04-21: 0.9902
 \end{ioutput}
 
 A very useful way to check the correctness of a result is by plotting it. So let's see what the discount factor and the discount curve look like, Fig.~\ref{fig:linear_discount_curve}.
-
-\begin{ipython}
-import matplotlib.pyplot as plt
-
-plt.plot(pillars[:10], dfs[:10], marker='o', markersize=10, 
-         label="dfs")
-plt.scatter(df_date, df0, marker='X', s=100, color='red', 
-            label='interp. df')
-plt.xticks(rotation=45)
-plt.grid(True)
-plt.legend()
-plt.show()
-\end{ipython}
-
-%\begin{figure}[htb]
-%	\centering
-%	\includegraphics[width=0.7\textwidth]{figures/log_discount_curve}
-%	\caption{Plot of the discount curve defined in the text and of the two computed discount factors with semi-log scale.}
-%	\label{fig:log_discount_curve}
-%\end{figure}
-%\noindent
-%Let's see what it looks like when plotted on a linear graph too, Fig.~\ref{fig:linear_discount_curve}.
-%\begin{ipython}
-%plt.plot(pillar_dates, discount_factors, marker='o')
-%plt.plot(d0, df0, marker='X')
-%plt.plot(d1, df1, marker='X')
-%plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%m/%d/%Y'))
-%plt.gca().xaxis.set_major_locator(mdates.YearLocator())
-%plt.grid(True)
-%plt.show()
-%\end{ipython}
 
 \begin{figure}[htb]
 	\centering
@@ -405,44 +233,12 @@ The \texttt{TermStructure} class of the \texttt{finmarkets} module computes forw
 In order to successfully interpolate the rates, dates need again to be converted to numbers by evaluating the number of days since a reference date. Also the interpolation date is checked to avoid extrapolations, if it is outside the known range a warning will be printed out and the calculation stopped.
 \end{finmarkets}
 
-\begin{ipython}
-from scipy.interpolate import interp1d
-
-class TermStructure:
-    def __init__(self, obs_date, pillars, rates):
-        self.obs_date = obs_date
-        self.pillars = [(p-self.obs_date).days/365 for p in pillars]
-        self.rates = rates
-        self.interpolator = interp1d(self.pillars, self.rates)
-
-    def interp_rate(self, adate):
-        yf = (adate-self.obs_date).days/365
-        if yf < self.pillars[0] or yf > self.pillars[-1]:
-            raise ValueError(f"Cannot extrapolate rates (date: {adate}).")
-        return yf, self.interpolator(yf)
-
-    def forward_rate(self, d1, d2):
-        yf1, r1 = self.interp_rate(d1)
-        yf2, r2 = self.interp_rate(d2)
-        return (r2*yf2 - r1*yf1)/(yf2 - yf1)
-\end{ipython}
+\pythoncode{code/discount_4.py}
 
 As an example let's compute a forward rate.
-\begin{ipython}
-from finmarkets import TermStructure, TimeInterval
-from datetime import date
 
-today = date.today()
-pillars = [today + TimeInterval(i) for i in ['1y', '2y', '3y']]
-spot_rates = [0.09, 0.095, 0.1]
-ts = TermStructure(today, pillars, spot_rates)
-t1 = today + TimeInterval('1y')
-t2 = today + TimeInterval('2y')
-t3 = today + TimeInterval('3y')
+\pythoncode{code/discount_5.py}
 
-print (f"f_12 = {ts.forward_rate(t1, t2):.3f}")
-print (f"f_23 = {ts.forward_rate(t2, t3):.3f}")
-print (f"f_13 = {ts.forward_rate(t1, t3):.3f}")\end{ipython}
 \begin{ioutput}
 f_12 = 0.100
 f_23 = 0.110

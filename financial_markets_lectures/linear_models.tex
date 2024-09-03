@@ -36,7 +36,7 @@ This is why we introduce $\epsilon$ (residual/error) to the model, it covers the
 One of the measures we get from a regression analysis is the covariance. It calculates the relationship between two variables.
 
 \begin{equation}
-\textrm{cov}(x, y) = \mathbb{E}[(x - \mathbb{E}[x])(y - \mathbb{E}[y])]
+\text{Cov}(x, y) = \mathbb{E}[(x - \mathbb{E}[x])(y - \mathbb{E}[y])]
 \end{equation}
 where: $x$ and $y$ are the values of the independent and dependent variables at each observation, and $\mathbb{E}$ represents the mean.
 
@@ -47,29 +47,22 @@ That’s where correlation, another measure of regression analysis, comes in. It
 
 Correlation takes the covariance and divides it over the product of the standard deviations of the variables. This makes sure we get a correlation coefficient between -1 and +1.
 \begin{equation}
-\textrm{cor}(x, y) = \frac{\textrm{cov}(x, y)}{\textrm{std}(x)\textrm{std}(y)}
+\text{Corr}(x, y) = \frac{\text{Cov}(x, y)}{\text{std}(x)\text{std}(y)}
 \end{equation}
 
 A correlation of +1 suggests the two variables are perfectly positively correlated, and a value of -1 suggests an entirely negative correlation.
 
 From the definition of the $\beta$ coefficient (i.e. the slope of the linear regression) through least squares we have
 \begin{equation}
-\hat{\beta} = \textrm{cor}(x, y)\cdot \frac{\textrm{std}(y)}{\textrm{std}(x)}
+\hat{\beta} = \text{Corr}(x, y)\cdot \frac{\text{std}(y)}{\text{std}(x)}
 \end{equation}
-therefore the two only coincide when $\textrm{std}(y) = \textrm{std}(x)$ That is, they only coincide when the two variables are, in some sense, on the same scale. 
+therefore the two only coincide when $\text{std}(y) = \text{std}(x)$ That is, they only coincide when the two variables are, in some sense, on the same scale. 
 
 Correlation and slope at some extent give the same information, i.e. they each tell the linear relationship strength between $x$ and $y$. But, they also do each give distinct information:
 \begin{itemize}
 \item the correlation gives you a bounded measurement that can be interpreted independently of the two variables scale. The closer the estimated correlation is to $\pm1$, the closer the two are to a perfect linear relationship. The regression slope, in isolation, does not tell you that piece of information.
 \item the regression slope gives a useful quantity interpreted as the estimated change in the expected value of $y$ for a given value of $x$. Specifically, $\hat{\beta}$ tells you the change in the expected value of $y$ corresponding to a 1-unit increase in $x$. This information can not be deduced from the correlation coefficient alone.
 \end{itemize}
-
-%Model Assumptions
-%Whenever we are setting up a regression model, we need to work with some inherent assumptions. The most notable amongst those are:
-%
-%The variables exhibit a linear relationship between the slope and intercept;
-%The independent variable (predictor) is not random;
-%The values of the residuals (errors) follow a standard normal distribution.
 
 \subsection{Multiple Linear Regression}
 Simple regression is usually not enough in a real-life scenario, as targets (dependent variables) are rarely impacted only by a single predictor.
@@ -303,7 +296,7 @@ The key point in CAPM is the determination of $\beta$. This can be achieved with
 The regressed coefficient estimates can be expressed as 
 
 \begin{equation}
-\beta \approx \cfrac{\textrm{cov}(X,y)}{\textrm {var}(X)}
+\beta \approx \cfrac{\text{Cov}(X,y)}{\text{Var}(X)}
 \end{equation}
 
 In the case of CAPM the line estimates the stock returns $y$ given the global market returns $X$ and so provides insights about how \emph{volatile}, or how risky, a stock is relative to the rest of the market.
@@ -332,14 +325,8 @@ To implement the linear regression model it can be used the \texttt{statsmodel} 
 
 So to determine $\beta$ and $\alpha$ for GE stock the model is made of its excess of returns ($y$) and market excess of returns ($X)$ 
 
-\begin{ipython}
-X = capm['ret_SP500']
-y = capm['ret_GE']
-	
-X = sm.add_constant(X)
-est = sm.OLS(y, X).fit()
-print(est.summary())
-\end{ipython}
+\pythoncode{code/linear_models_1.py}
+
 \begin{ioutput}
 OLS Regression Results                                
 ===========================================================================
@@ -370,7 +357,7 @@ The most interesting (for us) part of the summary is:
 \item coef: the estimate of this model parameter (the weight assigned to this feature);
 \item std err: the standard error of our estimate. From these two values we can compute the t-score of our estimate:
 \begin{equation*}
-	t = \frac{\textrm{coeff}}{\textrm{std err}}
+t = \frac{\text{coeff}}{\text{std err}}
 \end{equation*}
 which we can find on the third column ($t$); 
 \item t: this value essentially provides us with a metric of how small the error is with respect to the estimated value: the larger the t-score, the smaller the error and the more confident we can be in our estimate.
@@ -480,14 +467,8 @@ where $\mathbf{X}$ is the factor exposure matrix, $\mathbf{F}$ is the $K\times K
 
 Consider the example of previous Section and improve the model by adding the crude oil price as a second factor. Perform again the linear regression
 
-\begin{ipython}
-X = capm[['ret_SP500', 'ret_Brent']]
-y = capm['ret_GE']
+\pythoncode{code/linear_models_2.py}
 
-X = sm.add_constant(X)
-est = sm.OLS(y, X).fit()
-print(est.summary())
-\end{ipython} 
 \begin{ioutput}
 OLS Regression Results                                
 ==============================================================================
@@ -516,14 +497,6 @@ Kurtosis:                      24.292   Cond. No.                         1.90
 The regression coefficient for the oil factor (ret\_Brent) is statistically significant and negative. Over the analysis period, price changes in GE stock are negatively related to the price changes in oil.
 Let's apply the same model now to Exxon (XOM) stock.
 
-\begin{ipython}
-X = capm[['ret_SP500', 'ret_Brent']]
-y = capm['ret_XOM']
-
-X = sm.add_constant(X)
-est = sm.OLS(y, X).fit()
-print(est.summary())
-\end{ipython} 
 \begin{ioutput}
 OLS Regression Results                                
 ==============================================================================
@@ -588,602 +561,6 @@ The application of such models goes along the lines of the CAPM with the only di
 %
 %* **The factor corresponding to this characteristic is the return on this portfolio**. 
 %* The $X_{nk}(t)$ are estimated for each asset $n$ by regressing over the historical values of $r_n(t)$ and of the factors.
-
-\section{Principal Components Analysis}
-%\label{sec:pca}
-%
-%Principal Component Analysis, or PCA, is a dimensionality-reduction method that is often used to reduce the complexity of large datasets, by transforming the original set of variables into a smaller one that still contains most of the initial information.
-%
-%Reducing the number of variables of a dataset naturally comes at the expense of accuracy. Since smaller datasets are easier to explore and visualize, and make analyzing data simpler and faster without extraneous variables to process, the trick is to trade less accuracy for more simplicity
-%
-%Let's see how this kind of technique can be implemented starting from 
-%a multidimensional initial dataset 
-%\begin{equation}
-%X=\begin{bmatrix}
-%x^{(1)}_1 &x^{(2)}_1&\cdots &x^{(m)}_1 \\
-%x^{(1)}_2 &x^{(2)}_2&\cdots &x^{(m)}_2 \\
-%\vdots &\vdots &\vdots &\vdots \\
-%x^{(1)}_n &x^{(2)}_n&\cdots &x^{(m)}_n 
-%\end{bmatrix}
-%\end{equation}
-%
-%To allow an easier representation in the examples of this Section we will use the following two-dimensional dataset.
-%
-%\begin{ipython}
-%import numpy as np
-%from matplotlib import pyplot as plt
-%	
-%np.random.seed(123)
-%x = 5*np.random.rand(100)
-%y = 2*x + 1 + np.random.rand(100)
-%
-%y = np.hstack([x, y])
-%\end{ipython}
-%
-%Left plot of Fig.~\ref{fig:pca_dataset} shows the dataset.
-%
-%\subsection{Standardization}
-%The first step to implement PCA is to standardize the range of the variables so that each one of them contributes equally.
-%
-%More specifically, the reason why it is critical to perform \emph{standardization} prior to PCA, is that the latter is sensitive to the variances of the initial variables. That is, if there are large differences between the ranges of the variables, those with larger ranges will dominate over those with small ranges (e.g. a variable that goes from 0 and 100 will dominate over another one that ranges between 0 and 1), which will lead to biased results. 
-%
-%Mathematically, this can be done by subtracting the mean and dividing by the standard deviation for each component of each variable
-%
-%\begin{equation}
-%z = \cfrac{x - \textrm{mean}}{\textrm{std dev.}}
-%\end{equation}
-%
-%Once the standardization is done, all the variables will be transformed to the same scale.
-%
-%\begin{ipython}
-%def centerData(X):
-%    X = X.copy()
-%    X = (X - np.mean(X, axis=0))/np.std(X, axis=0)
-%    return X
-%    
-%X_centered = centerData(X)
-%\end{ipython}
-%
-%Right plot of Fig.~\ref{fig:pca_dataset} shows the standardized dataset used in the following.
-%
-%Left plot of Fig.~\ref{fig:pca_dataset} shows the dataset.
-%\begin{figure}[htb]
-%	\centering
-%	\includegraphics[width=0.9\linewidth]{figures/pca_dataset_both}
-%	%\includegraphics[width=0.45\linewidth]{figures/pca_dataset_centered}
-%	\caption{The dataset used in the PCA example (left), and the same dataset centered in the origin (right).}
-%	\label{fig:pca_dataset}
-%\end{figure}
-%
-%\subsection{Covariance Matrix Computation}
-%The covariance matrix of our dataset helps us to understand if there is any relationship between the variables (i.e. sometimes, they are so correlated that they contain redundant information). So, in order to identify these correlations, we compute the covariance matrix.
-%
-%The covariance matrix is a $n\times n$ (where $n$ is the number of dimensions) that has as entries the covariances associated with all possible pairs of the initial variables. Since the covariance of a variable with itself is its variance ($\textrm{cov}(a, a)= \textrm{var}(a)$), in the main diagonal (top-left to bottom-right) we actually have the variances of each initial variable. And since the covariance is commutative ($\textrm{cov}(a, b) = \textrm{cov}(b, a)$), the entries of the covariance matrix are symmetric with respect to diagonal.
-%
-%Once we have centered our data around 0, $[X^T][X]$ is the covariance matrix.
-%
-%\begin{equation}
-%[\Sigma]=[X^T][X] =
-%\begin{bmatrix}
-%\textrm{var}(x_1) & \textrm{cov}(x_2, x_1) & \cdots & \textrm{cov}(x_n, x_1) \\
-%\textrm{cov}(x_1, x_2) & \textrm{var}(x_2) & \cdots & \textrm{cov}(x_n, x_2) \\
-%\vdots & \vdots & \vdots & \vdots \\
-%\textrm{cov}(x_1, x_n) & \textrm{cov}(x_2, x_n) & \cdots & \textrm{var}(x_n)
-%\end{bmatrix}
-%\end{equation}
-%
-%\subsection{Principal Components}
-%
-%Principal components are new variables that are constructed as linear combinations or mixtures of the initial variables. These combinations are done in such a way that the new variables (i.e. principal components) are uncorrelated and most of the information within the initial variables is squeezed or compressed into the first components. 
-%
-%So, the idea is that a $n$-dimensional dataset gives you $n$ principal components, but PCA tries to put maximum possible information in the first component, then maximum remaining information in the second and so on.
-%
-%Organizing information in principal components this way, will allow you to reduce dimensionality without losing much information, and this by discarding the components with low information and considering the remaining components as your new variables.
-%%An important thing to realize here is that, the principal components are less interpretable and don’t have any real meaning since they are constructed as linear combinations of the initial variables.
-%
-%Geometrically speaking, principal components represent the directions of the data that explain a maximal amount of variance, that is to say, the lines that capture most information of the data. The relationship between variance and information here, is that, the larger the variance carried by a line, the larger the dispersion of the data points along it, and the larger the dispersion along a line, the more the information it has.
-%
-%It is possible to demonstrate that the eigenvectors of the covariance matrix are actually the directions of the axis where there is the most variance (i.e. most information) and that we call \emph{principal components}. Eigenvalues are simply the coefficients, attached to eigenvectors, which give the amount of variance carried in each principal component.
-%
-%As we have seen in Sec.~\ref{find-eigenvalues-and-eigenvectors-in-python} the eigenvectors and eigenvalues of our dataset covariance are obtained as follows
-%
-%\begin{ipython}
-%eigVals, eigVecs = np.linalg.eig(X_centered.T.dot(X_centered))
-%print (eigVecs)
-%\end{ipython}
-%\begin{ioutput}
-%[[-0.70710678 -0.70710678]
-% [ 0.70710678 -0.70710678]]
-%\end{ioutput}
-%
-%\begin{ipython}
-%print (eigVals)
-%\end{ipython}
-%\begin{ioutput}
-%[  7.46600865 192.53399135]
-%\end{ioutput}
-%
-%If we rank the eigenvalues in descending order, we get $\lambda_2>\lambda_1$, which means that the eigenvector that corresponds to the first principal component (PC1) is  $v_2$ (i.e. the second column of the previous matrix).
-%
-%After having the principal components, to compute the percentage of variance (information) accounted for by each component, we divide the eigenvalue of each component by the sum of eigenvalues. 
-%
-%\begin{ipython}
-%for l in eigVals:
-%    print (f"{l/np.sum(eigVals)*100:.1f}")
-%\end{ipython}
-%\begin{ioutput}
-%3.7
-%96.3
-%\end{ioutput}
-%
-%According to these results PC2 and PC1 carry respectively 96\% and 4\% of the variance of the data.
-%
-%\subsection{Feature Vector}
-%Given the list of eigenvectors and eigenvalues we need to choose whether to keep all these components or discard those of lesser significance (i.e. of low eigenvalues), and form with the remaining ones a matrix called \emph{feature vector}.
-%
-%So, the feature vector is simply a matrix that has as columns the eigenvectors of the components that we decide to keep. This makes it the first step towards dimensionality reduction, because if we choose to keep only $p$ eigenvectors (components) out of $n$, the final dataset will have only $p$ dimensions.
-%
-%Continuing with the example from the previous step, we can either form a feature vector with both of the eigenvectors $v1$ and $v2$, or discard the eigenvector $v_2$, which is the one of lesser significance, and form a feature vector with $v_1$ only.
-%
-%Discarding the eigenvector $v_1$ will reduce dimensionality by 1, and will consequently cause a loss of information in the final data set. But given that $v_1$ was carrying only 4\% of the information, the loss will be therefore not important and we will still have 96\% of the information that is carried by $v_2$.
-%
-%Figure~\ref{fig:pca_result} shows the two principal components.
-%
-%\begin{figure}[htb]
-%	\centering
-%	\includegraphics[width=0.7\linewidth]{figures/pca_result}
-%	\caption{The directions corresponding to the first two principal 
-%		components of our example dataset.}
-%	\label{fig:pca_result}
-%\end{figure}
-%
-%\subsection{Recast Data Along Principal Components}
-%At this point we can use the feature vector to reorient data from the original axis to the ones represented by the principal components. 
-%This can be done by multiplying the transpose of the original dataset by the transpose of the feature vector
-%
-%\begin{equation}
-%[Y] = [X^T][F^T]
-%\end{equation}
-%
-%\begin{ipython}
-%Y = eigVecs.T.dot(X_centered.T)
-%\end{ipython}
-%
-%The rotation transformed our dataset that have now the more variance on one of the basis axis (i.e. the Cartesian axis). 
-%You could keep only this dimension and have a fairly good representation of the data. Figure~\ref{fig:pca_rotated} shows the effect of such a rotation to our sample.
-%\clearpage
-%\begin{figure}[htb]
-%	\centering
-%	\includegraphics[width=0.5\linewidth]{figures/pca_rotated}
-%	\caption{The dataset rotated so that the usual Cartesian coordinates
-%		correspond to the first two principal components.}
-%	\label{fig:pca_rotated}
-%\end{figure}
-%
-%\subsection{Impact of Covid19}
-%Using PCA analysis it can be assessed the impact of the Covid19 pandemic on different stocks, clustering together assets that were most/least affected without any prior knowledge of their fundamental.
-%
-%In this analysis we are going to use the equities forming the \emph{Dow Jones 30} index, so the first step is to download their returns with \texttt{yfinance} package (the data availability is from March 2019 to today).
-%
-%\begin{ipython}
-%import yfinance as yf
-%
-%tickers = ["BA","CAT","CVX","CSCO","KO",
-%	       "DOW","XOM","GS","HD","INTC","IBM",
-%	       "JNJ","JPM","MCD","MRK","MSFT","NKE",
-%	       "PFE","PG","RTX","TRV","UNH","VZ",
-%	       "V","WBA", "WMT", "^DJI"]
-%	
-%proxy = yf.Tickers(tickers)           
-%df = proxy.history(start='2020-01-02',
-%                   end='2020-08-16')['Close'].pct_change().dropna()
-%\end{ipython}
-%
-%After downloading data the PCA analysis is performed
-%\begin{ipython}
-%import numpy as np
-%	
-%equities = df.iloc[:, :-1]
-%cov = equities.cov()
-%eigVals, eigVecs = np.linalg.eig(cov)
-%\end{ipython}
-%
-%Let's look at the first principal component and select the corresponding stocks that have the best and the worst PCA weights, as shown in Fig.~\ref{fig:pca_covid_neg}.
-%
-%\begin{figure}[htb]
-%\centering
-%\includegraphics[width=.6\textwidth]{figures/pc1_weights_covid}
-%\caption{Ten most negative (top) and least negative (bottom) weights of the PC1 portfolio.}
-%\label{fig:pca_covid_neg}
-%\end{figure}
-%
-%Notice from Figure~\ref{fig:pca_covid_neg} how the most negative stocks are Boing and Chevron, connected to travel and energy sector. This makes sense since Covid19 heavily impacted the traveling business, as well as the energy companies that provide fuels for those business. On the other hand, the least impacted companies are Verizon, Wallmart, Pfizer and Johnson \& Johnson, which belong to sectors boosted during the quarantine measures and the pandemic in general.
-%
-%In addition we can check the winning portfolio that is long the top 3 companies according to the PCA weights.
-%
-%\begin{ipython}
-%# normalize weights
-%norm_eigVecs = abs(eigVecs.T[0])/sum(abs(eigVecs.T[0]))
-%	
-%# market portfolio
-%pc_daily_ret = equities.dot(norm_eigVecs)
-%pc_cum_ret = pc_daily_ret.cumsum()
-%	
-%# worst portfolio
-%worst_idx = np.argsort(eigVecs.T[0])[:3]
-%eq_worst = equities.iloc[:, worst_idx]
-%worst_eigv = norm_eigVecs[worst_idx]
-%worst_ret = eq_worst.dot(worst_eigv).cumsum()
-%print ("Worst :", df.columns[worst_idx])
-%	
-%# best portfolio         
-%best_idx = np.argsort(eigVecs.T[0])[-3:]
-%eq_best = equities.iloc[:, best_idx]
-%best_eigv = norm_eigVecs[best_idx]
-%best_ret = eq_best.dot(best_eigv).cumsum()
-%print ("Best :", df.columns[best_idx])
-%\end{ipython}
-%\begin{ioutput}
-%Worst : Index(['BA', 'CVX', 'DOW'], dtype='object')
-%Best : Index(['JNJ', 'VZ', 'WMT'], dtype='object')
-%\end{ioutput}
-%
-%As shown in Figure~\ref{fig:pca_covid_return}, the resulting portfolio would have performed significantly better than the market, since it invested in companies that actually didn't suffer to much from the pandemic. 
-%
-%\begin{figure}[bhtp]
-%\centering
-%\includegraphics[width=.7\textwidth]{figures/pc1_weights_covid_returns}
-%\caption{Three most negative and least negative weights portfolios compared to the market portfolio.}
-%\label{fig:pca_covid_return}
-%\end{figure}
-%
-%Note that this portfolio is formed with look-ahead bias, indeed portfolio weights are computed using future dates that were not available at the time of market downturn. The PCA used in this way is therefore a backward looking analytics tool.
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%
-%\subsection{Dimension Reduction}
-%In statistics, dimensionality reduction is the transformation of data such that the number of variables is reduced by obtaining principal variables. Dimensionality reduction can help us see the key structure of original data. For example, if the data lies in a low dimensional subspace, it is conceivable that one could restrict our learning problem to this low dimensional subspace and thereby simplify it.
-%
-%There are two techniques of dimensionality reduction that can be applied to the feature
-%space:
-%\begin{itemize}
-%\item feature selection: is the process of selection of a subset of relevant features, which can be done manually based on domain knowledge or using statistical tools
-%\item feature projection: converts data from high-dimensional space to low-dimensional space. The data transformation can be linear or nonlinear.
-%\end{itemize}
-%
-%The basic linear technique for dimensionality reduction, the principal component analysis (PCA), performs a linear mapping of the data into a smaller space such that the variance of the data in the low-dimensional representation is maximized. 
-%
-%In practice, a covariance matrix (and sometimes a correlation matrix) of the data is constructed, and the eigenvectors of this matrix are calculated. The eigenvectors corresponding to the largest eigenvalues (principal components) can now be used to recover most of the variance of the original data. Moreover, the first few eigenvectors can often be interpreted in terms of the large-scale physical behaviour of the system. 
-%
-%The original space (with a dimension equal to the number of points) is reduced (with loss of data, but with the hope that the most important variance remains) to a space stretched over a few eigenvectors.
-%
-%\subsection{Principal Component Analysis}
-%The goal of PCA is to find an alternative representation of data $X$ in the transformed space so that $X$ can be approximated by variables of smaller dimensions while maintaining a given level of the original information.
-%Let us denote a zero mean $p$-dimensional feature space $X = (X_1, \ldots, X_p)$. We aim to obtain a \textbf{linear} transformation $V$ such that the $p$-dimensional transformed feature variable $Z := XV$ consists of components orthogonal to each other, and the variances of those components are in descending order. Alternatively, we are aiming to find the representation of $\tilde{X} = ZV^{-1}$ can be seen as a projection onto a new feature space, on which a dimensionality reduction approach can be built.
-%
-%Figure~\ref{fig:pca_dataset} illustrates the main idea of PCA: to find such orthogonal vectors (principal components) $Z_k$ for $k = 1,\ldots, p$, and to reduce the dimensionality of the original data $X$ by mapping this data to the space generated by first $l$, $l = 1,\ldots, p - 1$ vectors. % (on this figure $p = 3$ and $l = 2$).
-%
-%%Right plot of Fig.~\ref{fig:pca_dataset} shows the standardized dataset used in the following.
-%
-%Left plot of Fig. shows the dataset.
-%\begin{figure}[htb]
-%	\centering
-%	\includegraphics[width=0.9\linewidth]{figures/pca_dataset_both}
-%	%\includegraphics[width=0.45\linewidth]{figures/pca_dataset_centered}
-%	\caption{The dataset used in the PCA example (left), and the same dataset centered in the origin (right).}
-%	\label{fig:pca_dataset}
-%\end{figure}
-%
-%
-%\subsection{Principal components and covariance}
-%Let’s recall some basic definitions from probability theory and statistics:
-%\begin{itemize}
-%\item for the vector $X = (X_1, X_2, \ldots, X_k)$ of $k$ jointly distributed random variables with finite second moments, its auto-covariance matrix $\SigmaX$ is defined as follows:
-%\begin{equation}
-%\Sigma_X = \text{Cov}(X, X) = E[(X − E[X])(X − E[X])^T] = E[XX^T]–E[X]E[X]^T
-%\end{equation}
-%\item let $X$ be a random vector with covariance matrix $\Sigma_X$, and let $A$ be a matrix that can
-%act on $X$ on the left. The covariance matrix of the matrix-vector product $AX$ is:
-%\begin{equation}
-%\text{Cov}(AX, AX) = E[(AX)(AX)^T]–E[AX]E[(AX)^T] = E[AXX^T A^T]–E[AX]E[A^T X^T] = AE[XX^T]A^T − AE[X]E^T A^T =
-%= A(E[XX^T]–E[X]E[X]^T)A^T = A\Sigma_XA^T
-%\end{equation}
-%\item The empirical covariance matrix $X$ can be written as 
-%\begin{equation}
-%\Sigma_X = \cfrac{1}{N − 1}XX^T
-%\end{equation}
-%\item For every $n\times n$ real symmetric matrix, the eigenvalues are real and the eigenvectors can be chosen real and orthonormal. Thus a real symmetric matrix $A$ can be decomposed as
-%\begin{equation}
-%A = Q\Lambda Q^T
-%\end{equation}
-%where $Q$ is an orthogonal matrix whose columns are (the above chosen, real and orthonormal) eigenvectors of $A$, and $\Lambda$ is a diagonal matrix whose entries are the eigenvalues of $A$.
-%By using the \emph{singular value decomposition} we can write this empirical matrix:
-%\begin{equation}
-%\Sigma_X = \cfrac{1}{N-1}XX^T = \cfrac{1}{N-1}(UDV^T)(UDV^T)^T = V\left(\cfrac{1}{N-1}D^2\right) V^T
-%\end{equation}
-%
-%Additionaly as the covariance matrix $\Sigma_X$ is a real non-negative symmetric matrix we can use an \emph{eigenvalue decomposition}:
-%\begin{equation}
-%\Sigma_X = Q\Lambda Q^T
-%\end{equation}
-%
-%It is clear that the right singular vectors in equation ... are the eigenvectors in ...p: $V = Q$, and the diagonal matrix $\Lambda = \text{diag}(\lambda_1, \ldots, \lambda_p)$ is $\left(\frac{1}{N-1}D^2\right)$, i.e componentwise:
-%\begin{equation}
-%\lambda_j = \cfrac{d_j}{N − 1}
-%\end{equation}
-%
-%That means that the new coordinates $V$ are given by the eigenvectors of the covariance matrix.
-%Now finally the empirical covariance matrix of the principal components $Z$ can be rewritten
-%\begin{equation}
-%\Sigma_Z = \cfrac{1}{N-1}Z^T Z = \cfrac{1}{N-1}(XV)^T(XV)=V^T\Sigma_X V = \cfrac{D^2}{N-1} = \Lambda
-%\end{equation}
-%\end{itemize}
-%
-%To summarize:
-%\begin{enumerate}
-%\item The principal components $Z_1, \ldots, Z_p$ are orthogonal (i.e. $Z^{-1}=Z^T$), and the variances of $Z_1,\ldots, Z_p$ are the eigenvalues of the covariance matrix of $X$ in descending order.
-%\item With the representation of the covariance of the data using SVD, we can apply PCA to reduce the dimensionality of the data.
-%
-%Once we have the principal components and the loading matrix, the representation of $X$ becomes
-%\begin{equation}
-%X = ZV^{−1} = ZV^T = \sum_{j=1}^{p}Z_j v_j^T
-%\end{equation}
-%
-%Thus an approximating sequence of feature variables $X$ is obtained. In section (2.5) we have shown that $\hat{X˜}(k)$ including the first $k$ principal components of $X$:
-%\begin{equation}
-%\hat{X}^{(k)} = \sum_{j=1}^{k}Z_j v_j^T
-%\end{equation}
-%covers such proportion
-%\begin{equation}
-%\cfrac{\sum_j=1}^k \lambda_j}{\sum_j=1}^p \lambda_j}
-%\end{equation}
-%of the variance of $X$. From the equation above, it is obvious that if we take $k = p$, we recover all the original data of $X$.
-%
-%Assuming, therefore, that the information is incorporated in the covariance, given the data set $X$ and the information preservation criterion in the form of the percentage of variance explained, we can find an approximation of $X$ with reduced dimensionality.
-%The residual from the approximation using $k$ PCs is 
-%\begin{equation}
-%R^{(k)} = X − \tilde{X}˜^{(k)} = \sum_{j=k+1}^{p}Z_j v^T_j
-%\end{equation}
-%
-%
-%
-%
-%
-%
-%\subsection{Practical problems}
-%PCA is not invariant to scaling. Before applying PCA, we should consider whether or not to standardize the data $X$, besides removing of the mean from the data before applying PCA. In practice, it depends on the context of the data and the objective, but there are two general tips regarding this problem:
-%\begin{enumerate}
-%\item If features are measured in different units that are not comparable, we should first standardize them before applying PCA.
-%\item If features are measured in comparable units, then we can keep them unscaled to preserve the original variability information.
-%\end{enumerate}
-%
-%Furthermore PCA can not be used if the data is not Gaussian. PCA is based on the assumption that the data is normally distributed, that is why we can represent all the information from the covariance. In the case of non-Gaussian data, independent component analysis (ICA) is often used.
-%
-%### Application: Term Structure Analysis Using PCA
-%
-%#### Bond yield and yield curve
-%
-%A bond’s yield is the interest income received by an investor from investing in debt securities. Bonds with a fixed coupon have an interest rate that accrues on the face value.
-%
-%Current yield is the ratio of annual coupon payments to the current
-%market value of the bond:
-%$$
-%\text{Current Yield} = \cfrac{\text{Annual Coupon Payment}}{\text{Bond Price}}
-%$$
-%
-%The yield curve represents the time structure of interest rates and shows the relationship between the yields of financial instruments and their maturity.
-%
-%%Using this tool, an investor gets an idea of several market properties of traded bonds and can also predict the potential behaviour of the security’s price under the influence of market factors.
-%
-%%By analysing graphical and tabular data, it is possible to assess the current state of the market, calculate fair premiums and calculate bond prices under forecasted interest rate movements.
-%
-%#### Treasuries bond yield curve and recession
-%The Treasuries bond yield curve is not only used as a benchmark to assess the value of other debt instruments but is also considered one of the most important economic indicators to watch as a precursor to a future cyclical downturn in the US economy.
-%
-%Usually, yields of longer-dated securities are higher than those of shorter-dated securities (this is a compensation for risk).
-%Such a yield curve is considered ”normal” because the market usually requires more compensation for more risk under normal conditions. Long-term bonds are subject to greater risks, such as changes in interest rates and increased potential default risk.
-%However, the short-term yield sometimes exceeds the long-term yield, and the spread turns negative. The result is a *concave* curve.
-%
-%%If short securities turn out to be more profitable than long ones, investors do not believe in the long term, i.e. they are afraid to hold long bonds.
-%
-%The inversion (concavity) of the Treasuries curve in the US is considered one of the proxies for an imminent recession or downturn in the economy.
-%%At least, as history shows, in seven out of ten cases, it has indeed become a clear harbinger of an American recession.
-%
-%In the following example, we analyse the data of Treasury bonds between 1st January 2017 and 31st December 2018 taken using the Federal Reserve Bank of St. Louis API.
-%
-%The US economy has been growing steadily in the period under review since after a rebound in 2016, it grew by 3.1% in 2018 after climbing by 2.5% in 2017
-%
-%### Factor Model
-%Let $X$ be the yield curve consisting of bonds of $p$ maturities with $N$ observations. We will model $X$ as a $k$ factor model.
-%
-%The $k$ factor model for the yield curve $X$ can then be presented in the following way
-%
-%$$
-%X = \mu_ X + Zf + e
-%$$
-%where $\mu_X = (\mu_1,\ldots, \mu_p)$ is the mean vector of $X$, $e = (e_1,\ldots, e_N )$ is the residuals and
-%
-%$$
-%Z =
-%\begin{bmatrix}
-%z_{1,1} & z_{1,2} & \cdots & z_{1,k} \\
-%z_{2,1} & z_{2,2} & \cdots & z_{2,k} \\
-%\vdots & \vdots & \ddots & \vdots \\
-%z_{N,1} & z_{N,2} & \cdots & z_{N,k} \\
-%\end{bmatrix}
-%$$
-%consist of $k$ factors,
-%$$
-%f =
-%\begin{bmatrix}
-%f_{1,1} & f_{1,2} & \cdots & f_{1,p} \\
-%f_{2,1} & f_{2,2} & \cdots & f_{2,p} \\
-%\vdots & \vdots & \ddots & \vdots \\
-%f_{k,1} & f_{k,2} & \cdots & f_{k,p} \\
-%\end{bmatrix}
-%$$
-%the factor loading matrix; i.e., the observation $i$ of feature $j$ is
-%
-%$$
-%x_{i,j} = \mu_j + \sum_{l=1}^k z_{i,l}f_{l,j} + e_{i,j}
-%$$
-%
-%The difference with the previous studies is that instead of identifying external factors, we will focus on self-contained independent drivers, i.e., factors related to the curve itself, such as slope and curvature.
-%
-%Through this approach, we will recognize the key structure of the yield curve dynamics and will be able to answer how 2Y, 10Y, and 30Y bond yields move together. Moreover, PCA will help us to naturally reduce the dimensionality of the factors based on the coefficient of explained variance.
-%
-%
-%### Data and observation
-%The yield/rate time series of different maturities are shown in Figure 3.1. It is clear that all curves are moving in the same direction, which indicates the idea that some common factors drive the yield dynamic.
-%
-%In Figure 3.2 we can see the yield curve term structure on different dates. In contrast to the previous figure, here one can distinctly see the inconsistencies in the dynamics and it is obvious that in some periods the movement is quite the opposite.
-%
-%
-%Let us consider in more detail the different types of changes between the dates:
-%1. Level change: The level shock modifies the interest rates of all maturities in nearly equal amounts, inducing a parallel shift that changes the level of the entire yield curve. An example of level change can be seen by observing the green (2018-02-05) and orange (2018-05-17) curves. Both are moving in the same direction with almost identical slopes, and the only difference is the level: the green curve is shifted compared to the orange one.
-%2. Slope change: The shock to the slope factor increases short-term interest rates by much more than long-term interest rates so that the yield curve becomes less abrupt and its slope decreases.
-%For example, from 2018-05-17 (orange) to 2018-12-10 (pink), the slope of the curve changed as the short-term yield increased while the long-term yield decreased (DGS2 to DGS5).
-%3. Curvature change: The change in curvature reflects how the difference between the medium-long-term premium (i.e., the long-term minus the medium-term rate level) and the shortmedium-term premium (i.e., the medium-term minus the short-term rate level) changes from each day. In other words, the ”belly” of the curve shifts relatively to variations in short-term and long-term levels daily. Moreover, we can say that the orange (2018-05-17) and green (2018-02-05) curves show us a classic example of the so-called \emph{normal yield curve}, a concave curve with a positive slope.
-%
-%
-%
-%
-%
-%
-%
-%%\subsection{Dimension Reduction}
-%%In statistics, dimensionality reduction is the transformation of data such that the number of variables is reduced by obtaining principal variables. Dimensionality reduction can help us see the key structure of original data. For example, if the data lies in a low dimensional subspace, it is conceivable that one could restrict our learning problem to this low dimensional subspace and thereby simplify it.
-%%
-%%There are two techniques of dimensionality reduction that can be applied to the feature
-%%space:
-%%\begin{itemize}
-%%	\item feature selection: is the process of selection of a subset of relevant features, which can be done manually based on domain knowledge or using statistical tools
-%%	\item feature projection: converts data from high-dimensional space to low-dimensional space. The data transformation can be linear or nonlinear.
-%%\end{itemize}
-%%
-%%The basic linear technique for dimensionality reduction, the principal component analysis (PCA), performs a linear mapping of the data into a smaller space such that the variance of the data in the low-dimensional representation is maximized. 
-%%
-%%In practice, a covariance matrix (and sometimes a correlation matrix) of the data is constructed, and the eigenvectors of this matrix are calculated. The eigenvectors corresponding to the largest eigenvalues (principal components) can now be used to recover most of the variance of the original data. Moreover, the first few eigenvectors can often be interpreted in terms of the large-scale physical behaviour of the system. 
-%%
-%%The original space (with a dimension equal to the number of points) is reduced (with loss of data, but with the hope that the most important variance remains) to a space stretched over a few eigenvectors.
-%%
-%%\subsection{Principal Component Analysis}
-%%The goal of PCA is to find an alternative representation of data $X$ in the transformed space so that $X$ can be approximated by variables of smaller dimensions while maintaining a given level of the original information.
-%%Let us denote a zero mean $p$-dimensional feature space $X = (X_1, \ldots, X_p)$. We aim to obtain a \textbf{linear} transformation $V$ such that the $p$-dimensional transformed feature variable $Z := XV$ consists of components orthogonal to each other, and the variances of those components are in descending order. Alternatively, we are aiming to find the representation of $\tilde{X} = ZV^{-1}$ can be seen as a projection onto a new feature space, on which a dimensionality reduction approach can be built.
-%%
-%%Figure~\ref{fig:pca_dataset} illustrates the main idea of PCA: to find such orthogonal vectors (principal components) $Z_k$ for $k = 1,\ldots, p$, and to reduce the dimensionality of the original data $X$ by mapping this data to the space generated by first $l$, $l = 1,\ldots, p - 1$ vectors. % (on this figure $p = 3$ and $l = 2$).
-%%
-%%%Right plot of Fig.~\ref{fig:pca_dataset} shows the standardized dataset used in the following.
-%%
-%%Left plot of Fig. shows the dataset.
-%%\begin{figure}[htb]
-%%	\centering
-%%	\includegraphics[width=0.9\linewidth]{figures/pca_dataset_both}
-%%	%\includegraphics[width=0.45\linewidth]{figures/pca_dataset_centered}
-%%	\caption{The dataset used in the PCA example (left), and the same dataset centered in the origin (right).}
-%%	\label{fig:pca_dataset}
-%%\end{figure}
-%%
-%%
-%%\subsection{Principal components and covariance}
-%%Let’s recall some basic definitions from probability theory and statistics:
-%%\begin{itemize}
-%%	\item for the vector $X = (X_1, X_2, \ldots, X_k)$ of $k$ jointly distributed random variables with finite second moments, its auto-covariance matrix $\Sigma X$ is defined as follows:
-%%	\begin{equation}
-%%		\Sigma_X = \text{Cov}(X, X) = E[(X − E[X])(X − E[X])^T] = E[XX^T]–E[X]E[X]^T
-%%	\end{equation}
-%%	\item let $X$ be a random vector with covariance matrix $\Sigma_X$, and let $A$ be a matrix that can
-%%	act on $X$ on the left. The covariance matrix of the matrix-vector product $AX$ is:
-%%	\begin{equation}
-%%		\text{Cov}(AX, AX) = E[(AX)(AX)^T]–E[AX]E[(AX)^T] = E[AXX^T A^T]–E[AX]E[A^T X^T] = AE[XX^T]A^T − AE[X]E^T A^T =
-%%		= A(E[XX^T]–E[X]E[X]^T)A^T = A\Sigma_XA^T
-%%	\end{equation}
-%%	\item The empirical covariance matrix $X$ can be written as 
-%%	\begin{equation}
-%%		\Sigma_X = \cfrac{1}{N − 1}XX^T
-%%	\end{equation}
-%%	\item For every $n\times n$ real symmetric matrix, the eigenvalues are real and the eigenvectors can be chosen real and orthonormal. Thus a real symmetric matrix $A$ can be decomposed as
-%%	\begin{equation}
-%%		A = Q\Lambda Q^T
-%%	\end{equation}
-%%	where $Q$ is an orthogonal matrix whose columns are (the above chosen, real and orthonormal) eigenvectors of $A$, and $\Lambda$ is a diagonal matrix whose entries are the eigenvalues of $A$.
-%%	By using the \emph{singular value decomposition} we can write this empirical matrix:
-%%	\begin{equation}
-%%		\Sigma_X = \cfrac{1}{N-1}XX^T = \cfrac{1}{N-1}(UDV^T)(UDV^T)^T = V\left(\cfrac{1}{N-1}D^2\right) V^T
-%%	\end{equation}
-%%	
-%%	Additionaly as the covariance matrix $\Sigma_X$ is a real non-negative symmetric matrix we can use an \emph{eigenvalue decomposition}:
-%%	\begin{equation}
-%%		\Sigma_X = Q\Lambda Q^T
-%%	\end{equation}
-%%	
-%%	It is clear that the right singular vectors in equation ... are the eigenvectors in ...p: $V = Q$, and the diagonal matrix $\Lambda = \text{diag}(\lambda_1, \ldots, \lambda_p)$ is $\left(\frac{1}{N-1}D^2\right)$, i.e componentwise:
-%%	\begin{equation}
-%%		\lambda_j = \cfrac{d_j}{N − 1}
-%%	\end{equation}
-%%	
-%%	That means that the new coordinates $V$ are given by the eigenvectors of the covariance matrix.
-%%	Now finally the empirical covariance matrix of the principal components $Z$ can be rewritten
-%%	\begin{equation}
-%%		\Sigma_Z = \cfrac{1}{N-1}Z^T Z = \cfrac{1}{N-1}(XV)^T(XV)=V^T\Sigma_X V = \cfrac{D^2}{N-1} = \Lambda
-%%	\end{equation}
-%%\end{itemize}
-%%
-%%To summarize:
-%%\begin{enumerate}
-%%	\item The principal components $Z_1, \ldots, Z_p$ are orthogonal (i.e. $Z^{-1}=Z^T$), and the variances of $Z_1,\ldots, Z_p$ are the eigenvalues of the covariance matrix of $X$ in descending order.
-%%	\item With the representation of the covariance of the data using SVD, we can apply PCA to reduce the dimensionality of the data.
-%%	
-%%	Once we have the principal components and the loading matrix, the representation of $X$ becomes
-%%	\begin{equation}
-%%		X = ZV^{−1} = ZV^T = \sum_{j=1}^{p}Z_j v_j^T
-%%	\end{equation}
-%%	
-%%	Thus an approximating sequence of feature variables $X$ is obtained. In section (2.5) we have shown that $\hat{X}(k)$ including the first $k$ principal components of $X$:
-%%	\begin{equation}
-%%		\hat{X}^{(k)} = \sum_{j=1}^{k}Z_j v_j^T
-%%	\end{equation}
-%%	covers such proportion
-%%	\begin{equation}
-%%		\cfrac{\sum_{j=1}^k \lambda_j}{\sum_{j=1}^p \lambda_j}
-%%\end{equation}
-%%of the variance of $X$. From the equation above, it is obvious that if we take $k = p$, we recover all the original data of $X$.
-%%
-%%Assuming, therefore, that the information is incorporated in the covariance, given the data set $X$ and the information preservation criterion in the form of the percentage of variance explained, we can find an approximation of $X$ with reduced dimensionality.
-%%The residual from the approximation using $k$ PCs is 
-%%\begin{equation}
-%%R^{(k)} = X − \tilde{X}˜^{(k)} = \sum_{j=k+1}^{p}Z_j v^T_j
-%%\end{equation}
-
 
 \section{Principal Components Analysis}
 \label{sec:pca}
@@ -1334,68 +711,15 @@ In the previous example and in the following the \texttt{PCAWrapper} class of th
 This is a simple wrapper which implements the PCA algorithm and has few utility methods to get relevant information, e.g. extract components and project the data along the new axis.
 \end{finmarkets}
 
-\begin{ipython}
-import pandas as pd, numpy as np
-
-class PCAWrapper:
-  def __init__(self, X, normalize=True):
-    if not isinstance(X, pd.DataFrame):
-      raise ValueError("X must be a pandas DataFrame.")
-    self.X = X
-    self.n_features = X.shape[1]
-    self.index = X.index
-    self.X_std = (X - np.mean(X, axis=0))
-    if normalize:
-      self.X_std /= np.std(self.X_std, axis=0)
-
-  def fit(self):
-    cov_mat = np.cov(self.X_std.T)
-    eig_vals, eig_vecs = np.linalg.eig(cov_mat)
-
-    max_abs_idx = np.argmax(np.abs(eig_vecs), axis=0)
-    signs = np.sign(eig_vecs[max_abs_idx, range(eig_vecs.shape[0])])
-    eig_vecs = eig_vecs*signs[np.newaxis,:]
-    eig_vecs = eig_vecs.T
-
-    eig_pairs = [(np.abs(eig_vals[i]), eig_vecs[i,:]) for i in range(len(eig_vals))]
-    eig_pairs.sort(key=lambda x: x[0], reverse=True)
-    self.eig_vals_sorted = np.array([x[0] for x in eig_pairs])
-    self.eig_vecs_sorted = np.array([x[1] for x in eig_pairs])
-
-  def to_df_pc(self, data, is_loading=False):
-    cols = ['PC' + str(i) for i in np.arange(1, data.shape[1] + 1)]
-    idx = self.X.columns if is_loading else self.index
-    return pd.DataFrame(data, columns=cols, index=idx)
-
-  def components(self, n_pc=None):
-    n_pc = self.X.shape[1] if n_pc is None else n_pc
-    cps = self.eig_vecs_sorted[:n_pc, :]
-    cps = self.to_df_pc(cps.T, is_loading=True)
-    return cps
-
-  def explained_var(self):
-    return self.eig_vals_sorted/np.sum(self.eig_vals_sorted)
-
-  def transform(self, n_pc=None):
-    n_pc = self.X.shape[1] if n_pc is None else n_pc
-    return self.X_std.dot(self.components(n_pc))
-
-  def project(self, n_pc=None):
-    n_pc = self.X.shape[1] if n_pc is None else n_pc
-    return self.transform().iloc[:, 0:n_pc].dot(self.components().T.iloc[0:n_pc, :])
-
-  def residuals(self, n_pc=None):
-    residuals = self.X - self.project(n_pc)
-    return residuals
-\end{ipython}
+\pythoncode{code/linear_models_3.py}
 
 \subsection{Term Structure Analysis Using PCA}
 
 A bond’s yield is the interest income received by an investor from investing in debt securities. Bonds with a fixed coupon have an interest rate that accrues on the face value.
 Current yield is the ratio of annual coupon payments to the current market value of the bond:
-$$
+\begin{equation}
 \text{Current Yield} = \cfrac{\text{Annual Coupon Payment}}{\text{Bond Price}}
-$$
+\end{equation}
 
 The yield curve represents the time structure of interest rates and shows the relationship between the yields of financial instruments and their maturity.
 
@@ -1416,12 +740,12 @@ Let $X$ be the yield curve consisting of bonds of $p$ maturities with $N$ observ
 
 The $k$ factor model for the yield curve $X$ can then be presented in the following way
 
-$$
+\begin{equation}
 X = \mu_ X + Zf + e
-$$
+\end{equation}
+\noindent
 where $\mu_X = (\mu_1,\ldots, \mu_p)$ is the mean vector of $X$, $e = (e_1,\ldots, e_N )$ is the residuals and
-
-$$
+\begin{equation}
 Z =
 \begin{bmatrix}
 	z_{1,1} & z_{1,2} & \cdots & z_{1,k} \\
@@ -1429,9 +753,9 @@ Z =
 	\vdots & \vdots & \ddots & \vdots \\
 	z_{N,1} & z_{N,2} & \cdots & z_{N,k} \\
 \end{bmatrix}
-$$
+\end{equation}
 consist of $k$ factors,
-$$
+\begin{equation}
 f =
 \begin{bmatrix}
 	f_{1,1} & f_{1,2} & \cdots & f_{1,p} \\
@@ -1439,35 +763,18 @@ f =
 	\vdots & \vdots & \ddots & \vdots \\
 	f_{k,1} & f_{k,2} & \cdots & f_{k,p} \\
 \end{bmatrix}
-$$
+\end{equation}
 the factor loading matrix; i.e., the observation $i$ of feature $j$ is
 
-$$
+\begin{equation}
 x_{i,j} = \mu_j + \sum_{l=1}^k z_{i,l}f_{l,j} + e_{i,j}
-$$
+\end{equation}
 
 The difference with the previous studies is that instead of identifying external factors, we will focus on self-contained independent drivers, i.e., factors related to the curve itself, such as slope and curvature.
 
 Through this approach, we will recognize the key structure of the yield curve dynamics and will be able to answer how 2Y, 10Y, and 30Y bond yields move together. Moreover, PCA will help us to naturally reduce the dimensionality of the factors based on the coefficient of explained variance.
 
 \subsection{PCA on Term Structure}
-
-\begin{ipython}
-import pandas as pd
-
-df = pd.read_csv("DGS_2017_2018.csv", index_col="date")
-
-print (df.head())
-\end{ipython}
-\begin{ioutput}
-              DGS1    DGS2    DGS5    DGS7   DGS10   DGS20   DGS30
-date                                                              
-2017-01-03  0.0089  0.0122  0.0194  0.0226  0.0245  0.0278  0.0304
-2017-01-04  0.0087  0.0124  0.0194  0.0226  0.0246  0.0278  0.0305
-2017-01-05  0.0083  0.0117  0.0186  0.0218  0.0237  0.0269  0.0296
-2017-01-06  0.0085  0.0122  0.0192  0.0223  0.0242  0.0273  0.0300
-2017-01-09  0.0082  0.0121  0.0189  0.0218  0.0238  0.0269  0.029
-\end{ioutput}
 
 The yield/rate time series of different maturities are shown in the top plot of Fig.~\ref{fig:yield_rate_ts}. It is clear that all curves are moving in the same direction, which indicates the idea that some common factors drive the yield dynamic.
 
@@ -1490,15 +797,7 @@ For example, from 2018-05-17 (orange) to 2018-12-10 (pink), the slope of the cur
 
 Let's know apply PCA on the matrix $X$ representing the de-meaned daily yield change of $p$ maturities on $N$ days.
 
-\begin{ipython}
-from finmarkets.ml.pca import PCAWrapper
-
-pca = PCAWrapper(df, normalize=False)
-pca.fit()
-
-explained_var = pca.explained_var()
-cum_explained_var = np.cumsum(explained_var)
-\end{ipython}
+\pythoncode{code/linear_models_4.py}
 
 Figure~\ref{fig:pca_explained_variance} indicates that almost 96\% of the variation in the data is described by the first principal component, and combined with the second and third components, it is almost 100\%, which means that all of the dynamics of the yield curve can be described by the first three components.
 
@@ -1511,10 +810,6 @@ Figure~\ref{fig:pca_explained_variance} indicates that almost 96\% of the variat
 
 The matrix made of the components values is called the \emph{loading matrix} and represents $X$ in the new coordinates.
 
-\begin{ipython}
-cps = pca.components()
-print (cps)
-\end{ipython}
 \begin{ioutput}
             PC1       PC2       PC3       PC4       PC5       PC6       PC7
 DGS1   0.553153  0.521945  0.406891 -0.503280  0.014236 -0.049874 -0.007363

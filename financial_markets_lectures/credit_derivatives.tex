@@ -4,6 +4,78 @@ A credit derivative is a financial contract that allows parties to minimize thei
 
 Credit default swaps have been already introduced in Chapter~\ref{sec:credit-default-swaps}, here two more kind of credit derivatives will be presented: Basket Default Swaps and Collateralized Debt Obligations (CDO).
 
+\section{Binomial Distribution}
+\label{binomial-distribution}
+
+In statistics, the binomial distribution is a discrete probability of independent events, where each event has exactly two possible outcomes.
+
+For example, if we toss a coin 10 times and we are interested in how many times it will land on heads, the probability of it lending one, two, three, up to 10 head in a row will form a the binomial distribution. 
+
+When we're interested in a specific outcome, let's say 3 heads out of 10 tosses, we call it binomial probability, which is a probability of exactly \(k\) successes on \(n\) repeated trials.
+
+Following the characteristics of this distribution:
+
+\begin{itemize}
+\tightlist
+\item
+  the number of observations or trials is fixed;
+\item
+  each observation or trial is independent. Like in the coin toss, the previous toss doesn't affect the following;
+\item
+  the probability of success is exactly the same from one trial to another. Each coin toss has 50\% chances to fall in heads or tails.
+\end{itemize}
+
+The probability mass function in this case describes the probability of an outcome, and for the binomial distribution is
+
+\begin{equation} \mathrm{PMF}_{\mathrm{binomial}} = \cfrac{n!}{k!(n-k)!}p^k (1-p)^{n-k}
+\label{eq:binomial_pmf}
+\end{equation}
+where \(n\) is the number of observations, \(k\) the desired outcome, \(p\) the probability of an outcome. To have a better understanding of how this formula works let's take a look at two examples.
+
+\subsection{A Fair Coin Flip}\label{a-fair-coin-flip}
+
+If we flip a fair coin 100 times, what is the probability of getting exactly 50 heads ? 
+We might think that since we have equal chances
+of getting heads or tails, the answer would be 50\% probability. On the other hand, what are the odds that we will get 49 heads, or 51 ? Almost 50\% chance too, but what exactly ? 
+
+Let's first answer the first question and then try it for all the possible outcomes to see how our probabilities are distributed. The parameters of the problem are the following: \(n = 100\), \(k = 50\), \(p = 0.5\). Plugging then numbers into Eq.~\ref{eq:binomial_pmf} we get
+
+\begin{equation*}
+P(50) = \cfrac{100!}{50!(100 - 50)!}0.5^{50}(1-0.5)^{(100-50)} \approx 8\%
+\end{equation*}
+
+So there is about an 8\% chance of getting exactly 50 heads on 100 coin tosses. The code below shows how to get this number in \texttt{python}. The probability distribution is shown in Fig.~\ref{fig:binomial_coin_flip}.
+
+\pythoncode{code/credit_derivatives_1.py}
+
+\begin{figure}[ht]
+\centering
+    \includegraphics[width=0.7\textwidth]{figures/binomial_2_0.png}
+    \caption{Binomial distribution relative to 100 coin flips.}
+    \label{fig:binomial_coin_flip}
+\end{figure}
+    
+\subsection{Success of Marketing Campaign}
+\label{success-of-marketing-campaign}
+
+In 2014, 8.5\% of adults aged 18 years and older had diabetes. Let's go back to 2014 and pretend we're working for the company that developed a drug for treating diabetes. Our job is to make phone calls to find potential clients. The only statistic we know is that 8.5\% of adults in the US have diabetes. What is the probability that out of 50 calls at least 5 customers have diabetes ? 
+
+Once again let's plug in the numbers into the formula: $n = 50, k > 5, p = 0.085$
+
+\begin{equation*}
+\sum_{k=5}^{n}P(k) = \sum_{k=5}^{n}\Big(\cfrac{50!}{k!(50 - k)!}0.085^{k}(1-0.085)^{(50-k)}\Big) \approx 42.2\%
+\end{equation*}
+there is a 42.2\% chance that out of 50 calls we will find at least five customers with diabetes. Again in \texttt{python} (this time instead of summing PMFs we exploit the binomial CDF, see Fig.~\ref{fig:binomial_cdf})
+
+\pythoncode{code/credit_derivatives_2.py}
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/binomial_5_0.png}
+\caption{Binomial distribution of 50 calls with ($p=0.085$), in red the integrated probability of finding 5 or more successes.}
+\label{fig:binomial_cdf}
+\end{figure}
+
 \section{Basket Default Swaps}
 \label{basket-default-swaps}
 
@@ -13,19 +85,7 @@ This kind of contracts are very similar to normal CDS except for the protection 
 
 For example, in the latter, the seller does not make any payment to the protection buyer for the first $n-1$ defaulted entities, and makes it only for the $n^{th}$. Once there has been this payment the swap terminates.
 
-The cost of protection in nth-to-default basket is obviously dependent on default correlations. Suppose that a basket of 100 reference entities is used to define a 5-year nth-to-default swap and that each reference entity has a 2\% probability of defaulting during the next 5 years. When the default correlation between the reference entities is zero (i.e. they are uncorrelated), the binomial distribution (see Appendix~\ref{binomial-distribution}) shows that the probability of one or more defaults during 5 years is 86.74\% and the probability of ten or more defaults is 0.0034\%.
-
-\begin{ipython}
-from scipy.stats import binom
-
-b = binom(100, 0.02)
-print(f"P(>=1) : {1 - b.cdf(0)}")
-print(f"P(>=10): {1 - b.cdf(9)}")
-\end{ipython}
-\begin{ioutput}
-P(>=1) : 0.8673804441052471
-P(>=10): 3.441680604299169e-05
-\end{ioutput}
+The cost of protection in nth-to-default basket is obviously dependent on default correlations. Suppose that a basket of 100 reference entities is used to define a 5-year nth-to-default swap and that each reference entity has a 2\% probability of defaulting during the next 5 years. When the default correlation between the reference entities is zero (i.e. they are uncorrelated), the binomial distribution (see Section~\ref{binomial-distribution}) shows that the probability of one or more defaults during 5 years is 86.74\% and the probability of ten or more defaults is 0.0034\%.
 
 A first-to-default is therefore quite valuable whereas a tenth-to-default swap is worth almost nothing.
 
@@ -45,75 +105,14 @@ In the following we develop a \texttt{BasketDefaultSwaps} class that is able to 
 The logic of the class relies on computing the contract NPV of the contract using a provided discount curve and the appropriate credit curve determined as described above.
 \end{finmarkets}
 
-\begin{ipython}
-import numpy as np
-from finmarkets import CreditCurve, CreditDefaultSwap
-
-class BasketDefaultSwaps:
-    def __init__(self, nominal, N, start_date, maturity, spread, 
-                 tenor="3m", recovery=0.4):
-        self.cds = CreditDefaultSwap(nominal, start_date, maturity,
-                                     spread, tenor, recovery)
-        self.N = N
-        self.cc = None
-
-    def credit_curve(self, n_defaults, copula_func, default_prob, obs_date, 
-                     pillars, simulations=100000):
-        copula_sample = copula_func.sample(simulations)
-        default_times = default_prob.ppf(copula_sample)
-
-        Ts = [(p-obs_date).days/365 for p in pillars]
-        ndps = []
-        for t in Ts:
-            entity_defs_per_sim = np.sum(default_times <= t, axis=1)
-            tot_defs = np.sum(entity_defs_per_sim >= n_defaults)
-            ndps.append(1 - tot_defs/simulations)
-        self.cc = CreditCurve(obs_date, pillars, ndps)
-
-    def npv(self, dc):
-        if self.cc is None:
-            print ("Need to call credit_curve method first !")
-            return None
-        return self.cds.npv(dc, self.cc)
-
-    def breakeven(self, dc):
-        if self.cc is None:
-            print ("Need to call credit_curve method first !")
-            return None
-        return self.cds.breakevenRate(dc, self.cc)
-\end{ipython}
+\pythoncode{code/credit_derivatives_3.py}
 
 Consider a 2-years 3rd-to-default basket of 10 reference entities, with a spread of 1\%, in the situation where the Gaussian copula correlation varies between is 0.3, the expected recovery rate, $R$, is $40\%$, and the term structure of interest rates is assumed to be flat at 5\%. The default probabilities $Q(t)$ for the ten entities are generated by Poisson processes, see Sec.~\ref{sec:poisson_process}, with constant default intensities, $\lambda_i=0.06$, such that $Q(t) = 1 - e^{-\lambda t}$
 
-\begin{ipython}
-import numpy as np
-from finmarkets import DiscountCurve, CreditCurve, PossionProcess
-from scipy.stats import multivariate_normal, norm
-from datetime import date
-from dateutil.relativedelta import relativedelta
-
-n_cds = 10
-rho = 0.3
-cov = np.ones(shape=(n_cds, n_cds))*rho
-np.fill_diagonal(cov, 1)
-copula = GaussianCopula(n_cds, cov)
-poisson = PoissonProcess(l=0.06)
-
-obs_date = date.today()
-start_date = obs_date
-pillar_dates = [obs_date + relativedelta(years=i) for i in range(6)]
-dfs = [1/(1+0.05)**i for i in range(1, 6)]
-dc = DiscountCurve(obs_date, pillar_dates, dfs)
-
-np.random.seed(1)
-basket = BasketDefaultSwaps(1, n_cds, start_date, "2y", 0.01)
-basket.credit_curve(n_defaults=3, copula_func=copula, default_prob=poisson, 
-                    obs_date=obs_date, pillars=pillar_dates)
-print (f"NPV: {basket.npv(dc):3f} EUR")
-\end{ipython}
-\begin{ipython}
-NPV: 0.0708 EUR
-\end{ipython}
+\pythoncode{code/credit_derivatives_4.py}
+\begin{ioutput}
+-0.0129430524567293
+\end{ioutput}
 
 Using the \texttt{BasketDefaultSwaps} class it is possible to check how the value (and the spread) of such BDS varies as a function of the correlation $\rho$ and the number of defaults (\texttt{n\_defaults}).
 
@@ -153,61 +152,11 @@ P_{\mathrm{def}}(l(t|m) \ge j) = \sum_{k=j}^{N}\left[  \cfrac{N!}{k!(N-k)!}Q^{\t
 
 To perform the integrals needed by the basket default swap valuation it can be used the method described in Section~\ref{sec:integration}.
 
-\begin{ipython}
-from finmarkets import CreditCurve, CreditDefaultSwap
-from scipy.stats import norm, binom
-from scipy.integrate import quad
-import numpy as np
-
-class BasketDefaultSwapsOneFactor:
-    def __init__(self, nominal, N, rho, start_date, maturity,
-                 spread, tenor="3m", recovery=0.4):
-        self.N = N
-        self.rho = rho
-        self.cds = CreditDefaultSwap(nominal, start_date, maturity,
-                                     spread, tenor, recovery)
-
-    def one_factor_model(self, M, f, obs_date,
-                         Q_dates, Q, dc, ndefaults):
-        P = norm.cdf((norm.ppf(Q) - np.sqrt(self.rho)*M)/np.sqrt(1-self.rho))
-        b = binom(self.N, P)
-        S = 1 - (1 - b.cdf(ndefaults-1))
-        cc = CreditCurve(obs_date, Q_dates, S)
-        return f(dc, cc)*norm.pdf(M)
-            
-    def breakeven(self, obs_date, Q_dates, Q, dc, ndefaults):
-        s = quad(self.one_factor_model, -np.inf, np.inf, 
-                 args=(self.cds.breakevenRate, Q_dates, Q, dc, ndefaults))
-        return s[0]
-    
-    def npv(self, obs_date, Q_dates, Q, dc, ndefaults):
-        s = quad(self.one_factor_model, -np.inf, np.inf, 
-                 args=(self.cds.npv, Q_dates, Q, dc, ndefaults))
-        return s[0]
-\end{ipython}
+\pythoncode{code/credit_derivatives_5.py}
 
 Let's repeat a similar scan of the BDS value as a function of the correlation $\rho$ and the number of defaults as performed above. The parameters of the BDS remain unchanged.
 
-\begin{ipython}
-from finmarkets import DiscountCurve
-from datetime import date
-from dateutil.relativedelta import relativedelta
-import numpy as np
-
-n_cds = 10
-l = 0.06
-rho = 0.3
-
-obs_date_date = date.today()
-start_date = obs_date
-pillar_dates = [obs_date + relativedelta(years=i) for i in range(6)]
-dfs = [1/(1+0.05)**i for i in range(1, 6)]
-dc = DiscountCurve(obs_date, pillar_dates, dfs)
-Q = [1-np.exp(-(l*t)) for t in range(1, 6)]
-
-basket = BasketDefaultSwapsOneFactor(1, n_cds, rho, obs_date, 0.01, "2y")
-print(basket.npv(pillar_dates, Q, dc, 3))
-\end{ipython}
+\pythoncode{code/credit_derivatives_6.py}
 \begin{ioutput}
 0.01791086281290842
 \end{ioutput}
@@ -221,7 +170,8 @@ print(basket.npv(pillar_dates, Q, dc, 3))
 
 Figure~\ref{fig:bds_value_one_factor} shows that the results are close to what obtained with the previous model. It has to be noticed though that the integration performed here is much slower than the simulation with Monte Carlo sampling.
 
-\section{Collateralized Debt Obligation}\label{collateralized-debt-obligation}
+\section{Collateralized Debt Obligation}
+\label{collateralized-debt-obligation}
 
 A Collateralized Debt Obligation (CDO) is a credit derivative where the issuer gather risky assets and repackage them into discrete classes, called \emph{tranches}, which are defined on the level of credit risk assumed by the investor. These tranches of securities become the final investment product.
 
@@ -287,45 +237,13 @@ Each probability can be calculated by integrating the above with respect to $M$
 \mathbb{E}_{\mathrm{tranche}} = \int_{-\infty}^{\infty}{\mathbb{E}_{\mathrm{tranche}}(l, \mathcal{Q}_M) f_M(m)dm}
 \end{equation}
 
-Let's see the corresponding \texttt{python} implementation: first we import the necessary modules and define the needed constants.
+Let's see the corresponding \texttt{python} implementation.
 
-\begin{ipython}
-from scipy.stats import binom, norm
-from scipy.integrate import quad
-import numpy as np
+\pythoncode{code/credit_derivatives_7.py}
 
-N = 125
-C = 1
-R = 0
-q = 0.02
-tranches = [[1,3],[4, 6],[7,9]]
-\end{ipython}
-
-Then we define a function \texttt{p} which implements the expected losses for each tranche according to Eq.~\ref{eq:def_prob_ex_cdo_1}.
+We define a function \texttt{p} which implements the expected losses for each tranche according to Eq.~\ref{eq:def_prob_ex_cdo_1}.
 The function depends on the parameter \texttt{M}, and takes as inputs the correlation \texttt{rho} and the tranche attach-detach limits.
-	
-\begin{ipython}
-def p(M, rho, lims):
-    qM = norm.cdf((norm.ppf(q)-np.sqrt(rho)*M)/(np.sqrt(1-rho)))
-    pN = binom(N, qM)
-    loss = 3*(pN.cdf(N) - pN.cdf(lims[1]-1))
-    for i in range(lims[0], lims[1]):
-        index = i-lims[0]+1
-        loss += index*pN.pmf(i)
-    return norm.pdf(M)*loss
-\end{ipython}
-
 Finally we loop over a range of possible values for the correlation on each tranche to draw the plot of the expected losses vs correlation, shown in Fig.~\ref{fig:losses_rho}.
-
-\begin{ipython}
-res = [[],[],[]]
-for i in range(len(tranches)):
-    for rho in np.arange(0, 1.05, 0.05):
-        if rho == 1.0:
-            rho = 0.99
-        v = quad(p, -np.inf, np.inf, args=(rho, tranches[i]))
-        res[i].append(v[0])
-\end{ipython}
 
 Some considerations can be done from these results. First of all, as expected, the equity tranche is the riskier, producing the highest level of loss. 
 
@@ -349,21 +267,7 @@ When considering all the tranches covering the entire number of names, the last 
 \begin{attention}
 As noticed at the end of Section~\ref{standard-market-model}, in case the entities of the reference portfolio haven't the same default probabilities it is possible to determine Eq.~\ref{eq:def_prob_ex_cdo_1} numerically with an iterative procedure. The next snippet of code shows an example where ten names have different probabilities.
 
-\begin{attpython}
-N=10
-# probabilities of default of the each name
-q = [0.01, 0.02, 0.15, 0.22, 0.03, 0.01, 0.024, 0.008, 0.015, 0.04]
-
-# p[k] probability of k defaults
-p = [0 for _ in range(0, N+1)]
-p[0] = (1-q[0])
-p[1] = q[0]
-for i in range(2, N+1):
-    for j in range(1, i+1):
-        p[j] = p[j-1]*q[i-1] + p[j]*(1-q[i-1])
-    p[0] = p[0]*(1-q[i-1])
-print (p)
-\end{attpython}
+\pythoncodenon{code/credit_derivatives_8.py}
 \begin{ioutput}
 [0.5655235318063276, 0.350403844356834, 0.11955743831716371,
  0.0330669128164737, 0.007898678014359, 0.00081191731818153,
@@ -435,84 +339,11 @@ Equation~\ref{eq:cdo_fair_value} defines the CDO fair value, but can also be use
 
 As a last consideration we have to notice that all equations shown previously have been derived under the assumptions of the same notional and recovery rate for each entity in the portfolio. Nonetheless their generalization to different notional and recovery rate is pretty straightforward.
  
-%Each tranche has an attachment percentage and a detachment
-%percentage. When the cumulative percentage loss of the portfolio reaches
-%the attachment percentage, investors in the tranche start to lose their
-%principal, and when the cumulative percentage loss of principal reaches
-%the detachment percentage, the investors in the tranche lose all their
-%principal and no further loss can occur to them.
-%
-%A common analogy compares the cash flow from the CDO's portfolio of securities (say mortgage payments from mortgage-backed bonds) to water flowing into cups of the investors where senior tranches were filled first and overflowing cash flowed to junior tranches, then equity tranches. If a large portion of the mortgages enter default, there is insufficient cash flow to fill all these cups and equity tranche investors face the losses first.
-
 \begin{finmarkets}
 Clearly this class too has to go into the \texttt{finmarkets} module. The following code implements a \texttt{CollDebtObligation} class.
 \end{finmarkets}
 
-\begin{ipython}
-import numpy as np
-from finmarkets import DiscountCurve, CreditCurve, generate_dates
-from scipy.integrate import quad
-from scipy.stats import norm, binom
-
-class CollDebtObligation:
-    def __init__(self, nominal, N, tranches, rho, cc,
-                 start_date, spreads, maturity, tenor="3m", recovery=0.4):
-        self.nominal = nominal
-        self.N = N
-        self.tranches = tranches
-        self.payment_dates = generate_dates(start_date, maturity, tenor)
-        self.spreads = spreads
-        self.rho = rho
-        self.recovery = recovery
-        self.cc = cc
-
-    def one_factor_model(self, M, Q, l, L, U):
-        P = norm.cdf((norm.ppf(Q) - np.sqrt(self.rho) * M) / (np.sqrt(1 - self.rho)))
-        b = binom(self.N, P)
-        return b.pmf(l) * norm.pdf(M) * max(min(l/self.N *
-               self.nominal * (1 - self.recovery), U) - L, 0)
-
-    def expected_tranche_loss(self, d, L, U):
-        Q = 1 - self.cc.ndp(d)
-        v = 0 
-        for l in range(self.N+1):
-            i = quad(self.one_factor_model, -np.inf, np.inf,
-                args=(Q, l, L, U))[0]
-            v += i
-        return v
-
-    def npv_premium(self, tranche, dc):
-        L = self.tranches[tranche][0] * self.nominal
-        U = self.tranches[tranche][1] * self.nominal
-        v = 0
-        for i in range(1, len(self.payment_dates)):
-            ds = self.payment_dates[i - 1]
-            de = self.payment_dates[i]
-            D = dc.df(de)
-            ETL = self.expected_tranche_loss(ds, L, U)
-            v += D * (de - ds).days / 360 * max((U - L) - ETL, 0)
-        return v * self.spreads[tranche]
-
-    def npv_default(self, tranche, dc):
-        U = self.tranches[tranche][1] * self.nominal
-        L = self.tranches[tranche][0] * self.nominal
-        v = 0
-        for i in range(1, len(self.payment_dates)):
-            ds = self.payment_dates[i - 1]
-            de = self.payment_dates[i]
-            ETL1 = self.expected_tranche_loss(ds, L, U)
-            ETL2 = self.expected_tranche_loss(de, L, U)
-            v += dc.df(de) * (ETL2 - ETL1)
-        return v
-
-    def npv(self, tranche, dc):
-        return self.npv_default(tranche, dc) - self.npv_premium(tranche, dc)
-
-    def fair_value(self, tranche, dc):
-        num = self.npv_default(tranche, dc)
-        den = self.npv_premium(tranche, dc) / self.spreads[tranche]
-        return num / den
-\end{ipython}
+\pythoncode{code/credit_derivatives_9.py}
 
 Let's test the class with a CDO with 1 year maturity and a reference portfolio of 125 names. Each of them have the same default probabilities, defined through a credit curve (\texttt{cc}) and the correlation is set to 0.3. The risk free rate is flat at 5\%. The tenor has been chosen to 12 months mainly for performance reasons since the computation of the expected losses implies the integration in Equations~\ref{eq:tl} and \ref{eq:etl}, for each name, and for each payment date and this can be quite time consuming.
 Tranches and premiums are defined as follows:
@@ -525,30 +356,8 @@ Tranches and premiums are defined as follows:
 
 In the following example we are going to evaluate the fair value of each tranche of the contract.
 
-\begin{ipython}
-from finmarkets import DiscountCurve, CreditCurve
-from datetime import date
-from dateutil.relativedelta import relativedelta
+\pythoncode{code/credit_derivatives_10.py}
 
-pillar_dates = []
-df = []
-obs_date = date.today()
-start_date = obs_date
-for i in range(1, 2):
-    pillar_dates.append(obs_date + relativedelta(years=i))
-    df.append(1 / (1 + 0.05) ** i)
-dc = DiscountCurve(obs_date, pillar_dates, df)
-cc = CreditCurve(obs_date, 
-                 [obs_date + relativedelta(years=i) for i in range(1, 5)],
-                 [0.99, 0.97, 0.95, 0.93])
-tranches = [[0.0, 0.03], [0.03, 0.06], [0.06, 0.09], [0.09, 1.0]]
-spreads = [0.15, 0.07, 0.03, 0.01]
-cdo = CollDebtObligation(100e6, 125, tranches, 0.3, cc,
-                         start_date, spreads, "1y", "12m")
-          
-for i in range(len(tranches)):
-    print (f"Tranche {i} ({tranches[i]}): {cdo.fair_value(i, dc):.5f}")
-\end{ipython}
 \begin{ioutput}
 Tranche 0 ([0.0, 0.03]): 0.15942
 Tranche 1 ([0.03, 0.06]): 0.02505
