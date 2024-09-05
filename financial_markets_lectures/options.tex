@@ -172,7 +172,7 @@ and similar evaluation of the integral. Finally the option price
 \begin{equation}
 V(S,t) = SN(d_1)-Ke^{-r(T-t)}N(d_2)
 \end{equation}
-where $N$ is the distribution function of a normalized normal distribution and  $d_1=\frac{\textrm{log}(\frac{S}{K}+\left(r+\frac{\sigma^2}{2}\right)(T-t)}{\sigma\sqrt{T-t}},\quad d_2=d_1-\sigma\sqrt{T-t}$.
+where $N$ is the distribution function of a normalized normal distribution and  $d_1=\frac{\textrm{log}(\frac{S}{K}+\left(r+\frac{\sigma^2}{2}\right)(T-t)}{\sigma\sqrt{T-t}}$, $d_2=d_1-\sigma\sqrt{T-t}$.
 
 Figure~\ref{fig:call_option} shows the option price as a function of the stock price for various values of $t$.
 
@@ -254,7 +254,7 @@ Since the path of the stock is defined as a geometric Brownian motion with rando
 
 \subsubsection{Control Variate Variance Reduction Method}
 
-Say desired simulation quantity is $\mathbb{E}[X]$, and there is another known random variable $Y$ with known analytical expectation $\mu_Y = \mathbb{E}[Y]$. For any constant $c$ one can see that $Z = X + c\cdot(Y -\mu_Y)$ is an unbiased estimator of $X$, by linearity of expectation. Also it can be shown that $\text{Var}(Z) = \text{Var}(X) + c\cdot 2 \text{Var}(Y) + 2c\cdot\text{Cov}(X; Y)$ is minimized when $c = -\frac{\text{Cov}(X;Y)^2}{\text{Var}(Y)}$. 
+Say desired simulation quantity is $\mathbb{E}[X]$, and there is another known random variable $Y$ with known analytical expectation $\mu_Y = \mathbb{E}[Y]$. For any constant $c$ one can see that $Z = X + c\cdot(Y -\mu_Y)$ is an unbiased estimator of $X$, by linearity of expectation. Also it can be shown that $\text{Var}(Z) = \text{Var}(X) + 2c\cdot \text{Var}(Y) + 2c\cdot\text{Cov}(X; Y)$ is minimized when $c = -\frac{\text{Cov}(X;Y)^2}{\text{Var}(Y)}$. 
 $Y$ is called a \textbf{control variate} of $X$. 
 
 To reduce variance, $Y$ can be chosen as much correlated as possible with $X$. In practice, we can select a $Y$ which is approximately equal to $X$, easy to simulate and whose expectation is known. 
@@ -267,99 +267,7 @@ In practice we are going to simulate a set of paths for the underlying and compu
 The following class \texttt{AsianOption} implements all the methods described above besides the analytical pricing formula of the Geometric average Asian option.
 \end{finmarkets}
 
-\begin{ipython}
-import numpy as np
-
-from finmarkets import OptionType
-from scipy.stats.mstats import gmean
-from scipy.stats import norm
-
-class AsianOption:
-    def __init__(self, S0, K, r, sigma, ttm, otype=OptionType.Call):
-        self.S0 = S0
-        self.K = K
-        if type(ttm) == list:
-            self.ttm = np.array([t for t in ttm])
-        else:
-            self.ttm = ttm
-        self.sigma = sigma
-        self.r = r
-        self.otype = otype
-
-    def geometric_price(self, timesteps=252):
-        adj_sigma = self.sigma*np.sqrt((2*timesteps+1)/(6*(timesteps+1)))
-        rho = 0.5*(self.r-(self.sigma**2)*0.5 + adj_sigma**2)
-        d1 = (np.log(self.S0/self.K)+(rho+0.5*adj_sigma**2)*self.ttm)/\
-             (adj_sigma*np.sqrt(self.ttm))
-        d2 = (np.log(self.S0/self.K)+(rho-0.5*adj_sigma**2)*self.ttm)/\
-             (adj_sigma*np.sqrt(self.ttm))
-        if self.otype == OptionType.Call:
-            return np.exp(-self.r*self.ttm)*(self.S0*np.exp(rho*self.ttm)*\
-            norm.cdf(d1)-self.K*norm.cdf(d2))
-        else:
-            return np.exp(-self.r*self.ttm)*(self.K*norm.cdf(-d2)-self.S0*\
-                   np.exp(rho*self.ttm)*norm.cdf(-d1))
-
-    def path(self, n, timesteps, anti=False, seed=10000):
-        np.random.seed(seed)
-        dt = self.ttm/timesteps
-  
-        S = np.zeros(shape=(timesteps, n))
-        S[0] = self.S0
-        w = norm.rvs(size=(timesteps-1)*n).reshape(((timesteps-1), n))
-        for i in range(0, timesteps-1):
-            S[i+1] = S[i] * (1 + self.r*dt  + self.sigma*np.sqrt(dt)*w[i])
-
-        if anti:
-            S1 = np.zeros(shape=(timesteps, n))
-            S1[0] = self.S0
-            w = -w
-            for i in range(0, timesteps-1):
-                S1[i+1] = S1[i] * (1 + self.r*dt  + self.sigma*np.sqrt(dt)*w[i])
-
-        if anti:
-            return S, S1
-        else:
-            return S
-
-    def aritmethic_payoff(self, S):
-        if self.otype == OptionType.Call:
-            return np.maximum(0, np.mean(S, axis=0)-self.K)
-        else:
-            return np.maximum(0, self.K - np.mean(S, axis=0))
-
-    def geometric_payoff(self, S):
-        if self.otype == OptionType.Call:
-            return np.maximum(0, gmean(S, axis=0)-self.K)
-        else:
-            return np.maximum(0, self.K-gmean(S, axis=0))
-
-    def simulate_naive(self, n, timesteps=252, seed=10000):
-        S = self.path(n, timesteps, seed=seed)
-        payoffs = np.exp(-self.r*self.ttm) * self.aritmethic_payoff(S)
-        price = np.mean(payoffs)
-        err = np.std(payoffs)/np.sqrt(n)
-        return price, err
-
-    def simulate_antithetic(self, n, timesteps=252, seed=10000):
-        S1, S2 = self.path(n, timesteps, anti=True, seed=seed)
-        S = np.exp(-self.r*self.ttm) * (self.aritmethic_payoff(S1) +\
-            self.aritmethic_payoff(S2))/2
-        price = np.mean(S)
-        err = np.std(S)/np.sqrt(n)
-        return price, err
-    
-    def simulate_control_variate(self, n, timesteps=252, seed=10000):
-        S = self.path(n, timesteps)
-        X = np.exp(-self.r*self.ttm) * self.aritmethic_payoff(S)
-        Y = np.exp(-self.r*self.ttm) * self.geometric_payoff(S)
-        c = -np.cov(X,Y)[0, 1]/np.var(Y)
-        mu = self.geometric_price(timesteps)
-        Z = X + c*(Y-mu)
-        price = np.mean(Z)
-        err = (np.std(Z)/np.sqrt(n))
-        return price, err
-\end{ipython}
+\pythoncode{code/options_1.py}
 
 \subsubsection{An Example}
 We are going to consider an Asian Option (fixed strike) with the following properties

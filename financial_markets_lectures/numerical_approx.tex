@@ -85,7 +85,8 @@ class Node:
             self.P = max(K - self.S, 0)
         
 class Tree:
-    def __init__(self, r, sigma, N, T, S0, K, iscall = True, isamerican = False):
+    def __init__(self, r, sigma, N, T, S0, K, iscall = True, 
+                 isamerican = False):
         self.iscall = iscall
         self.isamerican = isamerican
         self.S0 = S0
@@ -288,120 +289,6 @@ When discussing effectiveness of different finite difference methods, we should 
 
 More quantitative statement concerning stability will be presented in the next Section in the context of the heat equation.
 
-%\subsection{A Simple Application}
-%Imagine we are going out to launch a rocket, and let $y(t)$ be the altitude (meters from the surface) of the rocket at time $t$. We know the gravity $g=9.8$~m/s$^2$. If we want to have the rocket at $50$~m off the ground after 5 seconds after launching, what should be the velocity at launching? 
-%The ODE we need to solve is 
-%
-%\begin{equation*}
-%\cfrac{\partial^2y}{\partial t^2} = -g
-%\end{equation*}
-%
-%with the boundary conditions $y(0)=0$ and $y(5)=50$. Let’s take $n=10$, so let's make a grid with ten steps in time.
-%
-%Since the time interval is $[0,5]$ and we have chosen $n=10$, $h=0.5$, using the finite difference approximated derivatives, we have
-%
-%\begin{gather*}
-%y0=0 \\
-%y_{i−1}−2y_i+y_{i+1}=−gh^2,i=1,2,...,n−1\\
-%y_{10}=50
-%\end{gather*}
-%
-%If we use matrix notation, we will have:
-%\begin{equation*}
-%\begin{bmatrix}
-%1 & 0\\
-%1 & -2 & 1 \\
-%  &  \ddots & \ddots & \ddots & \\
-%  & &  1 & -2 & 1 \\
-%  &  &  &  & 1 
-%\end{bmatrix}
-%\begin{bmatrix}
-%y_0 \\
-%y_1 \\
-%\vdots \\
-%y_{n-1} \\
-%y_n 
-%\end{bmatrix}
-%=
-%\begin{bmatrix}
-%0\\
-%-gh^2 \\
-%\vdots \\
-%-gh^2 \\
-%50
-%\end{bmatrix}
-%\end{equation*}
-%
-%Therefore, we have 11 equations in the system, that can be solved using the method explained in Chapter~\ref{matrix-equations}.
-%
-%\begin{ipython}
-%import numpy as np
-%import matplotlib.pyplot as plt
-%
-%n = 10
-%h = (5-0) / n
-%
-%# Get A
-%A = np.zeros((n+1, n+1))
-%A[0, 0] = 1
-%A[n, n] = 1
-%for i in range(1, n):
-%    A[i, i-1] = 1
-%    A[i, i] = -2
-%    A[i, i+1] = 1
-%
-%print(A)
-%
-%# Get b
-%b = np.zeros(n+1)
-%b[1:-1] = -9.8*h**2
-%b[-1] = 50
-%print(b)
-%
-%# solve the linear equations
-%y = np.linalg.solve(A, b)
-%
-%t = np.linspace(0, 5, 11)
-%
-%plt.figure(figsize=(10,8))
-%plt.plot(t, y)
-%plt.plot(5, 50, 'ro')
-%plt.xlabel('time (s)')
-%plt.ylabel('altitude (m)')
-%plt.show()
-%\end{ipython}
-%\begin{ioutput}
-%[[ 1.  0.  0.  0.  0.  0.  0.  0.  0.  0.  0.]
-% [ 1. -2.  1.  0.  0.  0.  0.  0.  0.  0.  0.]
-% [ 0.  1. -2.  1.  0.  0.  0.  0.  0.  0.  0.]
-% [ 0.  0.  1. -2.  1.  0.  0.  0.  0.  0.  0.]
-% [ 0.  0.  0.  1. -2.  1.  0.  0.  0.  0.  0.]
-% [ 0.  0.  0.  0.  1. -2.  1.  0.  0.  0.  0.]
-% [ 0.  0.  0.  0.  0.  1. -2.  1.  0.  0.  0.]
-% [ 0.  0.  0.  0.  0.  0.  1. -2.  1.  0.  0.]
-% [ 0.  0.  0.  0.  0.  0.  0.  1. -2.  1.  0.]
-% [ 0.  0.  0.  0.  0.  0.  0.  0.  1. -2.  1.]
-% [ 0.  0.  0.  0.  0.  0.  0.  0.  0.  0.  1.]]
-%[ 0.   -2.45 -2.45 -2.45 -2.45 -2.45 -2.45 -2.45 -2.45 -2.45 50.  ]
-%\end{ioutput}
-%
-%\begin{figure}[htb]
-%	\centering
-%	\includegraphics[width=0.9\textwidth]{figures/finite_difference}
-%	\caption{Example of linear regression for the determination of $\beta$.}
-%	\label{fig:finite_difference}
-%\end{figure} 
-%
-%Now, let’s solve for $y'(0)$ in order to determine the intial velocity of the rocket. From the finite difference formula, we know that $\frac{dy}{dx}=\frac{y_{i+1}−y_{i−1}}{2h}$, which means that $y'(0)=\frac{y_1−y_{−1}}{2h}$, but we don’t know what is $y_{−1}$. Actually, we can calculate $y_{−1}$ since we know the $y$ values on each grid point. From the 2$^{nd}$ derivative finite difference formula, we know that $\frac{y_{−1}−2y_0+y_1}{h^2}=−g$, therefore, we can solve for $y_{−1}$ and then get the launching velocity. See the calculation below.
-%
-%\begin{ipython}
-%y_n1 = -9.8*h**2 + 2*y[0] - y[1]
-%(y[1] - y_n1) / (2*h)
-%\end{ipython}
-%\begin{ioutput}
-%34.5
-%\end{ioutput}
-
 \section{2D Heat Equation}
 Heat equation is a partial differential equation, defined as
 \begin{equation}
@@ -518,7 +405,8 @@ As a second example, let’s set all of the boundary conditions to 0, and then r
 ...
 # Initial condition everywhere inside the grid
 #u_initial = 0
-u_initial = np.random.uniform(low=28.5, high=55.5, size=(plate_length,plate_length))
+u_initial = np.random.uniform(low=28.5, high=55.5, 
+                              size=(plate_length,plate_length))
 
 # Change initial conditions
 #u.fill(u_initial)
@@ -883,10 +771,6 @@ Figure~\ref{fig:american_call_surface} shows the American option price surface f
 
 %\section*{Exercises}
 %\input{numerical_approx_ex_text}
-
-\begin{thebibliography}{9}
-\bibitem{bib:ode}\href{https://en.wikipedia.org/wiki/Ordinary_differential_equation}{\emph{Ordinary differential equation}}, Wikipedia [Online]
-\end{thebibliography}
 
 
 % \section{Finite Differences in Option Pricing}

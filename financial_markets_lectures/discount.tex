@@ -1,13 +1,12 @@
 \chapter{Interpolation, Discount Factors and Forward Rates}
 \label{interpolation}
 
-In this Chapter we will begin to see some \texttt{python} applications to financial calculations, in particular discount curves and forward rates. In doing so we will review a widely used mathematical tool: \emph{interpolation}.
+In this Chapter we will begin to see some \texttt{python} applications for finance, in particular we are going to deal with discount curves and forward rates. In doing so we will review a widely used mathematical tool: \emph{interpolation}.
 
 \section{Discounting}
 \label{discount-factors}
 
 The core principle of \emph{time value of money} states that a dollar today is worth more than a dollar tomorrow. This is because money has the potential to earn interest over time.
-
 The concept acknowledges that the ability to invest and grow your money today holds more value than receiving the same amount later.
 
 \emph{Discounting} is the process of determining the present value of a future cash flow. It essentially takes the future amount and adjusts it downward to reflect its current worth based on the time value of money, i.e. a chosen discount rate.
@@ -22,7 +21,7 @@ PV = N\cdot D(T) = N \cdot \cfrac{1}{(1 + r)^t}~~~~~
 \label{eq:discount_factor}
 \end{equation}
 
-The discount rate $r$ which is used in financial calculations is usually chosen to be equal to the cost of capital, i.e. risk-free rate.
+The discount rate $r$ which is used in financial calculations is usually chosen to be equal to the cost of capital, i.e. the risk-free rate.
 
 \subsection{Risk Neutral Pricing Formula}
 
@@ -33,10 +32,10 @@ NPV = \mathbb{E}[e^{-rt} H(t)]
 \end{equation}
 
 In words we can states that the value of the derivative is given by the \textbf{sum of the discounted value of the future cash-flows}.
-
 It is then apparent how important is to know the proper discount factors for pricing purposes.
 
-Since discount curves are made of a discrete set of discount factors derived at some dates, we may need to find the factor at some different times: this is a typical financial application of interpolation.
+Discount factors are usually presented as a \emph{discount curve} which represents the factors for various dates in the future. 
+Since discount curves are made of a discrete set of discount factors derived only at some dates, we may need to find the factor at some different times: this is a typical application of interpolation.
 
 \subsection{Linear Interpolation}
 \label{linear-interpolation}
@@ -50,23 +49,23 @@ Consider to have a discount curve made of three points as in Fig.~\ref{fig:sampl
   \label{fig:samples_for_interpolation}
 \end{figure}
 
-Given two discount factors $d_1$ and $d_2$ taken at two different times $t_1$ and $t_2$ a new factor between the two can be found as the point laying on the line connecting $d_1$ and $d_2$ at the desired time. 
+Given two discount factors $d_1$ and $d_2$ taken at two different times $t_1$ and $t_2$ a new factor between these two can be found as the point lying on the \textbf{line} connecting $d_1$ and $d_2$ at the desired time. 
 
 \begin{attention}
 \subsubsection{Derivation}
-The equation of a line for two points $(t_1, s_1)$ and $(t_2, s_2)$ can be written as:
+The equation of a line for two points $(t_1, d_1)$ and $(t_2, d_2)$ can be written as:
 
 \begin{equation}
-\frac{t - t_1}{t_2 - t_1} = \frac{s - s_1}{s_2 - s_1}
+\frac{t - t_1}{t_2 - t_1} = \frac{d - d_1}{d_2 - d_1}
 \end{equation}
 
-Setting $w = \cfrac{t - t_1}{t_2 - t_1}$ and solving for $s$ we find the desired solution:
+Setting $w = \cfrac{t - t_1}{t_2 - t_1}$ and solving for $d$ we find the desired solution:
 
 \begin{equation}
-(s_2 - s_1)\cdot w = s - s_1\quad\implies\quad s = (1 - w)\cdot s_1 + w \cdot s_2
+(d_2 - d_1)\cdot w = d - d_1\quad\implies\quad d = (1 - w)\cdot d_1 + w \cdot d_2
 \end{equation}
 
-This formula can also be understood as a weighted average where the weights are inversely related to the distance from the end points to the unknown point ($w_1 = (1 - w) = \cfrac{t_2 - t}{t_2 -t_1}, w_2 = w$), which means that the closer point has more "influence" than the farther point on the result.
+This formula can be interpreted as a weighted average where the weights are inversely related to the distances from the end points to the unknown point ($w_1 = (1 - w) = \cfrac{t_2 - t}{t_2 -t_1}, w_2 = w$), which means that the closer point has more "influence" than the farther point on the result.
 \end{attention}
 
 You don't need to implement the interpolation formula from scratch, instead it can be used the one provided in \texttt{scipy.interpolate.interp1d}. 
@@ -96,13 +95,14 @@ NASA took the entire responsibility for having vaporized about 300~M\$ in the Ma
 
 \subsubsection{Extrapolation Risk}
 
-Interpolation is primarily designed to estimate values within the range of known data points. Attempting to extrapolate beyond the range of the data can lead to inaccurate results and is generally discouraged. Extrapolation assumes that the relationship between data points remains constant outside the known range, which may not be valid
+Interpolation is primarily designed to estimate values \textbf{within} the range of known data points. Attempting to extrapolate beyond the range of the data can lead to inaccurate results and is generally discouraged. Extrapolation assumes that the relationship between data points remains constant outside the known range, which may not be valid in general.
 
 \subsection{Log-linear Interpolation}
 \label{log-linear-interpolation}
-When there is an exponential relationship between the two variables we can fall back to the linear case by a simple variable transformation. 
 
-Consider the discount factor in case of continuous compounding $D=e^{-rt}$. Applying the logarithm to both sides of the equation gives:
+When there is an exponential relationship between the two variables (e.g. $t$ and $d$) we can fall back to the linear case by a simple variable transformation. 
+
+Consider the discount factor in case of continuous compounding: $D=e^{-rt}$. Applying the logarithm to both sides of the equation gives:
 
 \begin{equation}
 f = \log(D) = \log(\exp(-rt)) = -rt
@@ -121,16 +121,15 @@ It can be easily demonstrated that the linear approximation between two points o
   \label{fig:sine_interp}
 \end{figure}
 
-To improve the approximation accuracy with complicated curves, an higher order polynomial can be used ($p(x)=a_0 + a_1\cdot x + a_2\cdot x^2+\cdots$), for example in the evaluation of natural logarithm or trigonometric functions. It has to be clear however that going to higher degrees does not always help~\cite{bib:runge}.
-
-Some interpolation methods, particularly higher-order polynomial interpolation, can result in \emph{overfitting}. This means the interpolating function fits the data points very closely but may not generalize well to unseen data. It can lead to excessive fluctuations between data points.
+To improve the approximation accuracy with complicated curves e.g. in the evaluation of natural logarithm or trigonometric functions), an higher order polynomial can be used ($p(x)=a_0 + a_1\cdot x + a_2\cdot x^2+\cdots$). It has to be clear however that going to higher degrees does not always help~\cite{bib:runge}.
+Some interpolation methods, indeed, can result in \emph{overfitting}. This means the interpolating function fits the data points very closely but may not generalize well to unseen data, i.e. it can lead to excessive fluctuations between data points.
 
 \subsection{Discount Curve}
 
 \begin{finmarkets}
-Since discount factors are an essential part for every financial calculation and we will keep using them everywhere, a \texttt{python} class which manages discount factors and curves is developed, using an object oriented approach.
+Since discount factors are an essential part for every financial calculation and we will keep using them everywhere, a \texttt{python} class which manages discount factors and curves is developed using an object oriented approach.
 
-This class, that we name \texttt{DiscountCurve}, should have as attributes
+This class, that we name \texttt{DiscountCurve}, have as attributes
 \begin{itemize}
 	\tightlist
     \item an observation date which corresponds to $t=0$;
@@ -138,7 +137,7 @@ This class, that we name \texttt{DiscountCurve}, should have as attributes
 	\item a list of given discount factors, $D(t_0),...,D(t_{n-1})$.
 \end{itemize}
 
-and at least a method to interpolate discount factors at a generic date. The input argument to this function will be the value date at which we want to interpolate. Since the discount factor can be expressed as an exponential the log-linear interpolation can be used:
+and a method to interpolate discount factors at a generic date. The input argument to this function will be the value date at which we want to interpolate. Since the discount factor can be expressed as an exponential the log-linear interpolation can be used:
 
 \begin{equation}
 	\begin{gathered}
@@ -149,14 +148,15 @@ and at least a method to interpolate discount factors at a generic date. The inp
 \end{equation}
 where $i$ is such that $t_i \le t \le t_{i+1}$
 
-When dealing with discount factors we need to be careful though. \texttt{scipy.interpolate.interp1d} only accepts list of numbers as argument (i.e. it doesn't know how to interpolate them). So we need to convert them before passing the dates to the interpolation function. This transformation will be implemented directly in the class constructor by replacing each date with the number of days from a reference with the method \texttt{toordinal()}.
+When dealing with discount factors we need to be careful though. \texttt{scipy.interpolate.interp1d} only accepts list of numbers as argument, i.e. it doesn't know how to interpolate them. So we need to convert the dates before going through the interpolation function. This transformation is implemented directly in the class constructor snd replace each date with the number of days from a reference using the method \texttt{toordinal()} available for each \texttt{datetime} object.
+
 To protect against extrapolation problems an exception is raised if the provided date is outside the range of known discount factor dates.
-Furthermore we also attempted a simple code optimization: compute the input discount factors logarithm directly in the constructor in order to save some computation time with respect to doing the log at every call of the interpolation method. 
 \end{finmarkets}
 
 \pythoncode{code/discount_2.py}
 
 Using the discount curve data in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{\texttt{discount\_factors.xlsx}} instantiate the corresponding object and compute a discount factor.
+The following example is going to use also the \texttt{TimeInterval} utility which converts strings like "10d" or "5y" into actual time deltas to be used with \texttt{python} dates.
 
 \begin{finmarkets}
 The \texttt{finmarkets} module is currently in the test repository of PyPi, the official collection of \texttt{python} modules. 
@@ -166,14 +166,12 @@ To install it in your working area just type
 pip install --index-url https://test.pypi.org/simple finmarkets
 \end{ioutput}
 
-(if you want to install it on Colab just prepend an exclamation mark to the previous command). The tool \texttt{pip} will take care of picking up the latest version of the package and of all the required dependencies. You can explore the module with \texttt{help} command and in your program just import what you need with
+(if you want to install it on Colab just prepend an exclamation mark to the previous command). The tool \texttt{pip} will take care of picking up the latest version of the package and of all the required dependencies. You can explore the module with \texttt{help} command and in your program just import what you need with something like
 
 \begin{ipythonnon}
 from finmarkets import DiscountCurve
 \end{ipythonnon}
 \end{finmarkets}
-
-The following example is going to use also the \texttt{TimeInterval} utility which converts strings like "10d" or "5y" into actual time deltas to be used with \texttt{python} dates.
 
 \pythoncode{code/discount_3.py}
 
@@ -181,22 +179,20 @@ The following example is going to use also the \texttt{TimeInterval} utility whi
 discount factor at 2023-04-21: 0.9902
 \end{ioutput}
 
-A very useful way to check the correctness of a result is by plotting it. So let's see what the discount factor and the discount curve look like, Fig.~\ref{fig:linear_discount_curve}.
+A very useful way to check the correctness of a result is by plotting it. So by inspecting Fig.~\ref{fig:linear_discount_curve} we can see that the computed discount factor is compatible with the original discount curve.
 
 \begin{figure}[htb]
 	\centering
 	\includegraphics[width=0.7\textwidth]{figures/linear_discount_curve}
-	\caption{Plot of the discount curve defined in the text and of the discount factor with linear scale.}
+	\caption{Plot of the discount curve and of the computed discount factor.}
 	\label{fig:linear_discount_curve}
 \end{figure}
 
 \section{Forward Rates}
 \label{calculating-forward-rates}
-A forward rate is an interest rate applicable to a financial transaction that will take place in the future. It can be considered as the market's expectation for future prices and can serve as an indicator of how it believes will perform.
+A forward rate is an interest rate applicable to a financial transaction that will take place in the future. It can be considered as the market's expectation for future prices and can serve as an indicator of how it believes will perform. Contrary the \emph{spot rate} is used by buyers and sellers looking to make an immediate purchase or sale.
 
-Contrary the \emph{spot rate} is used by buyers and sellers looking to make an immediate purchase or sale, and it cannot be an indicator of market expectations.
-
-Forward rates are calculated from the spot rate by exploiting the no arbitrage condition which states that investing at rate $r_1$ for the period $(0, T_1)$ and then \emph{re-investing} at rate $r_{1,2}$ for the time period $(T_1, T_2)$ is equivalent to invest at rate $r_2$ for the full time period $(0, T_2)$. Essentially two investors shouldn't be able to earn money from arbitraging between different interest periods. That said:
+Forward rates are calculated from the spot rate by exploiting the no arbitrage condition which states that investing at rate $r_1$ for the period $(0, T_1)$ and then \emph{re-investing} at rate $r_{1,2}$ for the time period $(T_1, T_2)$ should be equivalent to invest at rate $r_2$ for the full time period $(0, T_2)$. Essentially two investors shouldn't be able to earn money from arbitraging between different interest periods. That said:
 
 \begin{equation}
 (1+r_1 T_1)[1+r_{1,2}(T_2 - T_1)] = 1 + r_2 T_2
@@ -208,34 +204,34 @@ Solving for $r_{1,2}$ leads to
 F(T_1, T_2) = r_{1,2} = \frac{1}{T_2 - T_1}\Big(\frac{1+r_2 T_2}{1+r_1 T_1} - 1 \Big)
 \label{eq:forward_rate_simple}
 \end{equation}
-The same expression in terms of the discount factor of Eq.~\ref{eq:discount_factor} becomes
+The same expression in terms of discount factors becomes
 \begin{equation}
 F(T_1, T_2) = \frac{1}{T_2 - T_1}\Big(\frac{D(0, T_1)}{D(0, T_2)} - 1 \Big)
 \end{equation}
-Considering continuously compounded rates instead Eq.~\ref{eq:no_arbitrage_r} can be written as
-\begin{equation}
-\begin{gathered}
-e^{r_{2}T_{2}}=e^{r_{1}T_{1}}\cdot \ e^{r_{1,2} (T_{2}-T_{1})}\quad(\textrm{then equating the exponents})\\
-%\textrm{log}\left(e^{r_{2}T_{2}}\right)=\textrm{log}\left(e^{r_{1}T_{1}+ r_{1,2} (T_{2}-T_{1})}\right) \\
-r_{2}T_{2}=r_{1}T_{1}+r_{1,2}(T_{2}-T_{1})\implies r_{1,2} = \cfrac{r_2 T_2 - r_1 T_1}{T_2 - T_1} 
-\end{gathered}
-\end{equation}
-and the corresponding expression for the forward rate is
-\begin{equation}
-F(T_1, T_2) = r_{1,2} = \frac {1}{T_{2}-T_{1}}(\ln D(0,T_{1})-\ln D(0,T_{2}))
-\quad(\textrm{since now } D(0, T_i)=e^{-r_i T_i})
-\label{eq:forward_rate_continous}
-\end{equation}
+%Considering continuously compounded rates instead Eq.~\ref{eq:no_arbitrage_r} can be written as
+%\begin{equation}
+%\begin{gathered}
+%e^{r_{2}T_{2}}=e^{r_{1}T_{1}}\cdot \ e^{r_{1,2} (T_{2}-T_{1})}\quad(\textrm{then equating the exponents})\\
+%%\textrm{log}\left(e^{r_{2}T_{2}}\right)=\textrm{log}\left(e^{r_{1}T_{1}+ r_{1,2} (T_{2}-T_{1})}\right) \\
+%r_{2}T_{2}=r_{1}T_{1}+r_{1,2}(T_{2}-T_{1})\implies r_{1,2} = \cfrac{r_2 T_2 - r_1 T_1}{T_2 - T_1} 
+%\end{gathered}
+%\end{equation}
+%and the corresponding expression for the forward rate is
+%\begin{equation}
+%F(T_1, T_2) = r_{1,2} = \frac {1}{T_{2}-T_{1}}(\ln D(0,T_{1})-\ln D(0,T_{2}))
+%\quad(\textrm{since now } D(0, T_i)=e^{-r_i T_i})
+%\label{eq:forward_rate_continous}
+%\end{equation}
 
 \begin{finmarkets}
-The \texttt{TermStructure} class of the \texttt{finmarkets} module computes forward rates at any arbitrary date, given a set of spot rates. This class is quite similar to \texttt{DiscountCurve}, but its logic has been split into two methods: one to interpolate spot rates, another to actually compute the forward rates.
+The \texttt{TermStructure} class of the \texttt{finmarkets} module computes forward rates at any arbitrary date, given a set of spot rates. This class is quite similar to \texttt{DiscountCurve}, but its logic has been split into two methods: one to interpolate spot rates, another to actually compute the forward rate.
 
-In order to successfully interpolate the rates, dates need again to be converted to numbers by evaluating the number of days since a reference date. Also the interpolation date is checked to avoid extrapolations, if it is outside the known range a warning will be printed out and the calculation stopped.
+In order to successfully interpolate the rates, dates need to be converted to numbers by evaluating the number of days since a reference date. Also the interpolation date is checked to avoid extrapolations, if it is outside the known range am exception will be raisedw and the calculation stopped.
 \end{finmarkets}
 
 \pythoncode{code/discount_4.py}
 
-As an example let's compute a forward rate.
+As an example let's compute
 
 \pythoncode{code/discount_5.py}
 
@@ -396,15 +392,3 @@ For example, if we want to calculate the net present value (NPV) of a forward 6-
 
 \section*{Exercises}
 \input{discount_ex_text}
-
-\begin{thebibliography}{9}
-	%  %\bibitem{survey2019} StackOverflow \emph{The TEXbook}, Addison-Wesley, Reading,Massachusetts, second edition, 1984,
-	\bibitem{bib:mars}\href{https://en.wikipedia.org/wiki/Mars_Climate_Orbiter}{\emph{Mars Climate Orbiter}}, Wikipedia [Online]
-	\bibitem{bib:runge} \href{https://en.wikipedia.org/wiki/Runge\%27s_phenomenon}{\emph{Runge's phenomenon}}, Wikipedia [Online]
-	\bibitem{bib:forward_rate}\href{https://www.investopedia.com/ask/answers/042315/what-difference-between-forward-rate-and-spot-rate.asp}{\emph{Forward Rate vs. Spot Rate: What's the Difference?}}, Investopedia [Online]
-	\bibitem{bib:libor} \href{https://www.ig.com/it/glossario-trading/definizione-di-libor}{\emph{LIBOR}} [Online]
-	\bibitem{bib:2008crisis} \href{https://www.investopedia.com/articles/economics/09/financial-crisis-review.asp}{\emph{The 2007-2008 Financial Crisis Review}}, Investopedia [Online]
-	\bibitem{bib:str}
-	B. Guggenheim and A. Schrimpf, 
-	\href{https://www.bis.org/publ/work891.htm}{\emph{At the crossroads in the transition away from LIBOR - from overnight to term rates}}, BIS Working Papers No 891, 09 October 2020 [Online]
-\end{thebibliography}
