@@ -5,9 +5,70 @@ In quantitative finance arguably one of the most important challenge is the fina
 The majority of the financial engineer’s task is connected to this field.
 %Risk Measurement for a financial institution is very data intense and computational expensive process. Using the adequate, state of the art technologies is key to keep up with the speed of the financial market innovation, and to be able to meet the regulatory requirements.
 
-There is a wide range of risk measures that spread through the Market: volatility ($\sigma$), Value at Risk (VaR), Expected Shortfall (ES), Conditional Value at Risk (CVaR) (in case of continuous distributions same as ES, Average Drawdown, Maximum Drawdown, $\ldots$
+There is a wide range of risk measures that spread through the Market: volatility ($\sigma$), Value at Risk (VaR), Expected Shortfall (ES) (Conditional Value at Risk), Average Drawdown, Maximum Drawdown, $\ldots$
+In this Chapter we will concentrate specifically on two of them: VaR and ES.
 
-In the first Section of this Chapter we will concentrate specifically on two of them: VaR and ES.
+\section{Portfolios}
+
+A \emph{portfolio} is a collection of financial investments like stocks, bonds, commodities,\ldots
+It is fully described by the \emph{weights} $w_i$ which represent the fraction of the total wealth that has been invested in asst $i$. Clearly it must hold $\sum_i w_i = 1$. 
+Some notations that will be used later on are
+
+\begin{itemize}
+	\tightlist
+	\item
+	portfolio expected return: 
+	\begin{equation} 
+		\mathbb{E}(R_{p}) = \sum _{i}w_{i} \mathbb{E}(R_{i}) = \mathbf{w}\cdot \mathbb{E}(\mathbf{R}) = \mathbf{w}^T \mathbb{E}(\mathbf{R})=
+		\begin{bmatrix}
+			w_1 \\ 
+			w_2 \\ 
+			\vdots \\
+			w_n
+		\end{bmatrix}
+		\begin{bmatrix}
+			\mathbb{E}(R_1) & \mathbb{E}(R_2) & \cdots & \mathbb{E}(R_n)
+		\end{bmatrix}
+	\end{equation} 
+	where \(R_{p}\) is the return on the portfolio, \(R_{i}\) is the return on asset \(i\) and \(w_{i}\) is the weighting of component asset \(i\) (that is, the proportion of asset \(i\) in the portfolio) and \(\sum_{i}w_i = 1\) and \(0 \le w_i \le 1\);
+	\item
+	portfolio return variance:
+	\begin{equation}
+		\begin{aligned}
+			\sigma _{p}^{2} = &\sum _{i}\sum _{j}w_{i}w_{j}\sigma _{ij} = \mathbf{w}^T\Sigma\mathbf{w} =
+			\begin{bmatrix}
+				w_1 \\ 
+				w_2 \\ 
+				\vdots \\
+				w_n
+			\end{bmatrix}
+			\begin{bmatrix}
+				\sigma_{11} & \sigma_{12} & \cdots & \sigma_{1n} \\
+				\sigma_{21} & \sigma_{22} & \cdots & \sigma_{2n} \\
+				\vdots & & \\
+				\sigma_{n1} & \sigma_{n2} & \cdots & \sigma_{nn} \\
+			\end{bmatrix}
+			\begin{bmatrix}
+				w_1 & w_2 & \cdots & w_n
+			\end{bmatrix} =\\ 
+			&\begin{bmatrix}
+				\sigma_{11} *w_1 + \sigma_{12} *w_2 + \cdots + \sigma_{1n}*w_n \\
+				\sigma_{21} *w_1 + \sigma_{22} *w_2  +\cdots + \sigma_{2n}*w_n \\
+				\vdots \\
+				\sigma_{n1} *w_1 + \sigma_{n2}*w_2 + \cdots + \sigma_{nn}*w_n \\
+			\end{bmatrix}
+			\begin{bmatrix}
+				w_1 & w_2 & \cdots & w_n
+			\end{bmatrix}
+		\end{aligned}
+	\end{equation}
+	where \(\sigma\) is the (sample) standard deviation of the periodic returns on an asset, and \(\rho _{ij}\) is the correlation coefficient between the returns on assets \(i\) and \(j\). For a brief introduction to matrices see Chapter~\ref{sec:matrices};
+	\item
+	portfolio return volatility (standard deviation):
+	\begin{equation}
+		\sigma _{p}= \sqrt{\sigma _{p}^{2}}
+	\end{equation}
+\end{itemize}
 
 \section{VaR and Expected Shortfall}
 \label{value-at-risk}
@@ -102,11 +163,11 @@ Dashed lines in Figure~\ref{fig:paramtric_var} shows the resulting fit which cle
 It is possible to avoid any assumption on the return distribution, by random sampling on the historical returns directly. The parameter estimation is not required in this case, but clearly such kind of simulation heavily relies on the assumption that past behaviors are indicative of what might happen in the future. That's why it is important that out historical series was as large as possible otherwise our results will be affected by lack of statistics. 
 
 \begin{finmarkets}
-The \texttt{finmarkets} module has also two functions to compute $VaR$ and $ES$ for the discrete case. 
-They rely on the sampling from the original historical series which has been implemented in a separated utility function. The fastest way to generate random sample of historical returns is to assign an integer for each observation, and, using a random sampling algorithm, we can generate the set of simulated returns. Then the risk measures are calculated as percentiles of the the generated distributions. Notice that \texttt{numpy.random.choice} is equivalent to \texttt{random.sample} that we have already used before.
+The \texttt{finmarkets} module has also two functions to compute VaR and ES for the discrete case. 
+They rely on the sampling from the original historical series which has been implemented in a separated utility function. The fastest way to generate random sample of historical returns is to assign an integer for each observation, and, using a random sampling algorithm, we can generate the set of simulated returns. Then the risk measures are calculated as percentiles of the the generated distributions. %Notice that \texttt{numpy.random.choice} is equivalent to \texttt{random.sample} that we have already used before.
 \end{finmarkets}
 
-\pythoncode{code/var_2.py}
+\pythoncodenon{code/var_2.py}
 \begin{ioutput}
 1d-95% VaR (discrete): 0.02661
 1d-95% ES (discrete): 0.04328
@@ -237,7 +298,7 @@ Credit VaR is actually either the difference of the percentile from the mean, or
 %\end{figure}
 
 \subsection{Credit VaR and One Factor Copula Model}
-Consider a portfolio made of similar assets. As an approximation assume that the probability of default is the same for each counter-party and that the correlation between each pair is the same and equal to $\rho$. Under these assumption the One Factor Copula model can be used to describe the default correlations (see Eq.~\ref{eq:gaussian_one_factor_copula}
+Consider a portfolio made of similar assets. As an approximation assume that the probability of default is the same for each counter-party and that the correlation between each pair is the same and equal to $\rho$. Under these assumption the One Factor Copula model can be used to describe the default correlations (see Eq.~\ref{eq:gaussian_one_factor_copula})
 
 \begin{equation}
 \mathcal{Q}_M(T) = \Phi\Big(\cfrac{\Phi^{-1}[Q(T)]-M\sqrt{\rho}}{\sqrt{1-\rho}}\Big)

@@ -3,16 +3,6 @@
 
 In this Chapter the Overnight Index Swap contract is reviewed. Besides the financial arguments another very important mathematical technique is introduced: the \emph{bootstrapping}.
 
-\section{Payment Dates Generator}
-Before going to describe the Overnight Index Swap we need to develop a tool which helps us to generate list of dates (e.g. payment dates), a task that we need to do often from now on. 
-
-\pythoncode{code/bootstrap_1.py}
-
-\begin{ioutput}
-[datetime.date(2020, 10, 20), datetime.date(2021, 10, 20), 
- datetime.date(2022, 10, 20), datetime.date(2022, 11, 20)]
-\end{ioutput}
-
 \section{Overnight Index Swap}
 \label{overnight-index-swap}
 
@@ -122,11 +112,11 @@ K = \cfrac{[D(d_0) - D(d_n)]}{\sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}}
 \end{equation}
 \end{finmarkets}
 
-\pythoncode{code/bootstrap_2.py}
+\pythoncodenon{code/bootstrap_ois.py}
 
 Let's test the class using the following discount curve: \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{discount\_factors\_2022-10-05.xlsx}.
 
-\pythoncode{code/bootstrap_3.py}
+\pythoncodenon{code/bootstrap_3.py}
 
 \begin{ioutput}
 -2162.61 EUR
@@ -218,7 +208,7 @@ In Figure~\ref{fig:fifth_year_rate} the equation is plotted as a function of $S_
   \label{fig:fifth_year_rate}
 \end{figure}
 
-\pythoncode{code/bootstrap_4.py}
+\pythoncodenon{code/bootstrap_4.py}
 
 \begin{ioutput}
 5y rate: 0.0836
@@ -307,7 +297,7 @@ S = 2\pi rh + 2\cdot(\pi r^2) = \cfrac{2\cdot 330}{r} + 2\cdot(\pi r^2)
 \end{equation}
 The objective function depends on one parameter only \texttt{x[0]} which is the can radius in cm. We are going to use a \texttt{list} (or a \texttt{numpy.array}) even in this simple case so that the same code can be generalized to more complex problems with a larger number of parameters to minimize. 
 
-\pythoncode{code/bootstrap_5.py}
+\pythoncodenon{code/bootstrap_5.py}
 
 Set the limits to our unknown variable and its initial value and finally run the minimization.
 
@@ -373,7 +363,7 @@ In this example there are two differences with respect to the previous:
 \item there is a constraint (we have a limited budget).
 \end{itemize}
 
-\pythoncode{code/bootstrap_6.py}
+\pythoncodenon{code/bootstrap_6.py}
 
 So let's repeat the steps as before. The objective is to maximize the enclosed area $A$ but our algorithm can only minimize functions. To overcome this issue the objective function can be defined to return the quantity $-A$, so that minimizing its value, the real objective, $A$, is maximized. 
 Define length and width of the field respectively as \texttt{x[0]} and \texttt{x[1]} (items of the \texttt{list} \texttt{x}):
@@ -406,13 +396,13 @@ This function is plotted in Fig.~\ref{fig:local_minima} in the range $[0, 2]$, a
 	\label{fig:local_minima}
 \end{figure}
 Let's try to find a minimum setting the initial value to $x=1.1$.
-\begin{ipython}
+\begin{ipythonnon}
 x0 = [1.1]
 bounds = [(0.01, 20)]
 r = minimize(func, x0, bounds=bounds)
 
 print (r)
-\end{ipython}
+\end{ipythonnon}
 \begin{ioutput}
      fun: array([-1.00569871])
 hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
@@ -427,13 +417,13 @@ hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
 The minimization worked perfectly and we found $x=0.98865633$ (i.e. the red point in Fig.~\ref{fig:local_minima}) but this is not the absolute minimum we were expecting to find. The problem arise since the algorithm, following the derivative direction, has got stuck in a local minimum without any possibility to jump out from the well.
 
 If we repeat the minimization using as initial value $0.5$ instead
-\begin{ipython}
+\begin{ipythonnon}
 x0 = [0.5]
 bounds = [(0.01, 20)]
 r = minimize(func, x0, bounds=bounds)
 
 print (r)
-\end{ipython}
+\end{ipythonnon}
 \begin{ioutput}
      fun: array([-3.17151711])
 hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
@@ -505,7 +495,7 @@ With these swaps define the objective function: the sum of the squared NPVs of t
 Set the initial value of the discount factors $x_i^0$ to 1 with a range of variability $[0.01, 10]$. Discount factor 0 will be set fixed to 1.
 Finally launch the minimizer to find the discount factors $\mathbf{x}$
 
-\pythoncode{code/bootstrap_7.py}
+\pythoncodenon{code/bootstrap_7.py}
 
 \begin{ioutput}
   message: CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL
@@ -522,12 +512,12 @@ Finally launch the minimizer to find the discount factors $\mathbf{x}$
 
 A useful cross-check to perform to understand if everything went fine, is the comparison of the objective function value at the beginning and at the end of minimization.
 
-\begin{ipython}
+\begin{ipythonnon}
 print ("Initial objective function value ", objective_function(x0, obs_date, 
                                           pillar_dates, swaps))
 print ("Final objective function value ", objective_function(result.x, obs_date,
                                           pillar_dates, swaps))
-\end{ipython}
+\end{ipythonnon}
 \begin{ioutput}
 Initial objective function value  51601443377.52911
 Final objective function value  6.013612670431716e-06
@@ -601,7 +591,7 @@ d_5
 \end{equation*}
 The \texttt{python} implementation to determine the solution is given in the snippet below. The code use by default the pseudo-inverse since if $[C]$ is invertible holds $[C^+] = [C^{-1}]$. 
 
-\pythoncode{code/bootstrap_9.py}
+\pythoncodenon{code/bootstrap_9.py}
 
 \begin{ioutput}
 [0.96153846 0.90659341 0.83765291 0.75756548 0.66938146]	

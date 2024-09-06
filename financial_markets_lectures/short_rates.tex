@@ -2,7 +2,7 @@
 
 The volume of traded interest rate derivatives in both the OTC and exchange-traded markets have been increasing sharply over the past decades. As the number of new and simultaneously exotic interest rate products virtually exploded, it has been a key challenge to find good and primarily robust procedures for pricing and also hedging these products. To reach this goal it is essential to have reliable models to describe the evolution of the interest rate with time.
 
-In this Chapter the most common interest rate modelling techniques are reviewed together with related \texttt{python} applications.
+In this Chapter the most common interest rate modeling techniques are reviewed together with related \texttt{python} applications.
 
 \section{Short Rate Models}
 Bond, option and other derivative prices depend only on the process followed by $r$ in a risk neutral world.
@@ -16,30 +16,18 @@ R(T) = -\cfrac{\ln Z(R, t, T)}{T-t}
 \label{eq:zcb}
 \end{equation}
 
-Zero-coupon yield curve, also called term structure of interest rates, is then formed by interest rates with different maturities
+\emph{Zero-coupon yield curve}, also called term structure of interest rates, is then formed by interest rates with different maturities.
 
-The \emph{short rate} (also called \emph{instantaneous short rate}), $r(t)$, at time $t$ is the rate that applies to an infinitesimally short period at time $t$. It can be seen as the beginning of the yield curve: 
+The \emph{short rate} (also called \emph{instantaneous short rate}), $r(t)$, at time $t$ is the rate that applies to an infinitesimally short period at time $t$. It can be seen as the \emph{beginning} of the yield curve: 
 
 \begin{equation}
 r(t) = \underset{T\rightarrow t^{+}}{lim}R(T)
 \label{eq:short_rate}
 \end{equation}
 
-%The price can be expresses as
-%
-%\[\mathbb{E}[e^{-r(T-t)}\textrm{payoff}]\]
-%
-%If \(Z(t, T)\) is the price of a zero coupon bond then from the previous
-%equation
-%
-%\[Z(t, T) = \mathbb{E}[e^{-r(T-t)}]\]
-
-%The interest rates implied by the zero coupon bonds form a yield curve, 
-%or more precisely, a zero curve.
-
 From Equations~\ref{eq:zcb} and~\ref{eq:short_rate} it is clear that the term structure of interest rates at any time can be obtained from the value of $r$ at that time and the evolution process for $r$. They show that once the process for $r$ has been defined, everything about the initial zero curve and its evolution through time can be determined.
 
-Short rate models have been introduced in order to be able to explore the development of the dynamics of $r(t)$. They generally owe their popularity to both their high degree of tractability and flexibility. For many models one can find explicit solutions for bond and bond option prices. They may be applied to price simple instruments in closed form or sometimes by deterministic numerical methods.
+Short rate models have been introduced in order to be able to explore the dynamics of $r(t)$. They generally owe their popularity to both their high degree of tractability and flexibility. For many models one can find explicit solutions for bond and bond option prices. They may be applied to price simple instruments in closed form or sometimes by deterministic numerical methods.
 
 In particular, the stochastic evolution of short rate models is identified by the following generalized SDE
 
@@ -47,7 +35,7 @@ In particular, the stochastic evolution of short rate models is identified by th
 dr(t) = (\theta(t)-\alpha(t)r(t)) dt + \sigma(t)r(t)^{\gamma} dW
 \label{eq:short_rate_sde}
 \end{equation}
-This equation denotes a generic Gaussian Markov process where $\theta$, $\alpha$ and $\sigma$ that in general are all deterministic functions of time and $dW$ is a Brownian motion.
+This equation denotes a generic Gaussian Markov process where $\theta$, $\alpha$ and $\sigma$ in general are all deterministic functions of time and $dW$ is a Brownian motion.
 
 \section{Equilibrium Models}\label{equilibrium-models}
 
@@ -75,59 +63,15 @@ One important difference between interest rates and other stochastic quantities 
 
 There are real economic arguments in favor of mean reversion. When rates are high, the economy tends to slow down and there is low demand for funds from borrowers. As a result, rates decline. When rates are low, there tends to be a high demand for funds on the part of borrowers and rates tend to rise.
 
-The Vasicek model incorporates this feature (the short rate is pulled to a level $\theta$ at a rate $k$), which is a good property, but interest rates can go negative, which instead is a very bad property.
+The Vasicek model incorporates this feature (the short rate is pulled to a level $\theta$ at a rate $k$), which is a good property, but interest rates can go negative, which instead is not such as good property.
 
 \begin{finmarkets}
 The following code implements the \texttt{VasicekModel} referring to the process described by Eq.~\ref{eq:vasicek_process}.
 \end{finmarkets}
 
-\begin{ipython}
-import numpy as np
+\pythoncodenon{code/short_rates_vasicek.py}
 
-from scipy.stats import norm
-
-from finmarkets.utils import OptionType
-
-class VasicekModel:
-    def __init__(self, k, theta, sigma):
-        self.theta = theta
-        self.k = k
-        self.sigma = sigma
-        
-    def r_generator(self, r0, dates, seed=1):
-        if len(dates) < 2:
-            print ("You need to pass at least two dates")
-            return None
-        np.random.seed(seed)
-        dt = (dates[1] - dates[0]).days/365
-        m = len(dates)
-        r = np.zeros(shape=(m,))
-        r[0] = r0
-        for i in range(1, m):
-            r[i] = r[i-1] + self.k*(self.theta-r[i-1])*dt +\
-                   self.sigma*np.random.normal()*np.sqrt(dt)
-        return r
-            
-    def B(self, t, T):
-        return 1/self.k*(1-np.exp(-self.k*(T-t)))
-
-    def A(self, t, T):
-        return np.exp((self.theta-self.sigma**2/(2*self.k**2))*\
-               (self.B(t, T)-T+t)-self.sigma**2/(4*self.k)*self.B(t, T)**2)
-    
-    def ZCB(self, r, t, T):
-        return self.A(t, T)*np.exp(-self.B(t, T)*r)
-
-    def ZBO(self, r, K, t, T, S, option_type=OptionType.Call):
-        sigma_p = self.sigma*np.sqrt((1-np.exp(-2*self.k*(T-t)))/(2*self.k))*\
-                  self.B(T, S)
-        h = 1/sigma_p*np.log((self.ZCB(r, t, S))/(self.ZCB(r, t, T)*K))+sigma_p/2
-        arg1 = option_type*h
-        arg2 = option_type*(h-sigma_p)
-        return option_type*(self.ZCB(r, t, S)*norm.cdf(arg1)-\
-               K*self.ZCB(r, t, T)*norm.cdf(arg2))\end{ipython}
-
-Figure~\ref{fig:vasicek_path} shows just various realizations of the short rate using the following parameters: $r_0=0.01875$, $k=0.3$, $\theta=0.1$ and $\sigma=0.03$. 
+Figure~\ref{fig:vasicek_path} shows just various realizations of the short rate using the following parameters: $r_0=0.02$, $k=0.3$, $\theta=0.1$ and $\sigma=0.03$. 
 Two facts can be noticed by this plot: each process starts at $r_0$, but is pulled towards 0.10 which is the value of $\theta$ (dashed red line), and the interest rate can drop below 0\%. The Figure also shows the expected value of the process.
 
 \begin{figure}[htb]
@@ -192,9 +136,7 @@ Concerning the mean
 \end{equation}
 where the property that $\mathbb{E}(\textrm{stochastic~Integral}) = 0$ has been used.
 
-Regarding the variance, noting that the variance of a deterministic variable is zero, we only need to calculate it for the stochastic integral. %We can do this by using the It\(\hat{o}\) Isometry,
-%as the terms inside the Stochastic Integral are deterministic functions
-%of time.
+Regarding the variance, noting that the variance of a deterministic variable is zero, we only need to calculate it for the stochastic integral. We can do this by using the It$\hat{o}$ Isometry, as the terms inside the Stochastic Integral are deterministic functions of time.
 
 \begin{equation*}
 \textrm{var}(r_T)=\mathbb{E}(r^2_T)-(\mathbb{E}(r_T))^2
@@ -232,7 +174,7 @@ The change in this portfolio in a time $dt$ is given by
 \begin{equation*}
 d\Pi = \cfrac{\partial Z_1}{\partial t}dt + \cfrac{\partial Z_1}{\partial r}dr + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt - \Delta\left(\cfrac{\partial Z_2}{\partial t}dt + \cfrac{\partial Z_2}{\partial r}dr + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_2}{\partial r^2}dt\right)
 \end{equation*}
-where we have applied It$\hat{o}$'s lemma to functions of $r$ and $t$. All the randomness in this expression comes from $dr$ terms given that the rate follows Eq.~\ref{eq:vasicek_process} which contains the Brownian motion $dW$. So to eliminate it (hedging) we need to choose $\Delta$ such that $dr$ terms cancelled out
+where we have applied It$\hat{o}$'s lemma to functions of $r$ and $t$. All the randomness in this expression comes from $dr$ terms given that the rate follows Eq.~\ref{eq:vasicek_process} which contains the Brownian motion $dW$. So to eliminate it (hedging) we need to choose $\Delta$ such that $dr$ terms canceled out
 
 \begin{equation*}
 \Delta = \cfrac{\cfrac{\partial Z_1}{\partial r}}{\cfrac{\partial Z_2}{\partial r}}
@@ -287,38 +229,16 @@ To demonstrate some of the possible curve shapes allowed by the Vasicek model so
 \begin{figure}[htb]
     \centering
     \includegraphics[width=0.7\linewidth]{figures/vasicek_yields}
-    \caption{Various yield curves computed according to the Vasicek model ($k=0.5, \theta=0.1, \sigma=0.03$).}
+    \caption{Various yield curves computed according to the Vasicek model ($k=0.3, \theta=0.1, \sigma=0.03$).}
     \label{fig:yield_vasicek}
 \end{figure}
 
-Just to cross check the bond pricing formula was implemented correctly, the price using Eq.~\ref{eq:zcb_vasicek} versus the price using Monte Carlo simulation of $\mathbb{E}\left[e^{\int_0^T r_s ds}\right]$ have been compared. The prices are in excellent agreement.
+Just to cross check the bond pricing formula was implemented correctly, the price using Eq.~\ref{eq:zcb_vasicek} versus the price using Monte Carlo simulation of $\mathbb{E}\left[e^{-\int_0^T r_s ds}\right]$ have been compared. The prices are in excellent agreement.
 
-\begin{ipython}
-from finmarkets import generate_dates
-from finmarkets.short_rates.vasicek import VasicekModel
-  
-r0 = 0.03
-v = VasicekModel(0.3, 0.10, 0.03)
-
-n = 1000
-maturity = "1y"
-dates = generate_dates(start_date, maturity, "1m")
-dt = 1/12
-
-res = []
-for i in range(n):
-    r = v.r_generator(r0, dates, i)
-    I = np.sum(r[1:])*dt
-    res.append(np.exp(-I))
-
-print (f"Exact Vasicek Price: {v.ZCB(T, r0):.4f}")
-print (f"MC Price: {np.mean(res):.4f}")
-print (f"MC Std Error: {np.std(res)/np.sqrt(n):.4f}")
-\end{ipython}
+\pythoncodenon{code/short_rates_vasicek_mc_check.py}
 \begin{ioutput}
-Exact Vasicek Price: 0.9613
-MC Price: 0.9615
-MC Std Error: 0.0005
+Exact Vasicek Price: 0.9614
+MC Price: 0.9609 +- 0.0005
 \end{ioutput}
 
 \subsubsection{Model Calibration}
@@ -341,7 +261,7 @@ k = \frac{1-a}{\delta t} \\
 \label{eq:vasicek_parameters_estimate}
 \end{equation}
 
-As an example the Vasicek model has been calibrated on the 3-months Treasury Bills monthly data since 2010 (\href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/TB3MS.csv}{TB3MS.csv}). Figure~\ref{fig:TB3MS} reports the scatter plot of $r(t)$ vs $r(t+1)$.
+As an example the Vasicek model has been calibrated on the 3-months Treasury Bills monthly data since 2010 (\href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/input_files/TB3MS.csv}{TB3MS.csv}). Figure~\ref{fig:TB3MS} reports the scatter plot of $r(t)$ vs $r(t+1)$.
 
 \begin{figure}[htb]
 \centering
@@ -350,25 +270,11 @@ As an example the Vasicek model has been calibrated on the 3-months Treasury Bil
 \label{fig:TB3MS}
 \end{figure}
 
-The regression is performed in the following code, notice that it is necessary to remove possible \texttt{NaN} values from the dateframe for the algorithm to work. 
+The regression is performed in the following code, notice that it is necessary to remove possible \texttt{NaN} values from the dataframe for the algorithm to work. For a more detailed explanation of the regression summary please look in Sec.~\ref{sec:linear_regression}.
+The corresponding Vasicek model parameter values have been estimated using Eqs.~\ref{eq:vasicek_parameters_estimate}, lines 17-20
 
-\begin{ipython}
-import pandas as pd
-import statsmodels.api as sm
+\pythoncode{code/short_rates_vasicek_calibration.py}
 
-df = pd.read_csv("TB3MS.csv")
-df = df[df['DATE']>'2010-12-01']
-
-df.dropna(inplace=True)
-df['TB3MS'] = df['TB3MS']/100
-df['prec'] = df['TB3MS'].shift(-1)
-
-X = sm.add_constant(df['prec'][:-1])
-y = df['TB3MS'][:-1]
-model = sm.OLS(y, X)
-r = model.fit()
-print (r.summary())
-\end{ipython}
 \begin{ioutput}
                             OLS Regression Results                            
 ==============================================================================
@@ -392,32 +298,9 @@ Prob(Omnibus):                  0.000   Jarque-Bera (JB):             7494.971
 Skew:                           3.357   Prob(JB):                         0.00
 Kurtosis:                      38.210   Cond. No.                         123.
 ==============================================================================
-\end{ioutput}
-For a more detailed explanation of the summary please look in Sec.~\ref{sec:linear_regression}.
-%
-%The most interesting part of the summary is, at least for our purpose: 
-%
-%\begin{itemize}
-%\item \texttt{R-squared}: the closer to 1 the higher is the linear correlation between $y$ and $X$;
-%\item coeff column: the \texttt{prec} (our $\beta$) resulting from the regression, represent the mean change in the response variable $y$ for one unit of change in the predictor variable $X$ (\texttt{const} is the corresponding $\alpha$);
-%\item  \texttt{P>|t|} column: the p-value for each term tests the null hypothesis that the coefficient is equal to zero (no effect). A low p-value (< 0.05) indicates that you can reject the null hypothesis. In other words, a predictor that has a low p-value is likely to be a meaningful addition to your model because changes in the predictor's value are related to changes in the response variable.
-%Conversely, a larger (insignificant) p-value suggests that changes in the predictor are not associated with changes in the response.
-%\end{itemize}
 
-The corresponding parameter values have been estimated using Eqs.~\ref{eq:vasicek_parameters_estimate}
-\begin{ipython}
-import numpy as np
-
-dt = 1/12
-theta = r.params['const']/(1-r.params['prec'])
-k = (1-r.params['prec'])/dt
-sigma = (np.sqrt(np.var(r.resid)))/dt
-print (f"k: {k:.3f}, theta: {theta:.4f}, sigma: {sigma:.3f}")
-\end{ipython}
-\begin{ioutput}
 k: 0.627, theta: 0.0019, sigma: 0.018
 \end{ioutput}
-Few realizations of $r(t)$ with the calibrated model are shown in Figure~\ref{fig:vasicek_calibrated_paths}.
 
 \begin{figure}[htb]
 \centering
@@ -455,48 +338,14 @@ with $\gamma = \sqrt {k^2 + 2\sigma^2}$. As in the Vasicek model the value of $r
 The following code implements the \texttt{CIRModel} class which has similar methods to \texttt{VasicekModel} for computing short rate, and zero coupon bond value.
 \end{finmarkets}
 
-\begin{ipython}
-import numpy as np
-
-class CIRModel:
-    def __init__(self, k, theta, sigma):
-        self.k = k
-        self.theta = theta
-        self.sigma = sigma
-        self.gamma = np.sqrt(self.k**2 + 2*self.sigma**2)
-
-    def r_generator(self, r0, T, m=100):
-        np.random.seed(seed)
-        dt = (dates[1] - dates[0]).days/365
-        m = len(dates)
-        r = np.zeros(shape=(m,))
-        r[0] = r0
-        for i in range(1, m):
-            r[i] = r[i-1] + self.k*(self.theta - r[i-1])*dt \
-                   + self.sigma*np.random.normal()*np.sqrt(dt*r[i-1])
-        return r
-
-    def _B(self, T):
-        c = np.exp(self.gamma*T) - 1
-        return 2*c/((self.gamma + self.k)*c + 2*self.gamma)
-
-    def _A(self, T):
-        c = np.exp(self.gamma*T) - 1
-        num = 2*self.gamma*np.exp((self.k+self.gamma)*T/2)
-        den = (self.gamma + self.k)*c + 2*self.gamma
-        return np.power(num/den, 2*self.k*self.theta/self.sigma**2)
-
-    def ZCB(self, T, r0):
-        maturity_from_str(T, "y")
-        return self._A(T)*np.exp(-r0*self._B(T))
-\end{ipython}
+\pythoncodenon{code/short_rates_cir.py}
 
 Figures~\ref{fig:cir_path} and~\ref{fig:cir_yields} show respectively one simulation of the short rate and the interest rate resulting from the application of the CIR model. Notice how it remains always positive.
 
 \begin{figure}[htb]
 \centering
 \includegraphics[width=0.7\linewidth]{figures/cir_short_rate}
-\caption{Various realizations of short rate determined with CIR model ($k=0.3, \theta=0.07, \sigma=0.03$). The plot shows also the expected value and the $2\sigma$ bands.}
+\caption{Various realizations of short rate determined with CIR model ($k=0.3, \theta=0.07, \sigma=0.03$). The plot shows also the expected value and the $2\sigma$ band.}
 \label{fig:cir_path}
 \end{figure}
 

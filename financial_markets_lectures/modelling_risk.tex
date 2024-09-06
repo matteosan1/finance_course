@@ -139,21 +139,25 @@ Indeed the returns are correlated by about 66\% as shown in Figure~\ref{fig:bmw_
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.5\textwidth]{figures/bmw_sie_daily_returns}
+\includegraphics[width=0.6\textwidth]{figures/bmw_sie_daily_returns}
 \caption{Distribution of the daily returns of BMW and Siemens stock price from 2010 to 2022.}
 \label{fig:bmw_sie_returns}
 \end{figure}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5 FIXME HOW TO FIT
 
 By fitting the return histograms, e.g. using t-student~\cite{bib:t_student} functions, we can determine the parametric form of the marginal distributions. The resulting fits are shown in Fig.~\ref{fig:bmw_sie_fit}.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.7\textwidth]{figures/bmw_siemens_fit}
+\includegraphics[width=0.75\textwidth]{figures/bmw_siemens_fit}
 \caption{Fit of the daily return distributions for BMW (left) and Siemens (right). The assumed functional form is a t-student.}
 \label{fig:bmw_sie_fit}
 \end{figure}
+
+\begin{finmarkets}
+Histogram fitting is the art of choosing a probability model for the unknown population, and calibrating that model (setting the best value for the model parameters) using a representative sample from the population.
+
+In \texttt{python} this can be done quite easily since each \texttt{scipy.stats} distribution has a convenient method \texttt{fit} which performs the calibration and return an array with the best estimate of the parameter values.
+\end{finmarkets}
 
 To model the joint probability distribution we first have to simulate a sample from a multivariate distribution with the specific correlation structure, lines 15-16. To keep thing simple we are going to assume a Gaussian correlation, this is not mandatory though, since we could have modeled it with different distribution either.
 It is important to understand that correlation doesn't affect the distribution of each component, but it rather changes how given a sample the second is determined.
@@ -196,7 +200,7 @@ Using the uniform distribution as a common base for our transformations we can e
 It may be useful to create a \texttt{python} object to handle copulas. In \texttt{finmarkets} this class is \texttt{GaussianCopula} and has a method \texttt{sample} which generates a sample from the Gaussian copula with the proper correlation.
 \end{finmarkets}
 
-\pythoncode{code/modelling_risk_3.py}
+\pythoncodenon{code/modelling_risk_3.py}
 
 \subsubsection{Remarks on Gaussian Copula}
 Extreme, synchronized rises and falls in financial markets occur infrequently but they do occur. The problem with Gaussian models is that they did not assign a high enough likelihood of occurrence to the scenario in which many things go wrong (or right) at the same time the “perfect storm” scenario.
@@ -208,7 +212,7 @@ A $n\sigma$ event has a probability to happen equivalent to that of sampling a v
 To compute the occurrence frequency (in years) of such an event consider the probability to get $n\sigma$ so it is 1 over $(
 [365\cdot P(|x| \ge n\sigma)]$ (the 365 factor comes from the number of working days in a year).
 
-\pythoncodenon{code/modelling_risk_4.py}
+\pythoncodebox{code/modelling_risk_4.py}
 \begin{ioutput}
 4778.843544161504
 \end{ioutput}
@@ -236,7 +240,7 @@ To simulate the credit event by Monte Carlo it can be thrown a random number fro
 \item if it is higher no default happened.
 \end{itemize}
 
-\pythoncode{code/modelling_risk_5.py}
+\pythoncodenon{code/modelling_risk_5.py}
 
 In such a way we have a "successful" experiment with the desired probability.
 
@@ -249,7 +253,7 @@ To generate samples from correlated distributions it is enough to determine the 
 Imagine three companies ($A$, $B$ and $C$) which have a cumulative probability of defaulting within the next two years of 10\%.
 Let's compare the probability to have the three of them all defaulting within the next two years in two cases: independent and perfectly correlated default probabilities.
 
-\pythoncode{code/modelling_risk_6.py}
+\pythoncodenon{code/modelling_risk_6.py}
 
 In the first case (independent probabilities), the odds to get three defaults within two years is equivalent to the product of the single probabilities, hence $P_{\mathrm{uncorr}} = 10\% \cdot 10\% \cdot 10\% = 0.1 \%
 $.
@@ -352,7 +356,7 @@ If you now want $Y$ to be distributed as $Y\approx\mathcal{N}(\mu,\Sigma)$, then
 
 As a practical example, suppose that $X$ is a vector of independent standard normal variables. The matrix $[L]$ can be used to create a new vector $Z$ such that the covariance of $Z$ equals $[\Sigma]$.
 
-\pythoncode{code/modelling_risk_7.py}
+\pythoncodenon{code/modelling_risk_7.py}
 
 \begin{ioutput}
 [[1.73205081 0.        ]
@@ -371,9 +375,9 @@ Figure~\ref{fig:cholesky_norm} shows the original uncorrelated variable $X$ (lef
 Clearly, if you start with correlated variables, you can apply the Cholesky inverse transformation to get uncorrelated variables.
 If you take the $Z$ points generated above and apply $[L]^{-1}$, the original data is obtained again. Figure~\ref{fig:cholesky_inv} shows the resulting distribution.
 
-\begin{ipython}
+\begin{ipythonnon}
 orig_X = np.dot(Z, np.linalg.inv(L))
-\end{ipython}
+\end{ipythonnon}
 
 \begin{figure}[htbp]
 \centering
@@ -395,7 +399,7 @@ It is a symmetrical copula and has larger tails than the Gaussian. The following
 \item finally, $U = CDF_{t-student(\nu)}(Z)$.
 \end{itemize}
 
-\pythoncode{code/modelling_risk_8.py}
+\pythoncodenon{code/modelling_risk_8.py}
 
 \begin{figure}[htbp]
 \centering

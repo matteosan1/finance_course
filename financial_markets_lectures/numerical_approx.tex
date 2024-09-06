@@ -71,7 +71,7 @@ f_{i,j} = \textrm{max}\left(K - S_0 \upsilon^{j} \delta^{N-j}, e^{-rdt}\left(pf_
 Below the \texttt{python} code to generate binomial trees for European and American options.
 The example computes using a 5-steps binomial tree the price of an European call with $r=0.1, \sigma=0.4, T=1, S_0=50, K=50$.
 
-\begin{ipython}
+\begin{ipythonnon}
 import math
 
 class Node:
@@ -132,7 +132,7 @@ class Tree:
 myTree = Tree(0.1, 0.4, step, 1, 50, 50, True, False)    
 print (f"Options price: {myTree.price():.4f}")
 myTree.print()
-\end{ipython}
+\end{ipythonnon}
 \begin{ioutput}
 Options price: 10.4968
  50.0000  10.4968
@@ -345,7 +345,7 @@ At the same time let's put a heat source close to the upper side of the plate.
 \noindent
 Let’s take $\Delta x = 1$ and $\alpha = 2.0$. Now we can write some \texttt{python} code to solve this problem numerically to see the temperature everywhere as a function of time. 
 
-\begin{ipython}
+\begin{ipythonnon}
 import numpy as np
 
 plate_length = 50
@@ -379,17 +379,17 @@ u[:, :1, 1:] = u_bottom
 u[:, :, (plate_length-1):] = u_right
 
 def calculate(u):
-    for k in range(0, max_iter_time-1, 1):
-        for i in range(1, plate_length-1, delta_x):
-            for j in range(1, plate_length-1, delta_x):
-                u[k + 1, i, j] = gamma * (u[k][i+1][j] + u[k][i-1][j] + 
-                                          u[k][i][j+1] + u[k][i][j-1] - 
-                                          4*u[k][i][j]) + u[k][i][j]
+  for k in range(0, max_iter_time-1, 1):
+      for i in range(1, plate_length-1, delta_x):
+          for j in range(1, plate_length-1, delta_x):
+              u[k + 1, i, j] = gamma * (u[k][i+1][j] + u[k][i-1][j] + 
+                                        u[k][i][j+1] + u[k][i][j-1] - 
+                                        4*u[k][i][j]) + u[k][i][j]
 
     return u
 
 u = calculate(u)
-\end{ipython}
+\end{ipythonnon}
 
 Figure~\ref{fig:heat_end_1} shows the heat distribution after 62.5 seconds. The central part of the plate is now much warmer. 
 \begin{figure}[htb]
@@ -401,7 +401,7 @@ Figure~\ref{fig:heat_end_1} shows the heat distribution after 62.5 seconds. The 
 
 As a second example, let’s set all of the boundary conditions to 0, and then randomize the initial condition for the interior grid (below only the updated part of the code is shown for brevity).
 
-\begin{ipython}
+\begin{ipythonnon}
 ...
 # Initial condition everywhere inside the grid
 #u_initial = 0
@@ -421,7 +421,7 @@ u_right = 0.0
 # Set the initial condition
 u.fill(u_initial)
 ...
-\end{ipython}
+\end{ipythonnon}
 
 In this second case, being the interior initially warmer it cools down as time goes by. Figure~\ref{fig:heat_2} shows the initial condition and the situation after about 30 seconds.
  
@@ -508,7 +508,7 @@ Consider again the heat equation (1D this time)
 \noindent
 with $y(x, 0) = \textrm{sin}\pi x$, $x_{0} = 0$, $x_M = 1$ and boundary conditions $= 0$. Let us approximate $y(x = 0.2, t = 0.5)$ using a grid with $\Delta x = 0.1$ (i.e. $M = 10$ and $0.2 = x_2$, and two different values of $\Delta t$: 0.0005 and 0.01.
 
-\begin{ipython}
+\begin{ipythonnon}
 import numpy as np
 import math
 
@@ -529,7 +529,7 @@ y[0,:] = np.sin(math.pi*x)
 
 y_exp = example(y, N, M, alpha)
 print (y[int(0.5/dt), int(0.2/dx)])
-\end{ipython}
+\end{ipythonnon}
 \noindent
 Running with $N=1000$ gives
 \begin{ioutput}
@@ -650,44 +650,42 @@ V_{i, n+1} = \cfrac{1}{2}\left(\sigma^2 i^2+ri\right)V_{i+1,n} \Delta t +
 \end{equation}
 
 This difference equation can be easily implemented in \texttt{python}.
-\begin{ipython}
+\begin{ipythonnon}
 import numpy as np
 
 class FiniteDifference:
-    def __init__(self, M, N, Smin, Smax, T, K, r, D, sigma):
-        self.r = r
-        self.K = K
-        self.D = D
-        self.sigma = sigma
-        self.M = M
-        self.N = N
-        self.V = np.zeros(shape=(M+1,N+1))   
-        self.dt = T/N
-        self.dS = (Smax - Smin)/M
+  def __init__(self, M, N, Smin, Smax, T, K, r, D, sigma):
+    self.r = r
+    self.K = K
+    self.D = D
+    self.sigma = sigma
+    self.M = M
+    self.N = N
+    self.V = np.zeros(shape=(M+1,N+1))   
+    self.dt = T/N
+    self.dS = (Smax - Smin)/M
+    self.S = np.linspace(Smin, Smax, M+1)
+    self.t = np.linspace(0, T, N+1)
+    self.V[:, 0] = np.maximum(self.S-self.K, 0)
+    self.V[0, :] = 0
+    self.V[self.M, :] = self.Smax*np.exp(-self.D*self.t) - \
+                        self.K*np.exp(-self.r*self.t)
 
-        self.S = np.linspace(Smin, Smax, M+1)
-        self.t = np.linspace(0, T, N+1)
-
-        self.V[:, 0] = np.maximum(self.S-self.K, 0)
-        self.V[0, :] = 0
-        self.V[self.M, :] = self.Smax*np.exp(-self.D*self.t) - \
-                            self.K*np.exp(-self.r*self.t)
-
-    def explicit(self):
-        for j in range(self.N):
-            for i in range(1, self.M):
-                self.V[i, j+1] = 0.5*self.dt*(self.sigma*self.sigma*i*i-\
-                                 (self.r-self.D)*i)*self.V[i-1, j]+(1-self.dt* \
-                                 (self.sigma*self.sigma*i*i+self.r))*self.V[i, j]+\
-                                 0.5*self.dt*(self.sigma*self.sigma*i*i+\
-                                 (self.r-self.D)*i)*self.V[i+1, j]
-\end{ipython}             
+  def explicit(self):
+    for j in range(self.N):
+      for i in range(1, self.M):
+        self.V[i, j+1] = 0.5*self.dt*(self.sigma*self.sigma*i*i-\
+                         (self.r-self.D)*i)*self.V[i-1, j]+(1-self.dt* \
+                         (self.sigma*self.sigma*i*i+self.r))*self.V[i, j]+\
+                         0.5*self.dt*(self.sigma*self.sigma*i*i+\
+                         (self.r-self.D)*i)*self.V[i+1, j]
+\end{ipythonnon}             
 
 As an example consider a European call with an underlying currently traded at \$20 (with a volatility of 0.2). The maturity is six months, the strike price is \$10 and the risk-free interest rate is 10\%. Let's compute the price of the option.
-\begin{ipython}
+\begin{ipythonnon}
 fd = FiniteDifference(100, 300, 0, 30, 1, 10, 0.2, 0, 0.1)
 fd.explicit()
-\end{ipython}
+\end{ipythonnon}
 
 Figure~\ref{fig:bs_finite_difference} shows the call option price against the current stock price. As a comparison the same plot obtained with the analytical solution of the Black-Scholes equation is also shown. 
 
@@ -712,54 +710,52 @@ The main characteristic of an American option is the possibility of early exerci
 The explicit finite difference method can be easily adapted to account for this additional feature not available in European options.
 
 After each iteration it is indeed enough to compare the calculated option value with the it intrinsic value, taking the larger of the two. The \texttt{python} class can be adapted accordingly (a parameter to set call or put has been added too):
-\begin{ipython}
+\begin{ipythonnon}
 import numpy as np
 
 class FiniteDifference:
-    def __init__(self, M, N, Smin, Smax, T, K, r, D, sigma, 
-                 iscall=True, isamerican=False):
-        self.iscall = iscall
-        self.isamerican = isamerican
-        self.r = r
-        self.K = K
-        self.D = D
-        self.sigma = sigma
-        self.M = M
-        self.N = N
-        self.V = np.zeros(shape=(M+1,N+1))   
-        self.dt = T/N
-        self.dS = (Smax - Smin)/M
+  def __init__(self, M, N, Smin, Smax, T, K, r, D, sigma, 
+               iscall=True, isamerican=False):
+    self.iscall = iscall
+    self.isamerican = isamerican
+    self.r = r
+    self.K = K
+    self.D = D
+    self.sigma = sigma
+    self.M = M
+    self.N = N
+    self.V = np.zeros(shape=(M+1,N+1))   
+    self.dt = T/N
+    self.dS = (Smax - Smin)/M
+    self.S = np.linspace(Smin, Smax, M+1)
+    self.t = np.linspace(0, T, N+1)
+    if self.iscall:
+      self.V[:, 0] = np.maximum(self.S - self.K, 0)
+      self.V[self.M, :] = Smax*np.exp(-self.D*self.t) - \
+                          self.K*np.exp(-self.r*self.t)
+      self.V[0, :] = 0
+    else:
+      self.V[:, 0] = np.maximum(self.K - self.S, 0)
+      self.V[self.M, :] = self.K*np.exp(-self.r*self.t) - \
+                          Smax*np.exp(-self.D*self.t)
 
-        self.S = np.linspace(Smin, Smax, M+1)
-        self.t = np.linspace(0, T, N+1)
-
-        if self.iscall:
-            self.V[:, 0] = np.maximum(self.S - self.K, 0)
-            self.V[self.M, :] = Smax*np.exp(-self.D*self.t) - \
-                                self.K*np.exp(-self.r*self.t)
-            self.V[0, :] = 0
-        else:
-            self.V[:, 0] = np.maximum(self.K - self.S, 0)
-            self.V[self.M, :] = self.K*np.exp(-self.r*self.t) - \
-                                Smax*np.exp(-self.D*self.t)
-
-    def explicit(self):
-        for j in range(self.N):
-            for i in range(1, self.M):
-                self.V[i, j+1] = 0.5*self.dt*(self.sigma*self.sigma*i*i-\
-                                 (self.r-self.D)*i)*self.V[i-1, j]+(1-self.dt* \
-                                 (self.sigma*self.sigma*i*i+self.r))*self.V[i, j]+\
-                                 0.5*self.dt*(self.sigma*self.sigma*i*i+\
-                                 (self.r-self.D)*i)*self.V[i+1, j]
-            if self.isamerican:
-                V[:, j+1] = np.maximum(V[:, j+1], V[:, 0])
-\end{ipython}             
+  def explicit(self):
+    for j in range(self.N):
+      for i in range(1, self.M):
+        self.V[i, j+1] = 0.5*self.dt*(self.sigma*self.sigma*i*i-\
+                         (self.r-self.D)*i)*self.V[i-1, j]+(1-self.dt* \
+                         (self.sigma*self.sigma*i*i+self.r))*self.V[i, j]+\
+                         0.5*self.dt*(self.sigma*self.sigma*i*i+\
+                         (self.r-self.D)*i)*self.V[i+1, j]
+        if self.isamerican:
+          V[:, j+1] = np.maximum(V[:, j+1], V[:, 0])
+\end{ipythonnon}             
 
 Consider now an American call with an underlying currently traded at \$20 (with a volatility of 0.2). The maturity is six months, the strike price is \$10 and the risk-free interest rate is 10\% and the dividend rate is 5\%. Let's compute the price of the option.
-\begin{ipython}
+\begin{ipythonnon}
 fd = FiniteDifference(100, 300, 0, 30, 1, 10, 0.2, 0.05, 0.1, True, True)
 fd.explicit()
-\end{ipython}
+\end{ipythonnon}
 
 Figure~\ref{fig:american_call_surface} shows the American option price surface for the call used in the example above.
 \begin{figure}[htb]
