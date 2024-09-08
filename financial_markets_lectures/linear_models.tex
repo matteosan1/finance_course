@@ -262,6 +262,7 @@ It is crucial to keep in mind that the multiple regression model requires \emph{
 
 \section{Capital Asset Pricing Model}
 \label{sec:capm}
+
 The Capital Asset Pricing Model (CAPM) describes the relationship between asset expected returns and \emph{systematic risk} of the market. No measure of unsystematic risk appears in the risk premium for in the world of CAPM diversification has already eliminated it.
 
 Sharpe~\cite{bib:capm_sharpe} and Lintner~\cite{bib:capm_lintner} developed the Capital Asset Pricing Model whose central insight is that the riskiness of an asset is not measured by the standard deviation of its return but by its beta. In particular, there is a linear relationship between the expected return of any security (or portfolio) and the expected return of the market portfolio. It is given by
@@ -309,6 +310,7 @@ Those who use CAPM pick individual stocks or portfolios, and compare them to dif
 
 \subsection{CAPM Example}
 \label{sec:linear_regression}
+
 Let's apply CAPM model to a couple of securities, the market proxy is the SP500 index while the risk free rate is approximated by the 3 months Treasury rate.
 Input data can be downloaded with \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/capm.csv}{capm.csv}.
 
@@ -325,7 +327,7 @@ To implement the linear regression model it can be used the \texttt{statsmodel} 
 
 So to determine $\beta$ and $\alpha$ for GE stock the model is made of its excess of returns ($y$) and market excess of returns ($X)$ 
 
-\pythoncode{code/linear_models_1.py}
+\pythoncodenon{code/linear_models_capm.py}
 
 \begin{ioutput}
 OLS Regression Results                                
@@ -339,16 +341,16 @@ No. Observations:                3340   AIC:                     -1.931e+04
 Df Residuals:                    3339   BIC:                     -1.930e+04
 Df Model:                           1                                                  
 Covariance Type:            nonrobust                                                  
-==============================================================================
+===========================================================================
 coef          std err          t      P>|t|      [0.025      0.975]
-------------------------------------------------------------------------------
-ret_SP500      1.1867      0.018     66.854      0.000       1.152       1.222
-==============================================================================
-Omnibus:                      900.145   Durbin-Watson:                   1.973
-Prob(Omnibus):                  0.000   Jarque-Bera (JB):            66833.895
-Skew:                           0.275   Prob(JB):                         0.00
-Kurtosis:                      24.908   Cond. No.                         1.00
-==============================================================================
+---------------------------------------------------------------------------
+ret_SP500      1.1867      0.018     66.854      0.000       1.152    1.222
+===========================================================================
+Omnibus:                      900.145   Durbin-Watson:                1.973
+Prob(Omnibus):                  0.000   Jarque-Bera (JB):         66833.895
+Skew:                           0.275   Prob(JB):                      0.00
+Kurtosis:                      24.908   Cond. No.                      1.00
+===========================================================================
 \end{ioutput}
 
 The most interesting (for us) part of the summary is: 
@@ -467,7 +469,7 @@ where $\mathbf{X}$ is the factor exposure matrix, $\mathbf{F}$ is the $K\times K
 
 Consider the example of previous Section and improve the model by adding the crude oil price as a second factor. Perform again the linear regression
 
-\pythoncode{code/linear_models_2.py}
+\pythoncodenon{code/linear_models_multifactor.py}
 
 \begin{ioutput}
 OLS Regression Results                                
@@ -628,10 +630,10 @@ Once we have centred our data around 0, $[X^T][X]$ is the covariance matrix.
 \begin{equation}
 	[\Sigma]=[X^T][X] =
 	\begin{bmatrix}
-		\textrm{var}(x_1) & \textrm{cov}(x_2, x_1) & \cdots & \textrm{cov}(x_n, x_1) \\
-		\textrm{cov}(x_1, x_2) & \textrm{var}(x_2) & \cdots & \textrm{cov}(x_n, x_2) \\
+		\var(x_1) & \cov(x_2, x_1) & \cdots & \cov(x_n, x_1) \\
+		\cov(x_1, x_2) & \var(x_2) & \cdots & \cov(x_n, x_2) \\
 		\vdots & \vdots & \vdots & \vdots \\
-		\textrm{cov}(x_1, x_n) & \textrm{cov}(x_2, x_n) & \cdots & \textrm{var}(x_n)
+		\cov(x_1, x_n) & \cov(x_2, x_n) & \cdots & \var(x_n)
 	\end{bmatrix}
 \end{equation}
 
@@ -711,7 +713,7 @@ In the previous example and in the following the \texttt{PCAWrapper} class of th
 This is a simple wrapper which implements the PCA algorithm and has few utility methods to get relevant information, e.g. extract components and project the data along the new axis.
 \end{finmarkets}
 
-\pythoncode{code/linear_models_3.py}
+\pythoncodenon{code/linear_models_pca.py}
 
 \subsection{Term Structure Analysis Using PCA}
 
@@ -780,7 +782,7 @@ The yield/rate time series of different maturities are shown in the top plot of 
 
 In bottom Fig.~\ref{fig:yield_rate_ts} we can see the yield curve term structure on different dates. In contrast to the previous figure, here one can distinctly see the inconsistencies in the dynamics and it is obvious that in some periods the movement is quite the opposite.
 
-\begin{figure}[htbp]
+\begin{figure}[htb]
 	\centering
 	\includegraphics[width=0.7\linewidth]{figures/treasury_rate}
 	\caption{Yield rate time series for different maturity Treasury bonds (top). Yield rate at different dates (bottom).}
@@ -797,13 +799,13 @@ For example, from 2018-05-17 (orange) to 2018-12-10 (pink), the slope of the cur
 
 Let's know apply PCA on the matrix $X$ representing the de-meaned daily yield change of $p$ maturities on $N$ days.
 
-\pythoncode{code/linear_models_4.py}
+\pythoncodenon{code/linear_models_pca_cps.py}
 
 Figure~\ref{fig:pca_explained_variance} indicates that almost 96\% of the variation in the data is described by the first principal component, and combined with the second and third components, it is almost 100\%, which means that all of the dynamics of the yield curve can be described by the first three components.
 
 \begin{figure}[hbtp]
 	\centering
-	\includegraphics[width=0.8\linewidth]{figures/pca_explained_variance}
+	\includegraphics[width=\linewidth]{figures/pca_explained_variance}
 	\caption{(left) Variance explained by each principal component. (right) Cumulative explained variance.}
 	\label{fig:pca_explained_variance}
 \end{figure}
@@ -811,14 +813,14 @@ Figure~\ref{fig:pca_explained_variance} indicates that almost 96\% of the variat
 The matrix made of the components values is called the \emph{loading matrix} and represents $X$ in the new coordinates.
 
 \begin{ioutput}
-            PC1       PC2       PC3       PC4       PC5       PC6       PC7
-DGS1   0.553153  0.521945  0.406891 -0.503280  0.014236 -0.049874 -0.007363
-DGS2   0.548462  0.229310 -0.058753  0.784664 -0.142051  0.033247  0.078571
-DGS5   0.401411 -0.187341 -0.458251 -0.105166  0.664757  0.058601 -0.370652
-DGS7   0.330703 -0.322376 -0.348364 -0.263626 -0.146838 -0.041370  0.756690
-DGS10  0.279229 -0.373706 -0.101193 -0.142498 -0.626985 -0.304434 -0.515790
-DGS20  0.180465 -0.429733  0.390784 -0.010568 -0.062438  0.789335 -0.054686
-DGS30  0.110360 -0.460045  0.580245  0.173307  0.345178 -0.524912  0.121570
+          PC1     PC2     PC3     PC4     PC5     PC6     PC7
+DGS1   0.5531  0.5219  0.4068 -0.5032  0.0142 -0.0498 -0.0073
+DGS2   0.5484  0.2293 -0.0587  0.7846 -0.1420  0.0332  0.0785
+DGS5   0.4014 -0.1873 -0.4582 -0.1051  0.6647  0.0586 -0.3706
+DGS7   0.3307 -0.3223 -0.3483 -0.2636 -0.1468 -0.0413  0.7566
+DGS10  0.2792 -0.3737 -0.1011 -0.1424 -0.6269 -0.3044 -0.5157
+DGS20  0.1804 -0.4297  0.3907 -0.0105 -0.0624  0.7893 -0.0546
+DGS30  0.1103 -0.4600  0.5802  0.1733  0.3451 -0.5249  0.1215
 \end{ioutput}
 
 Let's check the loading values for the first three components as shown in Fig.~~\ref{fig:yield_pca_components}.
@@ -831,7 +833,7 @@ Let's check the loading values for the first three components as shown in Fig.~~
 	
 \begin{figure}[hbtp]
 	\centering
-	\includegraphics[width=0.7\linewidth]{figures/pca_loading_matrix}
+	\includegraphics[width=0.5\linewidth]{figures/pca_loading_matrix}
 	\caption{Components values after having performed PCA.}
 	\label{fig:yield_pca_components}
 \end{figure}
@@ -847,23 +849,23 @@ In the 10Y bond approximation: PC1 has the dominant explanatory power, its resid
 
 Our last approximation is for 30Y bonds. In comparison to the 10Y curve, PC2 is more significant in explaining the 30Y trends. Moreover, in this case, the contribution of PC3 is much more substantial.
 
-\begin{figure}[hp]
+\begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.7\linewidth]{figures/dgs5_reco}
+	\includegraphics[width=0.65\linewidth]{figures/dgs5_reco}
 	\caption{DGS5 reconstruction by PCs (top). Residuals with original data by components (down).}
 	\label{fig:pca_dsg5}
 \end{figure}
 
 \begin{figure}[hp]
 	\centering
-	\includegraphics[width=0.7\linewidth]{figures/dgs10_reco}
+	\includegraphics[width=0.65\linewidth]{figures/dgs10_reco}
 	\caption{DGS10 reconstruction by PCs (top). Residuals with original data by components (down).}
 	\label{fig:pca_dsg10}
 \end{figure}
 
 \begin{figure}[hp]
 	\centering
-	\includegraphics[width=0.7\linewidth]{figures/dgs30_reco}
+	\includegraphics[width=0.65\linewidth]{figures/dgs30_reco}
 	\caption{DGS30 reconstruction by PCs (top). Residuals with original data by components (down).}
 	\label{fig:pca_dsg30}
 \end{figure}

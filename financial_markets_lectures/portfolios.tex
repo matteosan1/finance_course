@@ -1,7 +1,7 @@
 \chapter{Asset Allocation}
 \label{portfolio-optimization}
 
-Portfolio optimization models look for the optimal way to make investments. Usually investors expect either a maximum return for a given level of risk or a given return for a minimum risk so these models are typically based on two criteria: maximization of the expected return and/or minimization of the risk.
+Portfolio optimization looks for the optimal way to make investments. Usually investors expect either a maximum return for a given level of risk or a given return for a minimum risk so these models are typically based on two criteria: maximization of the expected return and/or minimization of the risk.
 
 While the concept of return is straightforward there are a variety of risk measures. The most popular one is the variance in return and we will mainly focus on it in this Chapter.
 
@@ -21,10 +21,7 @@ Hence the Markowitz model requires two major information:
 \item the covariance matrix of returns, which characterizes not only the individual variability of the return on each investment, but also how each investment's return tends to move with the others (correlation).
 \end{itemize}
 
-In the following examples we are going to use real data
-from:  AAPL (Apple), AMZN (Amazon), FB (Facebook), GOOG (Google), NFLX (Netflix). It can be downloaded with \texttt{yfinance}. Otherwise it can be directly used from \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/libro/input_files/portfolio_data.csv}{portfolio\_data.csv}.
-
-The data, shown in Figure~\ref{fig:stocks}, is made of the historical series of the closing prices in the last 5 years. 
+In the following examples we are going to use real data from:  AAPL (Apple), AMZN (Amazon), FB (Facebook), GOOG (Google), NFLX (Netflix), historical series can be directly used from \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/input_files/portfolio_data.csv}{portfolio\_data.csv}. The data, shown in Figure~\ref{fig:stocks}, is made of the series of the last 5 years closing prices. 
 
 \begin{figure}[htbp]
 \centering
@@ -33,11 +30,9 @@ The data, shown in Figure~\ref{fig:stocks}, is made of the historical series of 
 \label{fig:stocks}
 \end{figure}
 
-The main quantities (e.g. daily returns, covariance matrix,\ldots) can be easily computed with \texttt{pandas}.
-Variances can be added across time intervals if return in one interval is uncorrelated with those in others. The correlation of returns across time intervals (called \emph{auto-correlation}) is in general close to zero for most assets. This means that variances will grow with the length of the forecast horizon and the risk will grow with the square root of the forecast horizon. 
-Thus, a 5\% annual risk is equivalent to a 2.5\% risk over the first quarter or a 10\% risk over four years. 
-
-This relationship can be used to “annualize” risk, i.e. standardize risk numbers to an annual period. The observed daily return standard deviation ($\sigma_{daily}$) can be converted to annual risk according to
+The most useful quantities (e.g. daily returns, covariance matrix,\ldots) can be easily computed with \texttt{pandas}.
+Variances can be added across time intervals if return in one interval is uncorrelated with those in others. The correlation of returns across time intervals (called \emph{auto-correlation}) is in general close to zero for most assets. This means that variances will grow with the length of the forecast horizon and the risk will grow with the square root of the forecast horizon. Thus, a 5\% annual risk is equivalent to a 2.5\% risk over the first quarter or a 10\% risk over four years. 
+This can be used to “annualize” risk, i.e. standardize risk numbers to an annual period. The observed daily return standard deviation ($\sigma_{daily}$) can be converted to annual risk according to
 \begin{equation}
 \sigma_{yearly} = \sigma_{daily}\cdot\sqrt{252}
 \end{equation}
@@ -57,7 +52,8 @@ This relationship can be used to “annualize” risk, i.e. standardize risk num
 %Investors may use \emph{short sales} in their portfolios (a portfolio is short in those stocks with negative weights). 
 %Although short selling extends the set of possible portfolios we are not going to consider it here.
 
-\section{Optimization}\label{optimization}
+\subsection{The Model}
+\label{optimization}
 
 MPT model states that \textbf{the weights of a portfolio should be chosen such that its volatility (or its variance) is minimized, given a certain level of return}. Alternatively weights can be found by maximizing the return given a certain level of risk. 
 The application of this model reduces to a minimization problem: given the covariance matrix of the portfolio $\Sigma$, we need to find
@@ -77,20 +73,20 @@ In \texttt{python} we have already seen how to solve minimization problems (see 
 \item run the algorithm with \texttt{scipy.optimize.minimize}.
 \end{itemize}
 
-\pythoncode{code/portfolios_1.py}
+\pythoncodenon{code/portfolios_mpt.py}
 
 The optimization recommends to devote about 44\% of the portfolio to AAPL, about 10\% to AMZN, 12\% to FB and so on\ldots The expected return is 25\% as desired, with a variance of about 0.036 or, equivalently, a standard deviation of 0.19.
 
 \begin{ioutput}
-     fun: 0.03636340858846002
-     jac: array([0.07251946, 0.07721784, 0.07324787, 0.07043841, 0.08025067])
- message: 'Optimization terminated successfully'
-    nfev: 48
-     nit: 8
-    njev: 8
-  status: 0
+ message: Optimization terminated successfully
  success: True
-       x: array([0.43988165, 0.10839598, 0.12863822, 0.29488199, 0.02820217])
+  status: 0
+     fun: 0.03611648817922789
+       x: [ 4.454e-01  6.275e-02  1.227e-01  3.666e-01  2.545e-03]
+     nit: 9
+     jac: [ 7.240e-02  7.243e-02  7.199e-02  7.208e-02  7.233e-02]
+    nfev: 54
+    njev: 9
        
 Expected portfolio return: 0.250
 \end{ioutput}
@@ -100,7 +96,7 @@ In finance terminology, means to trace the \emph{efficient frontier of return an
 
 The following example computes the efficient frontier plot (shown in Fig.~\ref{fig:efficient_frontier}) with the return ranging from 0.20 to 0.45.
 
-\pythoncode{code/portfolios_2.py}
+\pythoncodenon{code/portfolios_efficient_frontier.py}
 
 \begin{figure}[htb]
 \centering
@@ -161,7 +157,7 @@ If you plot these three points they lay on a line.
 
 If we added a risk-free asset, with an expected return of 10\%, to the five risky ones considered so far we could repeat the Markowitz minimization to determine the efficient frontier of the resulting portfolio. 
 
-\pythoncode{code/portfolios_3.py}
+\pythoncodenon{code/portfolios_cal.py}
 
 \begin{figure}[htb]
 \centering
@@ -208,7 +204,7 @@ The portfolio that maximizes this ratio has some interesting properties. Suppose
 To meet the target return the weights need to be chosen such that:
 
 \begin{equation*} 
-(1 - w_r) * r_f + w_r * R_r =R_\textrm{target} 
+(1 - w_r)\cdot r_f + w_r\cdot R_r =R_\textrm{target} 
 \end{equation*}
 \noindent
 The standard deviation of the investment is: \(w_r\cdot \sigma_r\). Solving for \(w_r\) in the equation above, we get:
@@ -238,19 +234,18 @@ So, regardless of investor risk/return preference, \emph{the investment should g
 
 Let's compute the Sharpe portfolio with our sample.
 
-\pythoncode{code/portfolios_4.py}
+\pythoncodenon{code/portfolios_sharpe.py}
 
 \begin{ioutput}
-     fun: -1.259317843917775
-     jac: array([-0.37875983, -0.37936528, -0.26915939,  0.02855796, -0.37932488])
- message: 'Optimization terminated successfully'
-    nfev: 36
-     nit: 6
-    njev: 6
-  status: 0
+ message: Optimization terminated successfully
  success: True
-       x: array([1.19754346e-01, 5.43974190e-01, 5.20417043e-18, 1.22298005e-16,
-                 3.36271464e-01])
+  status: 0
+     fun: -1.260309429616595
+       x: [ 1.198e-01  5.440e-01  2.689e-17  0.000e+00  3.363e-01]
+     nit: 6
+     jac: [-3.786e-01 -3.792e-01 -2.692e-01  2.875e-02 -3.791e-01]
+    nfev: 36
+    njev: 6	
 
 Sharpe ratio:  1.259317843917775)
 \end{ioutput}
@@ -334,7 +329,7 @@ If we take the expectation of both sides, assuming $u'' < 0$,
 \begin{equation*}
   \begin{aligned}
   \mathbb{E}[u(X)] &= u(\mathbb{E}[X]) + u'(\mathbb{E}[X]) \mathbb{E}[X-\mathbb{E}[X]] + \frac{1}{2}u''(\mathbb{E}[X]) \mathbb{E}(X-\mathbb{E}[X])^2 + \ldots\\
-  &= u (\mathbb{E}[X]) + \frac{1}{2}u'' (\mathbb{E}[X]) Var(X) + \ldots < u (\mathbb{E}[X])
+  &= u (\mathbb{E}[X]) + \frac{1}{2}u'' (\mathbb{E}[X]) \var(X) + \ldots < u (\mathbb{E}[X])
   \end{aligned}
 \end{equation*}
 If we let $X$ to be the realized return of certain investment, the investors’ goal would be to maximize the expected utility, and from the last equation above it seems
@@ -510,6 +505,9 @@ In the absence of constraints, the Black-Litterman model only recommends a depar
 
 Having specified $\tau$ and the covariance matrix of the error term $\Omega$, all inputs are entered into the Black-Litterman formula and the New Combined Return Vector ($\mathbb{E}[R]$) is derived. 
 
+
+
+
 \section{Risk Parity Portfolio}
 \label{risk-parity-portfolio}
 
@@ -582,7 +580,7 @@ where ideally it is required to be 0 the difference between the squared sum of t
 
 Going back to our data sample let's find out the weights to give us a risk parity portfolio.
 
-\pythoncode{code/portfolios_5.py}
+\pythoncodenon{code/portfolios_risk_parity.py}
 
 Figure~\ref{fig:risk_parity} shows the fraction of risk allocated to each asset with the corresponding weight within the portfolio.
 
@@ -614,7 +612,7 @@ so that the relation to minimize becomes
 \noindent
 Translating it into \texttt{python} we get:
 
-\pythoncode{code/portfolios_6.py}
+\pythoncodenon{code/portfolios_budget_allocation.py}
 
 Figure~\ref{fig:risk_allocation} shows the amount of risk associated to each asset and its weight within the portfolio. 
 Indeed for each stock we have allocated the desired amount of risk.

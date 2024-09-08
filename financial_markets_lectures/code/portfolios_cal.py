@@ -2,9 +2,6 @@ num_assets = 6
 returns_rf = np.append(returns.values, 0.10)
 cov_rf = np.zeros(shape=(num_assets, num_assets))
 cov_rf[:num_assets-1, :num_assets-1] = covariances.values
-#cov_rf = np.column_stack((covariances.values, np.array([0, 0, 0, 0, 0])))
-#cov_rf = np.row_stack((cov_rf, np.array([0, 0, 0, 0, 0, 0])))
-print (cov_rf)
 
 result_rf = []
 
