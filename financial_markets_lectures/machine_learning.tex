@@ -723,6 +723,192 @@ The handwritten images used in this test are shown in Fig.~\ref{fig:test_images}
 \label{fig:test_images}
 \end{figure}
 
+\section{Implementing a NN from Scratch}
+
+In this Section we are going to see how it could be possible to develop a simple neural network without relying on high-level packages like \texttt{keras} or \texttt{pytorch}.
+This is of course a pure exercise to help understanding better how a neural network works.
+
+%Layer by Layer
+%We need to keep in mind the big picture here :
+%
+%We feed input data into the neural network.
+%The data flows from layer to layer until we have the output.
+%Once we have the output, we can calculate the error which is a scalar.
+%Finally we can adjust a given parameter (weight or bias) by subtracting the derivative of the error with respect to the parameter itself.
+%We iterate through that process.
+%The most important step is the 4th. We want to be able to have as many layers as we want, and of any type. But if we modify/add/remove one layer from the network, the output of the network is going to change, which is going to change the error, which is going to change the derivative of the error with respect to the parameters. We need to be able to compute the derivatives regardless of the network architecture, regardless of the activation functions, regardless of the loss we use.
+
+We are going to implement each layer separately. Every layer that we might create (fully connected, convolutional, maxpooling, dropout, etc.) have at least 2 things in common: input ($X$) and output ($Y$) data.
+
+\subsubsection{Forward Propagation}
+
+This is called \emph{forward propagation}: essentially, we give the input data to the first layer, then the output of every layer becomes the input of the next layer until we reach the end of the network. By comparing the result of the network ($Y$) with the desired output (let’s say $\tilde{Y}$), we can calculate an error $E$. The goal is to minimize that error by changing the parameters in the network. That is \emph{backward propagation (backpropagation)}.
+
+\subsubsection{Gradient Descent}
+
+Basically, we want to change some parameter in the network (call it $w$) so that the total error $E$ decreases. There is a clever way to do it (not randomly) which is the following:
+
+\begin{equation}
+w\leftarrow w - \alpha\cfrac{\partial E}{\partial w}
+\end{equation}
+
+Where $\alpha$ is a parameter in the range $[0,1]$ that we set and that is called the \emph{learning rate}. Anyway, the important thing here is $\frac{\partial E}{\partial w}$. We need to be able to find the value of that expression for any parameter of the network regardless of its architecture.
+
+\subsubsection{Backward Propagation}
+
+Suppose that we give a layer the derivative of the error with respect to its output ($\frac{\partial E}{\partial Y}$), then it must be able to provide the derivative of the error with respect to its input ($\frac{\partial E}{\partial X}$).
+
+Remember that $E$ is a scalar and $X$ and $Y$ are matrices.
+Let’s forget about $\frac{\partial E}{\partial X}$ for now. The trick here, is that if we have access to $\frac{\partial E}{\partial Y}$ we can very easily calculate $\frac{\partial E}{\partial W}$ (if the layer has any trainable parameters) without knowing anything about the network architecture ! We simply use the chain rule:
+
+\begin{equation}
+\cfrac{\partial E}{\partial w} = \sum_i \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial w}
+\end{equation}
+
+The unknown is $\frac{\partial y_j}{\partial w}$ which totally depends on how the layer is computing its output. So if every layer have access to $\frac{\partial E}{\partial Y}$ then we can update our parameters !
+
+Don’t forget, the output of one layer is the input of the next layer. Which means $\frac{\partial E}{\partial X}$ for one layer is $\frac{\partial E}{\partial Y}$ for the previous layer! Again, we can use the chain rule:
+
+\begin{equation}
+\cfrac{\partial E}{\partial x_i} = \sum_j \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial x_i}
+\end{equation}
+
+This is very important, it’s the key to understand backpropagation ! 
+
+This is what I described earlier. Layer 3 is going to update its parameters using $\frac{\partial E}{\partial Y}$, and is then going to pass $\frac{\partial E}{\partial H_2}$ to the previous layer, which is its own “$\frac{\partial E}{\partial Y}$”. Layer 2 is then going to do the same, and so on and so forth.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.2\textwidth]{figures/backpropagation_from_scratch}
+	\caption{Test handwritten digits used in the example.}
+	\label{fig:backpropagation_from_scratch}
+\end{figure}
+
+\subsection{Fully Connected Layer}
+Now let's define and implement the first type of layer: fully connected layer. FC layers are the most basic layers as every input neurons are connected to every output neurons.
+
+The value of each output neuron can be calculated as the following :
+\begin{equation}
+y_i = b_j + \sum_i x_i w_{ij}
+\end{equation}
+
+With matrices, we can compute this formula for every output neuron in one shot using a dot product: $Y=XW+B$
+\emph{Note that I’m not using any activation function yet, that’s because we will implement it in a separate layer.}
+
+As we said, suppose we have a matrix containing the derivative of the error with respect to that layer’s output ($\frac{\partial E}{\partial Y}$). We need:
+\begin{itemize}
+\item the derivative of the error with respect to the parameters ($\frac{\partial E}{\partial W}$, $\frac{\partial E}{\partial B}$);
+\item the derivative of the error with respect to the input ($\frac{\partial E}{\partial X}$).
+\end{itemize}
+
+Let's calculate $\frac{\partial E}{\partial W}$. This matrix should be the same size as $W$ itself: $i\times j$ where $i$ is the number of input neurons and $j$ the number of output neurons. We need one gradient for every weight and using the chain rule stated earlier, we can write:
+
+\begin{equation}
+\cfrac{\partial E}{\partial w_{ij}} = \cfrac{\partial E}{\partial y_1}\cfrac{\partial y_1}{\partial w_{ij}} + \ldots + \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial w_{ij}} = \cfrac{\partial E}{\partial y_j}x_i 
+\end{equation}
+
+Therefore,
+\begin{equation}
+\cfrac{\partial E}{\partial W} = X^T\cfrac{\partial E}{\partial Y}
+\end{equation}
+
+Same story to calculate $\frac{\partial E}{\partial B}$
+
+\begin{equation}
+\cfrac{\partial E}{\partial b_j} = \cfrac{\partial E}{\partial y_1}\cfrac{\partial y_1}{\partial b_j} + \ldots \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial b_j} = \cfrac{\partial E}{\partial y_j} 
+\end{equation}
+
+And conclude that,
+\begin{equation}
+\cfrac{\partial E}{\partial B} = \cfrac{\partial E}{\partial Y}
+\end{equation}
+
+Now we are left with $\cfrac{\partial E}{\partial X}$ which is very important as it will “act” as $\cfrac{\partial E}{\partial Y}$ for the layer before that one. Again, using the chain rule,
+
+\begin{equation}
+\cfrac{\partial E}{\partial x_i} = \cfrac{\partial E}{\partial y_1}\cfrac{\partial y_1}{\partial x_i} + \ldots \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial x_i} = \cfrac{\partial E}{\partial y_1} w_{i1} + \ldots + \cfrac{\partial E}{\partial y_j} w_{ij} 
+\end{equation}
+
+Finally, we can write the whole matrix :
+\begin{equation}
+\cfrac{\partial E}{\partial C} = \cfrac{\partial E}{\partial Y}W^T
+\end{equation}
+
+\pythoncodenon{code/machine_learning_fclayer.py}
+
+\subsubsection{Activation Layer}
+All the calculation we did until now were completely linear. It's hopeless to learn anything with that kind of model. We need to add non-linearity to the model by applying non-linear functions to the output of some layers.
+No worries, it’s going to be way faster as there are no learnable parameters. We just need to calculate $\frac{\partial E}{\partial X}$.
+
+We will call $f$ and $f'$ the activation function and its derivative respectively.
+
+Forward Propagation is quite straightforward. For a given input $X$, the output is simply the activation function applied to every element of $X$: $Y = f(X)$. 
+
+Given $\frac{\partial E}{\partial Y}$, we want to calculate $\frac{\partial E}{\partial X}$
+\begin{equation}
+\cfrac{\partial E}{\partial x_i} = \cfrac{\partial E}{\partial y_i}\cfrac{\partial y_i}{\partial x_i} = \cfrac{\partial E}{\partial y_i} f'(x_i) 
+\end{equation}
+
+\pythoncodenon{code/machine_learning_activation.py}
+
+You can also write some activation functions and their derivatives
+
+\pythoncodenon{code/machine_learning_tanh.py}
+
+\subsection{Loss Function}
+Until now, for a given layer, we supposed that $\frac{\partial E}{\partial Y}$ was given (by the next layer). But what happens to the last layer ? We simply give it manually, and it depends on how we define the error.
+
+The error of the network, which measures how good or bad the network did for a given input data, is defined by you. There are many ways to define the error, and one of the most known is called MSE — Mean Squared Error.
+
+What we need now, as for every other layer, is to define $\frac{\partial E}{\partial Y}$. Except now, we finally reached $E$ !
+\begin{equation}
+\cfrac{\partial E}{\partial y_i} = \cfrac{2}{n} (y_i - \tilde{y_i}) 
+\end{equation}
+
+\pythoncodenon{code/machine_learning_loss.py}
+
+\subsection{Network Class}
+
+We are going to make a \texttt{Network} class to create and run neural networks
+
+\pythoncodenon{code/machine_learning_network.py}
+
+Finally ! We can use our class to create a neural network with as many layers as we want !
+
+The network will be used to classify handwritten digits from the MNIST dataset (like it has been done in Sec~\ref{neural-net-to-recognize-handwritten-digits}) and it is made up of
+\begin{itemize}
+	\item Input layer: will have 784 neurons corresponding to the each pixels in the 28x28 input images;
+	\item A hidden layer: will have 10 neurons with ReLU activation.
+	\item Finally the output layer: will have 10 neurons corresponding to the ten digit classes with softmax activation.
+\end{itemize}
+
+The sample has been pre-processed by scaling each image in the range [0,1] (from the usual [0,255] of gray-scale images), also each matrix is flatten i.e. converted the $X$ array from (60000, 28, 28) to (60000, 784). Finally the array has been transposed such that each example image is a column.
+
+\pythoncodenon{code/machine_learning_mnist.py}
+
+\begin{ioutput}
+epoch 1/30   error=0.238658
+epoch 2/30   error=0.093187
+epoch 3/30   error=0.073039
+...
+epoch 28/30   error=0.011636
+epoch 29/30   error=0.011306
+epoch 30/30   error=0.010901
+predicted values : 
+[
+array([[ 0.119,  0.084 , -0.081,  0.084, -0.068, 
+         0.011,  0.057,  0.976, -0.042, -0.0462]]),
+array([[ 0.071,  0.211,  0.501 ,  0.058, -0.020, 
+         0.175,  0.057 ,  0.037,  0.020,  0.107]]),
+array([[ 1.197e-01,  8.794e-01, -4.410e-04, 4.407e-02, -4.213e-02,  
+         5.300e-02, 5.581e-02,  8.255e-02, -1.182e-01, 9.888e-02]])
+]
+true values : 
+[[0. 0. 0. 0. 0. 0. 0. 1. 0. 0.]
+ [0. 0. 1. 0. 0. 0. 0. 0. 0. 0.]
+ [0. 1. 0. 0. 0. 0. 0. 0. 0. 0.]]
+\end{ioutput}
+
 \section{Remarks on Artificial Intelligence}
 
 A neural network is a \emph{black box} in the sense that while it can approximate any function, studying its structure won't give you any insights on the functional form of the function being approximated.
