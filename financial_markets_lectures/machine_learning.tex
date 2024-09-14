@@ -89,123 +89,254 @@ This entire algorithm is called \emph{gradient descent optimization process} and
 \label{fig:training}
 \end{figure}
 
+\section{Implementing a NN from Scratch}
+
+In this Section we are going to develop a simple neural network without relying on high-level packages like \texttt{keras} or \texttt{pytorch}.
+This is of course a pure exercise to help understanding better how a neural network works, and in production you should always rely on official and well validated \texttt{python} modules.
+
+%Layer by Layer
+%We need to keep in mind the big picture here :
+%
+%We feed input data into the neural network.
+%The data flows from layer to layer until we have the output.
+%Once we have the output, we can calculate the error which is a scalar.
+%Finally we can adjust a given parameter (weight or bias) by subtracting the derivative of the error with respect to the parameter itself.
+%We iterate through that process.
+%The most important step is the 4th. We want to be able to have as many layers as we want, and of any type. But if we modify/add/remove one layer from the network, the output of the network is going to change, which is going to change the error, which is going to change the derivative of the error with respect to the parameters. We need to be able to compute the derivatives regardless of the network architecture, regardless of the activation functions, regardless of the loss we use.
+
+The goal is to to create a fully connected neural network. In the following Sections we are going to review again each steps of the training focusing on the mathematical aspects needed for the actual implementation.
+%convolutional, maxpooling, dropout, etc.) have at least 2 things in common: input ($X$) and output ($Y$) data.
+
+\subsection{Forward Propagation}
+In the \emph{forward propagation}, we give the input data to the first layer, then the output of every layer becomes the input of the next until we reach the end of the network. By comparing the result of the network ($Y$) with the desired output (let’s say $\tilde{Y}$), we can calculate an error $E$. The goal is to minimize that error by changing the parameters in the network. That is \emph{backward propagation (backpropagation)}.
+
+\subsection{Gradient Descent}
+
+Basically, we want to change some parameter in the network (call it $w$) so that the total error $E$ decreases. There is a clever way to do it (not randomly) which is the following:
+
+\begin{equation}
+	w\leftarrow w - \alpha\cfrac{\partial E}{\partial w}
+\end{equation}
+where $\alpha$ is a parameter in the range $[0,1]$ that we set and that is called the \emph{learning rate}. 
+Anyway, the important thing here is $\frac{\partial E}{\partial w}$. 
+We need to be able to find the value of that expression for any parameter of the network regardless of its architecture.
+
+Note that the parameter $\alpha$ should follow an update policy, or an optimizer (e.g. \emph{Adam} in the more complicated examples will see later) , but for the sake of simplicity we’re simply going to keep it constant throughout the entire gradient descent.
+
+\subsection{Backward Propagation}
+
+Suppose that we give a layer the derivative of the error with respect to its output ($\frac{\partial E}{\partial Y}$), then it must be able to provide the derivative of the error with respect to its input ($\frac{\partial E}{\partial X}$).
+
+Remember that $E$ is a scalar and $X$ and $Y$ are matrices.
+Let’s forget about $\frac{\partial E}{\partial X}$ for now. The trick here, is that if we have access to $\frac{\partial E}{\partial Y}$ we can very easily calculate $\frac{\partial E}{\partial W}$ (if the layer has any trainable parameters) without knowing anything about the network architecture. We simply use the chain rule:
+
+\begin{equation}
+	\cfrac{\partial E}{\partial w} = \sum_i \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial w}
+\end{equation}
+
+The unknown is $\frac{\partial y_j}{\partial w}$ which totally depends on how the layer is computing its output. So if every layer have access to $\frac{\partial E}{\partial Y}$ then we can update our parameters.
+
+Don’t forget, the output of one layer is the input of the next layer. Which means $\frac{\partial E}{\partial X}$ for one layer is $\frac{\partial E}{\partial Y}$ for the previous layer. Again, we can use the chain rule:
+
+\begin{equation}
+	\cfrac{\partial E}{\partial x_i} = \sum_j \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial x_i}
+\end{equation}
+
+%This is very important, it’s the key to understand backpropagation ! 
+%This is what I described earlier. 
+Referring to Fig.~\ref{fig:backpropagation_from_scratch}, 
+Layer 3 is going to update its parameters using $\frac{\partial E}{\partial Y}$, and is then going to pass $\frac{\partial E}{\partial H_2}$ to the previous layer, which is its own “$\frac{\partial E}{\partial Y}$”. Layer 2 is then going to do the same, and so on and so forth.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/backpropagation_from_scratch}
+	\caption{Graphical example of how back-propagation works.}
+	\label{fig:backpropagation_from_scratch}
+\end{figure}
+
+\subsection{Fully Connected Layer}
+Now let's define and implement the first type of layer: fully connected layer. These are the most basic layers as every input neurons are connected to every output neurons.
+
+The value of each output neuron can be calculated as the following :
+\begin{equation}
+	y_i = b_j + \sum_i x_i w_{ij}
+\end{equation}
+
+With matrices, we can compute this formula for every output neuron in one shot using a dot product: $Y=XW+B$
+\emph{Note that I’m not using any activation function yet, that’s because we will implement it in a separate layer.}
+
+As we said, suppose we have a matrix containing the derivative of the error with respect to that layer’s output ($\frac{\partial E}{\partial Y}$). We need:
+\begin{itemize}
+	\item the derivative of the error with respect to the parameters ($\frac{\partial E}{\partial W}$, $\frac{\partial E}{\partial B}$);
+	\item the derivative of the error with respect to the input ($\frac{\partial E}{\partial X}$).
+\end{itemize}
+
+Let's calculate $\frac{\partial E}{\partial W}$. This matrix should be the same size as $W$ itself: $i\times j$ where $i$ is the number of input neurons and $j$ the number of output neurons. We need one gradient for every weight and using the chain rule stated earlier, we can write:
+
+\begin{equation}
+	\cfrac{\partial E}{\partial w_{ij}} = \cfrac{\partial E}{\partial y_1}\cfrac{\partial y_1}{\partial w_{ij}} + \ldots + \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial w_{ij}} = \cfrac{\partial E}{\partial y_j}x_i 
+\end{equation}
+
+Therefore,
+\begin{equation}
+	\cfrac{\partial E}{\partial W} = X^T\cfrac{\partial E}{\partial Y}
+\end{equation}
+
+Same story to calculate $\frac{\partial E}{\partial B}$
+
+\begin{equation}
+	\cfrac{\partial E}{\partial b_j} = \cfrac{\partial E}{\partial y_1}\cfrac{\partial y_1}{\partial b_j} + \ldots \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial b_j} = \cfrac{\partial E}{\partial y_j} 
+\end{equation}
+
+And conclude that,
+\begin{equation}
+	\cfrac{\partial E}{\partial B} = \cfrac{\partial E}{\partial Y}
+\end{equation}
+
+Now we are left with $\cfrac{\partial E}{\partial X}$ which is very important as it will “act” as $\cfrac{\partial E}{\partial Y}$ for the layer before that one. Again, using the chain rule,
+
+\begin{equation}
+	\cfrac{\partial E}{\partial x_i} = \cfrac{\partial E}{\partial y_1}\cfrac{\partial y_1}{\partial x_i} + \ldots \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial x_i} = \cfrac{\partial E}{\partial y_1} w_{i1} + \ldots + \cfrac{\partial E}{\partial y_j} w_{ij} 
+\end{equation}
+
+Finally, we can write the whole matrix :
+\begin{equation}
+	\cfrac{\partial E}{\partial C} = \cfrac{\partial E}{\partial Y}W^T
+\end{equation}
+
+\pythoncodenon{code/machine_learning_fclayer.py}
+
+\subsection{Activation Layer}
+All the calculation we did until now were completely linear. It's hopeless to learn anything with that kind of model. We need to add non-linearity to the model by applying non-linear functions to the output of some layers. We just need to calculate $\frac{\partial E}{\partial X}$.
+
+We will call $f$ and $f'$ the activation function and its derivative respectively. For a given input $X$, the output is simply the activation function applied to every element of $X$: $Y = f(X)$. 
+
+Given $\frac{\partial E}{\partial Y}$, we want to calculate $\frac{\partial E}{\partial X}$
+\begin{equation}
+	\cfrac{\partial E}{\partial x_i} = \cfrac{\partial E}{\partial y_i}\cfrac{\partial y_i}{\partial x_i} = \cfrac{\partial E}{\partial y_i} f'(x_i) 
+\end{equation}
+
+\pythoncodenon{code/machine_learning_activation.py}
+
+You can also write some activation functions and their derivatives
+
+\pythoncodenon{code/machine_learning_tanh.py}
+
 \subsection{Loss Function}
-The NN loss (or error) is computed by the \emph{loss function}. Different loss functions will give different error estimates for the same prediction, and thus they have a considerable effect on the performance of any model. Two are the main choices:
+Until now, for a given layer, we supposed that $\frac{\partial E}{\partial Y}$ was given (by the next layer). But what happens to the last layer ? We simply give it manually, and it depends on how we define the error.
+
+
+The error of the network, which measures how good or bad the network did for a given input data, is computed by the \emph{loss function}.
+
+Different loss functions will give different error estimates for the same prediction, and thus they have a considerable effect on the performance of any model. Two are the main choices:
 
 \begin{itemize}
-\tightlist
-\item Mean Absolute Error (MAE): the average of the absolute value of the differences between the predictions and true values. It shows how far off we are on average from the correct value;
-\item Mean Squared Error (MSE): the average of the squared differences between the predictions and true values. It instead penalizes larger errors more heavily and is commonly used in regression tasks. Sometimes it is also referred to as \emph{L2-norm}, or squared norm
-\begin{equation}
-	L2 = \frac{1}{2}\sum_i (y_i - t_i)^2
-\end{equation} 
+	\tightlist
+	\item Mean Absolute Error (MAE): the average of the absolute value of the differences between the predictions and true values. It shows how far off we are on average from the correct value;
+	\item Mean Squared Error (MSE): the average of the squared differences between the predictions and true values. It instead penalizes larger errors more heavily and is commonly used in regression tasks. Sometimes it is also referred to as \emph{L2-norm}, or squared norm
+	\begin{equation}
+		L2 = \frac{1}{2}\sum_i (y_i - t_i)^2
+	\end{equation} 
 \end{itemize}
+
+What we need now, as for every other layer, is to define $\frac{\partial E}{\partial Y}$ (let's assume we are going to use MSE). Except now, we finally reached $E$ !
+\begin{equation}
+	\cfrac{\partial E}{\partial y_i} = \cfrac{2}{n} (y_i - \tilde{y_i}) 
+\end{equation}
+
+\pythoncodenon{code/machine_learning_loss.py}
+
 Either metrics may be appropriate depending on the situation and you can use both for comparison. More information about loss function can be found in~\cite{bib:loss_function}.
 
-\subsection{Back-propagation}
-The machine learning process is iterative. Data is fed into the model, then is accuracy is measured through the loss function. Then, with the help of optimization algorithms, the model’s parameters (weights and biases) are varied until the desired outputs are reached.
+\subsection{\texttt{Network} Class}
 
-\emph{Forward-propagation} is the process of pushing inputs through the net. At the end of each epoch, the obtained outputs is compared to the targets to form the errors. In the \emph{back-propagation}~\cite{bib:backpropagation}, the process is reversed and weights and biases are adjusted based on the obtained errors, minimizing the loss, thus improving the accuracy of artificial neural networks.
-Referring to the network in Figure~\ref{fig:training} which contains an input layer, a hidden layer, and an output layer let's describe how it works.
+Finally ee are going to make a \texttt{Network} class to create and run neural networks
 
-Two inputs, $(x_1, x_2)$, are fed into the network and passed to the hidden nodes, whose ouputs, $a_i$, are finally sent to the output layer which produces the prediction $y_i$. The arrows that connect the nodes represents the weights, e.g. $w^{(l)}_{ij}$ is the weights connecting the $i$th node of the $l$th layer to the $j$th node in the next layer. Finally the predictions are compared to the target outputs $t_i$. 
+\pythoncodenon{code/machine_learning_network.py}
 
-Without loss of generality, we are going to assume that the used loss function is the L2-norm, and that each node activation function is a \emph{sigmoid} (logistic function)
-
-\begin{equation}
-  \sigma(x) = \frac{1}{1+e^{-x}}
-\end{equation} 
-and its derivative (will be useful later on)
-\begin{equation}
-  \frac{\partial\sigma(x)}{\partial x} = \sigma(x)(1-\sigma(x))
-  \label{eq:sigmoid_derivative}
-\end{equation} 
-
-\subsubsection{Back-propagation for the Output Layer}
-The idea of back-propagation is to compute the gradient of the loss function concerning the weights and biases of each neuron in the network. Then, we use the gradients obtained to update the parameters such that the loss computed at the new value is less than the loss at the current value. The loss decreases by iteratively adjusting the weights and biases based on the obtained gradients, and the network gradually learns to make better predictions.
-
-The updates are directly related to the partial derivatives of the loss and to the errors (the differences between targets and outputs). The update rule can be written as
-\begin{equation}
-  w \leftarrow w - \eta\nabla_w L(w)
-\end{equation}
-where $\eta$ is the algorithm's \emph{learning rate}.
-
-To compute the right hand side of the previous expression we can use the chain rule. Considering for simplicity just one weight 
-\begin{equation}
-  \frac{\partial L}{\partial w^{(2)}_{ij}} = \frac{\partial L}{\partial y_j}\frac{\partial y_j}{\partial a^{(2)}_j}\frac{\partial a^{(2)}_j}{\partial w^{(2)}_{ij}}
-\label{eq:backprop_output}
-\end{equation}
-where $i$ corresponds to the hidden layer, $j$ corresponds to the output layer, and $a^{(2)}$ represents the input to the activation function (the linear combination of the neuron input) of a node in the second layer.
-The first the three terms is the loss derivative, since we are using the L2-norm it becomes
-\begin{equation}
-  \frac{\partial L}{\partial y_j} = (y_j - t_j)
-\end{equation}
-The second one is the sigmoid derivative (see Eq.~\ref{eq:sigmoid_derivative}):
-\begin{equation}
-  \frac{\partial y_j}{\partial a^{(2)}_j} = \sigma(a^{(2)}_j)(1-\sigma(a^{(2)}_j)) = y_j(1 - y_j)
-\end{equation}
-where the last step is due to the fact we are considering the output layer.
-Finally, the third one is the derivative of $a_j$ (i.e. the input value of the activation function) which equals
-\begin{equation}
-  \frac{\partial a^{(2)}_j}{\partial w^{(2)}_{ij}} = h_i
-\end{equation}
-where $h_i$ is the output of the $i$th node of the hidden layer.
-
-Replacing the partial derivatives into Eq.~\ref{eq:backprop_output} above, we get
-\begin{equation}
-  \frac{\partial L}{\partial w^{(2)}_{ij}} = (y_j - t_j) y_j(1 - y_j) h_i
-\end{equation}
-
-This is the update rule for a single weight for the output layer in our example network.
-
-\subsubsection{Back-propagation for a Hidden Layer}
-Similarly to the back-propagation of the output layer $\frac{\partial L}{\partial w^{(1)}_{ij}}$, the update rule for a single weight in a hidden layer, is given by Eq.~\ref{eq:backprop_output}, and again it can be computed following the chain rule.
-
-The calculation of the last two terms of the right hand side are the same as in the output layer case, but the calculation of the first component is more complex.
-The problem is that we don’t have targets for the hidden layers’ outputs, so we can’t calculate the errors as we did for the output layers.
-Instead, we solve this issue by tracing the contribution of each neuron (hidden or not) to the outputs’ errors. Let’s illustrate this with the following back-propagation example.
-
-The weight $w^{(1)}_{11}$ contributes to $h_1$. But $h_1$ is connected to the weights $w^{(2)}_{11}$ and $w^{(2)}_{12}$, contributing to two outputs. This means we can trace the contribution of $w^{(1)}_{11}$ to two outputs ($y_1$ and $y_2$) and errors ($e_1$ and $e_2$).
-
-We take the errors and back-propagate them through the net using the $w^{(2)}_{1j}$ weights. This allows us to measure the contribution of the hidden layers to the respective errors and use it to update the $w^{(1)}$ weights.
-
-Let’s take the solution for weight $w^{(1)}_{11}$ as an example:
-\begin{align}
-	\frac{\partial L}{\partial h_1} &= \frac{\partial L}{\partial y_1}\frac{\partial y_1}{\partial a^{(2)}_1}\frac{\partial a^{(2)}_1}{\partial h_1} + \frac{\partial L}{\partial y_2}\frac{\partial y_2}{\partial a^{(2)}_2}\frac{\partial a^{(2)}_2}{\partial h_1} \\ 
-	& = (y_1 - t_1)y_1(1-y_1)w^{(2)}_{11} + (y_2 - t_2)y_2(1-y_2)w^{(2)}_{12}
-\end{align}
-
-Now, we can calculate $\frac{\partial L}{\partial w^{(1)}_{11}}$ %, which was the only missing part of the update rule for the hidden layer.
-whose final expression is
-\begin{equation}
-  \frac{\partial L}{\partial w^{(1)}_{11}} = [(y_1-t_1)y_1(1-y_1)w^{(2)}_{11}+(y_2-t_2)y_2(1-y_2)w^{(2)}_{12}]h_1(1-h_1)x_1	
-\end{equation}
-The generalized form of this equation is:
-\begin{equation}
-  \frac{\partial L}{\partial w^{(l)}_{ij}} = \sum_k(y_k-t_k)y_k(1-y_k)w^{(l+1)}_{ij}h_j(1-h_j)x_i
-\end{equation}
-In our programs the \emph{optimization function} that we will be used is \emph{Adam}.
-
-\subsection{Regression and Classification}
-\label{regression-and-classification}
-
-Neural network applications can be categorized into two main classes: \emph{classification} and \emph{regression}. Let's see their characteristics and differences.
-
-\subsubsection{Classification}
-\label{classification}
-
-Classification is the process of finding a function which helps in dividing the input dataset into classes based on its characteristics. The goal is to find the mapping function between the input ($x$) and the \textbf{discrete} output ($y$) or, equivalently, to find the decision boundary which can divide the dataset into different classes.
-
-A typical classification problem is the \emph{email spam detection}. The model is trained on different parameters using millions of emails, and whenever it receives a new email, it checks whether is spam or not. Classification algorithms can also be used in speech recognition, car plates identification,~$\ldots$
-
-\subsubsection{Regression}
-\label{regression}
-
-Regression is the process of finding hidden correlations between dependent variables. It helps in predicting market trends, house prices,~$\ldots$
-
-The goal is to find the mapping function between the input variables ($x$) and the \emph{continuous} output variable ($y$), that is to find the best fit which can predict the output.
-
-As an example suppose we want to do weather forecasting. The model is trained on past data, and on the basis of today's inputs can predict the weather for future days. In general whenever we are dealing with function approximations this kind of techniques can be applied.
+%\subsection{Back-propagation}
+%The machine learning process is iterative. Data is fed into the model, then is accuracy is measured through the loss function. Then, with the help of optimization algorithms, the model’s parameters (weights and biases) are varied until the desired outputs are reached.
+%
+%\emph{Forward-propagation} is the process of pushing inputs through the net. At the end of each epoch, the obtained outputs is compared to the targets to form the errors. In the \emph{back-propagation}~\cite{bib:backpropagation}, the process is reversed and weights and biases are adjusted based on the obtained errors, minimizing the loss, thus improving the accuracy of artificial neural networks.
+%Referring to the network in Figure~\ref{fig:training} which contains an input layer, a hidden layer, and an output layer let's describe how it works.
+%
+%Two inputs, $(x_1, x_2)$, are fed into the network and passed to the hidden nodes, whose ouputs, $a_i$, are finally sent to the output layer which produces the prediction $y_i$. The arrows that connect the nodes represents the weights, e.g. $w^{(l)}_{ij}$ is the weights connecting the $i$th node of the $l$th layer to the $j$th node in the next layer. Finally the predictions are compared to the target outputs $t_i$. 
+%
+%Without loss of generality, we are going to assume that the used loss function is the L2-norm, and that each node activation function is a \emph{sigmoid} (logistic function)
+%
+%\begin{equation}
+%  \sigma(x) = \frac{1}{1+e^{-x}}
+%\end{equation} 
+%and its derivative (will be useful later on)
+%\begin{equation}
+%  \frac{\partial\sigma(x)}{\partial x} = \sigma(x)(1-\sigma(x))
+%  \label{eq:sigmoid_derivative}
+%\end{equation} 
+%
+%\subsubsection{Back-propagation for the Output Layer}
+%The idea of back-propagation is to compute the gradient of the loss function concerning the weights and biases of each neuron in the network. Then, we use the gradients obtained to update the parameters such that the loss computed at the new value is less than the loss at the current value. The loss decreases by iteratively adjusting the weights and biases based on the obtained gradients, and the network gradually learns to make better predictions.
+%
+%The updates are directly related to the partial derivatives of the loss and to the errors (the differences between targets and outputs). The update rule can be written as
+%\begin{equation}
+%  w \leftarrow w - \eta\nabla_w L(w)
+%\end{equation}
+%where $\eta$ is the algorithm's \emph{learning rate}.
+%
+%To compute the right hand side of the previous expression we can use the chain rule. Considering for simplicity just one weight 
+%\begin{equation}
+%  \frac{\partial L}{\partial w^{(2)}_{ij}} = \frac{\partial L}{\partial y_j}\frac{\partial y_j}{\partial a^{(2)}_j}\frac{\partial a^{(2)}_j}{\partial w^{(2)}_{ij}}
+%\label{eq:backprop_output}
+%\end{equation}
+%where $i$ corresponds to the hidden layer, $j$ corresponds to the output layer, and $a^{(2)}$ represents the input to the activation function (the linear combination of the neuron input) of a node in the second layer.
+%The first the three terms is the loss derivative, since we are using the L2-norm it becomes
+%\begin{equation}
+%  \frac{\partial L}{\partial y_j} = (y_j - t_j)
+%\end{equation}
+%The second one is the sigmoid derivative (see Eq.~\ref{eq:sigmoid_derivative}):
+%\begin{equation}
+%  \frac{\partial y_j}{\partial a^{(2)}_j} = \sigma(a^{(2)}_j)(1-\sigma(a^{(2)}_j)) = y_j(1 - y_j)
+%\end{equation}
+%where the last step is due to the fact we are considering the output layer.
+%Finally, the third one is the derivative of $a_j$ (i.e. the input value of the activation function) which equals
+%\begin{equation}
+%  \frac{\partial a^{(2)}_j}{\partial w^{(2)}_{ij}} = h_i
+%\end{equation}
+%where $h_i$ is the output of the $i$th node of the hidden layer.
+%
+%Replacing the partial derivatives into Eq.~\ref{eq:backprop_output} above, we get
+%\begin{equation}
+%  \frac{\partial L}{\partial w^{(2)}_{ij}} = (y_j - t_j) y_j(1 - y_j) h_i
+%\end{equation}
+%
+%This is the update rule for a single weight for the output layer in our example network.
+%
+%\subsubsection{Back-propagation for a Hidden Layer}
+%Similarly to the back-propagation of the output layer $\frac{\partial L}{\partial w^{(1)}_{ij}}$, the update rule for a single weight in a hidden layer, is given by Eq.~\ref{eq:backprop_output}, and again it can be computed following the chain rule.
+%
+%The calculation of the last two terms of the right hand side are the same as in the output layer case, but the calculation of the first component is more complex.
+%The problem is that we don’t have targets for the hidden layers’ outputs, so we can’t calculate the errors as we did for the output layers.
+%Instead, we solve this issue by tracing the contribution of each neuron (hidden or not) to the outputs’ errors. Let’s illustrate this with the following back-propagation example.
+%
+%The weight $w^{(1)}_{11}$ contributes to $h_1$. But $h_1$ is connected to the weights $w^{(2)}_{11}$ and $w^{(2)}_{12}$, contributing to two outputs. This means we can trace the contribution of $w^{(1)}_{11}$ to two outputs ($y_1$ and $y_2$) and errors ($e_1$ and $e_2$).
+%
+%We take the errors and back-propagate them through the net using the $w^{(2)}_{1j}$ weights. This allows us to measure the contribution of the hidden layers to the respective errors and use it to update the $w^{(1)}$ weights.
+%
+%Let’s take the solution for weight $w^{(1)}_{11}$ as an example:
+%\begin{align}
+%	\frac{\partial L}{\partial h_1} &= \frac{\partial L}{\partial y_1}\frac{\partial y_1}{\partial a^{(2)}_1}\frac{\partial a^{(2)}_1}{\partial h_1} + \frac{\partial L}{\partial y_2}\frac{\partial y_2}{\partial a^{(2)}_2}\frac{\partial a^{(2)}_2}{\partial h_1} \\ 
+%	& = (y_1 - t_1)y_1(1-y_1)w^{(2)}_{11} + (y_2 - t_2)y_2(1-y_2)w^{(2)}_{12}
+%\end{align}
+%
+%Now, we can calculate $\frac{\partial L}{\partial w^{(1)}_{11}}$ %, which was the only missing part of the update rule for the hidden layer.
+%whose final expression is
+%\begin{equation}
+%  \frac{\partial L}{\partial w^{(1)}_{11}} = [(y_1-t_1)y_1(1-y_1)w^{(2)}_{11}+(y_2-t_2)y_2(1-y_2)w^{(2)}_{12}]h_1(1-h_1)x_1	
+%\end{equation}
+%The generalized form of this equation is:
+%\begin{equation}
+%  \frac{\partial L}{\partial w^{(l)}_{ij}} = \sum_k(y_k-t_k)y_k(1-y_k)w^{(l+1)}_{ij}h_j(1-h_j)x_i
+%\end{equation}
+%In our programs the \emph{optimization function} that will be used is \emph{Adam}.
 
 \subsection{Hyper-parameters Setting}
 \label{neural-network-design}
@@ -239,28 +370,28 @@ If your data is linearly separable, then you don't need any hidden layers at all
 Beyond that, there's a mountain of commentary on the question of hidden layer configuration in NNs. One issue within this subject on which there is a \textbf{consensus} is the performance difference from adding additional hidden layers: the situations in which performance improves with a second (or third\ldots) hidden layer are very few i.e. \emph{one hidden layer is sufficient for the large majority of problems}. Table~\ref{tab:nn} summarizes the capabilities of neural network architectures with various hidden layers.
 
 \begin{center}
-\begin{table}[htbp]
-\begin{tabularx}{\textwidth}{|c|X|}%|p{0.3\linewidth}|p{0.65\linewidth}|}
-\hline
-%\vspace{1mm}
-Number of Hidden Layers & Result\xdef\tempwidth{\the\linewidth}\\
-\hline
-%\vspace{0.2\baselineskip} 
-0 & \multicolumn{1}{|m{\tempwidth}|}{Only capable of representing linear separable functions or decisions.} \\
-\hline
-%\vspace{0.2\baselineskip}
-1 & \multicolumn{1}{|m{\tempwidth}|}{Can approximate any function that contains a continuous mapping from one finite space to another.} \\
-\hline
-%\vspace{0.5\baselineskip}
-2 & \multicolumn{1}{|m{\tempwidth}|}{Can represent an arbitrary decision boundary to arbitrary accuracy with rational activation functions and can approximate any smooth mapping to any accuracy.} \\
-\hline
-%\vspace{0.1\baselineskip}
-More than 2 &  \multicolumn{1}{|m{\tempwidth}|}{Additional layers can learn complex representations (sort of automatic feature engineering)} \\
-\hline
-\end{tabularx}
-\vspace{2mm}
-\caption{Determining the number of hidden layers.}
-\label{tab:nn}
+	\begin{table}[htbp]
+		\begin{tabularx}{\textwidth}{|c|X|}%|p{0.3\linewidth}|p{0.65\linewidth}|}
+		\hline
+		%\vspace{1mm}
+		Number of Hidden Layers & Result\xdef\tempwidth{\the\linewidth}\\
+		\hline
+		%\vspace{0.2\baselineskip} 
+		0 & \multicolumn{1}{|m{\tempwidth}|}{Only capable of representing linear separable functions or decisions.} \\
+		\hline
+		%\vspace{0.2\baselineskip}
+		1 & \multicolumn{1}{|m{\tempwidth}|}{Can approximate any function that contains a continuous mapping from one finite space to another.} \\
+		\hline
+		%\vspace{0.5\baselineskip}
+		2 & \multicolumn{1}{|m{\tempwidth}|}{Can represent an arbitrary decision boundary to arbitrary accuracy with rational activation functions and can approximate any smooth mapping to any accuracy.} \\
+		\hline
+		%\vspace{0.1\baselineskip}
+		More than 2 &  \multicolumn{1}{|m{\tempwidth}|}{Additional layers can learn complex representations (sort of automatic feature engineering)} \\
+		\hline
+	\end{tabularx}
+	\vspace{2mm}
+	\caption{Determining the number of hidden layers.}
+	\label{tab:nn}
 \end{table}
 \end{center}
 
@@ -280,7 +411,7 @@ Obviously, some compromise must be reached between too many and too few neurons 
 \item a rough approximation can be obtained by the geometric pyramid rule~\cite{bib:master} (e.g. for a three layer network with $n$ input and $m$ output neurons, the hidden layer would have $\sqrt{n\cdot m}$ neurons);
 \item over-fitting can usually be prevented by keeping the number of neurons below~\cite{bib:hagan}:
 \begin{equation*}
-N_h = \frac{N_s}{\alpha\cdot(N_i+N_o)}
+	N_h = \frac{N_s}{\alpha\cdot(N_i+N_o)}
 \end{equation*}
 where $N_i$ = number of input neurons, $N_o$ = number of output neurons, $N_s$ = number of samples in training data set, $\alpha$ = an arbitrary scaling factor usually between $[2-10]$. 
 You want to limit the number of free parameters in your model (\emph{degree}) to a small portion of the degrees of freedom in your data which is the number of samples times the  dimensions in each sample or $N_s\cdot(N_i+N_o)$. So $\alpha$ is a way to indicate how general you want your model to be, or how much you want to prevent over-fitting (with 10 giving the safest architecture).
@@ -314,7 +445,28 @@ For about 100 or fewer parameters (such as the choice of number, type of layers,
 Neural network training and testing is performed using two modules: \texttt{keras}~\cite{bib:keras} (which in turn is based on a Google open source library called \texttt{tensorflow}~\cite{bib:tensorflow}) and \texttt{scikit-learn}~\cite{bib:scikit} which provides many useful utilities.
 \end{attention}
 
-\section{Function approximation}
+\section{Regression and Classification}
+\label{regression-and-classification}
+
+Neural network applications can be categorized into two main classes: \emph{classification} and \emph{regression}. Let's see their characteristics and differences.
+
+\subsection{Regression}
+\label{regression}
+
+Regression is the process of finding hidden correlations between dependent variables. It helps in predicting market trends, house prices,~$\ldots$
+
+The goal is to find the mapping function between the input variables ($x$) and the \emph{continuous} output variable ($y$), that is to find the best fit which can predict the output.
+
+As an example suppose we want to do weather forecasting. The model is trained on past data, and on the basis of today's inputs can predict the weather for future days. In general whenever we are dealing with function approximations this kind of techniques can be applied.
+
+\subsection{Classification}
+\label{classification}
+
+Classification is the process of finding a function which helps in dividing the input dataset into classes based on its characteristics. The goal is to find the mapping function between the input ($x$) and the \textbf{discrete} output ($y$) or, equivalently, to find the decision boundary which can divide the dataset into different classes.
+
+A typical classification problem is the \emph{email spam detection}. The model is trained on different parameters using millions of emails, and whenever it receives a new email, it checks whether is spam or not. Classification algorithms can also be used in speech recognition, car plates identification,~\ldots
+
+\section{Function Approximation Example}
 \label{function-approximation}
 
 Let's design an ANN which is capable of learning the functional form underlying a set of data. For this example the training sample is generated as a two columns array: $x$ (input), $f(x)$ (target output) where $f(x) = x^3 +2$. The dataset is saved in \href{https://github.com/matteosan1/finance_course/raw/develop/libro/input_files/function_approx.csv}{function\_approx.csv}. 
@@ -338,30 +490,7 @@ Figure~\ref{fig:scalers} reports the different transformations on the distributi
 \label{fig:scalers}
 \end{figure}
 
-\begin{ipython}
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
-
-df = pd.read_csv("function_approx.csv")
-print("Data before scaling ", df['X'].min(), df['X'].max(),
-                              df['y'].min(), df['y'].max())
-
-scale_X = MinMaxScaler()
-scale_y = MinMaxScaler()
-
-X_scaled = scale_X.fit_transform(df[['X']])
-y_scaled = scale_y.fit_transform(df[['y']])
-
-print("The same data after the normalization ", X_scaled.min()
-                                              , X_scaled.max()
-                                              , y_scaled.min()
-                                              , y_scaled.max())
-
-X_train, X_test, y_train, y_test = train_test_split(X_scaled, 
-                                                    y_scaled, 
-                                                    test_size=0.2)
-\end{ipython}
+\pythoncode{code/machine_learning_function_approx_preprocess.py}
 \begin{ioutput}
 Data before scaling -2.0 2.0 -6.0 9.999999999994714
 The same data after the normalization  0.0 1.0 0.0 1.0
@@ -374,18 +503,8 @@ In the following we will use complex networks just for illustration, but no atte
 In our first example two hidden layers with 15 and 5 neurons respectively and a \texttt{sigmoid} activation function are used, see Fig,~\ref{fig:ann_1}. The \texttt{inputs} parameter has to be set to 1 since we have just one single input, the \texttt{x} value.
 The training will last 5000 epochs and the mean squared error is used as loss function. Note the parameter \texttt{batch\_size} in the \texttt{fit} command; it can be useful in those circumstances where if we will feed the complete dataset during the training process to the model and then will try to do a back-propagation for all examples at once, we might run out of memory, and each training epoch may take too long to execute. To avoid a situation like this, we need to split our dataset indeed into batches.
 
-\begin{ipython}
-from keras.models import Sequential
-from keras.layers import Dense
+\pythoncode{code/machine_learning_function_approx.py}
 
-model = Sequential()
-model.add(Dense(15, input_dim=1, activation='sigmoid'))
-model.add(Dense(5, activation='sigmoid'))
-model.add(Dense(1, activation='sigmoid'))
-
-model.compile(loss='mse', optimizer='adam')
-model.fit(X_train, y_train, epochs=5000, batch_size=10, verbose=1)
-\end{ipython}
 \begin{ioutput}
 Epoch 1/5000
 100/100 [==============================] - 1s 2ms/step - loss: 0.0362
@@ -412,7 +531,7 @@ Since it takes some time to generate data samples and training, it is always adv
 Also both the training model and the actual scalers need to be stored in files in order to use them for later predictions. 
 %Remember that the NN has to work with data as close as possible to that used during the training to give meaningful results, so every time we need to apply the very same scaling functions to our inputs and outputs.
 
-\begin{ipython}
+\begin{ipythonnon}
 import joblib
 
 model_name = 'func_approx'
@@ -420,7 +539,7 @@ model.save(job_name)
 joblib.dump(scale_X, model_name + "_x_scaler.save")
 joblib.dump(scale_y, model_name + "_y_scaler.save")
 model.save(model_name)
-\end{ipython}
+\end{ipythonnon}
 
 \subsection{Model Prediction}
 
@@ -428,11 +547,11 @@ A \emph{perfect} model would lead to loss=0 so the lower these number the better
 Model performance improves with the number of epochs in the training, since the NN has more chances to learn the input features. To get an idea of what is going on in Fig.~\ref{fig:training_vs_epochs} is shown the actual function we want to approximate and different predictions obtained with the same architecture but various number of epochs (i.e. 5, 100, 800, 5000). Clearly the agreement improves with the number of epochs.
 \textbf{Notice that if the original dateset has been scaled or transformed in any way, we need to apply the same transformation to the input before the prediction and apply the inverse transformation to the result to get the correct values.}
 
-\begin{ipython}
+\begin{ipythonnon}
 x0 = 1
 x_transf = scale_X.transform([[x0]])
 print (scale_y.inverse_transform(model.predict(x_transf)))
-\end{ipython}
+\end{ipythonnon}
 \begin{ioutput}
 1/1 [==============================] - 0s 52ms/step
 [[2.996728]]
@@ -461,13 +580,13 @@ In our example since the two numbers are in good agreement we can be confident t
 
 The check can be done with the \texttt{evaluate()} method
 
-\begin{ipython}
+\begin{ipythonnon}
 eval_train = model.evaluate(X_train, y_train)
 print(f'Training: {eval_train}')
 
 eval_test = model.evaluate(X_test, y_test)
 print(f'Test: {eval_test}')
-\end{ipython}
+\end{ipythonnon}
 \begin{ioutput}
 100/100 [==============================] - 0s 1ms/step - loss: 5.2089e-06
 Training: 5.208917627896881e-06
@@ -579,24 +698,7 @@ Stacking convolutional layers prove to be very effective, and allows to learn bo
 The CNN output won't be a single number but rather a list containing the probabilities that an image belongs to each class, thanks to the \texttt{softmax} activation at the last layer. 
 Next we define the CNN architecture, see Fig.~\ref{fig:cnn2d}, to explore its capabilities the sample provided with the \texttt{mnist} module will be used.
 
-\begin{ipython}
-import numpy as np, mnist
-from keras.models import Sequential
-from keras.layers import Dense, Conv2D, MaxPooling2D, Flatten
-from tensorflow.keras.utils import to_categorical
-
-train_images = mnist.train_images() 
-train_labels = mnist.train_labels() 
-
-model = Sequential()
-model.add(Conv2D(8, kernel_size=3, input_shape=(28, 28, 1)))
-model.add(MaxPooling2D(pool_size=2))
-model.add(Flatten())
-model.add(Dense(10, activation="softmax"))
-
-model.compile(loss='categorical_crossentropy', optimizer='adam')
-model.fit(train_images, to_categorical(train_labels), epochs=5, verbose=1)
-\end{ipython}
+\pythoncode{code/machine_learning_cnn.py}
 \begin{ioutput}
 Epoch 1/5
 1875/1875 [==============================] - 19s 10ms/step - loss: 2.0868
@@ -640,7 +742,7 @@ The most common pooling operation are:
 \end{itemize}
 \end{attention}
 
-\begin{figure}[hb]
+\begin{figure}[htb]
 \centering
 \includegraphics[width=0.9\textwidth]{figures/cnn_2d}
 \caption{Graphical representation of the CNN developed to recognize handwritten digits.}
@@ -649,7 +751,7 @@ The most common pooling operation are:
 
 Let's see how well our NN predicts \texttt{mnist} testing digits.
 
-\begin{ipython}
+\begin{ipythonnon}
 test_images = mnist.test_images()
 test_labels = mnist.test_labels()
 
@@ -658,7 +760,7 @@ predictions = model.predict(test_images[:10])
 print ("Tesing on MNIST digits...")
 print("Predicted: ", np.argmax(predictions, axis=1)) 
 print("Truth:     ", test_labels[:10])
-\end{ipython}
+\end{ipythonnon}
 \begin{ioutput}
 Tesing on MNIST digits...
 Predicted:  [7 2 1 0 4 1 4 4 6 9]
@@ -672,9 +774,10 @@ for i, p in enumerate(predictions[-2]):
     print("9th digit:", [f"dig {i}: {p:.3f}"])
 \end{ipython}
 \begin{ioutput}
-9th digit: ['dig 0: 0.0000', 'dig 1: 0.0000', 'dig 2: 0.0000', 'dig 3: 0.0000', 
-            'dig 4: 0.0000', 'dig 5: 0.0001', 'dig 6: 0.9999', 'dig 7: 0.0000', 
-            'dig 8: 0.0000', 'dig 9: 0.0000']
+9th digit: ['dig 0: 0.0000', 'dig 1: 0.0000', 'dig 2: 0.0000', 
+            'dig 3: 0.0000', 'dig 4: 0.0000', 'dig 5: 0.0001', 
+            'dig 6: 0.9999', 'dig 7: 0.0000', 'dig 8: 0.0000', 
+            'dig 9: 0.0000']
 \end{ioutput}
 
 %So the second ranked digit is a 6 (which can be confused with a five if the lower loop is almost closed).
@@ -684,7 +787,7 @@ The NN performance can be checked using your own calligraphy.
 Open your favorite image editor (e.g. Paint, GIMP,\ldots) and create a 200x200 pixels canvas. With the help of the mouse (or a pen) draw a digit and save it as a png file.
 Before passing the image to the NN it has to be transformed to match the size and characteristics of those used in the training. This is done with an ad-hoc function, \texttt{transform\_image}, shown below.
 
-\begin{ipython}
+\begin{ipythonnon}
 import numpy as np
 from PIL import Image
 
@@ -701,7 +804,7 @@ for f in filenames:
     print ("Predicted: ", np.argmax(predict, axis=1))
     print("%:", [f"{p[np.argmax(p)]) for p in predict]:.3f}")
     print(["f{p:.2f}" for p in predict[0]])
-\end{ipython}
+\end{ipythonnon}
 \begin{ioutput}
 Predicted:  [4]
 %: ['0.802']
@@ -723,190 +826,35 @@ The handwritten images used in this test are shown in Fig.~\ref{fig:test_images}
 \label{fig:test_images}
 \end{figure}
 
-\section{Implementing a NN from Scratch}
+\subsection{Handwritten Digits with \texttt{Network}}
 
-In this Section we are going to see how it could be possible to develop a simple neural network without relying on high-level packages like \texttt{keras} or \texttt{pytorch}.
-This is of course a pure exercise to help understanding better how a neural network works.
-
-%Layer by Layer
-%We need to keep in mind the big picture here :
-%
-%We feed input data into the neural network.
-%The data flows from layer to layer until we have the output.
-%Once we have the output, we can calculate the error which is a scalar.
-%Finally we can adjust a given parameter (weight or bias) by subtracting the derivative of the error with respect to the parameter itself.
-%We iterate through that process.
-%The most important step is the 4th. We want to be able to have as many layers as we want, and of any type. But if we modify/add/remove one layer from the network, the output of the network is going to change, which is going to change the error, which is going to change the derivative of the error with respect to the parameters. We need to be able to compute the derivatives regardless of the network architecture, regardless of the activation functions, regardless of the loss we use.
-
-We are going to implement each layer separately. Every layer that we might create (fully connected, convolutional, maxpooling, dropout, etc.) have at least 2 things in common: input ($X$) and output ($Y$) data.
-
-\subsubsection{Forward Propagation}
-
-This is called \emph{forward propagation}: essentially, we give the input data to the first layer, then the output of every layer becomes the input of the next layer until we reach the end of the network. By comparing the result of the network ($Y$) with the desired output (let’s say $\tilde{Y}$), we can calculate an error $E$. The goal is to minimize that error by changing the parameters in the network. That is \emph{backward propagation (backpropagation)}.
-
-\subsubsection{Gradient Descent}
-
-Basically, we want to change some parameter in the network (call it $w$) so that the total error $E$ decreases. There is a clever way to do it (not randomly) which is the following:
-
-\begin{equation}
-w\leftarrow w - \alpha\cfrac{\partial E}{\partial w}
-\end{equation}
-
-Where $\alpha$ is a parameter in the range $[0,1]$ that we set and that is called the \emph{learning rate}. Anyway, the important thing here is $\frac{\partial E}{\partial w}$. We need to be able to find the value of that expression for any parameter of the network regardless of its architecture.
-
-\subsubsection{Backward Propagation}
-
-Suppose that we give a layer the derivative of the error with respect to its output ($\frac{\partial E}{\partial Y}$), then it must be able to provide the derivative of the error with respect to its input ($\frac{\partial E}{\partial X}$).
-
-Remember that $E$ is a scalar and $X$ and $Y$ are matrices.
-Let’s forget about $\frac{\partial E}{\partial X}$ for now. The trick here, is that if we have access to $\frac{\partial E}{\partial Y}$ we can very easily calculate $\frac{\partial E}{\partial W}$ (if the layer has any trainable parameters) without knowing anything about the network architecture ! We simply use the chain rule:
-
-\begin{equation}
-\cfrac{\partial E}{\partial w} = \sum_i \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial w}
-\end{equation}
-
-The unknown is $\frac{\partial y_j}{\partial w}$ which totally depends on how the layer is computing its output. So if every layer have access to $\frac{\partial E}{\partial Y}$ then we can update our parameters !
-
-Don’t forget, the output of one layer is the input of the next layer. Which means $\frac{\partial E}{\partial X}$ for one layer is $\frac{\partial E}{\partial Y}$ for the previous layer! Again, we can use the chain rule:
-
-\begin{equation}
-\cfrac{\partial E}{\partial x_i} = \sum_j \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial x_i}
-\end{equation}
-
-This is very important, it’s the key to understand backpropagation ! 
-
-This is what I described earlier. Layer 3 is going to update its parameters using $\frac{\partial E}{\partial Y}$, and is then going to pass $\frac{\partial E}{\partial H_2}$ to the previous layer, which is its own “$\frac{\partial E}{\partial Y}$”. Layer 2 is then going to do the same, and so on and so forth.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.2\textwidth]{figures/backpropagation_from_scratch}
-	\caption{Test handwritten digits used in the example.}
-	\label{fig:backpropagation_from_scratch}
-\end{figure}
-
-\subsection{Fully Connected Layer}
-Now let's define and implement the first type of layer: fully connected layer. FC layers are the most basic layers as every input neurons are connected to every output neurons.
-
-The value of each output neuron can be calculated as the following :
-\begin{equation}
-y_i = b_j + \sum_i x_i w_{ij}
-\end{equation}
-
-With matrices, we can compute this formula for every output neuron in one shot using a dot product: $Y=XW+B$
-\emph{Note that I’m not using any activation function yet, that’s because we will implement it in a separate layer.}
-
-As we said, suppose we have a matrix containing the derivative of the error with respect to that layer’s output ($\frac{\partial E}{\partial Y}$). We need:
+We can use the \texttt{Network} class to cross-check the classification of handwritten digits from the MNIST dataset (like it has been done in Sec~\ref{neural-net-to-recognize-handwritten-digits}) and it is made up of
 \begin{itemize}
-\item the derivative of the error with respect to the parameters ($\frac{\partial E}{\partial W}$, $\frac{\partial E}{\partial B}$);
-\item the derivative of the error with respect to the input ($\frac{\partial E}{\partial X}$).
-\end{itemize}
-
-Let's calculate $\frac{\partial E}{\partial W}$. This matrix should be the same size as $W$ itself: $i\times j$ where $i$ is the number of input neurons and $j$ the number of output neurons. We need one gradient for every weight and using the chain rule stated earlier, we can write:
-
-\begin{equation}
-\cfrac{\partial E}{\partial w_{ij}} = \cfrac{\partial E}{\partial y_1}\cfrac{\partial y_1}{\partial w_{ij}} + \ldots + \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial w_{ij}} = \cfrac{\partial E}{\partial y_j}x_i 
-\end{equation}
-
-Therefore,
-\begin{equation}
-\cfrac{\partial E}{\partial W} = X^T\cfrac{\partial E}{\partial Y}
-\end{equation}
-
-Same story to calculate $\frac{\partial E}{\partial B}$
-
-\begin{equation}
-\cfrac{\partial E}{\partial b_j} = \cfrac{\partial E}{\partial y_1}\cfrac{\partial y_1}{\partial b_j} + \ldots \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial b_j} = \cfrac{\partial E}{\partial y_j} 
-\end{equation}
-
-And conclude that,
-\begin{equation}
-\cfrac{\partial E}{\partial B} = \cfrac{\partial E}{\partial Y}
-\end{equation}
-
-Now we are left with $\cfrac{\partial E}{\partial X}$ which is very important as it will “act” as $\cfrac{\partial E}{\partial Y}$ for the layer before that one. Again, using the chain rule,
-
-\begin{equation}
-\cfrac{\partial E}{\partial x_i} = \cfrac{\partial E}{\partial y_1}\cfrac{\partial y_1}{\partial x_i} + \ldots \cfrac{\partial E}{\partial y_j}\cfrac{\partial y_j}{\partial x_i} = \cfrac{\partial E}{\partial y_1} w_{i1} + \ldots + \cfrac{\partial E}{\partial y_j} w_{ij} 
-\end{equation}
-
-Finally, we can write the whole matrix :
-\begin{equation}
-\cfrac{\partial E}{\partial C} = \cfrac{\partial E}{\partial Y}W^T
-\end{equation}
-
-\pythoncodenon{code/machine_learning_fclayer.py}
-
-\subsubsection{Activation Layer}
-All the calculation we did until now were completely linear. It's hopeless to learn anything with that kind of model. We need to add non-linearity to the model by applying non-linear functions to the output of some layers.
-No worries, it’s going to be way faster as there are no learnable parameters. We just need to calculate $\frac{\partial E}{\partial X}$.
-
-We will call $f$ and $f'$ the activation function and its derivative respectively.
-
-Forward Propagation is quite straightforward. For a given input $X$, the output is simply the activation function applied to every element of $X$: $Y = f(X)$. 
-
-Given $\frac{\partial E}{\partial Y}$, we want to calculate $\frac{\partial E}{\partial X}$
-\begin{equation}
-\cfrac{\partial E}{\partial x_i} = \cfrac{\partial E}{\partial y_i}\cfrac{\partial y_i}{\partial x_i} = \cfrac{\partial E}{\partial y_i} f'(x_i) 
-\end{equation}
-
-\pythoncodenon{code/machine_learning_activation.py}
-
-You can also write some activation functions and their derivatives
-
-\pythoncodenon{code/machine_learning_tanh.py}
-
-\subsection{Loss Function}
-Until now, for a given layer, we supposed that $\frac{\partial E}{\partial Y}$ was given (by the next layer). But what happens to the last layer ? We simply give it manually, and it depends on how we define the error.
-
-The error of the network, which measures how good or bad the network did for a given input data, is defined by you. There are many ways to define the error, and one of the most known is called MSE — Mean Squared Error.
-
-What we need now, as for every other layer, is to define $\frac{\partial E}{\partial Y}$. Except now, we finally reached $E$ !
-\begin{equation}
-\cfrac{\partial E}{\partial y_i} = \cfrac{2}{n} (y_i - \tilde{y_i}) 
-\end{equation}
-
-\pythoncodenon{code/machine_learning_loss.py}
-
-\subsection{Network Class}
-
-We are going to make a \texttt{Network} class to create and run neural networks
-
-\pythoncodenon{code/machine_learning_network.py}
-
-Finally ! We can use our class to create a neural network with as many layers as we want !
-
-The network will be used to classify handwritten digits from the MNIST dataset (like it has been done in Sec~\ref{neural-net-to-recognize-handwritten-digits}) and it is made up of
-\begin{itemize}
-	\item Input layer: will have 784 neurons corresponding to the each pixels in the 28x28 input images;
-	\item A hidden layer: will have 10 neurons with ReLU activation.
-	\item Finally the output layer: will have 10 neurons corresponding to the ten digit classes with softmax activation.
+\item Input layer: will have 784 neurons corresponding to the each pixels in the 28x28 input images;
+\item Two hidden layers: will have 100 and 50 neurons each with tanh activation;
+\item Finally the output layer: will have 10 neurons corresponding to the ten digit classes with softmax activation.
 \end{itemize}
 
 The sample has been pre-processed by scaling each image in the range [0,1] (from the usual [0,255] of gray-scale images), also each matrix is flatten i.e. converted the $X$ array from (60000, 28, 28) to (60000, 784). Finally the array has been transposed such that each example image is a column.
 
-\pythoncodenon{code/machine_learning_mnist.py}
+\pythoncodenon{code/machine_learning_mnist_from_scratch.py}
 
 \begin{ioutput}
-epoch 1/30   error=0.238658
-epoch 2/30   error=0.093187
-epoch 3/30   error=0.073039
+epoch 1/35  error=0.23756977869124812
+epoch 2/35  error=0.09585384173050779
+epoch 3/35  error=0.0778832146987061
 ...
-epoch 28/30   error=0.011636
-epoch 29/30   error=0.011306
-epoch 30/30   error=0.010901
-predicted values : 
-[
-array([[ 0.119,  0.084 , -0.081,  0.084, -0.068, 
-         0.011,  0.057,  0.976, -0.042, -0.0462]]),
-array([[ 0.071,  0.211,  0.501 ,  0.058, -0.020, 
-         0.175,  0.057 ,  0.037,  0.020,  0.107]]),
-array([[ 1.197e-01,  8.794e-01, -4.410e-04, 4.407e-02, -4.213e-02,  
-         5.300e-02, 5.581e-02,  8.255e-02, -1.182e-01, 9.888e-02]])
-]
-true values : 
-[[0. 0. 0. 0. 0. 0. 0. 1. 0. 0.]
- [0. 0. 1. 0. 0. 0. 0. 0. 0. 0.]
- [0. 1. 0. 0. 0. 0. 0. 0. 0. 0.]]
+epoch 34/35  error=0.010464489201745728
+epoch 35/35  error=0.010179050058617526
+
+predicted value: 7 (prob. 0.947)
+true value: 7
+
+predicted value: 6 (prob. 0.856)
+true value: 2
+
+predicted value: 1 (prob. 0.969)
+true value: 1
 \end{ioutput}
 
 \section{Remarks on Artificial Intelligence}
@@ -922,16 +870,3 @@ The black box issue is: the approximation given by the neural network will not g
 Plus, from a traditional statistics viewpoint, a neural network is a non-identifiable model: given a dataset and network architecture, there can be two neural networks with different weights but exactly the same result. This makes the analysis very hard.
 Needless to say, debugging NN results is even harder given this lack of interpretability. So use with caution machine learning models since they can be quite misleading.
  
-\begin{thebibliography}{9}
-\bibitem{bib:deep_learning} I. Goodfellow, Y. Bengio and A. Courville, \href{http://www.deeplearningbook.org}{\emph{Deep Learning}}, MIT Press, 2016
-\bibitem{bib:nn_over_human}K. Grace, J. Salvatier, A. Dafoe, B. Zhang and O. Evans, \emph{When Will AI Exceed Human Performance? Evidence from AI Experts}, arXiv:1705.08807, 2005
-\bibitem{bib:activation_function} J. Lederer, \emph{Activation Functions in Artificial Neural Networks: A Systematic Overview}, arxiv: 2101.09957, 2001
-\bibitem{bib:backpropagation}\href{https://towardsdatascience.com/understanding-backpropagation-algorithm-7bb3aa2f95fd}{\emph{Understanding back-propagation algorithm}}, Towards Data Science [Online]
-\bibitem{bib:loss_function}\href{https://medium.com/human-in-a-machine-world/mae-and-rmse-which-metric-is-better-e60ac3bde13d}{\emph{Mae and rmse which metric is better ?}}, Medium [Online]
-\bibitem{bib:master} Masters, Timothy, \emph{Practical neural network recipes in C++}, Morgan Kaufmann, 1993.
-\bibitem{bib:heaton} J. Heaton, \emph{Introduction to Neural Networks for Java} ($2^{nd}$ edition).
-\bibitem{bib:hagan} Hagan, Demuth, Beale, De Jesus, \emph{Neural Network Design}.
-\bibitem{bib:keras}\href{https://keras.io/}{\emph{Keras Documentation}}, [Online]  
-\bibitem{bib:tensorflow}\href{https://www.tensorflow.org/}{\emph{Tensorflow Documentation}}, [Online] 
-\bibitem{bib:scikit}\href{https://scikit-learn.org/stable/}{\emph{scikit-learn Documentation}}, [Online]
-\end{thebibliography}
