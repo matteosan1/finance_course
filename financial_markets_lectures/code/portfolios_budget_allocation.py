@@ -23,4 +23,4 @@ for i in range(num_assets):
 print (opts)
 	
 for i in range(num_assets):
-    print (f"Risk contribution for asset {i}: {sigma_i[i]/sum(sigma_i)*100:.3f}%")    
+    print (f"Risk per asset {i}: {sigma_i[i]/sum(sigma_i)*100:.3f}%")    

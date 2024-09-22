@@ -10,7 +10,8 @@ def sharpe_ratio(w, returns, rf_asset_return, cov):
 constraints = ({'type': 'eq', 'fun': sum_weights})
 bounds = tuple((0, 1) for asset in range(num_assets))
 weights = [1./num_assets for _ in range(num_assets)]
-opts = minimize(sharpe_ratio, weights, args=(returns, rf_asset_return, covariance),
+opts = minimize(sharpe_ratio, weights,
+                args=(returns, rf_asset_return, covariance),
                 bounds=bounds, constraints=constraints)
 print (opts)
 print ("Sharpe ratio: ", -opts.fun)

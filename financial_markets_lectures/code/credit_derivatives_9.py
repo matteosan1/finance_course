@@ -17,7 +17,8 @@ class CollDebtObligation:
         self.cc = cc
 
     def one_factor_model(self, M, Q, l, L, U):
-        P = norm.cdf((norm.ppf(Q) - np.sqrt(self.rho) * M) / (np.sqrt(1 - self.rho)))
+        P = norm.cdf((norm.ppf(Q) - np.sqrt(self.rho) * M) /\
+                     (np.sqrt(1 - self.rho)))
         b = binom(self.N, P)
         return b.pmf(l) * norm.pdf(M) * max(min(l/self.N *
                self.nominal * (1 - self.recovery), U) - L, 0)

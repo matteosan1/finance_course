@@ -9,7 +9,8 @@ for t_ret in np.arange(0.1, 0.4, 0.01):
     weights = [1/n_assets for _ in range(num_assets)]
     bounds = [(0, 1) for _ in range(num_assets)]
     constraints = [{'type':'eq', 'fun':sum_weights},
-                   {'type':'eq', 'fun':target_return, 'args':(returns_rf, t_ret)}]
+                   {'type':'eq', 'fun':target_return,
+                                 'args':(returns_rf, t_ret)}]
 
     opts = minimize(min_risk, weights, bounds=bounds, 
                     constraints=constraints, args=(cov_rf))

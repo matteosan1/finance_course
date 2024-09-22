@@ -20,7 +20,8 @@ class PCAWrapper:
     eig_vecs = eig_vecs*signs[np.newaxis,:]
     eig_vecs = eig_vecs.T
 
-    eig_pairs = [(np.abs(eig_vals[i]), eig_vecs[i,:]) for i in range(len(eig_vals))]
+    eig_pairs = [(np.abs(eig_vals[i]), eig_vecs[i,:])
+                 for i in range(len(eig_vals))]
     eig_pairs.sort(key=lambda x: x[0], reverse=True)
     self.eig_vals_sorted = np.array([x[0] for x in eig_pairs])
     self.eig_vecs_sorted = np.array([x[1] for x in eig_pairs])
@@ -45,7 +46,8 @@ class PCAWrapper:
 
   def project(self, n_pc=None):
     n_pc = self.X.shape[1] if n_pc is None else n_pc
-    return self.transform().iloc[:, 0:n_pc].dot(self.components().T.iloc[0:n_pc, :])
+    return self.transform().iloc[:, 0:n_pc] \
+                           .dot(self.components().T.iloc[0:n_pc, :])
 
   def residuals(self, n_pc=None):
     residuals = self.X - self.project(n_pc)
