@@ -263,6 +263,111 @@ So using the Sharpe ratio gives a portfolio that is on the efficient frontier, a
 
 Usually, any Sharpe ratio greater than 1.0 is considered acceptable to good by investors. A ratio higher than 2.0 is rated as very good. A ratio of 3.0 or higher is considered excellent. A ratio under 1.0 is sub-optimal.
 
+\section{Covariance Matrix Denoising}
+
+The question of building reliable estimators of covariance has a long history in finance. The problem comes from the high dimensionality of these matrices; when the size of the time series $T$ is very large, each of the coefficients of the covariance/correlation matrix can be estimated with negligible error (if is assumed not to vary with time). But if $N$ is also large and of the order of $T$ , as is often the case in finance, the large number of noisy variables creates important systematic errors in the computation of the inverse of the matrix, which is a direct input of Markowitz’s optimisation formula. These systematic errors lead to sub-optimal portfolios with grossly underestimated out-of-sample risk.
+
+In the following we consider a universe made of $N$ different financial assets that we observe at (say) the daily frequency, defining a vector of returns $r_t$. Since we focus specifically on correlations and not on volatilities, we standardise these returns as follows: we remove
+the sample mean of each asset; we normalise each return by an 
+estimate $\hat{\sigma}_{it}$ of its daily volatility (for simplicity we use the cross-sectional daily volatility $\hat{\sigma}_{it}=\sqrt{\sum_j r_{jt}^2}$ to remove a substantial amount of non-stationarity in the volatilities, although other possible choices are available like Garch or Figarch models, or simply implied volatilities from option markets). The final standardised return matrix $X = \tilde{r}_{it}/\sigma_i$ where $\sigma_i$ is the sample estimator of the volatility of $\tilde{r}_{it}$, which is now, to a first approximation, stationary.
+
+The most common estimator of the \emph{true} underlying correlation matrix (that we henceforth denote by $[C]$) is to use the sample estimator:
+\begin{equation}
+[E] = \cfrac{1}{T}[X][X]^{T} = \sum_{k=1}^{N} \lambda_k u_k u_k^{T}
+\end{equation}
+for the eigenvalues $\lambda_i$ and the associated eigenvectors $u_i$. When $q=N/T\rightarrow 0$, i.e. when the data set is very long, one expects that $[E]\rightarrow [C]$, whereas important distortions survive when $q=O(1)$, even if $T\rightarrow \infty$. In fact, it can be showed that the spectrum of $[E]$ is a broadened version of that of $[C]$, with an explicit $q$-dependent formula relating the two. The distrosion is caused by the \emph{noise} included in the measurement, in particular small $\lambda_i$ are too small and large $\lambda_i$ s are too large compared to the true eigenvalues $[C]$. Thus, recalling that Markowitz’s optimal strategy overweight low variance modes, we understand why using the sample estimator $[E]$ can lead to disastrous results, and why some cleaning procedure should be applied to $[E]$ before any application to portfolio construction. 
+
+%. The noise masks the actual correlation between the asset returns leading to wrong estimate and consequently to bad portfolio weights. Various techniques have been devised in order to eliminate (or at least reduce) the noise and extract a better estimate of the correlation from market data.
+\subsection{Mar\v{c}enko-Pastur Technique}
+According to the studies of Mar\v{c}enko and Pastur the eigenvalues of the covariance matrix (see~\ref{sec:eigenvectors-and-eigenvalues}) follow the \emph{Mar\v{c}enko-Pastur distribution} which describes the eignevalues density of a random matrix. The main parameter of the distribution is ratio $q=T/N$ where $T$ is the length of the time-series used to derived the covariance matrix and $N$ the number of variables (assets in our case).
+
+The eigenvalue density ranges between:
+\begin{equation}
+\lambda_{-} = \sigma^2 \left( 1 - \sqrt{q} \right)^2 \quad \text{and} \quad \lambda_{+} = \sigma^2 \left( 1 + \sqrt{q} \right)^2
+\label{eq:marcenko-pastur-distro}
+\end{equation}
+where $\sigma^2$ is the variance in presence of white-noise i.e. under ideal conditions.
+
+In order to denoise the covariance matrix we need to:
+\begin{enumerate}
+\item compute eigenvalues and eigenvectors of empirical covariance matrix;
+\item filter eigenvalues to keep only those above $\lambda_+$, since they are considered real signal, the others are noise;
+\item rebuild covariance matrix using only filtered eigenvalues.
+\end{enumerate}
+
+This technique allows to reduce covariance matrix noise, improving the parameter estimate accuracy. It is well suited when we are in presence of overfitting i.e. when the number of observations is relatively small compared to the number of variables.
+Note that the Mar\v{c}enko and Pastur results do not require multivariate normality of the returns, which can have fat-tailed distributions.
+
+Below a simple implementation of the described procedure, Fig.~\ref{fig:marcenko_pastur} reports a comparison between original and denoised eigenvalues. Correctly since the original matrix was produced with uncorrelated data all the eigenvalues have been discarded.
+
+\pythoncodenon{code/portfolios_marcenko_pastur.py}
+
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.7\textwidth]{figures/marcenko_pastur}
+\caption{Comparison of the original vs denoised eigenvalues using Mar\v{c}enko-Pastur denoising technique.}
+\label{fig:marcenko_pastur}
+\end{figure}
+
+\subsection{Rotationally Invariant, Optimal Shrinkage}
+This method was first proposed by Ledoit \& Péché (2011) to overcome the issues of another technique called \emph{Eigenvalues substitution}.
+For large $N$, the \emph{optimal rotational invariant} (RIE) of $[C]$ reads:
+\begin{equation}
+\Xi^{RIE} = \sum_{k=1}^N \xi_k^{RIE}u_k u_k^T
+\end{equation}
+with 
+\begin{equation}
+\xi^{RIE} = \cfrac{\lambda_k}{(1-q+qz_ks_k(z_k))^2}
+\label{eq:rie_eigenvalues}
+\end{equation}
+where $s(z)=N^{-1}\text{tr}(z[I_N]-[E])^{-1}$ and $z_k=\lambda_k - i\eta$. 
+
+The rotational invariant hypothesis on an estimator $\Xi$ assumes that one does not have any prior knowledge of the structure of the true eigenvectors, and therefore that the best one can do is to keep the eigenvectors $u_i$ of $[E]$ untouched.
+%We will not discuss methods 2 and 4 any further, because they turn out to be less efficient than the simpler schemes 1 and 3 on real data. Also, we do not consider the algorithm of Ledoit & Wolf (2014) for method 5 because it requires heavy numerical operations with O.N / parameters to fit. Moreover, the proposed quantile representation rules out a priori outliers (see Bun & Knowles (2016) for an extended discussion on this topic). Equation (7), on the other hand, is very appealing from a theoretical point of view. The optimality of (7) stands in the following sense. Suppose that we knew C exactly, but constrain ourselves to estimate it in the eigenbasis fukg of E. The optimal estimator of the eigenvalues of C would then read: ora: k WD huk; Cuki (8) where h�; �i denotes the inner product. Note that the superscript ‘ora.’ stands for oracle, which is the optimal estimator that one would obtain if one knew the true correlation matrix C (which is of course not the case, since we are actually attempting to estimate C !). But, as was shown in Bun & Knowles (2016), (7) satisfies, roughly speaking: j�RIE k � huk; Cukij D O.T �1=2/ 8k (9) for q D O.1/. This means that the estimator �RIE k converges, for large enough T , to the optimal ‘oracle’ estimator (8)
+
+For practical applications, however, Eq.~\ref{eq_rie_eigenvalues} contains the parameter $\eta$ that must be chosen to be small, but at the same time such that $N\eta \gg 1$. A good trade-off is to set $\eta = N^{-1/2}$. Unfortunately, in cases where $N$ is not extremely large (say $N = 400$), this corresponds to $\eta = 0.05$, which is not very small, and this induces a systematic downward bias in the estimator of small
+eigenvalues. This bias can be explicitly calculated in simple cases and suggests the following heuristic correction for any $k$:
+\begin{equation}
+\hat{\xi}_k = \xi^{RIE}_k \cdot \max(1, \Gamma_k)
+\end{equation}
+
+Note that $\hat{\xi}_k$ is always greater than or equal to $\xi^{RIE}_k$: this allows one to correct nearly perfectly a systematic
+downward bias in the trace of the RIE correlation matrix $\Xi^{RIE}$.
+
+The complete procedure to construct the optimal estimator for $[E]$ reads as this: given the eigenvalues $\lambda_k$ of the sample correlation matrix $[E]$ and $q=N/T$, we define the complex variable $z_k =\lambda_k-i\sqrt{N}$ for any $k$, then
+
+\begin{enumerate}
+\item compute for any $k\in[1,N]$:
+\begin{equation}
+\xi^{RIE}_k=\cfrac{\lambda_k}{(1q+qz_ks_k(z_k))^2}
+\end{equation}
+with:
+\begin{equation}
+s_k(z_k)=\cfrac{1}{N}\sum_{j=1;j\neq k}^{N}\cfrac{1}{z_k-\lambda_j}
+\end{equation}
+\item evaluate at the same time for any $k$
+\begin{equation}
+\Gamma_k=\sigma^2\cfrac{(1-q+q z_k g_{mp}(z_k))^2}{\lambda_k}
+\end{equation}
+where 
+\begin{equation}
+g_{mp}(z) = \cfrac{z+\sigma^2(q-1)-\sqrt{z-\lambda_N}\sqrt{z-\lambda_+}}{2qz\sigma^2}
+\end{equation}
+with:
+\begin{equation}
+\lambda_+ = \lambda_N\left(\cfrac{1+\sqrt{q}}{1-\sqrt{q}}\right)^2,\quad\quad\sigma^2=\cfrac{\lambda_N}{(1-\sqrt{q})^2}
+\end{equation}
+where $\lambda_N$ is the smallest empirical eigenvalue;
+\item the debiased optimal RIE for any $k$ is
+\begin{equation}
+\hat{\xi}_k = 
+\begin{cases}
+\Gamma_k\xi^{RIE}_k\quad\text{if }\Gamma_k>1\\ \\
+\xi^{RIE}_k\quad\text{otherwise}
+\end{cases}
+\end{equation}
+\end{enumerate}
+
 \section{Portfolio Diversification}
 
 A security total risk can be divided into \emph{unsystematic}, the risk portion peculiar to the company that can be diversified away, and systematic, the non-diversifiable portion that is related to the movement of the stock market and is therefore unavoidable. 
