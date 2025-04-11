@@ -2,7 +2,8 @@ import pandas as pd, numpy as np
 
 from datetime import date
 
-from finmarkets import TimeInterval, DiscountCurve, CreditDefaultSwap, CreditCurve, Bootstrap
+from finmarkets import TimeInterval, DiscountCurve, CreditDefaultSwap
+from finmarkets import CreditCurve, Bootstrap
 
 obs_date = start_date = date.today()
 dc = pd.read_excel("discount_factors_2022-10-05.xlsx")
