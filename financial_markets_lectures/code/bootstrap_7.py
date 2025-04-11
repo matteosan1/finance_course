@@ -31,9 +31,4 @@ result = minimize(objective_function, x0, bounds=bounds,
                   args=(obs_date, pillar_dates, swaps))
 print (result)
 
-dc = DiscountCurve(today, pillars, np.concatenate(([1], result.x)))
-d = obs_date + TimeInterval("40y")
-
-print (f"40y df: {dc.df(d):.3f}")
-print (f"40y rate: {dc.rate(d):.4f}")
 

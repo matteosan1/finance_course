@@ -1,9 +1,10 @@
 import pandas as pd, numpy as np
 
-from scipy.optimize import minimize
-from finmarkets import TimeInterval
+from datetime import date
 
-obs_date = date.today()
+from finmarkets import TimeInterval, DiscountCurve, CreditDefaultSwap, CreditCurve, Bootstrap
+
+obs_date = start_date = date.today()
 dc = pd.read_excel("discount_factors_2022-10-05.xlsx")
 mq = pd.read_excel("cds_quotes.xlsx")
 
@@ -18,16 +19,12 @@ for i in range(len(mq)):
   cdswaps.append(cds)
   pillar_dates.append(cds.payment_dates[-1])
 
-def objective_function(ndps, obs_date, pillar_dates, discount_curve):
-  credit_curve = CreditCurve(obs_date, pillar_dates, ndps)
-  sum_sq = 0
-  for cds in cdswaps:
-      sum_sq += cds.npv(discount_curve, credit_curve)**2
-  return sum_sq
+def obj_cc(ndp, i, ndps, objs, obs_date, discount_curve):
+    pillars = [obs_date] + [objs[j].payment_dates[-1] for j in range(i+1)]
+    credit_curve = CreditCurve (obs_date, pillars, [1] + ndps + [ndp])
+    return objs[i].npv(discount_curve, credit_curve)
 
-ndp_guess = [1 for _ in range(len(cdswaps))]
-bounds = [(0.01, 1) for _ in range(len(cdswaps))]
+bootstrap = Bootstrap(obs_date, cdswaps)
+ndps = bootstrap.run(obj_cc, args=(discount_curve,))
 
-r = minimize(objective_function, ndp_guess, bounds=bounds,
-             args=(obs_date, pillar_dates, discount_curve))
-print (r)
+credit_curve = CreditCurve(obs_date, pillar_dates, ndps)

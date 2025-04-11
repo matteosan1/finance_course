@@ -549,44 +549,32 @@ As an example if the recovery rate is 40\% a CDS spread of 200~bp would translat
 \subsubsection*{Default Probability with Bootstrapping}
 \label{default-probabilities-and-cds}
 
-To derive default probabilities from Credit Default Swap market quotes we can exploit again the \emph{bootstrap technique}. If we consider the parallelism between discount and credit curves indeed we can follow the same steps applied in Chapter~\ref{sec:swaps-and-bootstrapping} when deriving the discount factors from Overnight Index Swaps.
+To derive default probabilities from Credit Default Swap market quotes we can exploit again the \emph{bootstrap technique}. 
+If we consider the parallelism between discount and credit curves indeed we can follow the same steps applied in Section~\ref{sec:the-bootstrapping-technique} 
+when deriving the discount factors from Overnight Index Swaps.
 
-Let's summarize the procedure: 
-\begin{itemize}
-\tightlist
-\item create a CDS for each available market quote;
-\item implement an objective function to minimize the squared sum of the CDS NPVs, in the computation it will use a \texttt{CreditCurve} with the unknown (to be determined) survival probabilities;
-\item set initial guesses and boundary conditions for the unknown survival probability (the first one has to be set to 1 since no default happened, the others free to move between $[0., 1]$ because they are probabilities);
-\item with \texttt{scipy.optimize.minimize} find the curve.
-\end{itemize}
+% Let's summarize the procedure: 
+% \begin{itemize}
+% \tightlist
+% \item create a CDS for each available market quote;
+% \item implement an objective function to minimize the squared sum of the CDS NPVs, in the computation it will use a \texttt{CreditCurve} with the unknown (to be determined) survival probabilities;
+% \item set initial guesses and boundary conditions for the unknown survival probability (the first one has to be set to 1 since no default happened, the others free to move between $[0., 1]$ because they are probabilities);
+% \item with \texttt{scipy.optimize.minimize} find the curve.
+% \end{itemize}
 
-We now implement the code to bootstrap for the survival probabilities using the market quotes saved in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/cds_quotes.xlsx}{cds\_quotes.xlsx} and for the discount curve \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{discount\_factors\_2022-10-05.xlsx}.
+We now implement the code to bootstrap for the survival probabilities using the market quotes saved in 
+\href{https://github.com/matteosan1/finance_course/raw/master/input_files/cds_quotes.xlsx}{cds\_quotes.xlsx} and for the discount curve 
+\href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{discount\_factors\_2022-10-05.xlsx}.
 
-So first load market data and create a discount curve and the swaps.
+So first load market data and create a discount curve and the swaps, than apply boostrapping.
 
 \pythoncode{code/credit_risk_cds_bootstrap.py}
 
-\begin{ioutput}
-  message: CONVERGENCE: REL_REDUCTION_OF_F_<=_FACTR*EPSMCH
-  success: True
-   status: 0
-      fun: 3.185490060079406e-05
-        x: [ 9.760e-01  9.467e-01  9.173e-01  8.335e-01  7.371e-01
-             5.395e-01]
-      nit: 11
-      jac: [ 1.713e+01  2.725e+01  5.384e+01  2.231e+01 -3.634e+01
-            -8.419e+01]
-     nfev: 126
-     njev: 18
- hess_inv: <6x6 LbfgsInvHessProduct with dtype=float64>
-\end{ioutput}
-
-After the minimization we get the list of non-default probabilities corresponding to the expiry dates of our CDSs.
+We can now get the list of non-default probabilities corresponding to the expiry dates of our CDSs.
 
 \begin{ipython}
-cc = CreditCurve(obs_date, pillar_dates, r.x)
 for i in range(len(pillar_dates)):
-    print ("S(t<{}): {:.2f}".format(pillar_dates[i], r.x[i]))
+    print (f"S(t<{credit_curve.pillar_dates[i]}): {credit_curve.ndps[i]:.2f}")
 \end{ipython}
 \begin{ioutput}
 S(t<2025-08-10): 0.98
@@ -598,4 +586,4 @@ S(t<2044-08-10): 0.54
 \end{ioutput}
 
 \section*{Exercises}
-\input{credit_risk_ex_text}
+%\input{credit_risk_ex_text}
