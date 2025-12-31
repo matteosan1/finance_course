@@ -89,6 +89,108 @@ Answer the questions in the spaces provided. If you run out of room for an answe
 \vspace{.5cm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\question
+Consider a Poisson process with constant $\lambda$ describing the default probability of an asset.
+Why does this imply that assuming a constant default probability over an \textbf{infinite horizon} is equivalent to assuming the company is "born to die" ?
+Does this make sense for a sovering nation or a "too big to fail" utility ?
+
+\textbf{Hint}: the PDF of a Poissonian process is $\lambda e^{-\lambda t}$.
+\begin{solution}
+Mathematically, a constant hazard rate implies the "Memoryless Property." 
+It assumes the firm never learns, never restructures, and never benefits from surviving past crises. 
+Indeed 
+\begin{equation}
+P_def = \int_0^{\infty}\lambda e^{-\lambda t} dt = 1
+\end{equation}
+For long-dated assets, we must use a term structure of credit spreads (an inhomogeneous Poisson process) rather than a uniform probability.
+\end{solution}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Suppose a bank owns a portfolio containing $n=5$ loans. The portfolio is split into two classes:
+\begin{itemize}
+\item Low risk: 2 loans with $p_{\text{def}}^L = 0.01$;
+\item High risk: 3 loans with $p_{\text{def}}^H = 0.05$.
+\end{itemize}
+
+Calculate the probability that all loans default simultaneously assuming independency ($\rho = 0$) and strong correlation ($\rho = 0.9$).
+
+Imagine then that the bank decides to make the portfolio safer by adding 5 more "Low risk" loans (i.e. we now have $n=10$ loans 7 Low risk, 3 High risk).
+In case of a disaster scenario (e.g. 2008 housing bubble burst) how much the risk (default probability) is reduced ?
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\question
+A risk manager is using a Monte Carlo simulation to estimate the 99\% Value-at-Risk (VaR) for a portfolio of 2 high-yield bonds.
+Each bond has a face value of \$1,000. The probability of default for each bond is $p=5\%$. The simulation assumes a linear correlation of ρ=0.2 between the bonds.
+
+The manager decides to run a Monte Carlo using 10 trials. 
+He uses a random number generator that yields the following pairs of $\mathcal{U}(0,1)$ variables for Bond A and Bond B: 
+\begin{equation*}
+(0.12,0.45),(0.88,0.21),(0.04,0.03),(0.55,0.91),(0.32,0.11),(0.67,0.44),(0.09,0.52),(0.22,0.18),(0.95,0.82),(0.41,0.33)
+\end{equation*}
+
+How many defaults  ($p<0.05$) occur in these 10 trials ? What is the relative error with respect to the \textit{true} probability of total collapse ?
+
+Which action should the manager take if the Risk Committee demands a simulation where the uncertainty ($SE$) is no larger than 10\% of the probability you are trying to measure ($SE=0.1\cdot p_true$​) (note that for a sample proportion $\sigma = \sqrt{np(1-p)}$)
+
+\begin{solution}
+1/10=10\%. 
+This is double the individual $p$ and vastly different from the theoretical independent $p^2=0.25\%$. Low-frequency events (tails) require massive sample sizes. Small MC simulations lead to "sampling error" where the tail is either completely missed or wildly overestimated.
+Relative Error:
+\begin{equation*}
+p_{true} = \frac{∣p_sim-p_true∣}{p_true}​=\frac{|0.10-0.0025|}{0.0025}=3900 \%
+\end{equation*}
+
+Set $SE = 0.00025$ so
+\begin{align}
+SE = 0.00025 = \sqrt{\frac{n\cdot p(1-p)}{n^2}}\\
+0.00025 = \sqrt{\frac{0.0025*(1-0.0025)}{n}} \\
+n \approx \frac{2.5e-3}{2.5e-4^2 } \approx 40000
+\end{align}
+
+\end{solution}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+You are given the following liquid instruments in the market. All bonds pay coupons annually, and the face value is \$100.
+\begin{table}[h]
+    \centering
+    \caption{Market Data for Yield Curve Bootstrapping}
+    \label{tab:bond_data}
+    \begin{tabular}{@{}llll@{}}
+        \toprule
+        \textbf{Instrument} & \textbf{Maturity} & \textbf{Coupon Rate} & \textbf{Market Price} \\ \midrule
+        Bond A (Zero)       & 1 Year            & 0\%                  & \$97.00               \\
+        Bond B (Coupon)     & 2 Years           & 5\%                  & \$101.00              \\
+        Bond C (Coupon)     & 3 Years           & 6\%                  & \$102.00              \\ \bottomrule
+    \end{tabular}
+\end{table}
+
+Using the bootstrap technique calculate the Spot Rates (Zero-Coupon Rates) for years 1, 2, and 3 $(r_1​, r_2​, r_3​)$.
+
+Suppose there was a data entry error. The price of Bond A was actually \$96.50 instead of \$97.00 (a small 0.5\% difference).
+Without recalculating everything, describe what happens to $r_3$​ if $r_1$​ is calculated incorrectly.
+
+You have the spot rates for Year 2 and Year 3. A manager wants to value a payment occurring at Year 2.5 (they suggest using a simple Linear Interpolation between $r_2$​ and $r_3$).
+Although the spot rate curve might seem smooth what happens to the 6m-forward rate curve at 2.5 years ?
+
+\begin{solution}
+Year 1 Spot Rate ($r_1$)
+\begin{equation*}
+97=\frac{100}{(1+r_1)^1 \implies 1+r_1 ​= \frac{100}{97} \implies r_1 \approx 3.093\%
+\end{equation*}
+Year 2 Spot Rate ($r_2$), using the result from $r_1$​ to value Bond B:
+\begin{equation*}
+101=\frac{5}{(1.03093)^1}+\frac{105}{(1+r_2)^2 \implies r_2 = 4.5\%​
+\end{equation*}
+Year 3 Spot Rate ($r_3$):
+\begin{equation*}
+102=\frac{6}{(1+r_1)^1+\frac{6}{(1+r_2)^2+\frac{106}{(1+r_3)^3 \implies ​r_3 \approx 5.34\%
+\end{equation*}
+
+Because Bootstrapping is a recursive process, an error in the Year 1 rate "contaminates" the Year 2 rate, which then compounds into the Year 3 rate. Small mispricings in short-term liquid instruments can lead to wildly unrealistic long-term forward rates.
+
+While the Spot Curve might look smooth with linear interpolation, the resulting Forward Curve (the rate for the period between Year 2 and 3) will have "kinks" or "steps." In finance, we assume rates change continuously; a "steppy" forward curve creates arbitrage opportunities in the model that don't exist in reality.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \question Consider that the spot yield on government bonds are 4\%, 5\% and 5\% for 1-year, 2-year and 3-year maturity respectively. 
 For corporate BBB bonds, the spot yields are 5\%, 7\% and 8\% respectively. If the recovery rate is 0\%, what is the implied cumulative probability that companies issuing BBB bonds will default after 3 years? What if the recovery rate is 10\%?
 \begin{solution}

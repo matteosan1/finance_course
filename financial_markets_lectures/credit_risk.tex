@@ -29,7 +29,14 @@ The instantaneous default probability conditional to no previous default $\lambd
 \end{split}
 \end{equation}
 where $\Psur$ and $\Pdef$ are survival and default probabilities and $\tau$ the occurrence time of the credit event.
-Also remember that $\Pdef(t_0, t) = 1 - \Psur(t_0, t)$. Given the hazard rate, the survival probability can be determined as:
+
+In other words, since in credit modeling, the PDF of the default probability $f(t)$ is defined as the rate of change of the cumulative default probability and $\Pdef(t_0, t) = 1 - \Psur(t_0, t)$, it follows that:
+\begin{gather}
+f(t) = \frac{d\Pdef}{dt} = \frac{d(1-\Psur)}{dt} = -\frac{d\Psur}{dt} \\
+\lambda(t) = \frac{f(t)}{\Psur(t)}
+\end{gather}
+
+Given the hazard rate, the survival probability can be determined as:
 
 %So far we have assumed implicitly that the credit event is bound to occur, so that $dP_{\textrm{sur}}(+\infty)=0$. Given enough time the survival probability goes down to zero. This condition implies that the cumulative hazard must diverge, i.e. we must have Λ(∞)=∞. Intuitively, the event will occur with certainty only if the cumulative risk over a long period is sufficiently high.
 
@@ -149,6 +156,99 @@ Default times can also be obtained by sampling from the distribution as shown in
 	\caption{Default times simulated through the sampling from a Poisson process with $\lambda=5$ and time interval $t=100$. An exponential fit shows that the decay rate is about $1/\lambda=0.2$.}
 	\label{fig:default_time_simulation}
 \end{figure}
+
+\subsubsection{Piecewise Constant Hazard Rate}
+A constant hazard rate ($\lambda$) implies that the probability of defaulting in the next instant, given that the entity has survived until now, is exactly the same regardless of whether the entity is 1 day old or 20 years old.
+
+In the real world, this is considered unrealistic for several key reasons:
+\begin{itemize}
+\item the "Aging" Effect (Credit Quality Dynamics): a constant hazard rate follows a memoryless property. It assumes that the entity's history or current age provides no information about its future stability. In reality, as a company matures, it typically builds retained earnings, establishes market share, and stabilizes its capital structure, which might lower its default risk over time. Conversely, a startup has a much higher "infant mortality" rate.
+\item the Credit Cycle and Macroeconomics: default risk is heavily tied to the economic cycle (recessions vs. expansions). Hazard rates are stochastic and time-dependent. We expect default risk to be higher during a projected downturn in 2 years than it might be in the current stable month. A constant $\lambda$ cannot capture the "mean-reverting" nature of economic conditions.
+\item Term Structure of Credit Spreads: If you look at the market prices for Credit Default Swaps (CDS) or corporate bonds, the "Credit Curve" is rarely flat.    \textit{Upward Sloping}: investors often demand a higher premium for longer maturities because there is more uncertainty about the distant future (e.g., the company might face new competitors or technological obsolescence). \textit{Downward Sloping}: for distressed entities, the risk of defaulting now (liquidity crisis) is often much higher than the risk of defaulting in 5 years if they manage to survive the current quarter. Constant Hazard Rate results in a perfectly flat credit curve, which almost never matches market data.
+\item Information Dissipation: the longer an entity survives, the more information the market has about its management and resilience. A constant hazard rate ignores the fact that survival itself acts as a signal of quality. In many models (like those using the Lévy process or Structural models), the probability density of default changes as the entity's asset value moves relative to its "default barrier."
+\end{itemize}
+
+So in conclusion most entities follow a \textit{Bathtub Curve}: high risk at the start (startups), low, relatively constant risk in the middle and increasing risk as the entity or industry becomes obsolete.
+
+The simplest improvement to account for the previous consideration in the credit risk modeling is to consider a \textbf{piecewise constant $\lambda$}.
+A second slightly more complicated implementation a the Poisson Process allows to handle this new kind of hazard rate.
+
+\pythoncodenon{code/credit_risk_poisson_process_piecewise_constant.py}
+
+\subsubsection{Calibration Example}
+
+To calibrate the PiecewisePoissonProcess to a non-flat market curve, we need to find the set of $\lambda$ values that make the model's survival probabilities match the market's implied survival probabilities at specific pillar dates (e.g., 1Y, 3Y, 5Y).
+
+Although this is typically done using a bootstrapping process, here we are going to use a global optimization approach (e.g. least squares). 
+In the example below the function \texttt{calibrate} takes market pillar dates and their corresponding market survival probabilities and will use \texttt{scipy.optimize.least\_squares} to solve for the hazard rates.
+
+from scipy.optimize import least_squares
+
+def calibrate_credit_process(market_times, market_probs, initial_guess=0.02):
+    times = np.array(market_times)
+    probs = np.array(market_probs)
+    
+    def residuals(log_lambdas):
+        temp_lambdas = np.exp(log_lambdas)
+        temp_process = PiecewisePoissonProcess(temp_lambdas, times)
+        return temp_process.survival_prob(times) - probs
+
+    x0 = np.log(np.ones(len(times)) * initial_guess)
+    sol = least_squares(residuals, x0, method='lm')   
+    if not sol.success:
+        raise ValueError("Calibration failed to converge")
+
+    return PiecewisePoissonProcess(np.exp(sol.x), times)
+
+t_market = [1, 3, 5, 10]
+p_market = [0.99, 0.95, 0.88, 0.70] 
+
+calibrated_model = calibrate_credit_process(t_market, p_market)
+
+print("Calibrated Lambdas:", calibrated_model.lambdas)
+# Check 7-year survival probability (interpolated)
+print(f"Prob at 7Y: {calibrated_model.survival_prob(7.0):.2%}")
+
+Calibrated Lambdas: [0.01005034 0.02062148 0.03827004 0.04576831]
+Prob at 7Y: 88.00%
+
+2. Why this matters: Term Structure of Credit
+
+When you run this calibration, you'll see that self.lambdas are no longer identical. This allows the model to "bend" the survival curve to fit market expectations.
+
+    Inversion: If the 1Y hazard rate is higher than the 5Y rate, the market is pricing immediate distress.
+
+    Contango: If the rates increase over time, the market sees the entity as safe now but potentially risky in the long run.
+
+3. Example Usage
+
+Suppose you have CDS market data that implies the following survival probabilities (usually derived from CDS spreads):
+
+    1 Year: 98% survival
+
+    3 Years: 92% survival
+
+    5 Years: 85% survival
+
+Python
+
+market_t = [1.0, 3.0, 5.0]
+market_p = [0.98, 0.92, 0.85]
+
+# Initialize and calibrate
+model = PiecewisePoissonProcess()
+calibrated_lambdas = model.calibrate(market_t, market_p)
+
+print(f"Pillar Times: {market_t}")
+print(f"Calibrated Lambdas: {calibrated_lambdas}")
+
+# Check the fit at a non-pillar date (e.g., 2 years)
+print(f"Survival prob at 2Y: {model.survival_prob(2.0)[0]:.4f}")
+
+The "Jump" in the Density
+
+Because the hazard rate is piecewise constant, the PDF (Probability Density Function) will have visible "jumps" at the pillar dates (1Y, 3Y, 5Y). While this looks strange on a graph, it is the industry standard because it makes the math of pricing instruments like CDS very fast and consistent.
+
 
 \section{Credit Default Swaps}
 \label{sec:credit-default-swaps}
@@ -275,6 +375,39 @@ print (f"{cds.npv(dc, credit_curve):.2f}")
 105141.23
 \end{ioutput}
 	
+\begin{finmarkets}
+An alternative implementation of the default leg calculation (i.e. \texttt{npv\_default\_leg} method) is possible. The explicit daily loop over the lifetime of the swap could indeed be replaced by a numerical intergrato between $[t_0, T]$.
+The code below provide an example exploiting the integration function \texttt{scipy.integrate.quad}. For more information about integration in \texttt{python} please refer to Section~\ref{sec:integration}.
+
+\begin{ipythonnon}
+from dateutil.relativedelta import relativedelta
+from scipy.integrate import quad
+
+def npv_default_leg_quad(self, cc, dc):
+    def integrand(t, cc, dc):
+        current_date = self.payment_dates[0] \ 
+                                  + relativedelta(days=int(t * 365))
+        return dc.df(current_date) \
+               * (cc.ndp(current_date) \
+                  - cc.ndp(current_date + relativedelta(days=1)))    
+    maturity_in_years = (self.payment_dates[-1] \
+                         - self.payment_dates[0]).days / 365
+    npv, _ = quad(integrand, 0, maturity_in_years, args=(cc, dc))
+    return self.nominal * (1 - self.recovery) * npv * 365
+\end{ipythonnon}
+
+This new approach provide a higher precision and is often faster especially for long swap maturities, although it requires a little overhead in converting at each step the year fraction into an actual date.
+
+Furthermore if your credit curve uses a piecewise constant hazard rate ($\lambda$), you don't actually need numerical integration at all. Indeed within each segment where $\lambda$ is constant, the integral has a closed-form solution:
+
+\begin{equation}
+\int_{t_1}^{t_2} e^{-rt} \lambda e^{-\lambda t} dt = \frac{\lambda}{r +\lambda} \left(e^{-(r+\lambda)t_1}-e^{-(r+\lambda)t_2}\right)
+\end{equation}
+
+Using this summation across the "buckets" of your credit curve is the industry standard for CDS pricing because it is mathematically exact and near instantaneous.
+\end{finmarkets}
+
+
 %\section{Credit Ratings}\label{credit-ratings}
 %
 %A credit rating is a quantified assessment of the creditworthiness of a borrower either in general terms or with respect to a particular debt or financial obligation. A credit rating can be assigned to any entity that seeks to borrow money (e.g. an individual, corporation, state or provincial authority, or sovereign government).
