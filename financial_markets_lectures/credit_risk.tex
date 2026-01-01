@@ -177,10 +177,13 @@ A second slightly more complicated implementation a the Poisson Process allows t
 
 \subsubsection{Calibration Example}
 
-To calibrate the PiecewisePoissonProcess to a non-flat market curve, we need to find the set of $\lambda$ values that make the model's survival probabilities match the market's implied survival probabilities at specific pillar dates (e.g., 1Y, 3Y, 5Y).
+To calibrate the such a Poisson process to a non-flat market credit curve, we need to find the set of $\lambda$ values that make the model's survival probabilities match the market's implied survival probabilities at specific pillar dates.
 
 Although this is typically done using a bootstrapping process, here we are going to use a global optimization approach (e.g. least squares). 
 In the example below the function \texttt{calibrate} takes market pillar dates and their corresponding market survival probabilities and will use \texttt{scipy.optimize.least\_squares} to solve for the hazard rates.
+
+\begin{ipythonnon}
+from finmarkets.distributions import PiecewisePoissonProcess
 
 from scipy.optimize import least_squares
 
@@ -199,56 +202,27 @@ def calibrate_credit_process(market_times, market_probs, initial_guess=0.02):
         raise ValueError("Calibration failed to converge")
 
     return PiecewisePoissonProcess(np.exp(sol.x), times)
+\end{ipythonnon}
 
+When you run this calibration, you'll see that lambda values are no longer identical. This allows the model to "bend" the survival curve to fit market expectations. For example if the 1Y hazard rate is higher than the 5Y rate, the market is pricing immediate distress. Also if the rates increase over time, the market sees the entity as safe now but potentially risky in the long run.
+
+Suppose you have CDS market data that implies the following survival probabilities (usually derived from CDS spreads): 1Y 98\% survival, 3Y 92\% survival and 5Y 85\% survival.
+
+\begin{ipythonnon}
 t_market = [1, 3, 5, 10]
 p_market = [0.99, 0.95, 0.88, 0.70] 
-
+	
 calibrated_model = calibrate_credit_process(t_market, p_market)
-
+	
 print("Calibrated Lambdas:", calibrated_model.lambdas)
-# Check 7-year survival probability (interpolated)
-print(f"Prob at 7Y: {calibrated_model.survival_prob(7.0):.2%}")
-
+print(f"Prob at 5Y: {calibrated_model.survival_prob(5.0):.2%}")
+\end{ipythonnon}
+\begin{ioutput}
 Calibrated Lambdas: [0.01005034 0.02062148 0.03827004 0.04576831]
-Prob at 7Y: 88.00%
+Prob at 5Y: 80.00%
+\end{ioutput}
 
-2. Why this matters: Term Structure of Credit
-
-When you run this calibration, you'll see that self.lambdas are no longer identical. This allows the model to "bend" the survival curve to fit market expectations.
-
-    Inversion: If the 1Y hazard rate is higher than the 5Y rate, the market is pricing immediate distress.
-
-    Contango: If the rates increase over time, the market sees the entity as safe now but potentially risky in the long run.
-
-3. Example Usage
-
-Suppose you have CDS market data that implies the following survival probabilities (usually derived from CDS spreads):
-
-    1 Year: 98% survival
-
-    3 Years: 92% survival
-
-    5 Years: 85% survival
-
-Python
-
-market_t = [1.0, 3.0, 5.0]
-market_p = [0.98, 0.92, 0.85]
-
-# Initialize and calibrate
-model = PiecewisePoissonProcess()
-calibrated_lambdas = model.calibrate(market_t, market_p)
-
-print(f"Pillar Times: {market_t}")
-print(f"Calibrated Lambdas: {calibrated_lambdas}")
-
-# Check the fit at a non-pillar date (e.g., 2 years)
-print(f"Survival prob at 2Y: {model.survival_prob(2.0)[0]:.4f}")
-
-The "Jump" in the Density
-
-Because the hazard rate is piecewise constant, the PDF (Probability Density Function) will have visible "jumps" at the pillar dates (1Y, 3Y, 5Y). While this looks strange on a graph, it is the industry standard because it makes the math of pricing instruments like CDS very fast and consistent.
-
+Because the hazard rate is piecewise constant, the default PDF will have visible \textit{jumps} at the pillar dates (1Y, 3Y, 5Y). While this looks strange on a graph, it is the industry standard because it makes the math of pricing instruments like CDS very fast and consistent, as we will see in the next Section.
 
 \section{Credit Default Swaps}
 \label{sec:credit-default-swaps}
