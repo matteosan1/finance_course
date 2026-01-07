@@ -178,9 +178,9 @@ For a portfolio of risky assets let be
 
 \begin{itemize}
 \tightlist
-\item \(R_r\) its expected return;
-\item \(\sigma_r\) its standard deviation in return;
-\item \(r_f\) the return of a risk-free asset.
+\item $R_r$ its expected return;
+\item $\sigma_r$ its standard deviation in return;
+\item $r_f$ the return of a risk-free asset.
 \end{itemize}
 
 A plausible single measure of attractiveness of a portfolio (as opposed to the two measures, risk and return proposed by MPT model) is the Sharpe ratio:
@@ -263,6 +263,42 @@ So using the Sharpe ratio gives a portfolio that is on the efficient frontier, a
 
 Usually, any Sharpe ratio greater than 1.0 is considered acceptable to good by investors. A ratio higher than 2.0 is rated as very good. A ratio of 3.0 or higher is considered excellent. A ratio under 1.0 is sub-optimal.
 
+\begin{finmarkets}
+As we have seen the goal of Sharpe ratio optimization in asset allocation is to find portfolio weights that maximize the Sharpe ratio, which is:
+\begin{equation*}
+\text{Sharpe Ratio} = \frac{\text{Expected Portfolio Excess Return}}{\text{Portfolio Volatility}}
+\end{equation*}
+
+Maximizing Sharpe ratio under certain assumptions (no leverage constraint, full investment) leads to weights proportional to:
+\begin{equation}
+w^*\propto (\delta\Sigma)^{-1}(\mu-r_f)
+\label{eq:linear_algebra_optimization_sharpe}
+\end{equation}
+where: $\mu$ is the expected returns vector, $\Sigma$ the covariance matrix (risk), $\delta$ the risk aversion parameter (higher $\delta$ more risk-averse) and $r_f$ the risk-free rate.
+
+This formula comes from mean-variance optimization where the investor maximizes, see Sec.~\ref{sec:markowitz_utility}:
+\begin{equation*}
+\text{Utility} = \mu_p - \frac{\delta}{2} \sigma_p^2
+\end{equation*}
+The first-order condition for this optimization gives indeed Eq.~\ref{eq:linear_algebra_optimization_sharpe}.
+
+Note that after computing raw weights $w^*$, they have to be normalized so that the sum equals 1 (fully invested portfolio).
+Without normalization, the weights would only be proportional, not actual allocation percentages.
+
+In \texttt{python} this becomes
+\begin{ipythonbox}
+import numpy as np
+
+excess_returns = mu - rf
+weights_raw = np.linalg.inv(delta * sigma).dot(excess_returns)
+
+weights = weights_raw / np.sum(weights_raw)
+\end{ipythonbox}
+
+This algorithm gives an \textbf{uncostrained} solution. If you need to add some constrains instead, e.g. avoid short selling, you have to revert back to 
+quadratic programming with \texttt{scipy.optimize.minimize} as done in the previous Sections.
+\end{finmarkets}
+
 \subsection{Optimal Portfolio with Risk-Free Asset}
 
 In the Markowitz portfolio theory presented, there is an assumption that all of the securities have $\sigma > 0$, which excludes the choice for a risk-free security, such as the treasury bond. Of course most investors would like to include a risk-free component in the portfolio, and an obvious solution is to combine a minimum variance portfolio represented by $(\sigma_B, \mu_B)$ with a risk-free asset represented by $(0, r)$ and the combined portfolio will have its risk-return pair $(x, y) = w_0(0, r) + (1-w_0)(\sigma_B, \mu_B)$.
@@ -274,6 +310,7 @@ The straight line in this case is called the \emph{capital market line} (CML), w
 To see that the CML represents the optimal combination, just perturb the straight line in both directions and see what will happen. If you move the straight line up, then there is no point within the Markowitz bullet, which means the risky portfolio cannot be constructed. On the other hand, if we move the straight line down, there will be a secant line with the bullet, which gives a set of portfolios that are not on the frontier. That would suggest that this risky portfolio can be improved, therefore it is not optimal. \emph{With these arguments we conclude that the combination with the risky portfolio is the optimal combination}.
 
 \section{Utility Function and Markowitz Model}
+\label{sec:markowitz_utility}
 
 An \emph{utility function} $u(x)$ is a function of wealth ($x$) that quantifies the ``happiness'' level of the investor. Typically this function has $u'(x) > 0$ and $u''(x) < 0$. The first condition reflects the simple concept that ``the more I have the happier I am''. The latter instead will be described later on in this Section.
 
