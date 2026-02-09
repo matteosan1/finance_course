@@ -410,6 +410,41 @@ It can also be shown, by changing $C_0$ that the steady-state probabilities of t
 
 These results can be used in various ways, some examples are: calculating the average time it takes for a bearish period to end or the risk that a bullish market turns bearish or stagnant.
 
+\subsection{The Generator Matrix}
+
+As we have seen we can "evolve" a transition matrix by multiplying it by itself multiple times. Each multiplication move forward by a multiple of the original time horizon, e.g. in credit risk, a transition matrix $(P)$ shows the probability of a borrower’s credit rating changing from one grade to another over a specific period—typically one year, so $P^4$ represents the same probability for a 4 years horizon.
+ 
+However, it is sometimes needed the probabilities for different time frames (e.g., a 3-month outlook). Converting a 1-year matrix to these "other horizons" involves specific mathematical approaches.
+The most robust and "preferred" method for converting transition matrices to any arbitrary time horizon is using the \emph{Generator Matrix} $(A)$, often referred to as the \emph{Matrix Logarithm} approach.
+
+In this case instead of just multiplying the matrix by itself, we treat the credit migration as a \emph{continuous-time Markov chain}. So first calculate the Generator Matrix $A$ from the observed $t$-year matrix $P$ as:
+\begin{equation}
+A = \frac{1}{t}\ln(P)
+\end{equation}
+Then scale that generator by the desired time horizon $(h)$ and finally convert it back to a probability matrix $(P_h)$ using the matrix exponential:
+\begin{equation}
+P_h = \exp(A\cdot h)
+\end{equation}
+
+This technique allows you to calculate transitions for non-integer periods (e.g., 0.5 years or 2.3 years) and ensures that the transition behavior remains mathematically consistent across all time slices.
+
+The mathematical intuition behind the Generator Matrix relies on the transition from discrete jumps to continuous flow. The easiest way to visualize this is through interest rates.
+If you have an annual interest rate, you multiply your principal by $(1+r)$ once a year. If interest is compounded every microsecond, you use the exponential function $e^{rt}$.
+
+In credit risk, a standard transition matrix is discrete, i.e. a snapshot of what happened over 12 months. This method treats credit migration as a continuous process where a company's credit quality is "decaying" or "improving" every single second.
+
+To move between horizons, we use the relationship between a probability matrix $(P)$ and a generator matrix $(A)$:
+\begin{equation}
+P(t)=\exp(At)=\sum_{k=0}^{\infty}\frac{(At)^k}{k!}
+\end{equation}
+
+This represents the "instantaneous intensity" of migration. The diagonal elements are negative (representing the rate at which a firm leaves its current rating), and the off-diagonal elements are positive (the rate at which it moves to others). The Matrix Exponential isn't just taking the $e$ of every number in the grid; it’s a power series expansion that accounts for all possible "paths" a borrower could take e.g., migrating from A to BBB and back to A within the time frame.
+
+To find the generator $A$ from an observed 1-year matrix $P$, we perform a matrix logarithm, and once you have $A$, the time variable $t$ becomes a simple scaler, e.g. for a 6-month horizon $P_{0.5} = \exp(A\cdot 0.5)$.
+
+For the math to work (for the logarithm to exist and result in real numbers), the matrix $P$ must be diagonally dominant. This means the probability of staying in the same rating must be significantly higher than the probability of moving. If a rating system is so volatile that more people leave a grade than stay in it, the "Preferred Method" fails because the matrix logarithm may result in complex numbers—essentially saying the "path" of credit risk is mathematically undefined.
+
+
 \section*{Exercises}
 \input{stochastic_ex_text}
 

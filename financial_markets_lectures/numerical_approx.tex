@@ -174,6 +174,101 @@ It can be noticed that binomial tree is not so good at the beginning (small numb
 \end{figure} 
 %Finite difference schemes are very much similar to trinomial tree options pricing, where each node is dependent on three other nodes with an up movement, a down movement, and a flat movement.
 
+\section{Longstaff-Schwartz algorithm}
+The Longstaff-Schwartz algorithm, widely known as the \emph{Least Squares Monte Carlo} (LSM) approach, represents a seminal advancement in financial engineering for valuing derivatives with early-exercise features.
+Unlike European options, which only require a forward-looking simulation to maturity, American options present an optimal stopping problem where the holder must decide at every moment whether the immediate 
+"intrinsic value" exceeds the expected value of all future payoffs, known as the \emph{continuation value}. Because this expectation is conditional on the state of the market at time $t$, it cannot be solved through simple forward simulation alone.
+
+The LSM approach elegantly sidesteps the "curse of dimensionality" that plagues traditional lattice-based methods (like binomial trees) by combining Monte Carlo simulation with \emph{cross-sectional regression}. 
+
+The algorithm operates in two distinct phases. Initially, it performs a forward pass to generate a large number of stochastic paths for the underlying asset(s) using Geometric Brownian Motion or other jump-diffusion models. Once the paths are secured, it executes a backward induction process starting from the final expiration date and moving toward the present.
+
+At each discrete time step, the algorithm isolates the paths that are currently "in-the-money." It then uses the realized \emph{future cash flows} from those paths as the dependent variable in a least-squares regression, where the independent variables are the \emph{current asset prices} transformed by a set of basis functions (such as Laguerre, Hermite, or simple power polynomials).
+
+This regression provides a functional approximation of the continuation value. By comparing this estimate against the immediate exercise payoff, the algorithm establishes an optimal exercise rule for each path. 
+If the immediate payoff is higher, the path is "exercised," and the future cash flow for that path is updated to the current payoff; otherwise, the future cash flow is simply discounted back one step. 
+By the time the induction reaches $t=0$, the average of these optimized, discounted cash flows provides the Net Present Value (NPV) of the American option. This methodology is particularly robust for multi-asset options and complex path-dependent structures where traditional partial differential equation (PDE) solvers become computationally prohibitive.
+
+As an example consider the evaluation of an American put option using the Longstaff-Schwartz algorithm. The initial underlying value is $S_0=36$, the volatility is 20\%, the strike price $K=40$, $T=1$, and the risk-free rate 6\% flat.
+
+We start with the forward pass represented by the simulation of $N$ paths of the stock price until maturity T. Then, starting from the last exercise date we apply the stopping rule; at any time $t$ you have a choice:
+either exercise (receive $K-S_t$ for a put) or continue (receive $\mathbb{E}[V(t+1) e^{-rt}|S_t]$).
+Plotting the future  payoffs against the underlying price we can see that the analytical price for a put interpolated the cloud of Monte Carlo points, see Fig.~\ref{fig:longstaff_fit}(left). 
+This suggest us that the price at time $t_1$ can be computed by means of an average on all discounted payoff (i.e. the barycentre of the cloud made of discounted payoff). 
+Which in turn suggests that the future value of an option can be seen as the problem of finding the curve that best fits the cloud of discounted payoff up to the date of interest.
+So we have an empirical pricing formula for the put to be used in the Monte Carlo Simulation
+\begin{equation}
+	P(t_1,T,S(t_1),K)=c_0+c_1 S(t_1) + c_2 S(t_1)^2 + c_3 S(t_1)^3 + c_4 S(t_1)^4 + c_5 S(t_1)^5
+\end{equation}
+Since we don't know the "true" expected value of continuing, we approximate it using the cross-section of all simulated paths. We regress the realized future payoffs against the current stock price.
+If the regression says "exercising is better," we replace that path's future cash flow with the immediate payoff.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.45\textwidth]{figures/longstaff_fit}
+	\includegraphics[width=0.45\textwidth]{figures/longstaff_fit_2}
+	\caption{(Left) Scatter plot of the contract payoff and the underlying value ($S_t$) at time $t_1$. The green line represents the analytical price computed using Black-Scholes model. (Right) Cross-sectional
+	regression of the contract payoff with two fifth order polynomials.}
+	\label{fig:longstaff_fit}
+\end{figure} 
+
+\begin{ipythonnon}
+import numpy as np
+
+from datetime import date
+
+from finmarkets.utils import OptionType 
+from finmarkets import DiscountCurve, TimeInterval
+
+def payoff(S0, K, T, r, sigma, n_paths, t_steps, option_type=OptionType.Call):    
+    S = GBM(r, sigma, S0, T, t_steps, n_paths)    
+
+    if option_type == OptionType.Put:
+        payoffs = np.maximum(K - S, 0)
+    else:
+        payoffs = np.maximum(S - K, 0)
+    return S, payoffs
+
+def longstaff-schwarz(today, paths, payoffs, dc):    
+    t_steps, n_paths = paths.shape
+    dt = 1 / t_steps
+
+    value = payoffs[-1]
+
+    for t in range(t_steps - 1, 0, -1):
+        itm_idx = np.where(payoffs[t] > 0)[0]
+		df = dc.df(today+TimeInterval(f"{t}d"))
+        if len(itm_idx) > 0:
+            X = S[t, itm_idx]
+            Y = value[itm_idx] * dc.df(today+TimeInterval(f"{t}d"))
+            coeffs = np.polynomial.laguerre.lagfit(X, Y, 5)
+            continuation_value = np.polynomial.laguerre.lagval(X, coeffs)	
+            exer_now = payoffs[t, itm_idx]	
+            exer_mask = exer_now > continuation_value
+            value[itm_idx[exer_mask]] = exer_now[exer_mask]
+	
+            non_exer_mask = ~exer_mask
+            value[itm_idx[non_exer_mask]] = value[itm_idx[non_exer_mask]] * df
+	
+           otm_idx = np.setdiff1d(np.arange(n_paths), itm_idx)
+           value[otm_idx] = value[otm_idx] * df
+        else:
+            value = value * df
+    return np.mean(value * dc.df(today+TimeInterval(f"{1}d")))
+
+obs_date = date.today()
+dates = [obs_date + TimeInterval(f"{i}m") for i in range(13)]
+dc = DiscountCurve(dates, np.array([np.exp(-r*t/12) for t in range(13)]))
+
+S, payoffs = payoff(36, 40, 1, 0.06, 0.2, 25000, 365, OptionType.Put)
+
+npv = american_option_lsm(obs_date, S, payoffs, dc)
+print(f"American Option NPV: {npv:.4f}")	
+\end{ipythonnon}
+\begin{ioutput}
+American Option NPV: 3.9954
+\end{ioutput}
+
 \section{Finite Differences} 
 \label{sec:finite_difference}
 A common method to numerically solve Ordinary Differential Equations (ODE), like heat equation or Black-Scholes equation, is the \emph{finite difference method}. An ODE is a differential equation containing one or more functions of one independent variable and their derivatives~\cite{bib:ode}. The term ordinary is used in contrast with the term partial differential equation (PDE) which may be with respect to more than one independent variable.
