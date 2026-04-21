@@ -1,4 +1,4 @@
-\chapter{Variation Reduction Methods}
+\chapter{Optimizing Monte Carlo}
 \label{cap:variation_reduction}
 
 Results of Monte Carlo simulations are always estimates with a margin of error. \emph{Variance Reduction Techniques} (VRTs) are a set of
@@ -689,5 +689,314 @@ In IS, your estimator is: $\text{Payoff}\times \text{Likelihood Ratio}$; with th
 %%Standard Deviation of Price Estimate (IS): 17.5629
 %%\end{Verbatim}
 
+\section{Computation of Monte Carlo Greeks}
 
+In their everyday operations, banks report the P\&L attribution, which explains the impact of the daily fluctuations on the derivative values. Consider a portfolio conisting of an option $V(t,S)$ and $\Delta$ stocks of the underlying $S$ used for hedging purposes, $\Pi(t,S)=V(t,S)-\Delta S(t)$.
+In a short time interval
+$$
+\Pi_{i+1} = \Pi_i + V_{i+1} - V_i - \Delta(S_{i+1}-S_i)
+$$
 
+When the left- and right-hand sides of the equation are sufficiently close, the P\&L is said to be **well-explained*, i.e. all risk factors modeled are sufficient to materially explain the changes in the portfolio
+values. On the other hand, when the two sides differ substantially, this is an indication that the hedge has not been performed correctly, i.e. some risk factors are most likely not taken into account properly in the hedge strategy.
+
+The option Greeks form the basis of these attributions because in practice, asset price models are calibrated to financial market option prices, yielding an optimal set of model parameters, $\theta = (\theta_1,\ldots, \theta_N)$.
+From a risk management perspective, it is then crucial to understand how financial derivative prices would evolve if the asset model parameters change. If option price varies significantly with them, this would imply a
+frequent hedging re-balancing strategy and therefore an increase in the hedging costs. Otherwise the re-balancing frequency is low with a reduction of the costs.
+
+In the context of Monte Carlo pricing techniques, there are basically three methods for approximation of the option Greeks: finite difference techniques (bump-and-revalue), pathwise sensitivity and likelihood ratio methods, that are discussed next.
+
+\subsection{Finite Differences} 
+\label{sec:finite_difference}
+A common method to numerically solve Ordinary Differential Equations (ODE), like heat equation or Black-Scholes equation, is the \emph{finite difference method}. An ODE is a differential equation containing one or more functions of one independent variable and their derivatives~\cite{bib:ode}. The term ordinary is used in contrast with the term partial differential equation (PDE) which may be with respect to more than one independent variable.
+With this technique a differential equation is transformed into a system of algebraic equations to solve by approximating each derivative with finite difference formulas at evenly spaced grid points.
+
+Imagine to divide the ranges $[0, S_{max}]$ and $[0, T]$ into $M$ and $N$ intervals respectively (e.g. $S = i\Delta S$ with $i\in[0, M]$, $t = j\Delta t$ with $j \in[0,N]$).
+
+The differential equation is enforced only at the grid points, and the first and second derivatives can be obtained as follows.
+With the help of Taylor expansion we can discretize the ODE  derivatives ($y(x, t)$) leading to a recursive formula for $y_{i,j}$ (assume $y\in\mathbb{C}^{n+1}$ and the grid spacing is small). For a point $x_i$ between $x$ and $x+h$,
+
+\begin{equation}
+	y(x+h)=y(x)+hy'(x)+\cfrac{1}{2}h^2y''(x)+\ldots+\cfrac{h^n}{n!}y^{(n)}(x)+\cfrac{h^{n+1}}{(n+1)!}y^{(n+1)}(\xi)
+\end{equation}
+Replacing terms after $h^2$ with $O(h^2)$ and moving $y'(x)=\cfrac{\partial y}{\partial x}$ to the left-hand side, we have the \emph{forward difference}, which has error order 1
+
+\begin{equation}
+	%\begin{split}
+	y(x+h)=y(x)+hy'(x)+\cfrac{1}{2}h^2y''(x)+O(h^2)
+	\implies \cfrac{\partial y}{\partial x} = \cfrac{y(x+h)-y(x)}{2h}
+	%\end{split}
+\end{equation}
+
+Likewise, $y'$ and $y''$ can be approximated by \emph{backward difference} and \emph{central difference}. Figure~\ref{fig:graph_finite_difference} shows a graphical representation of the different types of finite differences. Commonly, the central difference formulas is used, due to the fact that it yields better accuracy. 
+Table~\ref{tab:derivative_approximations} reports a summary of derivatives approximation.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/graph_finite_difference}
+	\caption{Graphical representation of first order derivative using backward, forward and central difference.}
+	\label{fig:graph_finite_difference}
+\end{figure} 
+
+\begin{table}[htb]
+	\centering
+	\begin{tabular}{|l|c|c|}
+		\hline
+		Type & Approximation & Error Order \\
+		\hline
+		Forward difference & $\cfrac{\partial y}{\partial x} = \cfrac{y_{i+1,j}-y_{i,j}}{\Delta x}$, $\cfrac{\partial y}{\partial t} = \cfrac{y_{i,j+1}-y_{i,j}}{\Delta x}$ & 1 \\[1ex]
+		\hline
+		Backward difference & $\cfrac{\partial y}{\partial x} = \cfrac{y_{i,j}-y_{i-1,j}}{\Delta x}$ & 1 \\[1ex]
+		\hline
+		Central difference & $\cfrac{\partial y}{\partial x} = \cfrac{y_{i+1,j}-y_{i-1,j}}{2\Delta x}$& 2 \\[1ex]
+		\hline
+		Second difference & $\cfrac{\partial^2 y}{\partial x^2} = \cfrac{y_{i+1,j}-2y_{i,j} + y_{i-1,j}}{\Delta x^2}$& 2 \\[1ex]
+		\hline
+	\end{tabular}
+	\caption{Summary of derivative approximations and relative errors.}
+	\label{tab:derivative_approximations}
+\end{table}
+
+These finite difference expressions are used to replace the derivatives of $y$ in the differential equation which leads to a system of $n+1$ linear algebraic equations if the differential equation is linear. If the differential equation is non-linear, the algebraic equations will also be non-linear.
+
+Depending on which combination of presented schemes for derivatives is used in the discretization of the equation, one can end up with different approaches, \emph{explicit}, \emph{implicit} or \emph{Crank-Nicolson}. %Graphical illustration of these methods are shown with the grid in Fig.~\ref{fig:grid_finite_difference}. 
+Table ~\ref{tab:various_methods} summarizes the possibilities.
+
+%\begin{figure}[htb]
+%	\centering
+%	\includegraphics[width=0.7\textwidth]{figures/grid_finite_differences}
+%	\caption{Example of grid used to solve an Ordinary Differential Equation.}
+%	\label{fig:grid_finite_difference}
+%\end{figure} 
+
+\begin{table}[htb]
+	\centering
+	\begin{tabular}{|l|c|c|}
+		\hline
+		Method & x-derivatives & time-derivatives \\
+		\hline
+		Explicit & central difference & backward difference \\
+		\hline
+		Implicit & central difference & forward difference \\
+		\hline
+		Crank-Nicolson & central difference & central difference \\
+		\hline
+	\end{tabular}
+	\caption{Possible variations of finite difference method.}
+	\label{tab:various_methods}
+\end{table}
+
+Let's check an example that computes the $\Delta$ for a vanilla Interest Rate Swap when the interest rates are modelled according to the Vasicek model.
+
+\begin{ipythonnon}
+import numpy as np
+
+r0, kappa, theta, sigma = 0.03, 0.15, 0.05, 0.03
+T_max = 5.0
+dt = 0.01
+n_paths = 500000 
+K = 0.035
+pay_times = np.arange(0.5, T_max + 0.5, 0.5)
+
+def finite_difference(r0):
+  np.random.seed(42)
+  n_steps = int(T_max / dt)
+  r = np.full(n_paths, r0)
+  integral_r = np.zeros(n_paths)
+  npv = np.zeros(n_paths)
+
+  for s in range(1, n_steps + 1):
+    z = np.random.standard_normal(n_paths)
+    r += kappa * (theta - r) * dt + sigma * np.sqrt(dt) * z
+    integral_r += r * dt
+    t = s * dt
+    if any(np.isclose(t, pay_times, atol=dt/2)):
+      df = np.exp(-integral_r)
+      flow = (r - K) * 0.5
+      npv += df * flow
+  return np.mean(npv)
+
+eps = 0.0001
+price_up = finite_difference(r0 + eps)
+price_dn = finite_difference(r0 - eps)
+print(f"FD Delta: {(price_up - price_dn) / (2 * eps):.8f}")
+\end{ipythonnon}
+\begin{ioutput}
+FD Delta: 3.13512801
+\end{ioutput}
+
+\subsection{Likelihood Ratio Method}
+The Likelihood Ratio Method (LRM) is a powerful "Greeks" estimation technique in Monte Carlo simulations. Unlike Pathwise (Delta) methods, LRM differentiates the probability density function of the underlying process rather than the payoff itself.
+
+This makes it particularly useful for payoffs that aren't smooth (though a vanilla swap is smooth, the logic remains the same).
+
+Under the Vasicek model, the short rate $r_t$ follows:
+\begin{equation}
+dr_t=\kappa (\theta - r_t)dt+\sigma dW_t
+\end{equation}
+
+For a transition from $r_0$ to $r_T$, the density $p(r_T|r_0)$ is Gaussian. The LRM estimator for the sensitivity with respect to a parameter $\alpha$ is:
+\begin{equation}
+\Delta=\mathbb{E}\left[\text{Payoff}\cdot\frac{\partial\ln p(r_T|r_0)}{\partial\alpha}\right]
+\end{equation}
+
+Imagine to discretize the path in $N$ steps: $r_1, r_2,\ldots,r_N$.
+The probability to observe that precise path is the product of the probabilities for each jump (Markov property):
+\begin{equation}
+P(r_1,\ldots,r_N|r_0)=p_1(r_1|r_0)\cdot p_2(r_2|r_1)\cdots p_N(r_N|r_{N-1})
+\end{equation}
+
+The LRM $\Delta$ is given by the expectation of the payoff multiplied by the score, or the derivative of the logarithm of the joint density w.r.t. $r_0$:
+\begin{equation}
+\text{Score}=\frac{\partial\log P}{\partial r_0}=\sum_{j=1}^N \frac{\partial\log p_j(r_j|r_{j-1})}{\partial r_0}
+\end{equation}
+
+At the first step, $r_1$ depends directly on $r_0$ but from the second on, $r_j$ depends on $r_{j-1}$, which in turn depends on $r_{j-2}$\ldots down to $r_0$.
+
+For the chain rule, the derivative at each summation term is:
+\begin{equation}
+\frac{\partial\log p_j(r_j|r_{j-1})}{\partial r_0}=\frac{\partial\log p_j}{\partial r_j}\cdot \frac{\partial r_{j}}{\partial r_{j-1}}\cdots\frac{\partial r_1}{\partial r_0}
+\end{equation}
+
+When using a model like Vasicek where $r_j = r_{j-1}+\kappa (\theta - r_{j-1})dt$, $\frac{\partial r_j}{\partial r_{j-1}}$ equals to $(1-\kappa dt)$.
+The Score at $t$ results a weighted sum of each shock along the path, with exponentially decaying weights due to mean reversion.
+
+In a swap, cash flows are at $\{T_1, T_2,\ldots,T_k\}$ and the total value is $V=\sum\text{Payoff}(T_i)$, hence 
+\begin{equation}
+\Delta = \mathbb{E}\left[\sum_{i=1}^k\text{Payoff}(T_i)\cdot \text{Score}(T_i)\right]
+\end{equation}
+
+Notice that each payoff must be multiplied by the Score computed up to that time. The payoff in $T_1$ cannot be influenced by the density (hence the Score) realized between $T_1$ an $T_2$, because future doesn't influence past.
+
+There is an issue though. In LRM  the Score in a single Euler step is proportional to 
+\begin{equation}
+\text{Score}_{\text{step}} \approx \frac{z}{\sigma\sqrt{dt}}
+\end{equation}
+where $z$ is $\mathcal{N}(0,1)$. When $dt$ becomes smaller (for a better pricing precision) the Score increases, and in the limit becomes a stochastic variable with infinitely large variance.
+
+Adding up all the Scores for say 500 steps (5 years with $dt=0.01$), you are essentially summing variables with large oscillations. Mathematically the average should converge to the right $\Delta$ but you need a very large number of simulations.
+
+In conclusion for a swap, LRM is correct but you should apply variance reduction techniques to increase the convergence of the Monte Carlo: \textbf{control variates} using analytic delta of a ZCB, \textbf{conditional expectation} do not use the Score at each micro-step, but only at the payment dates.
+
+\begin{ipythonnon}
+def LRM():
+  np.random.seed(42)
+  delta_lrm_total = 0
+
+  for Ti in pay_times:
+    exp_kTi = np.exp(-kappa * Ti)
+    mean_Ti = r0 * exp_kTi + theta * (1 - exp_kTi)
+    var_Ti = (sigma**2 / (2 * kappa)) * (1 - np.exp(-2 * kappa * Ti))
+    std_Ti = np.sqrt(var_Ti)
+
+    z = np.random.standard_normal(n_paths)
+    r_Ti = mean_Ti + std_Ti * z
+
+    score_r0 = ((r_Ti - mean_Ti) / var_Ti) * exp_kTi
+
+    df = np.exp(-(r0 + r_Ti) / 2 * Ti)
+    flow = (r_Ti - K) * 0.5
+
+    payoff = df * flow
+    deriv_discount = flow * df * (-Ti / 2)
+
+    delta_lrm_total += np.mean(payoff * score_r0 + deriv_discount)
+
+    return delta_lrm_total
+
+print(f"LRM Delta: {LRM():.6f}")
+\end{ipythonnon}
+\begin{ioutput}
+LRM Delta: 3.136966
+\end{ioutput}
+
+\subsection{Pathwise Method}
+
+The Pathwise Method is a technique used in Monte Carlo simulations to calculate sensitivities (Greeks) by differentiating the payoff of a financial instrument directly along each simulated path. Unlike methods that shift the entire probability distribution, the Pathwise approach assumes that while the underlying market variables change due to a parameter shift (like a change in the initial interest rate $r_0$), the random shocks driving the simulation remain fixed. Mathematically, it applies the chain rule to the discounted payoff, requiring the payoff function to be continuous so that the derivative is well-defined.
+
+When applied to a Vanilla Interest Rate Swap, for each payment date, the sensitivity is calculated as the sum of two distinct effects: the change in the floating rate and the change in the discount factor.
+
+Because a shift in the initial rate $r_0$ propagates through the entire term structure—dampened by the model's mean reversion—the method tracks the "path derivative" ($\partial r_t/\partial r_0$) at every step. By aggregating these differentiated flows across all payment dates, the Pathwise method provides a high-precision Delta with significantly lower variance than other stochastic estimators, as it directly captures how the swap's Net Present Value "stretches" or "shrinks" in response to an infinitesimal move in the starting curve.
+
+To formalize the method for a vanilla interest rate swap under the Vasicek model, we represent the Net Present Value (NPV) as the sum of $n$ discounted net cash flows.
+
+The $\Delta$ is the expected value of the derivative of the discounted payoff with respect to the initial rate $r_0$. According to the Leibniz integral rule, we can move the derivative inside the expectation:
+\begin{equation}
+\Delta=\frac{\partial}{\partial r_0}\mathbb{E}\left[\sum_{i=1}^n e^{-\int_0^{T_i} r_s ds}\cdot(r_{T_i}-K)\Delta T\right]=\mathbb{E}\left[\sum_{i=1}^n\frac{\partial}{\partial r_0}(D(0,T_i)\cdot \text{Flow}_i)\right]
+\end{equation}
+where $D(0,T_i)$ is the stochastic discount factor and $\text{Flow}_i=(r_{T_i}-K)\Delta T$ is the cash flow at time $T_i$.
+
+For each individual payment in the swap, we apply the product rule to account for the sensitivity of both the discount factor and the floating rate:
+\begin{equation}
+\frac{\partial}{\partial r_0}(D_i\cdot\text{Flow}_i)=\underbrace{D_i\cdot\frac{\partial\text{Flow}_i}{\partial r_{T_i}}\cdot\frac{\partial r_{T_i}}{\partial r_0}}_{\text{Rate Sensitivity}}+\underbrace{\text{Flow}_i\cdot\frac{\partial D_i}{\partial r_0}}_{\text{Discount Sensitivity}}
+\end{equation}
+
+In the Vasicek model, the sensitivity of the rate at any future time $t$ to the starting rate $r_0$ is deterministic and governed by the speed of mean reversion $\kappa$:
+
+\begin{equation}
+\begin{aligned}
+	\frac{\partial r_t}{\partial r_0} &= e^{-\kappa t} \quad\text{(path derivative)}\\
+	\frac{\partial D_i}{\partial r_0} &= D_i\cdot\left(-\int_0^{T_i}\frac{\partial r_s}{\partial r_0}ds\right) = D_i\cdot\left(-\int_0^{T_i}e^{-\kappa s}ds\right)\quad\text{(discount derivative)}
+\end{aligned}
+\end{equation}
+
+Combining these, the Pathwise Delta for the entire swap is computed along each simulated path as:
+\begin{equation}
+\Delta = \sum_{i=1}^n D(0,T_i)\Delta T\left[e^{-\kappa T_i}-(r_{T_i}-K)\left(\frac{1-e^{-\kappa T_i}}{\kappa}\right)\right]
+\end{equation}
+
+This formula explains why the method is so stable: it avoids the $1/\sqrt{dt}$ terms found in LRM and instead uses the smooth, exponential decay of the Vasicek mean-reversion process.
+
+\begin{ipythonnon}
+def pathwise(r0):
+  np.random.seed(42)
+  n_steps = int(T_max / dt)
+  r = np.full(n_paths, r0)
+
+  integral_r = np.zeros(n_paths)
+  npv = np.zeros(n_paths)
+
+  path_deriv = np.ones(n_paths)
+  integral_path_deriv = np.zeros(n_paths)
+  delta_pw_acc = np.zeros(n_paths)
+
+  for s in range(1, n_steps + 1):
+    z = np.random.standard_normal(n_paths)
+
+    path_deriv += -kappa * path_deriv * dt
+    integral_path_deriv += path_deriv * dt
+
+    r += kappa * (theta - r) * dt + sigma * np.sqrt(dt) * z
+    integral_r += r * dt
+
+    t = s * dt
+    if any(np.isclose(t, pay_times, atol=dt/2)):
+      df = np.exp(-integral_r)
+      flow = (r - K) * 0.5
+      npv += df * flow
+
+      d_df = df * (-integral_path_deriv)
+      d_flow = path_deriv * 0.5
+      delta_pw_acc += (d_df * flow + df * d_flow)
+  return np.mean(delta_pw_acc)
+
+print(f"PW Delta: {pathwise(r0):.8f}")        
+\end{ipythonnon}
+\begin{ioutput}
+PW Delta: 3.13512794
+\end{ioutput}
+
+\subsubsection{Technique Comparison}
+
+The numerical results reported in the previous sections referred to a single MC with 100000 simulations for each method and the results were consistent.
+To improve a Monte Carlo simulation means to achieve the same level of precision with a smaller number of trials, \emph{convergence acceleration}.
+Hence it is interesting to look at the convergence plot, i.e. $\Delta$ versus number of simulations, Fig.~\ref{fig:MC_greek_comparison}.
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.9\textwidth]{figures/mc_greek_comparison}
+	\caption{Left plot compares the three methods. Right plot shows with a finer detailed Pairwise and Likelihood Ratio results.}
+	\label{fig:MC_greek_comparison}
+\end{figure}
+
+From the left plot it is apparent how Likelihood Ratio and Pairwise technique outperform the simpler finite difference, from the right one instead we can see that, at least for the IRS case, the Pairwise is slightly better than the LR.

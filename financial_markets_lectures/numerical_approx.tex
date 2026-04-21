@@ -1,864 +1,770 @@
 \chapter{Numerical Methods}
 \label{ch:numerical_approx}
 
-\section{Pricing Options via the Binomial Model}
+%\section{Pricing Options via the Binomial Model}
+%
+%Binomial pricing model arises from discrete random walk models of the underlying asset. The idea is to break down the time to expiration into potentially very large number ($N$) of time steps ($0, dt, 2dt,\ldots , ndt$ where $n\leq N$). First step is to initialize the tree of stock prices by moving forward from today to expiration. At each step it is assumed that the stock price will move up (by the factor of $\upsilon$) or down (by $\delta$).
+%
+%One should find a way to calibrate the lattice so that it reflects the underlying model which is a continuous-time, continuous-state stochastic differential equation. Following this model, no-arbitrage and risk neutral principles crucial parameters are then obtained.
+%
+%Risk-neutrality demands (i.e. discounted expected return equals current price): $Se^{r\delta t} = pS\upsilon + (1-p)S\delta$ that is $e^{r\delta t} = p\upsilon + (1-p)\delta$, where $p$ is the probability of an upward movement (and since we are dealing with a binomial tree $(1-p)$ is the probability of a downward movement). 
+%
+%\tikzstyle{bag} = [text width=2em, text centered]
+%\tikzstyle{end} = []
+%\begin{tikzpicture}[sloped]
+%	\node (a) at ( 0,0) [bag] {A};
+%	\node (b) at ( 4,-1.5) [bag] {B};
+%	\node (c) at ( 4,1.5) [bag] {C};
+%	\node (d) at ( 8,-3) [bag] {D};
+%	\node (e) at ( 8,0) [bag] {E};
+%	\node (f) at ( 8,3) [bag] {F};
+%	\draw [->] (a) to node [below] {$(1-p)$} (b);
+%	\draw [->] (a) to node [above] {$P$} (c);
+%	\draw [->] (c) to node [below] {$P^2$} (f);
+%	\draw [->] (c) to node [above] {$(1-p)p$} (e);
+%	\draw [->] (b) to node [below] {$(1-p)p$} (e);
+%	\draw [->] (b) to node [above] {$(1-p)^2$} (d);
+%\end{tikzpicture}
+%
+%\noindent
+%Using condition introduced by Cox, Ross and Rubbenstein
+%\begin{equation}
+%\upsilon = \cfrac{1}{\delta}
+%\end{equation}
+%it can be obtained
+%\begin{equation}
+%\begin{gathered}
+%p=\cfrac{e^{rdt}-\delta}{\upsilon-\delta}\\
+%\upsilon = e^{\sigma\sqrt{dt}} \\
+%\delta = e^{-\sigma\sqrt{dt}}
+%\end{gathered}
+%\end{equation}
+%It can be concluded that tree recombines so that in every time step we have in $i^{th}$ step $i+1$ prices (some are recombined, $i=0\ldots N$), resulting in $(N+1)(N+2)/2$ nodes (lattices) in trees of $N$ steps. Also there are $2N+1$ different possible price. Furthermore, as price at time zero is known ($S_0$), all feasible prices are obtained using
+%\begin{equation}
+%S\upsilon^j \delta^{i-j}\textrm{ or }S\upsilon^{2j-i}\textrm{, since }\upsilon=\cfrac{1}{\delta}
+%\end{equation}
+%
+%Having the tree of stock prices constructed, the option price can be derived working backward in the tree. %At the final step of the tree, i.e. at expiration of the option, the option values for each possible stock price are known, as they are equal to their intrinsic values. 
+%Assuming that the payoff function of the option is determined only by the value of the underlying asset at expiration, the model then works backwards through each time interval, calculating the option value at each step. The final step is at current time and stock price, where the theoretical fair value of the option is calculated. Algebraically it means for call option:
+%\begin{equation}
+%f_{N,j} = \textrm{max}(S_0 \upsilon^{j} \delta^{N-j} - K, 0),\quad j=0,1,\ldots , N
+%\end{equation}
+%\noindent
+%and for a put option
+%\begin{equation}
+%f_{N,j} = \textrm{max}(K - S_0 \upsilon^{j} \delta^{N-j}, 0),\quad j=0,1,\ldots , N
+%\end{equation}
+%Followed by working backward through the tree
+%\begin{equation}\
+%f_{i,j} = e^{-rdt}\left(pf_{i+1,j+1} + (1-p)f_{i+1,j}\right),\quad j=0,1,\ldots , i
+%\end{equation}
+%where $j$ denotes lattice position in $i^{th}$ step of the tree, so it can take values up to $i$.
+%
+%The main reason for introducing Binomial trees was inability to calculate the price of an American style option using Black-Scholes equation. With Binomial trees it is straightforward to take into account early exercise possibility in American calls and puts:
+%\begin{equation}
+%\begin{gathered}
+%f_{i,j} = \textrm{max}\left(S_0 \upsilon^{j} \delta^{N-j} - K, e^{-rdt}\left(pf_{i+1,j+1} + (1-p)f_{i+1,j}\right)\right) \\
+%f_{i,j} = \textrm{max}\left(K - S_0 \upsilon^{j} \delta^{N-j}, e^{-rdt}\left(pf_{i+1,j+1} + (1-p)f_{i+1,j}\right)\right)
+%\end{gathered}
+%\end{equation}
+%
+%Below the \texttt{python} code to generate binomial trees for European and American options.
+%The example computes using a 5-steps binomial tree the price of an European call with $r=0.1, \sigma=0.4, T=1, S_0=50, K=50$.
+%
+%\begin{ipythonnon}
+%import math
+%
+%class Node:
+%    def __init__(self, i, j, S0, u, K, iscall):
+%        self.i = i
+%        self.j = j
+%        self.S = S0*u**(2*j-i)
+%        if iscall:
+%            self.P = max(self.S - K, 0)
+%        else:
+%            self.P = max(K - self.S, 0)
+%        
+%class Tree:
+%    def __init__(self, r, sigma, N, T, S0, K, iscall = True, 
+%                 isamerican = False):
+%        self.iscall = iscall
+%        self.isamerican = isamerican
+%        self.S0 = S0
+%        self.K = K
+%        self.r = r
+%        self.sigma = sigma
+%        self.N = N + 1
+%        self.dt = T/N
+%        self.u = math.exp(self.sigma*math.sqrt(self.dt))
+%        self.d = 1/self.u
+%        self.p = (math.exp(self.r*self.dt)-self.d)/(self.u - self.d)
+%        self.nodes = []
+%        for i in range(self.N):
+%            tmp = []
+%            for j in range(i+1):
+%                node = Node(i, j, self.S0, self.u, self.K, self.iscall)
+%                tmp.append(node)
+%            self.nodes.append(tmp)
+%            
+%    def price(self):
+%        for i in range(len(self.nodes)-2, -1, -1):
+%            nds = self.nodes[i]
+%            for j in range(len(nds)):
+%                nds[j].P = math.exp(-self.r*self.dt)* \
+%                                (self.p*self.nodes[i+1][j+1].P + \
+%                                (1-self.p)*self.nodes[i+1][j].P)
+%                if self.isamerican:
+%                    S = self.S0*self.u**(2*j-i)
+%                    if self.iscall:
+%                        exercise = max(S - self.K, 0)
+%                    else:
+%                        exercise = max(self.K - S, 0)
+%
+%                    nds[j].P = max(nds[j].P, exercise)
+%        return self.nodes[0][0].P
+%            
+%    def print(self):
+%        for layer in myTree.nodes:
+%            for n in reversed(layer):
+%                print (f"{n.S:8.4f} {n.P:8.4f}") 
+%            print ("")
+%
+%myTree = Tree(0.1, 0.4, step, 1, 50, 50, True, False)    
+%print (f"Options price: {myTree.price():.4f}")
+%myTree.print()
+%\end{ipythonnon}
+%\begin{ioutput}
+%Options price: 10.4968
+% 50.0000  10.4968
+%
+% 59.7942  16.5321
+% 41.8101   4.6099
+%
+% 71.5069  25.3174
+% 50.0000   8.0145
+% 34.9617   1.2348
+%
+% 85.5139  37.4745
+% 59.7942  13.6320
+% 41.8101   2.4626
+% 29.2350   0.0000
+%
+%102.2647  53.2548
+% 71.5069  22.4970
+% 50.0000   4.9111
+% 34.9617   0.0000
+% 24.4464   0.0000
+%
+%122.2967  72.2967
+% 85.5139  35.5139
+% 59.7942   9.7942
+% 41.8101   0.0000
+% 29.2350   0.0000
+% 20.4421   0.000
+%\end{ioutput}
+%
+%Figure~\ref{fig:binomial_tree_accuracy} shows how the accuracy of the Binomial tree technique improves with the number of steps.
+%It can be noticed that binomial tree is not so good at the beginning (small number of steps used), but it converges to the right price every few steps. 
+%
+%\begin{figure}[htb]
+%	\centering
+%	\includegraphics[width=0.7\textwidth]{figures/binomial_tree_accuracy}
+%	\caption{Accuracy of the Binomial tree technique as a function of the number of steps. The analytical price computed using Black-Scholes model is reported for comparison too.}
+%	\label{fig:binomial_tree_accuracy}
+%\end{figure} 
+%%Finite difference schemes are very much similar to trinomial tree options pricing, where each node is dependent on three other nodes with an up movement, a down movement, and a flat movement.
 
-Binomial pricing model arises from discrete random walk models of the underlying asset. The idea is to break down the time to expiration into potentially very large number ($N$) of time steps ($0, dt, 2dt,\ldots , ndt$ where $n\leq N$). First step is to initialize the tree of stock prices by moving forward from today to expiration. At each step it is assumed that the stock price will move up (by the factor of $\upsilon$) or down (by $\delta$).
 
-One should find a way to calibrate the lattice so that it reflects the underlying model which is a continuous-time, continuous-state stochastic differential equation. Following this model, no-arbitrage and risk neutral principles crucial parameters are then obtained.
-
-Risk-neutrality demands (i.e. discounted expected return equals current price): $Se^{r\delta t} = pS\upsilon + (1-p)S\delta$ that is $e^{r\delta t} = p\upsilon + (1-p)\delta$, where $p$ is the probability of an upward movement (and since we are dealing with a binomial tree $(1-p)$ is the probability of a downward movement). 
-
-\tikzstyle{bag} = [text width=2em, text centered]
-\tikzstyle{end} = []
-\begin{tikzpicture}[sloped]
-	\node (a) at ( 0,0) [bag] {A};
-	\node (b) at ( 4,-1.5) [bag] {B};
-	\node (c) at ( 4,1.5) [bag] {C};
-	\node (d) at ( 8,-3) [bag] {D};
-	\node (e) at ( 8,0) [bag] {E};
-	\node (f) at ( 8,3) [bag] {F};
-	\draw [->] (a) to node [below] {$(1-p)$} (b);
-	\draw [->] (a) to node [above] {$P$} (c);
-	\draw [->] (c) to node [below] {$P^2$} (f);
-	\draw [->] (c) to node [above] {$(1-p)p$} (e);
-	\draw [->] (b) to node [below] {$(1-p)p$} (e);
-	\draw [->] (b) to node [above] {$(1-p)^2$} (d);
-\end{tikzpicture}
-
-\noindent
-Using condition introduced by Cox, Ross and Rubbenstein
-\begin{equation}
-\upsilon = \cfrac{1}{\delta}
-\end{equation}
-it can be obtained
-\begin{equation}
-\begin{gathered}
-p=\cfrac{e^{rdt}-\delta}{\upsilon-\delta}\\
-\upsilon = e^{\sigma\sqrt{dt}} \\
-\delta = e^{-\sigma\sqrt{dt}}
-\end{gathered}
-\end{equation}
-It can be concluded that tree recombines so that in every time step we have in $i^{th}$ step $i+1$ prices (some are recombined, $i=0\ldots N$), resulting in $(N+1)(N+2)/2$ nodes (lattices) in trees of $N$ steps. Also there are $2N+1$ different possible price. Furthermore, as price at time zero is known ($S_0$), all feasible prices are obtained using
-\begin{equation}
-S\upsilon^j \delta^{i-j}\textrm{ or }S\upsilon^{2j-i}\textrm{, since }\upsilon=\cfrac{1}{\delta}
-\end{equation}
-
-Having the tree of stock prices constructed, the option price can be derived working backward in the tree. %At the final step of the tree, i.e. at expiration of the option, the option values for each possible stock price are known, as they are equal to their intrinsic values. 
-Assuming that the payoff function of the option is determined only by the value of the underlying asset at expiration, the model then works backwards through each time interval, calculating the option value at each step. The final step is at current time and stock price, where the theoretical fair value of the option is calculated. Algebraically it means for call option:
-\begin{equation}
-f_{N,j} = \textrm{max}(S_0 \upsilon^{j} \delta^{N-j} - K, 0),\quad j=0,1,\ldots , N
-\end{equation}
-\noindent
-and for a put option
-\begin{equation}
-f_{N,j} = \textrm{max}(K - S_0 \upsilon^{j} \delta^{N-j}, 0),\quad j=0,1,\ldots , N
-\end{equation}
-Followed by working backward through the tree
-\begin{equation}\
-f_{i,j} = e^{-rdt}\left(pf_{i+1,j+1} + (1-p)f_{i+1,j}\right),\quad j=0,1,\ldots , i
-\end{equation}
-where $j$ denotes lattice position in $i^{th}$ step of the tree, so it can take values up to $i$.
-
-The main reason for introducing Binomial trees was inability to calculate the price of an American style option using Black-Scholes equation. With Binomial trees it is straightforward to take into account early exercise possibility in American calls and puts:
-\begin{equation}
-\begin{gathered}
-f_{i,j} = \textrm{max}\left(S_0 \upsilon^{j} \delta^{N-j} - K, e^{-rdt}\left(pf_{i+1,j+1} + (1-p)f_{i+1,j}\right)\right) \\
-f_{i,j} = \textrm{max}\left(K - S_0 \upsilon^{j} \delta^{N-j}, e^{-rdt}\left(pf_{i+1,j+1} + (1-p)f_{i+1,j}\right)\right)
-\end{gathered}
-\end{equation}
-
-Below the \texttt{python} code to generate binomial trees for European and American options.
-The example computes using a 5-steps binomial tree the price of an European call with $r=0.1, \sigma=0.4, T=1, S_0=50, K=50$.
-
-\begin{ipythonnon}
-import math
-
-class Node:
-    def __init__(self, i, j, S0, u, K, iscall):
-        self.i = i
-        self.j = j
-        self.S = S0*u**(2*j-i)
-        if iscall:
-            self.P = max(self.S - K, 0)
-        else:
-            self.P = max(K - self.S, 0)
-        
-class Tree:
-    def __init__(self, r, sigma, N, T, S0, K, iscall = True, 
-                 isamerican = False):
-        self.iscall = iscall
-        self.isamerican = isamerican
-        self.S0 = S0
-        self.K = K
-        self.r = r
-        self.sigma = sigma
-        self.N = N + 1
-        self.dt = T/N
-        self.u = math.exp(self.sigma*math.sqrt(self.dt))
-        self.d = 1/self.u
-        self.p = (math.exp(self.r*self.dt)-self.d)/(self.u - self.d)
-        self.nodes = []
-        for i in range(self.N):
-            tmp = []
-            for j in range(i+1):
-                node = Node(i, j, self.S0, self.u, self.K, self.iscall)
-                tmp.append(node)
-            self.nodes.append(tmp)
-            
-    def price(self):
-        for i in range(len(self.nodes)-2, -1, -1):
-            nds = self.nodes[i]
-            for j in range(len(nds)):
-                nds[j].P = math.exp(-self.r*self.dt)* \
-                                (self.p*self.nodes[i+1][j+1].P + \
-                                (1-self.p)*self.nodes[i+1][j].P)
-                if self.isamerican:
-                    S = self.S0*self.u**(2*j-i)
-                    if self.iscall:
-                        exercise = max(S - self.K, 0)
-                    else:
-                        exercise = max(self.K - S, 0)
-
-                    nds[j].P = max(nds[j].P, exercise)
-        return self.nodes[0][0].P
-            
-    def print(self):
-        for layer in myTree.nodes:
-            for n in reversed(layer):
-                print (f"{n.S:8.4f} {n.P:8.4f}") 
-            print ("")
-
-myTree = Tree(0.1, 0.4, step, 1, 50, 50, True, False)    
-print (f"Options price: {myTree.price():.4f}")
-myTree.print()
-\end{ipythonnon}
-\begin{ioutput}
-Options price: 10.4968
- 50.0000  10.4968
-
- 59.7942  16.5321
- 41.8101   4.6099
-
- 71.5069  25.3174
- 50.0000   8.0145
- 34.9617   1.2348
-
- 85.5139  37.4745
- 59.7942  13.6320
- 41.8101   2.4626
- 29.2350   0.0000
-
-102.2647  53.2548
- 71.5069  22.4970
- 50.0000   4.9111
- 34.9617   0.0000
- 24.4464   0.0000
-
-122.2967  72.2967
- 85.5139  35.5139
- 59.7942   9.7942
- 41.8101   0.0000
- 29.2350   0.0000
- 20.4421   0.000
-\end{ioutput}
-
-Figure~\ref{fig:binomial_tree_accuracy} shows how the accuracy of the Binomial tree technique improves with the number of steps.
-It can be noticed that binomial tree is not so good at the beginning (small number of steps used), but it converges to the right price every few steps. 
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/binomial_tree_accuracy}
-	\caption{Accuracy of the Binomial tree technique as a function of the number of steps. The analytical price computed using Black-Scholes model is reported for comparison too.}
-	\label{fig:binomial_tree_accuracy}
-\end{figure} 
-%Finite difference schemes are very much similar to trinomial tree options pricing, where each node is dependent on three other nodes with an up movement, a down movement, and a flat movement.
-
-\section{Longstaff-Schwartz algorithm}
-The Longstaff-Schwartz algorithm, widely known as the \emph{Least Squares Monte Carlo} (LSM) approach, represents a seminal advancement in financial engineering for valuing derivatives with early-exercise features.
-Unlike European options, which only require a forward-looking simulation to maturity, American options present an optimal stopping problem where the holder must decide at every moment whether the immediate 
-"intrinsic value" exceeds the expected value of all future payoffs, known as the \emph{continuation value}. Because this expectation is conditional on the state of the market at time $t$, it cannot be solved through simple forward simulation alone.
-
-The LSM approach elegantly sidesteps the "curse of dimensionality" that plagues traditional lattice-based methods (like binomial trees) by combining Monte Carlo simulation with \emph{cross-sectional regression}. 
-
-The algorithm operates in two distinct phases. Initially, it performs a forward pass to generate a large number of stochastic paths for the underlying asset(s) using Geometric Brownian Motion or other jump-diffusion models. Once the paths are secured, it executes a backward induction process starting from the final expiration date and moving toward the present.
-
-At each discrete time step, the algorithm isolates the paths that are currently "in-the-money." It then uses the realized \emph{future cash flows} from those paths as the dependent variable in a least-squares regression, where the independent variables are the \emph{current asset prices} transformed by a set of basis functions (such as Laguerre, Hermite, or simple power polynomials).
-
-This regression provides a functional approximation of the continuation value. By comparing this estimate against the immediate exercise payoff, the algorithm establishes an optimal exercise rule for each path. 
-If the immediate payoff is higher, the path is "exercised," and the future cash flow for that path is updated to the current payoff; otherwise, the future cash flow is simply discounted back one step. 
-By the time the induction reaches $t=0$, the average of these optimized, discounted cash flows provides the Net Present Value (NPV) of the American option. This methodology is particularly robust for multi-asset options and complex path-dependent structures where traditional partial differential equation (PDE) solvers become computationally prohibitive.
-
-As an example consider the evaluation of an American put option using the Longstaff-Schwartz algorithm. The initial underlying value is $S_0=36$, the volatility is 20\%, the strike price $K=40$, $T=1$, and the risk-free rate 6\% flat.
-
-We start with the forward pass represented by the simulation of $N$ paths of the stock price until maturity T. Then, starting from the last exercise date we apply the stopping rule; at any time $t$ you have a choice:
-either exercise (receive $K-S_t$ for a put) or continue (receive $\mathbb{E}[V(t+1) e^{-rt}|S_t]$).
-Plotting the future  payoffs against the underlying price we can see that the analytical price for a put interpolated the cloud of Monte Carlo points, see Fig.~\ref{fig:longstaff_fit}(left). 
-This suggest us that the price at time $t_1$ can be computed by means of an average on all discounted payoff (i.e. the barycentre of the cloud made of discounted payoff). 
-Which in turn suggests that the future value of an option can be seen as the problem of finding the curve that best fits the cloud of discounted payoff up to the date of interest.
-So we have an empirical pricing formula for the put to be used in the Monte Carlo Simulation
-\begin{equation}
-	P(t_1,T,S(t_1),K)=c_0+c_1 S(t_1) + c_2 S(t_1)^2 + c_3 S(t_1)^3 + c_4 S(t_1)^4 + c_5 S(t_1)^5
-\end{equation}
-Since we don't know the "true" expected value of continuing, we approximate it using the cross-section of all simulated paths. We regress the realized future payoffs against the current stock price.
-If the regression says "exercising is better," we replace that path's future cash flow with the immediate payoff.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.45\textwidth]{figures/longstaff_fit}
-	\includegraphics[width=0.45\textwidth]{figures/longstaff_fit_2}
-	\caption{(Left) Scatter plot of the contract payoff and the underlying value ($S_t$) at time $t_1$. The green line represents the analytical price computed using Black-Scholes model. (Right) Cross-sectional
-	regression of the contract payoff with two fifth order polynomials.}
-	\label{fig:longstaff_fit}
-\end{figure} 
-
-\begin{ipythonnon}
-import numpy as np
-
-from datetime import date
-
-from finmarkets.utils import OptionType 
-from finmarkets import DiscountCurve, TimeInterval
-
-def payoff(S0, K, T, r, sigma, n_paths, t_steps, option_type=OptionType.Call):    
-    S = GBM(r, sigma, S0, T, t_steps, n_paths)    
-
-    if option_type == OptionType.Put:
-        payoffs = np.maximum(K - S, 0)
-    else:
-        payoffs = np.maximum(S - K, 0)
-    return S, payoffs
-
-def longstaff-schwarz(today, paths, payoffs, dc):    
-    t_steps, n_paths = paths.shape
-    dt = 1 / t_steps
-
-    value = payoffs[-1]
-
-    for t in range(t_steps - 1, 0, -1):
-        itm_idx = np.where(payoffs[t] > 0)[0]
-		df = dc.df(today+TimeInterval(f"{t}d"))
-        if len(itm_idx) > 0:
-            X = S[t, itm_idx]
-            Y = value[itm_idx] * dc.df(today+TimeInterval(f"{t}d"))
-            coeffs = np.polynomial.laguerre.lagfit(X, Y, 5)
-            continuation_value = np.polynomial.laguerre.lagval(X, coeffs)	
-            exer_now = payoffs[t, itm_idx]	
-            exer_mask = exer_now > continuation_value
-            value[itm_idx[exer_mask]] = exer_now[exer_mask]
-	
-            non_exer_mask = ~exer_mask
-            value[itm_idx[non_exer_mask]] = value[itm_idx[non_exer_mask]] * df
-	
-           otm_idx = np.setdiff1d(np.arange(n_paths), itm_idx)
-           value[otm_idx] = value[otm_idx] * df
-        else:
-            value = value * df
-    return np.mean(value * dc.df(today+TimeInterval(f"{1}d")))
-
-obs_date = date.today()
-dates = [obs_date + TimeInterval(f"{i}m") for i in range(13)]
-dc = DiscountCurve(dates, np.array([np.exp(-r*t/12) for t in range(13)]))
-
-S, payoffs = payoff(36, 40, 1, 0.06, 0.2, 25000, 365, OptionType.Put)
-
-npv = american_option_lsm(obs_date, S, payoffs, dc)
-print(f"American Option NPV: {npv:.4f}")	
-\end{ipythonnon}
-\begin{ioutput}
-American Option NPV: 3.9954
-\end{ioutput}
-
-\section{Finite Differences} 
-\label{sec:finite_difference}
-A common method to numerically solve Ordinary Differential Equations (ODE), like heat equation or Black-Scholes equation, is the \emph{finite difference method}. An ODE is a differential equation containing one or more functions of one independent variable and their derivatives~\cite{bib:ode}. The term ordinary is used in contrast with the term partial differential equation (PDE) which may be with respect to more than one independent variable.
-With this technique a differential equation is transformed into a system of algebraic equations to solve by approximating each derivative with finite difference formulas at evenly spaced grid points.
-
-Imagine to divide the ranges $[0, S_{max}]$ and $[0, T]$ into $M$ and $N$ intervals respectively (e.g. $S = i\Delta S$ with $i\in[0, M]$, $t = j\Delta t$ with $j \in[0,N]$).
-
-The differential equation is enforced only at the grid points, and the first and second derivatives can be obtained as follows.
-With the help of Taylor expansion we can discretize the ODE  derivatives ($y(x, t)$) leading to a recursive formula for $y_{i,j}$ (assume $y\in\mathbb{C}^{n+1}$ and the grid spacing is small). For a point $x_i$ between $x$ and $x+h$,
-
-\begin{equation}
-y(x+h)=y(x)+hy'(x)+\cfrac{1}{2}h^2y''(x)+\ldots+\cfrac{h^n}{n!}y^{(n)}(x)+\cfrac{h^{n+1}}{(n+1)!}y^{(n+1)}(\xi)
-\end{equation}
-Replacing terms after $h^2$ with $O(h^2)$ and moving $y'(x)=\cfrac{\partial y}{\partial x}$ to the left-hand side, we have the \emph{forward difference}, which has error order 1
-
-\begin{equation}
+%\section{Finite Differences} 
+%\label{sec:finite_difference}
+%A common method to numerically solve Ordinary Differential Equations (ODE), like heat equation or Black-Scholes equation, is the \emph{finite difference method}. An ODE is a differential equation containing one or more functions of one independent variable and their derivatives~\cite{bib:ode}. The term ordinary is used in contrast with the term partial differential equation (PDE) which may be with respect to more than one independent variable.
+%With this technique a differential equation is transformed into a system of algebraic equations to solve by approximating each derivative with finite difference formulas at evenly spaced grid points.
+%
+%Imagine to divide the ranges $[0, S_{max}]$ and $[0, T]$ into $M$ and $N$ intervals respectively (e.g. $S = i\Delta S$ with $i\in[0, M]$, $t = j\Delta t$ with $j \in[0,N]$).
+%
+%The differential equation is enforced only at the grid points, and the first and second derivatives can be obtained as follows.
+%With the help of Taylor expansion we can discretize the ODE  derivatives ($y(x, t)$) leading to a recursive formula for $y_{i,j}$ (assume $y\in\mathbb{C}^{n+1}$ and the grid spacing is small). For a point $x_i$ between $x$ and $x+h$,
+%
+%\begin{equation}
+%y(x+h)=y(x)+hy'(x)+\cfrac{1}{2}h^2y''(x)+\ldots+\cfrac{h^n}{n!}y^{(n)}(x)+\cfrac{h^{n+1}}{(n+1)!}y^{(n+1)}(\xi)
+%\end{equation}
+%Replacing terms after $h^2$ with $O(h^2)$ and moving $y'(x)=\cfrac{\partial y}{\partial x}$ to the left-hand side, we have the \emph{forward difference}, which has error order 1
+%
+%\begin{equation}
+%%\begin{split}
+%y(x+h)=y(x)+hy'(x)+\cfrac{1}{2}h^2y''(x)+O(h^2)
+%\implies \cfrac{\partial y}{\partial x} = \cfrac{y(x+h)-y(x)}{2h}
+%%\end{split}
+%\end{equation}
+%
+%Likewise, $y'$ and $y''$ can be approximated by \emph{backward difference} and \emph{central difference}. Figure~\ref{fig:graph_finite_difference} shows a graphical representation of the different types of finite differences. Commonly, the central difference formulas is used, due to the fact that it yields better accuracy. 
+%Table~\ref{tab:derivative_approximations} reports a summary of derivatives approximation.
+%
+%\begin{figure}[htb]
+%	\centering
+%	\includegraphics[width=0.7\textwidth]{figures/graph_finite_difference}
+%	\caption{Graphical representation of first order derivative using backward, forward and central difference.}
+%	\label{fig:graph_finite_difference}
+%\end{figure} 
+% 
+%\begin{table}[htb]
+%    \centering
+%    \begin{tabular}{|l|c|c|}
+%    \hline
+%    Type & Approximation & Error Order \\
+%    \hline
+%    Forward difference & $\cfrac{\partial y}{\partial x} = \cfrac{y_{i+1,j}-y_{i,j}}{\Delta x}$, $\cfrac{\partial y}{\partial t} = \cfrac{y_{i,j+1}-y_{i,j}}{\Delta x}$ & 1 \\[1ex]
+%    \hline
+%    Backward difference & $\cfrac{\partial y}{\partial x} = \cfrac{y_{i,j}-y_{i-1,j}}{\Delta x}$ & 1 \\[1ex]
+%    \hline
+%    Central difference & $\cfrac{\partial y}{\partial x} = \cfrac{y_{i+1,j}-y_{i-1,j}}{2\Delta x}$& 2 \\[1ex]
+%    \hline
+%    Second difference & $\cfrac{\partial^2 y}{\partial x^2} = \cfrac{y_{i+1,j}-2y_{i,j} + y_{i-1,j}}{\Delta x^2}$& 2 \\[1ex]
+%    \hline
+%    \end{tabular}
+%\caption{Summary of derivative approximations and relative errors.}
+%\label{tab:derivative_approximations}
+%\end{table}
+%
+%These finite difference expressions are used to replace the derivatives of $y$ in the differential equation which leads to a system of $n+1$ linear algebraic equations if the differential equation is linear. If the differential equation is non-linear, the algebraic equations will also be non-linear.
+%
+%Depending on which combination of presented schemes for derivatives is used in the discretization of the equation, one can end up with different approaches, \emph{explicit}, \emph{implicit} or \emph{Crank-Nicolson}. Graphical illustration of these methods are shown with the grid in Fig.~\ref{fig:grid_finite_difference}. 
+%Table ~\ref{tab:various_methods} summarizes the possibilities.
+%
+%\begin{figure}[htb]
+%	\centering
+%	\includegraphics[width=0.7\textwidth]{figures/grid_finite_differences}
+%	\caption{Example of grid used to solve an Ordinary Differential Equation.}
+%	\label{fig:grid_finite_difference}
+%\end{figure} 
+%
+%\begin{table}[htb]
+%    \centering
+%    \begin{tabular}{|l|c|c|}
+%    \hline
+%    Method & x-derivatives & time-derivatives \\
+%    \hline
+%    Explicit & central difference & backward difference \\
+%    \hline
+%    Implicit & central difference & forward difference \\
+%    \hline
+%    Crank-Nicolson & central difference & central difference \\
+%    \hline
+%    \end{tabular}
+%\caption{Possible variations of finite difference method.}
+%\label{tab:various_methods}
+%\end{table}
+%
+%\subsection{Boundary Conditions}
+%Before delving into some example applications, we need to discuss the choice of boundary conditions which is an important issue in the construction of these methods. Well chosen boundary conditions contribute to prevent any errors on the boundaries propagated through the rest of the mesh. There are several ways to specify boundary conditions the most common are:
+%
+%\begin{itemize}
+%\item Dirichlet Condition: a Dirichlet boundary condition assigns a value to $y$ at boundary. For example, imagine to price a call option with the finite difference method. At $S_{min}=0$, the option value could be set to zero, since the it is worthless. However, if underlying price reaches $S_{max}$ at time $t$, the option is worth the discounted value of its expected payoff. For a vanilla call option:
+%
+%\begin{equation*}
+%\begin{cases}
+%y(0,t)=0(4)\\
+%y(S_{max},t)=S_{max}-Ke^{-r(T-t)}
+%\end{cases}
+%\end{equation*}
+%\item Neumann Condition: Neumann condition specifies the partial derivative at the boundary. Discretizing the second derivative at the boundary by central difference gives us a more friendly equation about $y_{i,j}$. In addition, the Neumann condition is inclined to be more accurate for the same boundaries than the Dirichlet conditions.
+%\begin{equation*}
+%\begin{cases}
+%\cfrac{\partial^2 f}{\partial x^2}(\Delta x,t)=0 \implies y_{0,j}-2y_{1,j}+y_{2,j}=0\\[1ex]
+%\cfrac{\partial^2 f}{\partial x^2}((N-1)\Delta x,t) =0\implies y_{M-2,j}-2y_{M-1,j}+y_{M,j}=0
+%\end{cases}
+%\end{equation*}
+%\end{itemize}
+%
+%%\subsection{Finite Difference Methods}
+%%In this section, we discretize the B-S PDE using explicit method, implicit method and Crank-Nicolson method and construct the matrix form of the recursive formula to price the European options. 
+%
+%\subsection{Instabilities}
+%When discussing effectiveness of different finite difference methods, we should consider three fundamental properties, which are consistency, stability, and convergence. %Furthermore, we have to notice that though numerical method is good for solving PDE, it also brings the truncation error due to the discretization of the variables (e.g. stock price and time).
+%
+%\begin{itemize}
+%\item stability: a finite difference scheme is said to be stable if the difference between numerical solution and the true solution doesn't grow infinitely as the grid spacing approaches zero; %The stability of numerical scheme is achieved if the spectral radius of A less than 1.
+%\item consistency: a finite difference scheme is consistent if the difference between PDE and finite differential equation vanishes as the grid spacing approaches zero. That is, the truncation error tends to 0 as the mesh gets infinitely finer.
+%\item convergence: a finite difference scheme is said to be convergent if solutions derived from a finite difference equation converge point-wise to the true solutions of the original PDE as the grid spacing approaches zero.
+%\end{itemize}
+%
+%More quantitative statement concerning stability will be presented in the next Section in the context of the heat equation.
+%
+%\section{2D Heat Equation}
+%Heat equation is a partial differential equation, defined as
+%\begin{equation}
+%\cfrac{\partial u}{\partial t} - \alpha\nabla u = 0
+%\end{equation}
+%\noindent 
+%It represents an important example since the Black-Scholes equation, through appropriate variable transformations, can be put in the same form. So learning to solve it helps in understanding the BS model.
+%
+%Consider the the two-dimensional case, expliciting $\nabla$ the heat equation becomes
+%\begin{equation}
+%\cfrac{\partial u}{\partial t} - \alpha\left(\cfrac{\partial^2 u}{\partial x^2}+\cfrac{\partial^2 u}{\partial y^2}\right)= 0
+%\end{equation}
+%\noindent
+%where $t$ is for temporal variable, $x$ and $y$ are spatial variables, and $\alpha$ is the diffusivity constant. So basically we want to find the solution $u(\mathbf{x}, t)$ everywhere in $x$ and $y$, and over time $t$.
+%
+%In order to get an approximate solution of the heat equation we are going to apply the finite difference method outlined in the previous Section. The first step is to "discretize" the spatial domain $x, y$ and the time interval $t$ like this
+%
+%\begin{gather}
+%x_i = i\Delta x \\
+%y_i = j\Delta y \\
+%t_i = k\Delta t 
+%\end{gather}
+%
+%As we can see, $i, j$, and $k$ represent the steps for each difference for $x, y,$ and $t$ respectively. What we want is the solution $u$, which is
+%
+%\begin{equation}
+%u(x, y, t) = u_{i,j}^k
+%\end{equation}
+%We can write the heat equation above using the \emph{explicit} finite difference method like this
+%
+%\begin{equation}
+%\cfrac{u_{i,j}^{k+1}-u_{i,j}^k}{\Delta t} - \alpha\left(\cfrac{u_{i+1,j}^{k}-2u_{i,j}^{k}+u_{i-1,j}^{k}}{\Delta x^2}+\cfrac{u_{i,j+1}^{k}-2u_{i,j}^{k}+u_{i,j-1}^{k}}{\Delta y^2}\right)=0
+%\end{equation}
+%If we arrange the equation above by taking $\Delta x = \Delta y$, we get the final equation
+%
+%\begin{equation}
+%u_{i,j}^{k+1} = \gamma \left(u_{i+1,j}^{k}+u_{i-1,j}^{k}+u_{i,j+1}^{k}+u_{i,j-1}^{k}-4u_{i,j}^{k}\right)+u_{i,j}^{k}
+%\end{equation}
+%\noindent 
+%where
+%\begin{equation}
+%\gamma = \alpha\cfrac{\Delta t}{\Delta x^2}
+%\end{equation}
+%
+%Now we can solve the heat equation approximated by the algebraic equation above, which is computer-friendly. As an example problem let’s suppose a thin square plate with the side of 50 unit length. The temperature everywhere inside the plate is originally (at $t = 0$) at 0 degree, see Figure~\ref{fig:heat_start_1}.
+%At the same time let's put a heat source close to the upper side of the plate.
+%
+%\begin{figure}[htb]
+%	\centering
+%	\includegraphics[width=0.7\textwidth]{figures/frame0}
+%	\caption{Boundary and initial conditions for our exercise.}
+%	\label{fig:heat_start_1}
+%\end{figure} 
+%\noindent
+%Let’s take $\Delta x = 1$ and $\alpha = 2.0$. Now we can write some \texttt{python} code to solve this problem numerically to see the temperature everywhere as a function of time. 
+%
+%\begin{ipythonnon}
+%import numpy as np
+%
+%plate_length = 50
+%max_iter_time = 750
+%
+%alpha = 2
+%delta_x = 1
+%
+%delta_t = (delta_x ** 2)/(4 * alpha)
+%gamma = (alpha * delta_t) / (delta_x ** 2)
+%
+%# Initialize solution: the grid of u(k, i, j)
+%u = np.empty((max_iter_time, plate_length, plate_length))
+%
+%# Initial condition everywhere inside the grid
+%u_initial = 0
+%
+%# Boundary conditions
+%u_top = 100.0
+%u_left = 0.0
+%u_bottom = 0.0
+%u_right = 0.0
+%
+%# Set the initial condition
+%u.fill(u_initial)
+%
+%# Set the boundary conditions
+%u[:, (plate_length-1):, :] = u_top
+%u[:, :, :1] = u_left
+%u[:, :1, 1:] = u_bottom
+%u[:, :, (plate_length-1):] = u_right
+%
+%def calculate(u):
+%  for k in range(0, max_iter_time-1, 1):
+%      for i in range(1, plate_length-1, delta_x):
+%          for j in range(1, plate_length-1, delta_x):
+%              u[k + 1, i, j] = gamma * (u[k][i+1][j] + u[k][i-1][j] + 
+%                                        u[k][i][j+1] + u[k][i][j-1] - 
+%                                        4*u[k][i][j]) + u[k][i][j]
+%
+%    return u
+%
+%u = calculate(u)
+%\end{ipythonnon}
+%
+%Figure~\ref{fig:heat_end_1} shows the heat distribution after 62.5 seconds. The central part of the plate is now much warmer. 
+%\begin{figure}[htb]
+%	\centering
+%	\includegraphics[width=0.7\textwidth]{figures/frame500}
+%	\caption{Situation after about 60 seconds.}
+%	\label{fig:heat_end_1}
+%\end{figure} 
+%
+%As a second example, let’s set all of the boundary conditions to 0, and then randomize the initial condition for the interior grid (below only the updated part of the code is shown for brevity).
+%
+%\begin{ipythonnon}
+%...
+%# Initial condition everywhere inside the grid
+%#u_initial = 0
+%u_initial = np.random.uniform(low=28.5, high=55.5, 
+%                              size=(plate_length,plate_length))
+%
+%# Change initial conditions
+%#u.fill(u_initial)
+%u[0,:,:] = u_initial
+%
+%# Boundary conditions
+%u_top = 0.0
+%u_left = 0.0
+%u_bottom = 0.0
+%u_right = 0.0
+%
+%# Set the initial condition
+%u.fill(u_initial)
+%...
+%\end{ipythonnon}
+%
+%In this second case, being the interior initially warmer it cools down as time goes by. Figure~\ref{fig:heat_2} shows the initial condition and the situation after about 30 seconds.
+% 
+%\begin{figure}[htb]
+%	\centering
+%	\includegraphics[width=0.45\textwidth]{figures/frame0_2}
+%	\includegraphics[width=0.45\textwidth]{figures/frame250_2}
+%	\caption{Initial condition of the second example of heat equation solution (left), heat distribution after after about 31.25 seconds (right).}
+%	\label{fig:heat_2}
+%\end{figure} 
+%
+%\subsection{Alternative Formulation}
+%In the heat equation (one-dimensional) replace
+%\begin{equation}
+%\cfrac{\partial y_{i,j}}{\partial t} = \cfrac{\partial y_{x_i, t_j}}{\partial t} = \cfrac{y_{i,j+1}-y_{i,j}}{\Delta t}
+%\end{equation}
+%\noindent 
+%and
+%\begin{equation}
+%\cfrac{\partial^2 y_{i,j}}{\partial x^2}=\cfrac{y_{i+1,j} -2y_{i,j} + y_{i-1,j}}{\Delta x^2}
+%\end{equation}
+%\noindent
+%which leads to the \emph{difference equation}
+%\begin{equation}
+%\cfrac{y_{i,j+1}-y_{i,j}}{\Delta t} = \cfrac{y_{i+1,j}-2y_{i,j} + y_{i-1,j}}{\Delta x^2}
+%\end{equation}
+%\noindent
+%In case all values $y$ are calculated for the time level $j$, then the values of the time level $j + 1$ are given by
+%\begin{equation}
+%y_{i,j+1} = y_{i,j} + \cfrac{\Delta t}{\Delta x^2} \left(y_{i+1,j}-2y_{i,j} + y_{i-1,j}\right)
+%\end{equation}
+%With the notation $\alpha = \Delta t/\Delta x^2$
+%\begin{equation}
+%y_{i,j+1} = \alpha y_{i-1,j} + (1-2\alpha)y_{i,j} + \alpha y_{i+1,j} 
+%\label{eq:explicit_formula1}
+%\end{equation}
+%Eq.~\ref{eq:explicit_formula1} can be generalized as
+%\begin{equation}
+%y_{i,j+1} = a_i y_{i-1,j} + b_i y_{i,j} + c_i y_{i+1,j} 
+%\label{eq:explicit_formula2}
+%\end{equation}
+%\noindent
+%which suggests the possibility that it may be written also in matrix notation
+%\begin{equation}
+%Y_{i+1} + K_i = [A]Y_i \quad i=N-1, 2,\ldots,2,0
+%\end{equation}
+%\noindent
+%where
+%\begin{equation*}
+%Y_i =
+%\begin{bmatrix}
+%y_{i, 1}\\
+%y_{i, 2}\\
+%\vdots\\
+%\vdots\\
+%y_{i,N-1}\\
+%\end{bmatrix},
+%K_i=
+%\begin{bmatrix}
+%-a_1 y_{i,0}\\
+%0\\
+%\vdots\\
+%0\\
+%-c_{M-1}y_{i,N}
+%\end{bmatrix},
+%[A] = 
+%\begin{bmatrix}
+%b_1 & c_1 & 0 \cdots & 0 & 0 & 0 \\
+%a_2 & b_2 & c_2 \cdots & 0 & 0 & 0\\
+%0  & a_3 & b_3 & c_3\cdots & 0 & 0 \\
+%0  & \vdots & \vdots & \ddots & \vdots & 0 \\
+%0 & 0 & 0 & \cdots & a_{M-1} & b_{M-1} \\
+%\end{bmatrix}
+%\end{equation*}
+%
+%This is equivalent to a system of equations that can be solved using the method explained in Chapter~\ref{matrix-equations}.
+%
+%\subsubsection{Example of Instability}
+%Consider again the heat equation (1D this time)
+%
+%\begin{equation}
+%\cfrac{\partial y}{\partial t} = \cfrac{\partial^2 y}{\partial x^2}
+%\end{equation}
+%\noindent
+%with $y(x, 0) = \textrm{sin}\pi x$, $x_{0} = 0$, $x_M = 1$ and boundary conditions $= 0$. Let us approximate $y(x = 0.2, t = 0.5)$ using a grid with $\Delta x = 0.1$ (i.e. $M = 10$ and $0.2 = x_2$, and two different values of $\Delta t$: 0.0005 and 0.01.
+%
+%\begin{ipythonnon}
+%import numpy as np
+%import math
+%
+%def example(V, N, M, alpha):
+%    for j in np.arange(N):
+%        for i in range(1, M):
+%            V[j+1, i] = alpha*V[j, i-1] + (1-2*alpha)*V[j, i] + alpha*V[j, i+1]
+%    return V
+%
+%N = 1000 #50 
+%M = 10
+%dt = 0.5/N
+%dx = 1/M
+%alpha = dt/dx**2
+%x = np.linspace(0, 1, M+1)
+%y = np.zeros(shape=(N+1, M+1))
+%y[0,:] = np.sin(math.pi*x)
+%
+%y_exp = example(y, N, M, alpha)
+%print (y[int(0.5/dt), int(0.2/dx)])
+%\end{ipythonnon}
+%\noindent
+%Running with $N=1000$ gives
+%\begin{ioutput}
+%0.004349220987439513
+%\end{ioutput}
+%\noindent
+%Running with $N=50$ gives
+%\begin{ioutput}
+%-466863.4978153779
+%\end{ioutput}
+%
+%\begin{itemize}
+%\item $\Delta t = 0.0005 \implies \alpha = 0.05$ yields $y_{2,1000}=0.00435$;
+%\item $\Delta t = 0.01 \implies \alpha = 1$ yields $y_{2,50}=-5\cdot 10^5$
+%\end{itemize}
+%Hence there is an instability, i.e. different results according to grid granularity.
+%
+%If $y(j)$ denotes the exact solution of $y(j+1) = [A] y(j) + d(j)$, $\bar{y}(j)$ the approximated solution (i.e. including all errors), $e(j) = y(j)-\bar{y}(j)$ and
+%\begin{equation}
+%r(j+1) = \bar{y}(j+1)-[A]y(j)-d(j)
+%\end{equation}
+%\noindent
+%the vector $r(j+1)$ represents the error at the j$^{th}$ step. %, and it suffices to study the propagation of one such errors to understand the behavior of the method. So we set $r(j) = 0$ for $j > 1$, i.e. study propagation of the error $e(0)$ in the course of the iterations.
+%
+%\begin{equation}
 %\begin{split}
-y(x+h)=y(x)+hy'(x)+\cfrac{1}{2}h^2y''(x)+O(h^2)
-\implies \cfrac{\partial y}{\partial x} = \cfrac{y(x+h)-y(x)}{2h}
+%y(j+1) &= [A]y(j) + d(j),\quad (j > 1) \\
+%&\implies [A]e(j) = [A]\bar{y}(j) - [A]y(j) = \bar{y}(j+1) - y(j+1) = e(j+1) \\
+%&\implies e(j) = [A]^j e(0)
 %\end{split}
-\end{equation}
-
-Likewise, $y'$ and $y''$ can be approximated by \emph{backward difference} and \emph{central difference}. Figure~\ref{fig:graph_finite_difference} shows a graphical representation of the different types of finite differences. Commonly, the central difference formulas is used, due to the fact that it yields better accuracy. 
-Table~\ref{tab:derivative_approximations} reports a summary of derivatives approximation.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/graph_finite_difference}
-	\caption{Graphical representation of first order derivative using backward, forward and central difference.}
-	\label{fig:graph_finite_difference}
-\end{figure} 
- 
-\begin{table}[htb]
-    \centering
-    \begin{tabular}{|l|c|c|}
-    \hline
-    Type & Approximation & Error Order \\
-    \hline
-    Forward difference & $\cfrac{\partial y}{\partial x} = \cfrac{y_{i+1,j}-y_{i,j}}{\Delta x}$, $\cfrac{\partial y}{\partial t} = \cfrac{y_{i,j+1}-y_{i,j}}{\Delta x}$ & 1 \\[1ex]
-    \hline
-    Backward difference & $\cfrac{\partial y}{\partial x} = \cfrac{y_{i,j}-y_{i-1,j}}{\Delta x}$ & 1 \\[1ex]
-    \hline
-    Central difference & $\cfrac{\partial y}{\partial x} = \cfrac{y_{i+1,j}-y_{i-1,j}}{2\Delta x}$& 2 \\[1ex]
-    \hline
-    Second difference & $\cfrac{\partial^2 y}{\partial x^2} = \cfrac{y_{i+1,j}-2y_{i,j} + y_{i-1,j}}{\Delta x^2}$& 2 \\[1ex]
-    \hline
-    \end{tabular}
-\caption{Summary of derivative approximations and relative errors.}
-\label{tab:derivative_approximations}
-\end{table}
-
-These finite difference expressions are used to replace the derivatives of $y$ in the differential equation which leads to a system of $n+1$ linear algebraic equations if the differential equation is linear. If the differential equation is non-linear, the algebraic equations will also be non-linear.
-
-Depending on which combination of presented schemes for derivatives is used in the discretization of the equation, one can end up with different approaches, \emph{explicit}, \emph{implicit} or \emph{Crank-Nicolson}. Graphical illustration of these methods are shown with the grid in Fig.~\ref{fig:grid_finite_difference}. 
-Table ~\ref{tab:various_methods} summarizes the possibilities.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/grid_finite_differences}
-	\caption{Example of grid used to solve an Ordinary Differential Equation.}
-	\label{fig:grid_finite_difference}
-\end{figure} 
-
-\begin{table}[htb]
-    \centering
-    \begin{tabular}{|l|c|c|}
-    \hline
-    Method & x-derivatives & time-derivatives \\
-    \hline
-    Explicit & central difference & backward difference \\
-    \hline
-    Implicit & central difference & forward difference \\
-    \hline
-    Crank-Nicolson & central difference & central difference \\
-    \hline
-    \end{tabular}
-\caption{Possible variations of finite difference method.}
-\label{tab:various_methods}
-\end{table}
-
-\subsection{Boundary Conditions}
-Before delving into some example applications, we need to discuss the choice of boundary conditions which is an important issue in the construction of these methods. Well chosen boundary conditions contribute to prevent any errors on the boundaries propagated through the rest of the mesh. There are several ways to specify boundary conditions the most common are:
-
-\begin{itemize}
-\item Dirichlet Condition: a Dirichlet boundary condition assigns a value to $y$ at boundary. For example, imagine to price a call option with the finite difference method. At $S_{min}=0$, the option value could be set to zero, since the it is worthless. However, if underlying price reaches $S_{max}$ at time $t$, the option is worth the discounted value of its expected payoff. For a vanilla call option:
-
-\begin{equation*}
-\begin{cases}
-y(0,t)=0(4)\\
-y(S_{max},t)=S_{max}-Ke^{-r(T-t)}
-\end{cases}
-\end{equation*}
-\item Neumann Condition: Neumann condition specifies the partial derivative at the boundary. Discretizing the second derivative at the boundary by central difference gives us a more friendly equation about $y_{i,j}$. In addition, the Neumann condition is inclined to be more accurate for the same boundaries than the Dirichlet conditions.
-\begin{equation*}
-\begin{cases}
-\cfrac{\partial^2 f}{\partial x^2}(\Delta x,t)=0 \implies y_{0,j}-2y_{1,j}+y_{2,j}=0\\[1ex]
-\cfrac{\partial^2 f}{\partial x^2}((N-1)\Delta x,t) =0\implies y_{M-2,j}-2y_{M-1,j}+y_{M,j}=0
-\end{cases}
-\end{equation*}
-\end{itemize}
-
-%\subsection{Finite Difference Methods}
-%In this section, we discretize the B-S PDE using explicit method, implicit method and Crank-Nicolson method and construct the matrix form of the recursive formula to price the European options. 
-
-\subsection{Instabilities}
-When discussing effectiveness of different finite difference methods, we should consider three fundamental properties, which are consistency, stability, and convergence. %Furthermore, we have to notice that though numerical method is good for solving PDE, it also brings the truncation error due to the discretization of the variables (e.g. stock price and time).
-
-\begin{itemize}
-\item stability: a finite difference scheme is said to be stable if the difference between numerical solution and the true solution doesn't grow infinitely as the grid spacing approaches zero; %The stability of numerical scheme is achieved if the spectral radius of A less than 1.
-\item consistency: a finite difference scheme is consistent if the difference between PDE and finite differential equation vanishes as the grid spacing approaches zero. That is, the truncation error tends to 0 as the mesh gets infinitely finer.
-\item convergence: a finite difference scheme is said to be convergent if solutions derived from a finite difference equation converge point-wise to the true solutions of the original PDE as the grid spacing approaches zero.
-\end{itemize}
-
-More quantitative statement concerning stability will be presented in the next Section in the context of the heat equation.
-
-\section{2D Heat Equation}
-Heat equation is a partial differential equation, defined as
-\begin{equation}
-\cfrac{\partial u}{\partial t} - \alpha\nabla u = 0
-\end{equation}
-\noindent 
-It represents an important example since the Black-Scholes equation, through appropriate variable transformations, can be put in the same form. So learning to solve it helps in understanding the BS model.
-
-Consider the the two-dimensional case, expliciting $\nabla$ the heat equation becomes
-\begin{equation}
-\cfrac{\partial u}{\partial t} - \alpha\left(\cfrac{\partial^2 u}{\partial x^2}+\cfrac{\partial^2 u}{\partial y^2}\right)= 0
-\end{equation}
-\noindent
-where $t$ is for temporal variable, $x$ and $y$ are spatial variables, and $\alpha$ is the diffusivity constant. So basically we want to find the solution $u(\mathbf{x}, t)$ everywhere in $x$ and $y$, and over time $t$.
-
-In order to get an approximate solution of the heat equation we are going to apply the finite difference method outlined in the previous Section. The first step is to "discretize" the spatial domain $x, y$ and the time interval $t$ like this
-
-\begin{gather}
-x_i = i\Delta x \\
-y_i = j\Delta y \\
-t_i = k\Delta t 
-\end{gather}
-
-As we can see, $i, j$, and $k$ represent the steps for each difference for $x, y,$ and $t$ respectively. What we want is the solution $u$, which is
-
-\begin{equation}
-u(x, y, t) = u_{i,j}^k
-\end{equation}
-We can write the heat equation above using the \emph{explicit} finite difference method like this
-
-\begin{equation}
-\cfrac{u_{i,j}^{k+1}-u_{i,j}^k}{\Delta t} - \alpha\left(\cfrac{u_{i+1,j}^{k}-2u_{i,j}^{k}+u_{i-1,j}^{k}}{\Delta x^2}+\cfrac{u_{i,j+1}^{k}-2u_{i,j}^{k}+u_{i,j-1}^{k}}{\Delta y^2}\right)=0
-\end{equation}
-If we arrange the equation above by taking $\Delta x = \Delta y$, we get the final equation
-
-\begin{equation}
-u_{i,j}^{k+1} = \gamma \left(u_{i+1,j}^{k}+u_{i-1,j}^{k}+u_{i,j+1}^{k}+u_{i,j-1}^{k}-4u_{i,j}^{k}\right)+u_{i,j}^{k}
-\end{equation}
-\noindent 
-where
-\begin{equation}
-\gamma = \alpha\cfrac{\Delta t}{\Delta x^2}
-\end{equation}
-
-Now we can solve the heat equation approximated by the algebraic equation above, which is computer-friendly. As an example problem let’s suppose a thin square plate with the side of 50 unit length. The temperature everywhere inside the plate is originally (at $t = 0$) at 0 degree, see Figure~\ref{fig:heat_start_1}.
-At the same time let's put a heat source close to the upper side of the plate.
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/frame0}
-	\caption{Boundary and initial conditions for our exercise.}
-	\label{fig:heat_start_1}
-\end{figure} 
-\noindent
-Let’s take $\Delta x = 1$ and $\alpha = 2.0$. Now we can write some \texttt{python} code to solve this problem numerically to see the temperature everywhere as a function of time. 
-
-\begin{ipythonnon}
-import numpy as np
-
-plate_length = 50
-max_iter_time = 750
-
-alpha = 2
-delta_x = 1
-
-delta_t = (delta_x ** 2)/(4 * alpha)
-gamma = (alpha * delta_t) / (delta_x ** 2)
-
-# Initialize solution: the grid of u(k, i, j)
-u = np.empty((max_iter_time, plate_length, plate_length))
-
-# Initial condition everywhere inside the grid
-u_initial = 0
-
-# Boundary conditions
-u_top = 100.0
-u_left = 0.0
-u_bottom = 0.0
-u_right = 0.0
-
-# Set the initial condition
-u.fill(u_initial)
-
-# Set the boundary conditions
-u[:, (plate_length-1):, :] = u_top
-u[:, :, :1] = u_left
-u[:, :1, 1:] = u_bottom
-u[:, :, (plate_length-1):] = u_right
-
-def calculate(u):
-  for k in range(0, max_iter_time-1, 1):
-      for i in range(1, plate_length-1, delta_x):
-          for j in range(1, plate_length-1, delta_x):
-              u[k + 1, i, j] = gamma * (u[k][i+1][j] + u[k][i-1][j] + 
-                                        u[k][i][j+1] + u[k][i][j-1] - 
-                                        4*u[k][i][j]) + u[k][i][j]
-
-    return u
-
-u = calculate(u)
-\end{ipythonnon}
-
-Figure~\ref{fig:heat_end_1} shows the heat distribution after 62.5 seconds. The central part of the plate is now much warmer. 
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/frame500}
-	\caption{Situation after about 60 seconds.}
-	\label{fig:heat_end_1}
-\end{figure} 
-
-As a second example, let’s set all of the boundary conditions to 0, and then randomize the initial condition for the interior grid (below only the updated part of the code is shown for brevity).
-
-\begin{ipythonnon}
-...
-# Initial condition everywhere inside the grid
-#u_initial = 0
-u_initial = np.random.uniform(low=28.5, high=55.5, 
-                              size=(plate_length,plate_length))
-
-# Change initial conditions
-#u.fill(u_initial)
-u[0,:,:] = u_initial
-
-# Boundary conditions
-u_top = 0.0
-u_left = 0.0
-u_bottom = 0.0
-u_right = 0.0
-
-# Set the initial condition
-u.fill(u_initial)
-...
-\end{ipythonnon}
-
-In this second case, being the interior initially warmer it cools down as time goes by. Figure~\ref{fig:heat_2} shows the initial condition and the situation after about 30 seconds.
- 
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.45\textwidth]{figures/frame0_2}
-	\includegraphics[width=0.45\textwidth]{figures/frame250_2}
-	\caption{Initial condition of the second example of heat equation solution (left), heat distribution after after about 31.25 seconds (right).}
-	\label{fig:heat_2}
-\end{figure} 
-
-\subsection{Alternative Formulation}
-In the heat equation (one-dimensional) replace
-\begin{equation}
-\cfrac{\partial y_{i,j}}{\partial t} = \cfrac{\partial y_{x_i, t_j}}{\partial t} = \cfrac{y_{i,j+1}-y_{i,j}}{\Delta t}
-\end{equation}
-\noindent 
-and
-\begin{equation}
-\cfrac{\partial^2 y_{i,j}}{\partial x^2}=\cfrac{y_{i+1,j} -2y_{i,j} + y_{i-1,j}}{\Delta x^2}
-\end{equation}
-\noindent
-which leads to the \emph{difference equation}
-\begin{equation}
-\cfrac{y_{i,j+1}-y_{i,j}}{\Delta t} = \cfrac{y_{i+1,j}-2y_{i,j} + y_{i-1,j}}{\Delta x^2}
-\end{equation}
-\noindent
-In case all values $y$ are calculated for the time level $j$, then the values of the time level $j + 1$ are given by
-\begin{equation}
-y_{i,j+1} = y_{i,j} + \cfrac{\Delta t}{\Delta x^2} \left(y_{i+1,j}-2y_{i,j} + y_{i-1,j}\right)
-\end{equation}
-With the notation $\alpha = \Delta t/\Delta x^2$
-\begin{equation}
-y_{i,j+1} = \alpha y_{i-1,j} + (1-2\alpha)y_{i,j} + \alpha y_{i+1,j} 
-\label{eq:explicit_formula1}
-\end{equation}
-Eq.~\ref{eq:explicit_formula1} can be generalized as
-\begin{equation}
-y_{i,j+1} = a_i y_{i-1,j} + b_i y_{i,j} + c_i y_{i+1,j} 
-\label{eq:explicit_formula2}
-\end{equation}
-\noindent
-which suggests the possibility that it may be written also in matrix notation
-\begin{equation}
-Y_{i+1} + K_i = [A]Y_i \quad i=N-1, 2,\ldots,2,0
-\end{equation}
-\noindent
-where
-\begin{equation*}
-Y_i =
-\begin{bmatrix}
-y_{i, 1}\\
-y_{i, 2}\\
-\vdots\\
-\vdots\\
-y_{i,N-1}\\
-\end{bmatrix},
-K_i=
-\begin{bmatrix}
--a_1 y_{i,0}\\
-0\\
-\vdots\\
-0\\
--c_{M-1}y_{i,N}
-\end{bmatrix},
-[A] = 
-\begin{bmatrix}
-b_1 & c_1 & 0 \cdots & 0 & 0 & 0 \\
-a_2 & b_2 & c_2 \cdots & 0 & 0 & 0\\
-0  & a_3 & b_3 & c_3\cdots & 0 & 0 \\
-0  & \vdots & \vdots & \ddots & \vdots & 0 \\
-0 & 0 & 0 & \cdots & a_{M-1} & b_{M-1} \\
-\end{bmatrix}
-\end{equation*}
-
-This is equivalent to a system of equations that can be solved using the method explained in Chapter~\ref{matrix-equations}.
-
-\subsubsection{Example of Instability}
-Consider again the heat equation (1D this time)
-
-\begin{equation}
-\cfrac{\partial y}{\partial t} = \cfrac{\partial^2 y}{\partial x^2}
-\end{equation}
-\noindent
-with $y(x, 0) = \textrm{sin}\pi x$, $x_{0} = 0$, $x_M = 1$ and boundary conditions $= 0$. Let us approximate $y(x = 0.2, t = 0.5)$ using a grid with $\Delta x = 0.1$ (i.e. $M = 10$ and $0.2 = x_2$, and two different values of $\Delta t$: 0.0005 and 0.01.
-
-\begin{ipythonnon}
-import numpy as np
-import math
-
-def example(V, N, M, alpha):
-    for j in np.arange(N):
-        for i in range(1, M):
-            V[j+1, i] = alpha*V[j, i-1] + (1-2*alpha)*V[j, i] + alpha*V[j, i+1]
-    return V
-
-N = 1000 #50 
-M = 10
-dt = 0.5/N
-dx = 1/M
-alpha = dt/dx**2
-x = np.linspace(0, 1, M+1)
-y = np.zeros(shape=(N+1, M+1))
-y[0,:] = np.sin(math.pi*x)
-
-y_exp = example(y, N, M, alpha)
-print (y[int(0.5/dt), int(0.2/dx)])
-\end{ipythonnon}
-\noindent
-Running with $N=1000$ gives
-\begin{ioutput}
-0.004349220987439513
-\end{ioutput}
-\noindent
-Running with $N=50$ gives
-\begin{ioutput}
--466863.4978153779
-\end{ioutput}
-
-\begin{itemize}
-\item $\Delta t = 0.0005 \implies \alpha = 0.05$ yields $y_{2,1000}=0.00435$;
-\item $\Delta t = 0.01 \implies \alpha = 1$ yields $y_{2,50}=-5\cdot 10^5$
-\end{itemize}
-Hence there is an instability, i.e. different results according to grid granularity.
-
-If $y(j)$ denotes the exact solution of $y(j+1) = [A] y(j) + d(j)$, $\bar{y}(j)$ the approximated solution (i.e. including all errors), $e(j) = y(j)-\bar{y}(j)$ and
-\begin{equation}
-r(j+1) = \bar{y}(j+1)-[A]y(j)-d(j)
-\end{equation}
-\noindent
-the vector $r(j+1)$ represents the error at the j$^{th}$ step. %, and it suffices to study the propagation of one such errors to understand the behavior of the method. So we set $r(j) = 0$ for $j > 1$, i.e. study propagation of the error $e(0)$ in the course of the iterations.
-
-\begin{equation}
-\begin{split}
-y(j+1) &= [A]y(j) + d(j),\quad (j > 1) \\
-&\implies [A]e(j) = [A]\bar{y}(j) - [A]y(j) = \bar{y}(j+1) - y(j+1) = e(j+1) \\
-&\implies e(j) = [A]^j e(0)
-\end{split}
-\end{equation}
-For stable behavior, is required that $[A]^j e(0) \rightarrow 0$ for $j\rightarrow\infty$.
-
-It is possible to demonstrate that for $0< \alpha\leq\cfrac{1}{2}$ the explicit method $y(j+1) = [A]y(j)$ is stable.
-Since $\alpha=\cfrac{\Delta t}{\Delta x^2}$ this result implies that the step sizes $\Delta t$ and $\Delta x$  cannot be chosen independent of each other.
-Indeed if accuracy is improved by halving the $\Delta x$ price step, time step must be reduced by a factor of four or more (and the computation time goes up by a factor of eight). The improvement in accuracy we would get from such a reduction in step sizes is a factor of four since the explicit finite-difference method is accurate to $O(\Delta t) + O(\Delta x^2)$.
-
-Concerning stability, it can be proved that the implicit method is \emph{unconditionally} stable and that $\Delta t$ and $\Delta x$ can be chosen independent of each other.
-On the other hand a weakness of this method is the accuracy of the first order in $\Delta t$ (the error is of the order of $O(\Delta x^2) + O(\Delta t)$). 
-
-Finally the Crank-Nicolson method is proved to be stable with an error $O(\Delta t^2)$. 
-
-In conclusion the advantages of the explicit method can be summarized as follows:
-\begin{itemize}
-\tightlist
-\item it is very easy to program and hard to make mistakes;
-\item it copes well with coefficients that are asset and/or time-dependent;
-\item American options are easily implemented (see next Section);
-\item it is relatively fast.
-\end{itemize}
-
-Its main disadvantage is the restriction on time step choice because of the stability issues seen above which can affect the speed of the algorithm.
-
-Implicit finite difference methods are usually used to overcome the stability issue. There is no more need for ridiculously small time-steps. But the solution is not so straightforward. With a little extra computational effort the implicit method precision can be improved significantly (at least in theory) by using Crank-Nicolson method. 
-
-\section{European Options}
-Let's introduce again the Black-Scholes (BS) equation, see also Chapter~\ref{ch:BS}
-
-\begin{equation}
-\cfrac{\partial V}{\partial t} + \cfrac{1}{2} \sigma^2 S^2 \cfrac{\partial^2 V}{\partial S^2}+ rS \cfrac{\partial V}{\partial S} - rV = 0
-\label{eq:bs_differential_equation}
-\end{equation}
-\noindent
-where $V$ stands for the price of the option, $S$ denotes the current value of the underlying assets, $\sigma$ its volatility, $t$ is time and $r$ the risk-free interest rate.
-
-The BS equation is aimed at calculating the price of an option, and the only unknown here is the price of this option ($V$), depending on $S$ and $t$. In the next Sections we will use finite difference method to solve this nonlinear second-order parabolic equation.
-
-\subsection{Boundary Conditions}
-Consider an European call option $C(S, t)$ of a stock at the expiry time $t=T$. Its payoff is given by $C(S, T) = \textrm{max}(S-K, 0)$. This is the final condition for the Black-Scholes equation, however, usually it is preferred to deal with an initial condition with a form  $C(S,0)=f(S)$. So we can apply a change of variable
-
-\begin{equation}
-t^* = T - t \rightarrow \cfrac{\partial V}{\partial t} = -\cfrac{\partial V}{\partial t^*} 
-\end{equation}
-\noindent
-which substituted in the BS equation gives
-\begin{equation}
-\cfrac{\partial V}{\partial t^*} - \cfrac{1}{2} \sigma^2 S^2 \cfrac{\partial^2 V}{\partial S^2} - rS \cfrac{\partial V}{\partial S} + rV = 0
-\end{equation}
-\noindent
-with initial condition $V(S,0)=\textrm{max}(S-K, 0)$. Be careful that this initial condition reflects the expiry moment $t=T$ and when we are stepping forward to calculate the last time step in $t^*$ we are actually calculating the price of the call option at $t=0$ (i.e. time transformation $t\rightarrow t^*$ converts the terminal condition for $V(S, T) = V(S, t^*)$ to an initial condition for $t^* = 0$).
-
-In order to make it a well-posed partial differential equation, we need to define the boundary conditions on both sides in the variable $S$. The current price of the stock can take values in the interval $[0, \infty)$ which is unbounded. However, in the numerical method, we need to set an artificial bound $S_{max}$ otherwise we will have an infinite number of grid points. Usually it is recommended to set $S_{max}$ around four times the exercise price $K$ ($S_{max} = 4K$).
-
-So in conclusion the boundary conditions can be written as
-\begin{equation}
-\begin{cases}
-V(0, t^*) = 0 \\
-V(S_{max}, t^*) = S_{max} - K \\
-\end{cases}
-\end{equation}
-
-The discretized version of each term of the BS equation are
-\begin{gather}
-\cfrac{\partial V}{\partial t^*} = \cfrac{V_{i, n+1}-V_{i, n}}{\Delta t} \\
-\cfrac{\partial V}{\partial S} = \cfrac{V_{i+1, n}-V_{i-1, n}}{2\Delta S} \\
-\cfrac{\partial^2 V}{\partial S^2} = \cfrac{V_{i+1, n}-2V_{i, n}+V_{i-1, n}}{\Delta S^2}
-\end{gather}
-\noindent
-which substituted into Eq.~\ref{eq:bs_differential_equation} give
-\begin{equation}
-\cfrac{V_{i, n+1}-V_{i, n}}{\Delta t} - \cfrac{1}{2}\sigma^2 S^2
-\cfrac{V_{i+1, n}-2V_{i, n}+V_{i-1, n}}{\Delta S^2} - rS
-\cfrac{V_{i+1,n}-V_{i-1,n}}{2\Delta S} + rV_{i,n} = 0
-\end{equation}
-
-Since $S=i\Delta S$ we can rearrange the above equation as:
-\begin{equation}
-\cfrac{V_{i, n+1}-V_{i, n}}{\Delta t} - \cfrac{1}{2}\sigma^2 i^2
-\left(V_{i+1, n}-2V_{i, n}+V_{i-1, n}\right) - \cfrac{1}{2}ri
-\left(V_{i+1,n}-V_{i-1,n}\right) + rV_{i,n} = 0
-\end{equation}
-\noindent
-and the option price at the next time step can be expressed as
-\begin{equation}
-V_{i, n+1} = \cfrac{1}{2}\left(\sigma^2 i^2+ri\right)V_{i+1,n} \Delta t +
-\left(1-\sigma^2 i^2\Delta t-r\Delta t \right)V_{i,n} +
-\cfrac{1}{2}\left(\sigma^2 i^2 - ri\right)V_{i-1,n} \Delta t
-\end{equation}
-
-This difference equation can be easily implemented in \texttt{python}.
-\begin{ipythonnon}
-import numpy as np
-
-class FiniteDifference:
-  def __init__(self, M, N, Smin, Smax, T, K, r, D, sigma):
-    self.r = r
-    self.K = K
-    self.D = D
-    self.sigma = sigma
-    self.M = M
-    self.N = N
-    self.V = np.zeros(shape=(M+1,N+1))   
-    self.dt = T/N
-    self.dS = (Smax - Smin)/M
-    self.S = np.linspace(Smin, Smax, M+1)
-    self.t = np.linspace(0, T, N+1)
-    self.V[:, 0] = np.maximum(self.S-self.K, 0)
-    self.V[0, :] = 0
-    self.V[self.M, :] = self.Smax*np.exp(-self.D*self.t) - \
-                        self.K*np.exp(-self.r*self.t)
-
-  def explicit(self):
-    for j in range(self.N):
-      for i in range(1, self.M):
-        self.V[i, j+1] = 0.5*self.dt*(self.sigma*self.sigma*i*i-\
-                         (self.r-self.D)*i)*self.V[i-1, j]+(1-self.dt* \
-                         (self.sigma*self.sigma*i*i+self.r))*self.V[i, j]+\
-                         0.5*self.dt*(self.sigma*self.sigma*i*i+\
-                         (self.r-self.D)*i)*self.V[i+1, j]
-\end{ipythonnon}             
-
-As an example consider a European call with an underlying currently traded at \$20 (with a volatility of 0.2). The maturity is six months, the strike price is \$10 and the risk-free interest rate is 10\%. Let's compute the price of the option.
-\begin{ipythonnon}
-fd = FiniteDifference(100, 300, 0, 30, 1, 10, 0.2, 0, 0.1)
-fd.explicit()
-\end{ipythonnon}
-
-Figure~\ref{fig:bs_finite_difference} shows the call option price against the current stock price. As a comparison the same plot obtained with the analytical solution of the Black-Scholes equation is also shown. 
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/bs_finite_difference}
-	\caption{Comparison between the analytical solution and the option price obtained with the explicit finite difference method.}
-	\label{fig:bs_finite_difference}
-\end{figure} 
-
-Figure~\ref{fig:explicit_relative_error} reports the error on the option price computed with the explicit finite difference method relative to the analytical calculation obtained from the Black-Scholes model. The most obvious conclusion that can be made from the plot is that the error is larger when the option is at-the-money. Also error depends on $\sigma$ and $r$. Of course the relationship between $dS$ and $dt$ have crucial influence to the stability of the' explicit method. 
- 
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/explicit_relative_error}
-	\caption{Relative error between option price computed with explicit finite difference method and analytically using Black-Scholes formula.}
-	\label{fig:explicit_relative_error}
-\end{figure} 
-
-\section{American Options}
-The main characteristic of an American option is the possibility of early exercise. 
-The explicit finite difference method can be easily adapted to account for this additional feature not available in European options.
-
-After each iteration it is indeed enough to compare the calculated option value with the it intrinsic value, taking the larger of the two. The \texttt{python} class can be adapted accordingly (a parameter to set call or put has been added too):
-\begin{ipythonnon}
-import numpy as np
-
-class FiniteDifference:
-  def __init__(self, M, N, Smin, Smax, T, K, r, D, sigma, 
-               iscall=True, isamerican=False):
-    self.iscall = iscall
-    self.isamerican = isamerican
-    self.r = r
-    self.K = K
-    self.D = D
-    self.sigma = sigma
-    self.M = M
-    self.N = N
-    self.V = np.zeros(shape=(M+1,N+1))   
-    self.dt = T/N
-    self.dS = (Smax - Smin)/M
-    self.S = np.linspace(Smin, Smax, M+1)
-    self.t = np.linspace(0, T, N+1)
-    if self.iscall:
-      self.V[:, 0] = np.maximum(self.S - self.K, 0)
-      self.V[self.M, :] = Smax*np.exp(-self.D*self.t) - \
-                          self.K*np.exp(-self.r*self.t)
-      self.V[0, :] = 0
-    else:
-      self.V[:, 0] = np.maximum(self.K - self.S, 0)
-      self.V[self.M, :] = self.K*np.exp(-self.r*self.t) - \
-                          Smax*np.exp(-self.D*self.t)
-
-  def explicit(self):
-    for j in range(self.N):
-      for i in range(1, self.M):
-        self.V[i, j+1] = 0.5*self.dt*(self.sigma*self.sigma*i*i-\
-                         (self.r-self.D)*i)*self.V[i-1, j]+(1-self.dt* \
-                         (self.sigma*self.sigma*i*i+self.r))*self.V[i, j]+\
-                         0.5*self.dt*(self.sigma*self.sigma*i*i+\
-                         (self.r-self.D)*i)*self.V[i+1, j]
-        if self.isamerican:
-          V[:, j+1] = np.maximum(V[:, j+1], V[:, 0])
-\end{ipythonnon}             
-
-Consider now an American call with an underlying currently traded at \$20 (with a volatility of 0.2). The maturity is six months, the strike price is \$10 and the risk-free interest rate is 10\% and the dividend rate is 5\%. Let's compute the price of the option.
-\begin{ipythonnon}
-fd = FiniteDifference(100, 300, 0, 30, 1, 10, 0.2, 0.05, 0.1, True, True)
-fd.explicit()
-\end{ipythonnon}
-
-Figure~\ref{fig:american_call_surface} shows the American option price surface for the call used in the example above.
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.7\textwidth]{figures/american_call_surface}
-	\caption{Option price surface.}
-	\label{fig:american_call_surface}
-\end{figure} 
+%\end{equation}
+%For stable behavior, is required that $[A]^j e(0) \rightarrow 0$ for $j\rightarrow\infty$.
+%
+%It is possible to demonstrate that for $0< \alpha\leq\cfrac{1}{2}$ the explicit method $y(j+1) = [A]y(j)$ is stable.
+%Since $\alpha=\cfrac{\Delta t}{\Delta x^2}$ this result implies that the step sizes $\Delta t$ and $\Delta x$  cannot be chosen independent of each other.
+%Indeed if accuracy is improved by halving the $\Delta x$ price step, time step must be reduced by a factor of four or more (and the computation time goes up by a factor of eight). The improvement in accuracy we would get from such a reduction in step sizes is a factor of four since the explicit finite-difference method is accurate to $O(\Delta t) + O(\Delta x^2)$.
+%
+%Concerning stability, it can be proved that the implicit method is \emph{unconditionally} stable and that $\Delta t$ and $\Delta x$ can be chosen independent of each other.
+%On the other hand a weakness of this method is the accuracy of the first order in $\Delta t$ (the error is of the order of $O(\Delta x^2) + O(\Delta t)$). 
+%
+%Finally the Crank-Nicolson method is proved to be stable with an error $O(\Delta t^2)$. 
+%
+%In conclusion the advantages of the explicit method can be summarized as follows:
+%\begin{itemize}
+%\tightlist
+%\item it is very easy to program and hard to make mistakes;
+%\item it copes well with coefficients that are asset and/or time-dependent;
+%\item American options are easily implemented (see next Section);
+%\item it is relatively fast.
+%\end{itemize}
+%
+%Its main disadvantage is the restriction on time step choice because of the stability issues seen above which can affect the speed of the algorithm.
+%
+%Implicit finite difference methods are usually used to overcome the stability issue. There is no more need for ridiculously small time-steps. But the solution is not so straightforward. With a little extra computational effort the implicit method precision can be improved significantly (at least in theory) by using Crank-Nicolson method. 
+%
+%\section{European Options}
+%Let's introduce again the Black-Scholes (BS) equation, see also Chapter~\ref{ch:BS}
+%
+%\begin{equation}
+%\cfrac{\partial V}{\partial t} + \cfrac{1}{2} \sigma^2 S^2 \cfrac{\partial^2 V}{\partial S^2}+ rS \cfrac{\partial V}{\partial S} - rV = 0
+%\label{eq:bs_differential_equation}
+%\end{equation}
+%\noindent
+%where $V$ stands for the price of the option, $S$ denotes the current value of the underlying assets, $\sigma$ its volatility, $t$ is time and $r$ the risk-free interest rate.
+%
+%The BS equation is aimed at calculating the price of an option, and the only unknown here is the price of this option ($V$), depending on $S$ and $t$. In the next Sections we will use finite difference method to solve this nonlinear second-order parabolic equation.
+%
+%\subsection{Boundary Conditions}
+%Consider an European call option $C(S, t)$ of a stock at the expiry time $t=T$. Its payoff is given by $C(S, T) = \textrm{max}(S-K, 0)$. This is the final condition for the Black-Scholes equation, however, usually it is preferred to deal with an initial condition with a form  $C(S,0)=f(S)$. So we can apply a change of variable
+%
+%\begin{equation}
+%t^* = T - t \rightarrow \cfrac{\partial V}{\partial t} = -\cfrac{\partial V}{\partial t^*} 
+%\end{equation}
+%\noindent
+%which substituted in the BS equation gives
+%\begin{equation}
+%\cfrac{\partial V}{\partial t^*} - \cfrac{1}{2} \sigma^2 S^2 \cfrac{\partial^2 V}{\partial S^2} - rS \cfrac{\partial V}{\partial S} + rV = 0
+%\end{equation}
+%\noindent
+%with initial condition $V(S,0)=\textrm{max}(S-K, 0)$. Be careful that this initial condition reflects the expiry moment $t=T$ and when we are stepping forward to calculate the last time step in $t^*$ we are actually calculating the price of the call option at $t=0$ (i.e. time transformation $t\rightarrow t^*$ converts the terminal condition for $V(S, T) = V(S, t^*)$ to an initial condition for $t^* = 0$).
+%
+%In order to make it a well-posed partial differential equation, we need to define the boundary conditions on both sides in the variable $S$. The current price of the stock can take values in the interval $[0, \infty)$ which is unbounded. However, in the numerical method, we need to set an artificial bound $S_{max}$ otherwise we will have an infinite number of grid points. Usually it is recommended to set $S_{max}$ around four times the exercise price $K$ ($S_{max} = 4K$).
+%
+%So in conclusion the boundary conditions can be written as
+%\begin{equation}
+%\begin{cases}
+%V(0, t^*) = 0 \\
+%V(S_{max}, t^*) = S_{max} - K \\
+%\end{cases}
+%\end{equation}
+%
+%The discretized version of each term of the BS equation are
+%\begin{gather}
+%\cfrac{\partial V}{\partial t^*} = \cfrac{V_{i, n+1}-V_{i, n}}{\Delta t} \\
+%\cfrac{\partial V}{\partial S} = \cfrac{V_{i+1, n}-V_{i-1, n}}{2\Delta S} \\
+%\cfrac{\partial^2 V}{\partial S^2} = \cfrac{V_{i+1, n}-2V_{i, n}+V_{i-1, n}}{\Delta S^2}
+%\end{gather}
+%\noindent
+%which substituted into Eq.~\ref{eq:bs_differential_equation} give
+%\begin{equation}
+%\cfrac{V_{i, n+1}-V_{i, n}}{\Delta t} - \cfrac{1}{2}\sigma^2 S^2
+%\cfrac{V_{i+1, n}-2V_{i, n}+V_{i-1, n}}{\Delta S^2} - rS
+%\cfrac{V_{i+1,n}-V_{i-1,n}}{2\Delta S} + rV_{i,n} = 0
+%\end{equation}
+%
+%Since $S=i\Delta S$ we can rearrange the above equation as:
+%\begin{equation}
+%\cfrac{V_{i, n+1}-V_{i, n}}{\Delta t} - \cfrac{1}{2}\sigma^2 i^2
+%\left(V_{i+1, n}-2V_{i, n}+V_{i-1, n}\right) - \cfrac{1}{2}ri
+%\left(V_{i+1,n}-V_{i-1,n}\right) + rV_{i,n} = 0
+%\end{equation}
+%\noindent
+%and the option price at the next time step can be expressed as
+%\begin{equation}
+%V_{i, n+1} = \cfrac{1}{2}\left(\sigma^2 i^2+ri\right)V_{i+1,n} \Delta t +
+%\left(1-\sigma^2 i^2\Delta t-r\Delta t \right)V_{i,n} +
+%\cfrac{1}{2}\left(\sigma^2 i^2 - ri\right)V_{i-1,n} \Delta t
+%\end{equation}
+%
+%This difference equation can be easily implemented in \texttt{python}.
+%\begin{ipythonnon}
+%import numpy as np
+%
+%class FiniteDifference:
+%  def __init__(self, M, N, Smin, Smax, T, K, r, D, sigma):
+%    self.r = r
+%    self.K = K
+%    self.D = D
+%    self.sigma = sigma
+%    self.M = M
+%    self.N = N
+%    self.V = np.zeros(shape=(M+1,N+1))   
+%    self.dt = T/N
+%    self.dS = (Smax - Smin)/M
+%    self.S = np.linspace(Smin, Smax, M+1)
+%    self.t = np.linspace(0, T, N+1)
+%    self.V[:, 0] = np.maximum(self.S-self.K, 0)
+%    self.V[0, :] = 0
+%    self.V[self.M, :] = self.Smax*np.exp(-self.D*self.t) - \
+%                        self.K*np.exp(-self.r*self.t)
+%
+%  def explicit(self):
+%    for j in range(self.N):
+%      for i in range(1, self.M):
+%        self.V[i, j+1] = 0.5*self.dt*(self.sigma*self.sigma*i*i-\
+%                         (self.r-self.D)*i)*self.V[i-1, j]+(1-self.dt* \
+%                         (self.sigma*self.sigma*i*i+self.r))*self.V[i, j]+\
+%                         0.5*self.dt*(self.sigma*self.sigma*i*i+\
+%                         (self.r-self.D)*i)*self.V[i+1, j]
+%\end{ipythonnon}             
+%
+%As an example consider a European call with an underlying currently traded at \$20 (with a volatility of 0.2). The maturity is six months, the strike price is \$10 and the risk-free interest rate is 10\%. Let's compute the price of the option.
+%\begin{ipythonnon}
+%fd = FiniteDifference(100, 300, 0, 30, 1, 10, 0.2, 0, 0.1)
+%fd.explicit()
+%\end{ipythonnon}
+%
+%Figure~\ref{fig:bs_finite_difference} shows the call option price against the current stock price. As a comparison the same plot obtained with the analytical solution of the Black-Scholes equation is also shown. 
+%
+%\begin{figure}[htb]
+%	\centering
+%	\includegraphics[width=0.7\textwidth]{figures/bs_finite_difference}
+%	\caption{Comparison between the analytical solution and the option price obtained with the explicit finite difference method.}
+%	\label{fig:bs_finite_difference}
+%\end{figure} 
+%
+%Figure~\ref{fig:explicit_relative_error} reports the error on the option price computed with the explicit finite difference method relative to the analytical calculation obtained from the Black-Scholes model. The most obvious conclusion that can be made from the plot is that the error is larger when the option is at-the-money. Also error depends on $\sigma$ and $r$. Of course the relationship between $dS$ and $dt$ have crucial influence to the stability of the' explicit method. 
+% 
+%\begin{figure}[htb]
+%	\centering
+%	\includegraphics[width=0.7\textwidth]{figures/explicit_relative_error}
+%	\caption{Relative error between option price computed with explicit finite difference method and analytically using Black-Scholes formula.}
+%	\label{fig:explicit_relative_error}
+%\end{figure} 
+%
+%\section{American Options}
+%The main characteristic of an American option is the possibility of early exercise. 
+%The explicit finite difference method can be easily adapted to account for this additional feature not available in European options.
+%
+%After each iteration it is indeed enough to compare the calculated option value with the it intrinsic value, taking the larger of the two. The \texttt{python} class can be adapted accordingly (a parameter to set call or put has been added too):
+%\begin{ipythonnon}
+%import numpy as np
+%
+%class FiniteDifference:
+%  def __init__(self, M, N, Smin, Smax, T, K, r, D, sigma, 
+%               iscall=True, isamerican=False):
+%    self.iscall = iscall
+%    self.isamerican = isamerican
+%    self.r = r
+%    self.K = K
+%    self.D = D
+%    self.sigma = sigma
+%    self.M = M
+%    self.N = N
+%    self.V = np.zeros(shape=(M+1,N+1))   
+%    self.dt = T/N
+%    self.dS = (Smax - Smin)/M
+%    self.S = np.linspace(Smin, Smax, M+1)
+%    self.t = np.linspace(0, T, N+1)
+%    if self.iscall:
+%      self.V[:, 0] = np.maximum(self.S - self.K, 0)
+%      self.V[self.M, :] = Smax*np.exp(-self.D*self.t) - \
+%                          self.K*np.exp(-self.r*self.t)
+%      self.V[0, :] = 0
+%    else:
+%      self.V[:, 0] = np.maximum(self.K - self.S, 0)
+%      self.V[self.M, :] = self.K*np.exp(-self.r*self.t) - \
+%                          Smax*np.exp(-self.D*self.t)
+%
+%  def explicit(self):
+%    for j in range(self.N):
+%      for i in range(1, self.M):
+%        self.V[i, j+1] = 0.5*self.dt*(self.sigma*self.sigma*i*i-\
+%                         (self.r-self.D)*i)*self.V[i-1, j]+(1-self.dt* \
+%                         (self.sigma*self.sigma*i*i+self.r))*self.V[i, j]+\
+%                         0.5*self.dt*(self.sigma*self.sigma*i*i+\
+%                         (self.r-self.D)*i)*self.V[i+1, j]
+%        if self.isamerican:
+%          V[:, j+1] = np.maximum(V[:, j+1], V[:, 0])
+%\end{ipythonnon}             
+%
+%Consider now an American call with an underlying currently traded at \$20 (with a volatility of 0.2). The maturity is six months, the strike price is \$10 and the risk-free interest rate is 10\% and the dividend rate is 5\%. Let's compute the price of the option.
+%\begin{ipythonnon}
+%fd = FiniteDifference(100, 300, 0, 30, 1, 10, 0.2, 0.05, 0.1, True, True)
+%fd.explicit()
+%\end{ipythonnon}
+%
+%Figure~\ref{fig:american_call_surface} shows the American option price surface for the call used in the example above.
+%\begin{figure}[htb]
+%	\centering
+%	\includegraphics[width=0.7\textwidth]{figures/american_call_surface}
+%	\caption{Option price surface.}
+%	\label{fig:american_call_surface}
+%\end{figure} 
 
 %\section*{Exercises}
 %\input{numerical_approx_ex_text}
