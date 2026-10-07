@@ -24,10 +24,10 @@ class PortfolioOptimizer:
     return self.portfolio_return(w) - target
 
   def portfolio_return(self, w: np.array) -> float:
-    return float(np.dot(w, self.returns))
+    return np.dot(w, self.returns)
 
   def portfolio_risk(self, w: np.array) -> float:
-    return float(np.sqrt(w.T @ self.covariance @ w))
+    return np.sqrt(w.T @ self.covariance @ w)
 
   def min_variance_portfolio(self, target_return: float):
     num_assets = len(self.assets)

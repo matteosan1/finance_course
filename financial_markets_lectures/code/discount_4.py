@@ -3,24 +3,24 @@ import numpy as np
 from scipy.interpolate import interp1d
 from typing import Union, List
 
-from finmarkets import GlobalConst as gc, yearFraction
+from dates import GlobalConsts as gc, yearFraction
 
 class TermStructure:
   def __init__(self, pillars: Union[np.array, List[date]], 
                rates: Union[np.array, List[float]], 
-               day_count_convention = "ACT365"):
+               day_count_convention = "ACT360"):
     if len(pillars) != len(rates):
       raise ValueError("pillars and rates must have the same the length.")
 
     self.day_count_convention = day_count_convention
-    self.times = np.array([self._get_time(p) for p in pillars], dtype=float)
+    times = np.array([self._get_time(p) for p in pillars], dtype=float)
     self.rates = np.array(rates, dtype=float) \\
       if isinstance(rates, list) else rates
     self.pillars = pillars
-    self.interpolator = interp1d(self.times, self.rates, bounds_error=True)
+    self.interpolator = interp1d(times, self.rates, bounds_error=True)
     
   def _get_time(self, d: date) -> float:
-    return YearFraction(gc.OBS_DATE, d, self.day_count_convention)
+    return yearFraction(gc.OBS_DATE, d, self.day_count_convention)
 
   def interp_rate(self, adate: date) -> tuple[float, float]:
     d = yearFraction(gc.OBS_DATE, adate, self.day_count_convention)

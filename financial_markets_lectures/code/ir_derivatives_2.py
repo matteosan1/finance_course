@@ -1,7 +1,7 @@
 import pandas as pd
 
-from finmarkets import GlobalConst as gc
-from finmarkets import DiscountCurve, TermStructure, TimeInterval
+from dates import GlobalConst as gc, TimeInterval
+from curves import DiscountCurve, TermStructure
 
 obs_date = gc.OBS_DATE
 discount_data = pd.read_excel('discount_factors_2022-10-05.xlsx')

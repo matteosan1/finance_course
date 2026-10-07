@@ -1,5 +1,4 @@
-import numpy as np
-import matplotlib.pyplot as plt
+import numpy as np, matplotlib.pyplot as plt
 
 def marcenko_pastur_filter(cov_matrix, T):
   eigvals, eigvecs = np.linalg.eigh(cov_matrix)

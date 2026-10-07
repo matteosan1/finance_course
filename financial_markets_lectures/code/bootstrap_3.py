@@ -1,8 +1,10 @@
 import pandas as pd
 
 from datetime import date
-from finmarkets import GlobalConst as gc
-from finmarkets import DiscountCurve, TimeInterval, OvernightIndexSwap
+
+from dates import GlobalConsts as gc, TimeInterval
+from curves import DiscountCurve
+from ird import OvernightIndexSwap
 
 obs_date = start_date = gc.OBS_DATE
 ois = OvernightIndexSwap(1e6, start_date, "3y", 0.025)

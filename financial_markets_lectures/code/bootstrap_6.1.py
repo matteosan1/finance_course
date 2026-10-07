@@ -1,7 +1,7 @@
 import pandas as pd
 
-from finmarkets import GlobalConst as gc
-from finmarkets import OvernightIndexSwap, TimeInterval
+from dates import GlobalConsts as gc, TimeInterval
+from curves import OvernightIndexSwap
 
 df = pd.read_excel("ois_2024_10_14.xlsx", index_col="maturities")
 

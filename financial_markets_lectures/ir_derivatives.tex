@@ -64,18 +64,18 @@ S=\frac{\sum_{i=1}^{m}F(d, d_{j-1}^{\mathrm{float}}, d_{j}^{\mathrm{float}}) \cd
 Once we have calculated $S$, we can express the $\mathrm{NPV}$ of an IRS as follows:
 
 \begin{equation}
-\begin{split}&\mathrm{NPV}(d, F, K) = \mathrm{NPV}_{\mathrm{float}}(d, F) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) = \\ 
-&= \underbrace{\mathrm{NPV}_{\mathrm{float}}(d, F) - \mathrm{NPV}_{\mathrm{fixed}}(d, S)}_{\textstyle\mathrm{=0}} + \mathrm{NPV}_{\mathrm{fixed}}(d, S) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) \\ 
+\begin{split}&\mathrm{NPV}(d, F, K) = \mathrm{NPV}_{\mathrm{float}}(d, F) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) = \\
+&= \underbrace{\mathrm{NPV}_{\mathrm{float}}(d, F) - \mathrm{NPV}_{\mathrm{fixed}}(d, S)}_{\textstyle\mathrm{=0}} + \mathrm{NPV}_{\mathrm{fixed}}(d, S) - \mathrm{NPV}_{\mathrm{fixed}}(d, K) \\
 & = N\cdot(S-K)\cdot\underbrace{\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}})}_{\textstyle \mathrm{annuity}}
 \end{split}
 \label{eq:irs_npv2}
 \end{equation}
 
 \begin{finmarkets}
-Now we analyze the \texttt{InterestRateSwap} class which allows to valuate IRS contracts. Its attributes are all the parameters needed to define an Interest Rate Swap, also it has methods to compute the annuity, the swap rate and the NPV of the contract. 
+Now we analyze the \texttt{InterestRateSwap} class which allows to valuate IRS contracts. Its attributes are all the parameters needed to define an Interest Rate Swap, also it has methods to compute the annuity, the swap rate and the NPV of the contract.
 \end{finmarkets}
 
-\pythoncodenon{code/ir_derivatives_1.py}
+\pythoncodenon{code/ir_derivatives_irs.py}
 
 For convenience the relevant inputs that will be used later (forward rate and discount curve definitions) have been saved in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/euribor_curve.xlsx}{euribor\_curve.xlsx} and \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{discount\_factors\_2022-10-05.xlsx} respectively.
 
@@ -89,14 +89,14 @@ Let's test our class instantiating an IRS with 1M notional, 2.3\% fixed rate, 3 
 \textbf{Can you guess what could be the \textbf{swap rate} given the NPV obtained above ?}
 \noindent
 From Eq.~\ref{eq:irs_npv} and since the actual NPV value is positive it is clear that, NPV$_{\textrm{fixed}}$ has to increase with an higher fixed rate to balance the value of NPV$_{\textrm{float}}$.
-Alternatively looking at Eq.~\ref{eq:irs_npv2}, $N$ and the annuity are positive so has to be $S > K$ to match the positive sign of the left hand side.  
+Alternatively looking at Eq.~\ref{eq:irs_npv2}, $N$ and the annuity are positive so has to be $S > K$ to match the positive sign of the left hand side.
 Below we verify that our conclusion was correct and check that a new swap defined with the fixed rate equal to the swap rate just computed has null NPV.
 
 \begin{ipythonnon}
 swap_rate = irs.swap_rate(dc, fr)
 print (swap_rate)
 
-irs_new = InterestRateSwap(nominal, start_date, maturity, 
+irs_new = InterestRateSwap(nominal, start_date, maturity,
                            swap_rate, tenor, side="Payer")
 print (irs_new.npv(dc, fr))
 \end{ipythonnon}
@@ -106,7 +106,7 @@ print (irs_new.npv(dc, fr))
 \end{ioutput}
 \noindent
 The result will be as close to zero as the accuracy of the swap rate used in the definition of the new IRS.
-   
+
 %\section{Inheritance Again}
 %\begin{finmarkets}
 %Now that we have introduced two kinds of swap we can try to make an alternative implementation of their classes, this time using inheritance.
@@ -118,14 +118,14 @@ The result will be as close to zero as the accuracy of the swap rate used in the
 %from finmarkets import generate_dates
 %
 %class Swap:
-%    def __init__(self, start_date, notional, rate_l1, rate_l2, 
+%    def __init__(self, start_date, notional, rate_l1, rate_l2,
 %                 tenor_months_l1, tenor_months_l2, maturity_years):
 %        self.notional = notional
 %        self.rate_l1 = rate_l1
 %        self.rate_l2 = rate_l2
-%        self.dates_l1 = generate_dates(start_date, 12 * maturity_years, 
+%        self.dates_l1 = generate_dates(start_date, 12 * maturity_years,
 %                                       tenor_months_l1)
-%        self.dates_l2 = generate_dates(start_date, 12 * maturity_years, 
+%        self.dates_l2 = generate_dates(start_date, 12 * maturity_years,
 %                                       tenor_months_l2)
 %
 %    def npv_l1(self, dc):
@@ -221,13 +221,13 @@ As an example let's consider a swaption whose underlying is a 6 months IRS with 
 \subsubsection{Valuation through Monte Carlo Simulation}
 \label{evaluation-through-monte-carlo-simulation}
 
-In this second case we start from the current swap rate $S(d)$ evaluated at the pricing date $d$ and assume that it follows a log-normal stochastic process with zero drift, i.e. its distribution at $d_{\mathrm{ex}}$ (exercise date) is 
+In this second case we start from the current swap rate $S(d)$ evaluated at the pricing date $d$ and assume that it follows a log-normal stochastic process with zero drift, i.e. its distribution at $d_{\mathrm{ex}}$ (exercise date) is
 
 \begin{equation*}
 S(d_{\mathrm{ex}}) = S(d)\mathrm{exp}(-\frac{1}{2}\sigma^{2}T+\sigma Z\sqrt{T})
 \end{equation*}
 \noindent
-where $Z\approx\mathcal{N}(0,1)$. %This assumption is not correct since we know that interest rate follows different processes, but it is ok for illustrative purposes. 
+where $Z\approx\mathcal{N}(0,1)$. %This assumption is not correct since we know that interest rate follows different processes, but it is ok for illustrative purposes.
 
 \begin{finmarkets}
 The \texttt{InterestRateSwaption} class is extended with another method to calculate the NPV using MC simulation. The algorithm works as follows

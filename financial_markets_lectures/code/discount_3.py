@@ -1,7 +1,7 @@
 import pandas as pd, matplotlib.pyplot as plt
 
-from finmarkets import GlobalConst as gc
-from finmarkets import TimeInterval, DiscountCurve
+from dates import GlobalConsts as gc, TimeInterval
+from curves import DiscountCurve
 
 df = pd.read_excel("discount_factors_2022-10-05.xlsx")
 
@@ -16,7 +16,7 @@ print (f"discount factor at {df_date}: {df0:.4f}")
 r0 = dc.get_zero_rate(df_date)
 print (f"zero rate at {df_date}: {r0:.4f}")
 
-plt.plot(pillars[:10], dfs[:10], marker='o', markersize=10, 
+plt.plot(pillars[:10], dc.discount_factors[:10], marker='o', markersize=10, 
          label="dfs")
 plt.scatter(df_date, df0, marker='X', s=100, color='red', 
             label='interp. df')

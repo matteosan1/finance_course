@@ -7,14 +7,14 @@ class PortfolioOptimizer:
   ...
   def portfolio_return(self, w: np.array) -> float:
     if self.rf_return > 0:
-      return float(np.dot(w[:-1], self.returns)) + self.rf_return * w[-1]
+      return np.dot(w[:-1], self.returns) + self.rf_return * w[-1]
     else:
-      return float(np.dot(w, self.returns))
+      return np.dot(w, self.returns))
 
   def portfolio_risk(self, w: np.array) -> float:
     if self.rf_return > 0:
       w = w[:-1]
-    return float(np.sqrt(w.T @ self.covariance @ w))
+    return np.sqrt(w.T @ self.covariance @ w)
 
   def min_variance_portfolio(self, target_return: float):
     num_assets = len(self.assets)

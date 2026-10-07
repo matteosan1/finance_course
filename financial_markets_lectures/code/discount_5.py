@@ -1,4 +1,5 @@
-from finmarkets import GlobalConst as gc, TimeInterval, TermStructure
+from dates import GlobalConsts as gc, TimeInterval
+from curves import TermStructure
 
 t0 = gc.OBS_DATE
 spot_rates = [0.09, 0.095, 0.10]
