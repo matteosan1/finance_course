@@ -89,13 +89,24 @@ date1.weekday() # 0 = Monday, ..., 6 = Sunday
 1
 \end{ioutput}
 
-\section{Date Utilities}
+\section{\texttt{finmarkets} Date Utilities}
 
-\subsection{TimeInterval}
+\begin{finmarkets}
+The entire \texttt{finmarkets} module relies on a global parameter that represents the observation date of the system. 
+This value can be modified during the calculation and it's taken as a reference by all the classes and function of the framework. 
+\end{finmarkets}
+
+\begin{ipythonnon}
+from finmarkets import GlobalConst as gc
+
+obs_date = gc.OBS_DATE
+\end{ipythonnon}
 
 \begin{finmarkets}
 As said date management is very important in financial application, so the \texttt{finmarkets} module implements a couple of utilities to ease the work. 
 This simple function take in input a string representing a time interval (e.g. \texttt{"1y"} or \texttt{"5d"}) and convert it into a \texttt{relativedelta} object to be directly used with a \texttt{datetime.date}.
+
+An important feature of a TimeInterval object is the capability to generate list of dates (e.g. payment dates) provided a frequency parameter. 
 \end{finmarkets}
 
 \pythoncodenon{code/datetime_timeinterval.py}
@@ -115,19 +126,47 @@ print (date + TimeInterval("2m"))
 2024-11-06
 \end{ioutput}
 
-\subsection{Payment Dates Generator}
+\begin{ipythonnon}
+from datetime import date
+
+from finmarkets import TimeInterval
+
+maturity = TimeInterval("3y")
+start_date = date.today() # could have been also a string like "2026-10-20"
+schedule = maturity.generate_schedule(start_date, frequency="6m")
+print (schedule)
+\end{ipythonnon}
+\begin{ioutput}
+[datetime.date(2027, 3, 10), datetime.date(2027, 9, 10), 
+ datetime.date(2028, 3, 10), datetime.date(2028, 9, 10), 
+ datetime.date(2029, 3, 10), datetime.date(2029, 9, 10)]
+\end{ioutput}
 
 \begin{finmarkets}
-Another very useful tool available in \texttt{finmarkets} is the function \texttt{generate\_dates}. Its main purpose is to generate list of dates (e.g. payment dates), a task that we need to do often from now on. 
-time
-It takes in input: a starting date (the first date of the list), an end date which represents the "length" of the list (it can be an actual date or a \texttt{TimeInterval}) and frequency (12 months by default). Note that if the maturity is not a multiple of 12 months the last period will be truncated to the last date. It returns the list of dates.
+Another very useful tool available in \texttt{finmarkets} is the function \texttt{yearFraction}. Its main purpose is to return a number the difference between two dates as the fraction of year according to the given convention. 
 \end{finmarkets}
 
-\pythoncodenon{code/datetime_generate_dates.py}
+\pythoncodenon{code/datetime_yearfraction.py}
 
+\begin{ipythonnon}
+from datetime import date
+
+from finmarkets import TimeInterval, yearFraction
+	
+interval = TimeInterval("3m")
+d1 = date.today()
+d2 = d1 + interval
+
+print (f"Today: {d1}")
+print (f"Shifted date: {d2}")
+print (f"Year Fraction (ACT360): {yearFraction(d1, d2, 'ACT360')}")
+print (f"Year Fraction (ACT365): {yearFraction(d1, d2, 'ACT365')}")
+\end{ipythonnon}
 \begin{ioutput}
-[datetime.date(2020, 10, 20), datetime.date(2021, 10, 20), 
-datetime.date(2022, 10, 20), datetime.date(2022, 11, 20)]
+Today: 2026-09-10
+Shifted date: 2026-12-10
+Year Fraction (ACT360): 0.25277777777777777
+Year Fraction (ACT365): 0.2493150684931507
 \end{ioutput}
 
 \section*{Exercises}

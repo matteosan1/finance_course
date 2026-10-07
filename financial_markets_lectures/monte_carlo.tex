@@ -15,24 +15,41 @@ In this Chapter the Monte Carlo technique is reviewed together with few applicat
 \section{The Algorithm}
 \label{whats-monte-carlo-simulation}
 
-A Monte Carlo simulation is a mathematical technique that simulates the range of possible outcomes for an uncertain event.
-The Monte Carlo method has been described as "faking it a billion times until the reality emerges." It relies on the assumption that many random samples mimic patterns in the total population.
+A Monte Carlo simulation is a mathematical technique that simulates the range of possible outcomes for an uncertain event. It relies on the assumption that many random samples mimic patterns of the total population.
+Indeed it can be considered as the algorithmic translation of the expectation value, i.e.
+$$
+V_0 = \mathbb{E}^{\mathbb{Q}} \left[ D(0,T)\cdot X_T \right] \implies \mathbb{E} \text{ calculation} \iff \text{MC simulation}
+$$
+As we have seen
 
-The algorithm proceeds by simulating the process under study replacing every source of uncertainty by random numbers sampled from appropriate distributions (PDF).
-The results is re-calculated many times, using a different set of random numbers within the estimated range. This process generates many probable outcomes, which become more accurate as the number of inputs grows, i.e. law of large numbers.
+$$\mathbb{E}[g(X)] = \int_{-\infty}^{+\infty} g(x) f(x) \, dx$$
+
+When the involved integral can't be analytically solvable or the sample space is quite big (e.g. financial calculations) we can rely on the Strong Law of Big Numbers which states that: *"sampling $N$ independent values $x_1, x_2, \dots, x_N$ from the distribution $f(x)$, the sample mean converges to the true value:
+
+$$\lim_{N \to \infty} \frac{1}{N} \sum_{i=1}^{N} g(x_i) = \mathbb{E}[g(X)]$$
+
+So the MC method is a direct application of the previous formula
+1. sampling: generate $N$ random scenarios/trajectories ($x_i$) complying the probability distribution of the system ($f(x)$).
+2. valuation: compute the function value (or payoff) $g(x_i)$ for each generated scenario.
+3. Monte Carlo estimator: compute the arithmetic mean of the previous calculations. This is the estimate of the expected value.
+
+$$V_0 = e^{-rT} \, \mathbb{E}^{\mathbb{Q}}[X_T] \quad \approx \quad e^{-rT} \cdot \frac{1}{N} \sum_{i=1}^{N} X_T^{(i)}$$
+where the MC approximates $\mathbb{E}^{\mathbb{Q}}$ of the payoff $X_T$ simulating $N$ plausible scenarios at time $T$.
+
+%The algorithm proceeds by simulating the process under study replacing every source of uncertainty by random numbers sampled from appropriate distributions (PDF).
+%The results is re-calculated many times, using a different set of random numbers within the estimated range. This process generates many probable outcomes, which become more accurate as the number of inputs grows, i.e. law of large numbers.
 
 The main advantage of the technique is that predictions are based on an estimated range of values instead of a fixed set of values and evolve randomly.
-
 Note that depending upon the number of uncertainties and their ranges, a Monte Carlo simulation could involve thousands or even millions of recalculations before it is completed.
-
-Although they might vary from case to case, the general steps to a Monte Carlo simulation can be summarized as follows:
-
-\begin{itemize}
-\item Build the mathematical model.
-\item Determine an appropriate probability distribution (PDF) for each random variable and their range of variability $\Omega$.
-\item Run the random variables through the mathematical model to perform many iterations of the simulation.
-\item Aggregate the results, and determine mean and standard deviation to determine if the result is as expected. Visualize the results on a histogram.
-\end{itemize}
+%
+%Although they might vary from case to case, the general steps to a Monte Carlo simulation can be summarized as follows:
+%
+%\begin{itemize}
+%\item Build the mathematical model.
+%\item Determine an appropriate probability distribution (PDF) for each random variable and their range of variability $\Omega$.
+%\item Run the random variables through the mathematical model to perform many iterations of the simulation.
+%\item Aggregate the results, and determine mean and standard deviation to determine if the result is as expected. Visualize the results on a histogram.
+%\end{itemize}
 
 As an example imagine to simulate the results of rolling a die: the only variable is the die outcome, so $\Omega =1,2,3,4,5,6$ and the outcome probability is a uniform distribution (i.e. we are using a fair die and outcomes are equiprobable). Hence the simulation consists of sampling uniform distributed integers between 1 and 6.
 
@@ -40,7 +57,6 @@ As an example imagine to simulate the results of rolling a die: the only variabl
 \label{pseudo-random-numbers}
 
 The need of generating random inputs during a MC simulation requires large amounts of \emph{random numbers} to be generated. A random number is a "randomly chosen" number from a particular distribution.
-
 Their use in Monte Carlo simulations spurred the development of \emph{pseudo-random number generators}. Nowadays every programming language has libraries that allow to produce huge series of random numbers. 
 
 These series, which have very large periodicity (e.g. $2^{20000}$), are calculated by algorithms that take as input a \emph{seed} which determines them uniquely. \textbf{This means that choosing the same seed will produce the same set of numbers every time (which is great for debugging purposes though).}
@@ -221,6 +237,85 @@ Finally note that,
 
 Thus, to achieve a 50\% reduction in error, i.e., a 50\% increase in accuracy, we must \textbf{quadruple} the number of random experiments.
 
+
+
+
+
+
+
+
+
+
+
+
+
+%No matter where you look, a bell curve is close by.
+%
+%Place a measuring cup in your backyard every time it rains and note the height of the water when it stops: Your data will conform to a bell curve. Record 100 people’s guesses at the number of jelly beans in a jar, and they’ll follow a bell curve. Measure enough women’s heights, men’s weights, SAT scores, marathon times — you’ll always get the same smooth, rounded hump that tapers at the edges.
+%
+%Why does the bell curve pop up in so many datasets?
+%
+%The answer boils down to the central limit theorem, a mathematical truth so powerful that it often strikes newcomers as impossible, like a magic trick of nature. “The central limit theorem is pretty amazing because it is so unintuitive and surprising,” said Daniela Witten (opens a new tab), a biostatistician at the University of Washington. Through it, the most random, unimaginable chaos can lead to striking predictability.
+%
+%It’s now a pillar on which much of modern empirical science rests. Almost every time a scientist uses measurements to infer something about the world, the central limit theorem is buried somewhere in the methods. Without it, it would be hard for science to say anything, with any confidence, about anything.
+%
+%
+%
+%Perhaps it shouldn’t come as a surprise that the push to find regularity in randomness came from the study of gambling.
+%Abraham de Moivre made early mathematical investigations into games of chance.
+%
+%Flipping a coin, rolling a die, and drawing a card from a deck are random actions, with every outcome equally likely. What de Moivre realized is that when you combine many random actions, the result follows a reliable pattern.
+%
+%Flip a coin 100 times and count how often it comes up heads. It’ll be somewhere around 50, but not very precisely. Play this game 10 times, and you may get 10 different counts.
+%
+%Now imagine playing the game 1 million times. The bulk of the outcomes will be close to 50. You’ll almost never get under 10 heads or over 90. If you make a graph of how many times you see each number between zero and 100, you’ll see that classic bell shape, with 50 at the center. The more times you play the game, the smoother and clearer the bell will become.
+%
+%De Moivre figured out the exact shape of this bell, which came to be called the normal distribution. It told him, without his having to actually play the game, how likely different outcomes were. For instance, the probability of getting between 45 and 55 heads is about 68%.
+%
+%Let’s take an example slightly more complex than coin flips: dice rolls. Every roll of a die has six equally likely outcomes. If you repeatedly roll the die and tally the results, you’ll get a chart that looks flat — you’re bound to see about as many rolls of 1 as you do 2 or 4 or 6.
+%
+%Now roll that die 10 times and take the average. You’re likely to get somewhere around 3.5. Repeat the experiment many more times and graph up all the results. You’ll get a bell curve that peaks at 3.5, with a precisely defined structure on either side.
+%
+%That’s the magic of the central limit theorem. You started with a distribution of possible outcomes that has no structure at all — equal chances of rolling 1 through 6. But by taking an average of multiple measurements, then repeating that process over and over, you get a precise, predictable, mathematical structure: the bell curve.
+%
+%Laplace distilled this structure into a simple formula, the one that would later be known as the central limit theorem. No matter how irregular a random process is, even if it’s impossible to model, the average of many outcomes has the distribution that it describes. “It’s really powerful, because it means we don’t need to actually care what is the distribution of the things that got averaged,” Witten said. “All that matters is that the average itself is going to follow a normal distribution.”
+%
+%Averaging might seem like something it takes a human to do, but the central limit theorem applies invisibly to all kinds of things we can observe in the world, like human heights. “Somebody’s height might depend on their dad’s height, and their mom’s height, and their genetics, and their nutrition, and all these little effects that add up,” said Jeffrey Rosenthal (opens a new tab), a statistician at the University of Toronto. Those effects are unrelated to each other (generally, your dad’s height has nothing to do with the food you eat). “It’s kind of like averaging a bunch of little effects,” said Rosenthal, which is why height approximately follows a normal distribution.
+%
+%The theorem also gives statisticians the power to tell when something fishy is happening. Say you’re sipping coffee at Old Slaughter’s when a patron hands you a coin and bets that you can’t get 45 heads in 100 flips. You try, and only get 20. How can you tell whether he gave you a trick coin and the process is not as random as it ought to be? Thanks to the central limit theorem, you know that the numbers up to 20 only cover 0.15% of the bell, so there’s only a 0.15% chance a fair coin would give such a bad result. You’re almost certainly being had.
+%
+%That’s the true power of Laplace’s formula. He knew that averaging over any process gives you a bell curve, which lets you say something about that process, without knowing anything deeper about how it works.
+%
+%Despite its centrality to modern science, the central limit theorem has limits of its own. It only works when you’re combining many samples, and those samples need to be independent. If they’re not — for example, if you only run a national presidential poll in a single small town in Maine — repeating the experiment won’t get you closer to the expected bell curve.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 \subsection{Central Limit Theorem in the Kings Example}
 
 We can check the Central Limit Theorem by repeating many times the MC experiment with our virtual deck and see how the distribution of $\mu_n$ behaves.
@@ -283,44 +378,44 @@ Below an example of how to compute a confidence level in \texttt{python} given a
 95% confidence int.: 4.437 +- 0.812
 \end{ioutput}
 
-\section{Integration by Monte Carlo}
-\label{sec:integration}
-
-\begin{finmarkets}
-Function integration in \texttt{python} can be performed using \texttt{scipy.integrate.quad}. This method takes in input: the function to integrate, the integration limits and, if needed, optional arguments for the integrand (see Section~\ref{sec:kwargs_args}). Since it is a numerical integration the result will be a tuple with the actual result and its associated error.
-
-For example imagine to integrate
-\begin{equation*}
-f(x) = \int_{0}^{\infty}\frac{e^{-x}}{\left(a + (x-1)^2\right)}~dx
-\end{equation*}
-for $a=3$.
-
-\pythoncodebox{code/monte_carlo_7.py}
-\begin{ioutput}
-(0.2802620835548487, 1.5887625490132047e-09)
-\end{ioutput}
-\end{finmarkets}
-
-Sometimes it may be useful to calculate the approximate result of an integral of a function $f$ through Monte Carlo simulation. The technique relies on the fact that the average of $f$ calculated in the integration interval can be expressed as
-
-\begin{equation}
-<f(x)> = \frac{1}{b-a} \int_{a}^{b} f(x) \,dx
-\end{equation}
-Rearranging the terms
-\begin{equation}
-\int_{a}^{b} f(x) \,dx = 
-(b-a) <f(x)> \approx (b-a) \frac{1}{N} \sum_{i=1}^{N} f(x_i)
-\end{equation}
-Then the integral can be computed by sampling values of $x$ from a uniform distribution between $[a,b]$, average the evaluations of $f(x)$ and then multiplying the result by $(b-a)$.
-
-Considering the previous integral
-
-\pythoncodenon{code/monte_carlo_8.py}
-\begin{ioutput}
-0.28061306413101306
-\end{ioutput} 
- 
-Although there are various improvements that can be added to our simple MC implementation, the result that we obtained is in good agreement with the one from the \texttt{python} implementation.  
+%\section{Integration by Monte Carlo}
+%\label{sec:integration}
+%
+%\begin{finmarkets}
+%Function integration in \texttt{python} can be performed using \texttt{scipy.integrate.quad}. This method takes in input: the function to integrate, the integration limits and, if needed, optional arguments for the integrand (see Section~\ref{sec:kwargs_args}). Since it is a numerical integration the result will be a tuple with the actual result and its associated error.
+%
+%For example imagine to integrate
+%\begin{equation*}
+%f(x) = \int_{0}^{\infty}\frac{e^{-x}}{\left(a + (x-1)^2\right)}~dx
+%\end{equation*}
+%for $a=3$.
+%
+%\pythoncodebox{code/monte_carlo_7.py}
+%\begin{ioutput}
+%(0.2802620835548487, 1.5887625490132047e-09)
+%\end{ioutput}
+%\end{finmarkets}
+%
+%Sometimes it may be useful to calculate the approximate result of an integral of a function $f$ through Monte Carlo simulation. The technique relies on the fact that the average of $f$ calculated in the integration interval can be expressed as
+%
+%\begin{equation}
+%<f(x)> = \frac{1}{b-a} \int_{a}^{b} f(x) \,dx
+%\end{equation}
+%Rearranging the terms
+%\begin{equation}
+%\int_{a}^{b} f(x) \,dx = 
+%(b-a) <f(x)> \approx (b-a) \frac{1}{N} \sum_{i=1}^{N} f(x_i)
+%\end{equation}
+%Then the integral can be computed by sampling values of $x$ from a uniform distribution between $[a,b]$, average the evaluations of $f(x)$ and then multiplying the result by $(b-a)$.
+%
+%Considering the previous integral
+%
+%\pythoncodenon{code/monte_carlo_8.py}
+%\begin{ioutput}
+%0.28061306413101306
+%\end{ioutput} 
+% 
+%Although there are various improvements that can be added to our simple MC implementation, the result that we obtained is in good agreement with the one from the \texttt{python} implementation.  
 
 \section*{Exercises}
 \input{monte_carlo_ex_text}

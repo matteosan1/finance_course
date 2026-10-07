@@ -1,26 +1,31 @@
 from scipy.optimize import newton
-from finmarkets import DiscountCurve
+from typing import List, Dict, Union
 
-class Bootstrap:
-    def __init__(self, obs_date, objects):
-        self.obs_date = obs_date
-        self.objects = objects
+from finmarkets import DiscountCurve, CreditCurve, OvernightIndexSwap, CreditDefaultSwap
 
-    def run(self, obj_func, guess=1.0, args=()):
-        x = []    
-        for i in range(len(self.objects)):
-            res = newton(obj_func, guess, 
-                         args=(i, x, self.objects, self.obs_date, *args))
-            x.append(res)
-        return x
+class Bootstrapper:
+  def __init__(self, objects: List[Union[OvernightIndexSwap, CreditDefaultSwap]]):    
+    self.objects = objects
+    self.pillars = []
 
+  def objective_function(self, x, i, x_prev, curve, kwargs) -> float:
+    c = curve(self.pillars, x_prev + [x])
+    return self.objects[i].npv(c, **kwargs)
 
-def obj_df(df, i, dfs, objs, obs_date, *args):
-    pillars = [obs_date] + [objs[j].payment_dates[-1] for j in range(i+1)]
-    dc = DiscountCurve(obs_date, pillars, [1] + dfs + [df])
-    return objs[i].npv(dc)
+  def run(self, curve_cls: type[Union[DiscountCurve, CreditCurve]], 
+          guess: float=1.0, kwargs: Dict={}) -> Union[DiscountCurve, CreditCurve]:
+    x = []
+    last_guess = guess
 
-bootstrap = Bootstrap(obs_date, oiss)
+    for i, obj in enumerate(self.objects):
+      self.pillars.append(obj.fix_dates[-1])        
+      res = newton(self.objective_function, last_guess, 
+        args=(i, x, curve_cls, kwargs))
+      x.append(res)
+      last_guess = res
+    return curve_cls(self.pillars, x)
+
+bootstrap = Bootstrap(oiss)
 dfs = bootstrap.run(obj_df)
     
-discount_curve = DiscountCurve(obs_date, pillars, dfs)
+discount_curve = DiscountCurve(pillars, dfs)

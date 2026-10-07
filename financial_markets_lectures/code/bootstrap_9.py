@@ -14,7 +14,7 @@ d = Cinv.dot(P.T)
 print (d)
 
 def rate(x, d, tau):
-    return d - 1/(1+x)**tau
+  return d - 1/(1+x)**tau
 
 for i in range(5):
-    print (f"yield y{i+1}: {brentq(rate, 0, 1, args=(d[i], i+1)):.4f}")
+  print (f"yield y{i+1}: {brentq(rate, 0, 1, args=(d[i], i+1)):.4f}")

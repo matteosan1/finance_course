@@ -120,7 +120,7 @@ Substituting back into Eq.~\ref{eq:itos_lemma} and taking the values of $a$ and 
 \begin{gathered}
 d(\textrm{log} S_t) = \left(\mu S_t \cfrac{1}{S_t} + \cfrac{1}{2}\sigma^2 S_t^2 (-\cfrac{1}{S_t^2})\right)dt + \sigma Z\sqrt{dt}\\[5pt]
 \textrm{log} (S_t) - \textrm{log} (S_{t-1}) = \textrm{log} \cfrac{S_t}{S_{t-1}} = \left(\mu - \cfrac{1}{2}\sigma^2\right)dt + \sigma Z\sqrt{dt}\\[5pt]
-S_t = S_{t-1}\cdot\textrm{exp}\left[\left(\mu - \cfrac{1}{2}\sigma^2\right)dt + \sigma Z\sqrt{dt}\right]
+S_t = S_{t-1}\cdot\textrm{exp}\left[\left(\mu - \cfrac{1}{2}\sigma^2\right)dt + \sigma Z\sqrt{dt}\right] \implies S_t = S_0 \prod_{i=0}^{t-1} dS_i 
 \end{gathered}
 \label{eq:gbm_solution}
 \end{equation}
@@ -213,26 +213,22 @@ Equation~\ref{eq:gbm_solution} allows to simulate realizations of possible asset
 Below two implementations are proposed, the latter exploiting \texttt{numpy} vectorialization, see~\ref{sec:vectorialization} more concise and faster.
 
 \begin{ipythonnon}
-from numpy.random import normal, seed
-from numpy import exp, sqrt, cumprod
+import numpy as np
 
-S = 100
-mu = -0.01
-sigma = 0.05
-T=1
-historical_series = [S]
-
-seed(1)
-for i in range(30):
-    S = S * exp((mu - 0.5 * sigma * sigma) * T +
-                 sigma * sqrt(T) * normal())
-    historical_series.append(S)
+from scipy.stats import norm
 
 # using numpy vectorialization    
 def gbm(mu, sigma, dT, steps):
     return exp((mu - 0.5 * sigma**2)*dT + sigma * sqrt(T) * normal(size=steps))
 
-historical_series = S*cumprod(gbm(mu, sigma, dt, 30))
+np.random.seed(1)
+
+tsteps = 30
+mu = -0.01
+sigma = 0.05
+S0 = 100.0
+
+historical_series = S0*cumprod(gbm(mu, sigma, dt, tsteps))
 \end{ipythonnon}
 
 It is important to note that both $\mu$ and $\sigma$ are variation in unit of time that refers to the $\Delta t$ used in the simulation. In other words if $\Delta t = 1~\textrm{day}$ then the two parameters should represents the daily variations of the stock price. Figure~\ref{fig:stock_price_sim} shows possible asset price paths following a geometric Brownian motion. 
@@ -271,12 +267,12 @@ However, it is impossible to price an option without any information about the d
 
 Let's model $S(T)$ as a log-normal random variable and simulate one path for the asset price as it is done before. Then calculate, according to Eq.~\ref{eq:call_payoff}, the corresponding payoff. Repeat this step numerous times and finally compute the mean of the discounted payoffs. 
 
-The fact that this Monte Carlo estimate is indeed consistent with the Black-Scholes formula results is illustrated in Fig.~\ref{fig:error_BS} where the relative pricing error, computed as $(C_n-C)/C$, as a function of the number of simulation $n$ is shown. Note that the pricing error is gradually decreasing and eventually converging to 0 as $n$ goes to infinity. This is another proof that Monte Carlo provides correct results in the limit $n\rightarrow\infty$.
+The fact that this Monte Carlo estimate is indeed consistent with the Black-Scholes formula results is illustrated in Fig.~\ref{fig:error_BS} where the distribution of 10000 simulations is plotted beside the 95\% confidence interval. This is another indication that Monte Carlo provides correct results in the limit $n\rightarrow\infty$.
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=0.7\textwidth]{figures/call_pricing_error.png}
-\caption{Development of the relative pricing error for a call between MC simulation and BS formula with growing samples.}
+\includegraphics[width=0.9\textwidth]{figures/call_pricing_error.png}
+\caption{Call option price: on the left the distribution of the results of 10000 MC simulation, on the right the 95\% confidence interval and the Black-Scholl price.}
 \label{fig:error_BS}
 \end{figure}
 

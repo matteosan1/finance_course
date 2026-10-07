@@ -1,28 +1,56 @@
-import pandas as pd, numpy as np
+import numpy as np, pandas as pd
 
 from scipy.optimize import minimize
+from typing import List, Union
+
+class PortfolioOptimizer:
+  def __init__(self, filename: str, assets: List[str], 
+               rf_return: float=0.0, index_col: str="date"):
+    self.assets = assets
+    self.rf_return = float(rf_return)
+
+    temp = pd.read_csv(filename, index_col=index_col)
+    temp = temp[self.assets].dropna()
+    log_returns = np.log(temp / temp.shift(1)).dropna()
+
+    self.df = temp
+    self.returns = log_returns.mean() * 252
+    self.covariance = log_returns.cov() * 252
+
+  def _sum_weights(self, w: np.array) -> float:
+    return np.sum(w) - 1.0
+
+  def _target_return(self, w: np.array, target: float) -> float:
+    return self.portfolio_return(w) - target
+
+  def portfolio_return(self, w: np.array) -> float:
+    return float(np.dot(w, self.returns))
+
+  def portfolio_risk(self, w: np.array) -> float:
+    return float(np.sqrt(w.T @ self.covariance @ w))
+
+  def min_variance_portfolio(self, target_return: float):
+    num_assets = len(self.assets)
+
+    constraints = [{"type": "eq", "fun": self._sum_weights},
+                   {"type": "eq", "fun": self._target_return, 
+                    "args": (target_return,)},]
+
+    bounds = tuple((0.0, 1.0) for _ in range(num_assets))
+    initial_weights = [1.0 / num_assets for _ in range(num_assets)]
+
+    return minimize(self.portfolio_risk, initial_weights, method="SLSQP", 
+                    bounds=bounds, constraints=constraints)
 
 df = pd.read_csv("portfolio_data.csv", index_col="date")
 daily_returns = df.pct_change()
 returns = daily_returns.mean()*252
 covariance = daily_returns.cov()*252
 
-def sum_weights(w): 
-    return np.sum(w) - 1
+optimizer = PortfolioOptimizer("portfolio_data.csv",
+                               assets=['AAPL', 'AMZN', 'FB', 'GOOG', 'NFLX'],
+                               index_col="date")
 
-def min_risk(w, cov):
-    return w.T.dot(cov.dot(w))
-
-def target_return(w, returns, target_return): 
-    return (returns.dot(w) - target_return)
-
-num_assets = 5
-constraints = [{'type': 'eq', 'fun': sum_weights},
-               {'type': 'eq', 'fun': target_return, 'args':(returns, 0.25)}] 
-bounds = tuple((0, 1) for _ in range(num_assets))
-weights = [1./num_assets for _ in range(num_assets)]
-
-opts = minimize(min_risk, weights, args=(covariance,),
-                bounds=bounds, constraints=constraints)
+opts = optimizer.min_variance_portfolio(0.25)
 print (opts)
-print (f"Expected portfolio return: {returns.dot(opts.x):.3f}")
+print (f"Expected portfolio return: {optimizer.portfolio_return(opts.x):.3f}")

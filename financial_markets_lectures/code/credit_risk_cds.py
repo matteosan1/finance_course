@@ -1,37 +1,44 @@
-from finmarkets import generate_dates
+from datetime import date
+from typing import Union
+
+from finmarkets import GlobalConst as gc
+from finmarkets import TimeInterval, yearFraction, DiscountCurve, CreditCurve
 
 class CreditDefaultSwap:
-    def __init__(self, nominal, start_date, maturity, fixed_spread,
-                 frequency="3m", recovery=0.4, side=SwapSide.Buyer):
-        self.nominal = nominal
-        self.payment_dates = generate_dates(start_date, maturity, frequency)
-        self.fixed_spread = fixed_spread
-        self.recovery = recovery
-        self.side = side
+  def __init__(self, nominal: float, start_date: date, maturity: Union[str, TimeInterval], spread: float, 
+               frequency: str="3m", recovery: float=0.4, side="Buyer", day_count_convention: str="ACT360"):
+    self.nominal = nominal
+    self.start_date = start_date
+    self.maturity = TimeInterval(maturity) if isinstance(maturity, str) else maturity
+    self.recovery = recovery
+    self.side = 1 if side == "Buyer" else -1
+    self.day_count_convention = day_count_convention
+    self.spread = spread
+    self.recovery = recovery
+    self.fix_dates = self.maturity.generate_schedule(start_date, frequency)
 
-    def npv_premium_leg(self, dc, cc):
-        npv = 0
-        for i in range(1, len(self.payment_dates)):
-            tau = (self.payment_dates[i] - self.payment_dates[i-1]).days/365
-            npv += dc.df(self.payment_dates[i])*\
-                   cc.ndp(self.payment_dates[i]) * tau
-        return self.fixed_spread * npv * self.nominal
+  def npv_premium_leg(self, cc: CreditCurve, dc: DiscountCurve) -> float:
+    npv = 0
+    for i in range(1, len(self.fix_dates)):
+      if self.fix_dates[i] < gc.OBS_DATE:
+        continue
+      tau = YearFraction(self.fix_dates[i-1], self.fix_dates[i], self.day_count_convention)
+      npv += dc.df(self.fix_dates[i]) * cc.ndp(self.fix_dates[i]) * tau
+    return self.spread * npv * self.nominal
+   
+  def npv_default_leg(self, cc: CreditCurve, dc: DiscountCurve) -> float:
+    npv = 0
+    d = max(self.fix_dates[0], gc.OBS_DATE)
+    while d < self.fix_dates[-1]:
+      npv += dc.df(d) * (cc.ndp(d) - cc.ndp(d + TimeInterval("1d")))
+      d += TimeInterval("1d")
+    return npv * self.nominal * (1 - self.recovery)
 
-    def npv_default_leg(self, dc, cc):
-        npv = 0
-        d = self.payment_dates[0]
-        while d < self.payment_dates[-1]:
-            npv += dc.df(d) * (
-                   cc.ndp(d) -
-                   cc.ndp(d + relativedelta(days=1)))
-            d += relativedelta(days=1)
-        return npv * self.nominal * (1 - self.recovery)
+  def npv(self, cc: CreditCurve, dc: DiscountCurve) -> float:
+    return self.side*(self.npv_default_leg(cc, dc) - self.npv_premium_leg(cc, dc))
 
-    def npv(self, dc, cc):
-        return self.side*(self.npv_default_leg(dc, cc)-\
-                          self.npv_premium_leg(dc, cc))
+  def breakeven_rate(self, cc: CreditCurve, dc: DiscountCurve) -> float:
+    num = self.npv_default_leg(cc, dc)
+    den = self.npv_premium_leg(cc, dc)/self.spread
+    return num/den
 
-    def breakeven_rate(self, dc, cc):
-        num = self.npv_default_leg(dc, cc)
-        den = self.npv_premium_leg(dc, cc)/self.fixed_spread
-        return num/den

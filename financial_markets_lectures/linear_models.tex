@@ -1,4 +1,4 @@
-\chapter{Linear Models}
+r\chapter{Linear Models}
 \label{linear-models}
 
 \section{Simple Linear Regression Analysis}
@@ -393,6 +393,84 @@ As we have seen the whole model is about plotting a line in a scatter plot, itâ€
 
 Moreover, this is a model from the 1960s. Market dynamics were different back then. And of course, this is a retrospective model. We cannot know how future stock prices move and how the market behaves.
 Interesting extension of CAPM involves \emph{Bayesian regression}\cite{bib:bayesian_regression} but it will not be discussed here.
+
+\section{Normal Returns Hypothesis}
+
+In finance, returns are almost always modelled with a \textbf{Normal distribution}: \emph{Markowitz Theory} (normally distributed single asset returns $R = (R_1, R_2, \dots, R_n)^T$ implies normal distribution for $R_p \sim \mathcal{N}(\mu_p, \sigma_p^2)$, the normal distribution is fully characterized by mean ($\mu$) and variance ($\sigma^2$), so those are the only two parameters an investor should consider); \emph{CAPM} (if returns wouldn't be normally distributed the relation between $R_i$ and $R_M$ couldn't be linear making the simple regression model useless or ar least incomplete, in a multivariate normal distribution the correlation is fully determined by the covariance matrix, hence $\beta_i = \frac{\cov(R_i, R_M)}{\var(R_M)}$ measure completely each asset contribution to risk).
+
+However, empirical observations of the historical series shows a systematic violation of this assumption and the major limitations of Gaussian models are:
+\begin{enumerate}
+	\item \textbf{Skewness}: equity returns often show a negative asymmetry: negative market shocks (\textit{crashes}) are stringer and happens more frequently than equally strength rallies;
+	\item \textbf{Kurtosis \& Fat Tails}: return distribution is leptocurtic (high kurtosis), meaning that extreme events have higher probability to happen than the Gaussian distribution predicts;
+	\item \textbf{Non-linear dependence}: during financial stressed periods, asset correlation increases (\textit{contagion}). The standard Pearson correlation is not able to catch the tail dependence.
+\end{enumerate}
+
+To check the actual return distribution we can \textbf{fit} the historical series distribution with Gaussian and other functions (e.g. t-student, a bell-like shaped distribution with fatter tails).
+
+\begin{ipythonnon}
+import pandas as pd
+
+from scipy.stats import t, norm
+
+df = pd.read_csv("bmw_siemens.csv", index_col="Date")
+df = df.dropna()
+
+bmw = df['BMW.DE']
+sie = df['SIE.DE']
+
+bmw_norm = norm.fit(bmw)
+sie_norm = norm.fit(sie)
+
+bmw_f2 = norm(loc=bmw_norm[0], scale=bmw_norm[1])
+sie_f2 = norm(loc=sie_norm[0], scale=sie_norm[1])
+
+bmw_fit = t.fit(bmw)
+sie_fit = t.fit(sie)
+
+bmw_f = t(*bmw_fit)
+sie_f = t(df=sie_fit[0], loc=sie_fit[1], scale=sie_fit[2])
+\end{ipythonnon}
+
+Figure~\ref{fig:bmw_siemens_returns} clearly shows the superior agreement in the t-student fit, confirming that the Normal hypothesis is a too crude approximation.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.7\textwidth]{figures/bmw_siemens_v2}
+	\caption{Gaussian and t-student fit to BMW and Siemens historical series of returns.}
+	\label{fig:bmw_siemens_returns}
+\end{figure}
+
+To give a more quantitative result though, we can perform the \textit{Jarque-Bera Test}. Given a sample of returns $R_1, R_2, \dots, R_T$ with mean $\mu$ and standard deviation $\sigma$, the Jarque-Bera Test check formally the null hypothesis $H_0$ that the sample comes from a Normal distribution, comparing simultaneously skewness and Kurtosis excess:
+
+$$JB = \frac{T}{6} \left( S^2 + \frac{(K - 3)^2}{4} \right) \sim \chi^2(2)$$
+Under $H_0$, the $JB$ statistic follows a Chi-2 distribution with 2 dof. If the $p\text{-value} < 0.05$, $H_0$ is rejected: returns are NOT Gaussian.
+
+\begin{ipythonnon}
+import scipy
+
+def JarqueBeraTest(df: pd.DataFrame) -> pd.DataFrame:
+results = []
+n_obs = len(df)
+
+for col in df.columns:
+series = df[col]
+skewness = float(scipy.stats.skew(series))
+kurtosis = float(scipy.stats.kurtosis(series, fisher=False))
+jb_stat, p_value = scipy.stats.jarque_bera(series)
+
+results.append({"Asset": col, "Obs": n_obs, "Skewness": skewness, "Kurtosis": kurtosis,
+	"JB Statistic": jb_stat, "P-Value": p_value, "Is Normal": bool(p_value > 0.05)})
+
+return pd.DataFrame(results).set_index("Asset")
+
+print (JarqueBeraTest(df))
+\end{ipythonnon}
+\begin{ipython}
+         Obs  Skewness  Kurtosis  JB Statistic  P-Value  Is Normal
+Asset                                                             
+BMW.DE  3252 -0.033995  7.563353   2822.303924      0.0      False
+SIE.DE  3252  0.058003  8.167413   3619.966069      0.0      False
+\end{ipython}
 
 \section{Multifactor Models}
 

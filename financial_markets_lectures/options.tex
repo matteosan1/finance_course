@@ -276,57 +276,57 @@ If the regression says "exercising is better," we replace that path's future cas
 \end{figure} 
 
 \begin{ipythonnon}
-	import numpy as np
+import numpy as np
 	
-	from datetime import date
+from datetime import date
 	
-	from finmarkets.utils import OptionType 
-	from finmarkets import DiscountCurve, TimeInterval
+from finmarkets.utils import OptionType 
+from finmarkets import DiscountCurve, TimeInterval
 	
-	def payoff(S0, K, T, r, sigma, n_paths, t_steps, option_type=OptionType.Call):    
-	S = GBM(r, sigma, S0, T, t_steps, n_paths)    
+def payoff(S0, K, T, r, sigma, n_paths, t_steps, option_type=OptionType.Call):    
+  S = GBM(r, sigma, S0, T, t_steps, n_paths)    
 	
-	if option_type == OptionType.Put:
-	payoffs = np.maximum(K - S, 0)
-	else:
-	payoffs = np.maximum(S - K, 0)
-	return S, payoffs
+  if option_type == OptionType.Put:
+    payoffs = np.maximum(K - S, 0)
+  else:
+    payoffs = np.maximum(S - K, 0)
+  return S, payoffs
 	
-	def longstaff-schwarz(today, paths, payoffs, dc):    
-	t_steps, n_paths = paths.shape
-	dt = 1 / t_steps
+def longstaff-schwarz(today, paths, payoffs, dc):    
+  t_steps, n_paths = paths.shape
+  dt = 1 / t_steps
 	
-	value = payoffs[-1]
+  value = payoffs[-1]
 	
-	for t in range(t_steps - 1, 0, -1):
-	itm_idx = np.where(payoffs[t] > 0)[0]
-	df = dc.df(today+TimeInterval(f"{t}d"))
-	if len(itm_idx) > 0:
-	X = S[t, itm_idx]
-	Y = value[itm_idx] * dc.df(today+TimeInterval(f"{t}d"))
-	coeffs = np.polynomial.laguerre.lagfit(X, Y, 5)
-	continuation_value = np.polynomial.laguerre.lagval(X, coeffs)	
-	exer_now = payoffs[t, itm_idx]	
-	exer_mask = exer_now > continuation_value
-	value[itm_idx[exer_mask]] = exer_now[exer_mask]
+  for t in range(t_steps - 1, 0, -1):
+    itm_idx = np.where(payoffs[t] > 0)[0]
+    df = dc.df(today+TimeInterval(f"{t}d"))
+    if len(itm_idx) > 0:
+      X = S[t, itm_idx]
+      Y = value[itm_idx] * dc.df(today+TimeInterval(f"{t}d"))
+      coeffs = np.polynomial.laguerre.lagfit(X, Y, 5)
+      continuation_value = np.polynomial.laguerre.lagval(X, coeffs)	
+      exer_now = payoffs[t, itm_idx]	
+      exer_mask = exer_now > continuation_value
+      value[itm_idx[exer_mask]] = exer_now[exer_mask]
 	
-	non_exer_mask = ~exer_mask
-	value[itm_idx[non_exer_mask]] = value[itm_idx[non_exer_mask]] * df
+      non_exer_mask = ~exer_mask
+      value[itm_idx[non_exer_mask]] = value[itm_idx[non_exer_mask]] * df
 	
-	otm_idx = np.setdiff1d(np.arange(n_paths), itm_idx)
-	value[otm_idx] = value[otm_idx] * df
-	else:
-	value = value * df
-	return np.mean(value * dc.df(today+TimeInterval(f"{1}d")))
+      otm_idx = np.setdiff1d(np.arange(n_paths), itm_idx)
+      value[otm_idx] = value[otm_idx] * df
+    else:
+      value = value * df
+    return np.mean(value * dc.df(today+TimeInterval(f"{1}d")))
 	
-	obs_date = date.today()
-	dates = [obs_date + TimeInterval(f"{i}m") for i in range(13)]
-	dc = DiscountCurve(dates, np.array([np.exp(-r*t/12) for t in range(13)]))
+obs_date = date.today()
+dates = [obs_date + TimeInterval(f"{i}m") for i in range(13)]
+dc = DiscountCurve(dates, np.array([np.exp(-r*t/12) for t in range(13)]))
 	
-	S, payoffs = payoff(36, 40, 1, 0.06, 0.2, 25000, 365, OptionType.Put)
+S, payoffs = payoff(36, 40, 1, 0.06, 0.2, 25000, 365, OptionType.Put)
 	
-	npv = american_option_lsm(obs_date, S, payoffs, dc)
-	print(f"American Option NPV: {npv:.4f}")	
+npv = american_option_lsm(obs_date, S, payoffs, dc)
+print(f"American Option NPV: {npv:.4f}")	
 \end{ipythonnon}
 \begin{ioutput}
 	American Option NPV: 3.9954

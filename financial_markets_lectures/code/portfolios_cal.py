@@ -1,19 +1,37 @@
-num_assets = 6
-returns_rf = np.append(returns.values, 0.10)
-cov_rf = np.zeros(shape=(num_assets, num_assets))
-cov_rf[:num_assets-1, :num_assets-1] = covariances.values
+import numpy as np, pandas as pd
 
-result_rf = []
+from scipy.optimize import minimize
+from typing import List, Union
 
-for t_ret in np.arange(0.1, 0.4, 0.01):
-    weights = [1/n_assets for _ in range(num_assets)]
-    bounds = [(0, 1) for _ in range(num_assets)]
-    constraints = [{'type':'eq', 'fun':sum_weights},
-                   {'type':'eq', 'fun':target_return,
-                                 'args':(returns_rf, t_ret)}]
+class PortfolioOptimizer:
+  ...
+  def portfolio_return(self, w: np.array) -> float:
+    if self.rf_return > 0:
+      return float(np.dot(w[:-1], self.returns)) + self.rf_return * w[-1]
+    else:
+      return float(np.dot(w, self.returns))
 
-    opts = minimize(min_risk, weights, bounds=bounds, 
-                    constraints=constraints, args=(cov_rf))
+  def portfolio_risk(self, w: np.array) -> float:
+    if self.rf_return > 0:
+      w = w[:-1]
+    return float(np.sqrt(w.T @ self.covariance @ w))
 
-    result_rf.append((np.sqrt(risk(opts.x, covariance)),
-                      returns.dot(opts.x)))
+  def min_variance_portfolio(self, target_return: float):
+    num_assets = len(self.assets)
+    if self.rf_return > 0:
+      num_assets += 1
+
+    constraints = [{"type": "eq", "fun": self._sum_weights},
+                   {"type": "eq", "fun": self._target_return, 
+                    "args": (target_return,)},]
+
+    bounds = tuple((0.0, 1.0) for _ in range(num_assets))
+    initial_weights = [1.0 / num_assets for _ in range(num_assets)]
+    return minimize(self.portfolio_risk, initial_weights, method="SLSQP", 
+                    bounds=bounds, constraints=constraints)
+  ...
+
+optimizer = PortfolioOptimizer("portfolio_data.csv",
+                               assets=['AAPL', 'AMZN', 'FB', 'GOOG', 'NFLX'],
+                               rf_return=0.1, index_col="date")
+results_rf = optimizer.efficient_frontier()    

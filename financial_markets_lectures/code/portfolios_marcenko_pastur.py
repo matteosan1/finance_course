@@ -2,18 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def marcenko_pastur_filter(cov_matrix, T):
-    eigvals, eigvecs = np.linalg.eigh(cov_matrix)
-    eigvals = np.real(eigvals)
+  eigvals, eigvecs = np.linalg.eigh(cov_matrix)
+  eigvals = np.real(eigvals)
     
-    N = cov_matrix.shape[0]
-    q = T / N
-    sigma2 = np.mean(eigvals)
-    lambda_plus = sigma2 * (1 + np.sqrt(1 / q))**2
+  N = cov_matrix.shape[0]
+  q = T / N
+  sigma2 = np.mean(eigvals)
+  lambda_plus = sigma2 * (1 + np.sqrt(1 / q))**2
     
-    filtered_eigvals = np.where(eigvals > lambda_plus, eigvals, 0)
-    cov_matrix_filtered = (eigvecs * filtered_eigvals) @ eigvecs.T
+  filtered_eigvals = np.where(eigvals > lambda_plus, eigvals, 0)
+  cov_matrix_filtered = (eigvecs * filtered_eigvals) @ eigvecs.T
     
-    return cov_matrix_filtered
+  return cov_matrix_filtered
 
 np.random.seed(0)
 N = 100

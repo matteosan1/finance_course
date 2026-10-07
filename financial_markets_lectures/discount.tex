@@ -27,102 +27,18 @@ The discount rate $r$ which is used in financial calculations is usually chosen 
 Given a derivative providing a payoff $H(t)$ at time $t$ it can be demonstrated that its value (NPV, net present value) can be expressed as
 
 \begin{equation}
-NPV = \mathbb{E}[e^{-rt} H(t)]
+V_0 = \mathbb{E}^{\mathbb{Q}} \left[ D(0,T)\cdot H(t) \right]
 \end{equation}
 
-In words we can states that the value of the derivative is given by the \textbf{sum of the discounted value of the future cash-flows}.
-It is then apparent how important is to know the proper discount factors for pricing purposes.
+In words we can states that the value of the derivative is given by the \textbf{sum of the discounted value of the future cash-flows}. Indeed if the contract is characterized by $n$ cash-flows $CF_t$ at dates $t_1, t_2, \dots, t_n$, the previous formula becomes (expecation is a *linear operator*)
+
+$$V_0 = \mathbb{E}^{\mathbb{Q}} \left[  \sum_{i=1}^{n} D(0, t_i) \cdot CF_{t_i} \right] = \sum_{i=1}^{n} \mathbb{E}^{\mathbb{Q}} \left[ D(0, t_i) \cdot CF_{t_i} \right] $$
+
+where $D(0, t_i)$ is the discount factor from tempo $t_i$ to $T_0$. It is then apparent how important is to know the proper discount factors for pricing purposes.
 
 Discount factors are usually presented as a \emph{discount curve} which represents the factors for various dates in the future. 
 Since discount curves are made of a discrete set of discount factors derived only at some dates, we may need to find the factor at some different times: 
-this is a typical application of interpolation~\ref{sec:interpolation}.
-
-\subsection{Linear Interpolation}
-\label{linear-interpolation}
-
-Consider to have a discount curve made of three points as in Fig.~\ref{fig:samples_for_interpolation}.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.7\textwidth]{figures/interp_example1}
-  \caption{Plot of the discount curve described in the text.}
-  \label{fig:samples_for_interpolation}
-\end{figure}
-
-Given two discount factors $d_1$ and $d_2$ taken at two different times $t_1$ and $t_2$ a new factor between these two can be found as the point lying on the \textbf{line} connecting $d_1$ and $d_2$ at the desired time. 
-
-\begin{attention}
-\subsubsection{Derivation}
-The equation of a line for two points $(t_1, d_1)$ and $(t_2, d_2)$ can be written as:
-
-\begin{equation}
-\frac{t - t_1}{t_2 - t_1} = \frac{d - d_1}{d_2 - d_1}
-\end{equation}
-
-Setting $w = \cfrac{t - t_1}{t_2 - t_1}$ and solving for $d$ we find the desired solution:
-
-\begin{equation}
-(d_2 - d_1)\cdot w = d - d_1\quad\implies\quad d = (1 - w)\cdot d_1 + w \cdot d_2
-\end{equation}
-
-This formula can be interpreted as a weighted average where the weights are inversely related to the distances from the end points to the unknown point ($w_1 = (1 - w) = \cfrac{t_2 - t}{t_2 -t_1}, w_2 = w$), which means that the closer point has more "influence" than the farther point on the result.
-\end{attention}
-
-You don't need to implement the interpolation formula from scratch, instead it can be used the one provided in \texttt{scipy.interpolate.interp1d}. 
-
-\pythoncodenon{code/discount_1.py}
-
-\begin{ioutput}
-0.988
-\end{ioutput}
-
-\emph{Always interpret critically your results to guess if they make sense or not and avoid mistakes}. In the previous example we certainly expected something between 0.994 and 0.982 (our range ends) furthermore since we are looking for the discount factor at a time which is halfway the considered interval, the result will be somehow in the middle of $d_1$ and $d_2$. This simple kind of reasoning should be applied every time you have a result to quickly judge it.
-
-\begin{curiosity}
-\subsubsection{Epic Failure}
-The Mars Climate Orbiter \emph{was} a 638~kg (1,407~lb), 326.7~M\$ space probe launched by NASA on December 11, 1998 to study Martian climate, atmosphere, and surface changes. 
-
-On September 15, 1999, the necessary corrections to speed and direction of the probe were computed in order to place the spacecraft at an optimal position for an orbital insertion maneuver that would bring it around Mars at the proper altitude. 
-But one week later communication with the spacecraft was permanently lost as it went into Martian orbital insertion. 
-
-A committee of experts was created to investigate the reasons of 
-such failure and they found out that the spacecraft encountered Mars at a lower than foreseen altitude causing either its destruction by atmospheric friction or making it bouncing against the atmosphere re-entering heliocentric orbit after leaving Mars.
-
-The primary cause of this discrepancy was found in one piece of software (supplied by Lockheed Martin) that produced results in "Imperial" units,  while a second system (supplied by NASA) expected those results to be in SI units. Specifically, the software calculated the total impulse produced by thrust in \emph{pound-force seconds}. The trajectory calculation software then used these results, expected to be in \emph{newton seconds}, thus incorrect by a factor of 4.45, to update the predicted position of the spacecraft.
-	
-NASA took the entire responsibility for having vaporized about 300~M\$ in the Martian atmosphere, mainly for failing to make the appropriate checks and tests that would have caught this unit discrepancy~\cite{bib:mars}.	
-\end{curiosity}
-
-\subsubsection{Extrapolation Risk}
-
-Interpolation is primarily designed to estimate values \textbf{within} the range of known data points. Attempting to extrapolate beyond the range of the data can lead to inaccurate results and is generally discouraged. Extrapolation assumes that the relationship between data points remains constant outside the known range, which may not be valid in general.
-
-\subsection{Log-linear Interpolation}
-\label{log-linear-interpolation}
-
-When there is an exponential relationship between the two variables (e.g. $t$ and $d$) we can fall back to the linear case by a simple variable transformation. 
-
-Consider the discount factor in case of continuous compounding: $D=e^{-rt}$. Applying the logarithm to both sides of the equation gives:
-
-\begin{equation}
-f = \log(D) = \log(\exp(-rt)) = -rt
-\end{equation}
-so there is linear relation between the new variable $f$ and $t$. At this point we can use the results of the previous Section to interpolate for values of $f$, just remember to exponentiate the final result to get the correct $D$.
-
-\subsection{Limitations of Interpolation}
-Interpolation is just an approximation and works well when we are trying to interpolate between two points that are close enough to believe that the function is almost linear in that interval.
-
-It can be easily demonstrated that the linear approximation between two points of a given function $f(x)$ gets worse with the second derivative of the function that is approximated ($f''(x)$). This is intuitively correct: the "curvier" the function is, the worse the approximation made with simple linear interpolation becomes, see Fig.~\ref{fig:sine_interp} where we try to interpolate a sine function.
-
-\begin{figure}
-  \centering
-  \includegraphics[width=0.7\textwidth]{figures/wrong_interp.png}
-  \caption{Trying to approximate a sine function with a line is clearly not going to work unless the interpolation interval is very small.}
-  \label{fig:sine_interp}
-\end{figure}
-
-To improve the approximation accuracy with complicated curves e.g. in the evaluation of natural logarithm or trigonometric functions), an higher order polynomial can be used ($p(x)=a_0 + a_1\cdot x + a_2\cdot x^2+\cdots$). It has to be clear however that going to higher degrees does not always help~\cite{bib:runge}.
-Some interpolation methods, indeed, can result in \emph{overfitting}. This means the interpolating function fits the data points very closely but may not generalize well to unseen data, i.e. it can lead to excessive fluctuations between data points.
+this is a typical application of interpolation, see Chapter~\ref{sec:interpolation}.
 
 \subsection{Discount Curve}
 
@@ -160,7 +76,8 @@ Using the discount curve data in \href{https://github.com/matteosan1/finance_cou
 \pythoncodenon{code/discount_3.py}
 
 \begin{ioutput}
-discount factor at 2023-04-21: 0.9902
+discount factor at 2027-03-25: 0.9902
+zero rate at 2027-03-25: 0.0184
 \end{ioutput}
 
 A very useful way to check the correctness of a result is by plotting it. So by inspecting Fig.~\ref{fig:linear_discount_curve} we can see that the computed discount factor is compatible with the original discount curve.
@@ -214,15 +131,15 @@ In order to successfully interpolate the rates, dates need to be converted to nu
 \end{finmarkets}
 
 \pythoncodenon{code/discount_4.py}
-
+\noindent
 As an example let's compute
 
 \pythoncodenon{code/discount_5.py}
 
 \begin{ioutput}
-f_12 = 0.100
-f_23 = 0.110
-f_13 = 0.105
+F(t1, t2; t0) = 0.09998633879781421
+F(t2, t3; t0) = 0.11001369863013699
+F(t1, t3; t0) = 0.105
 \end{ioutput}
 
 \section{Multi-curve Framework}

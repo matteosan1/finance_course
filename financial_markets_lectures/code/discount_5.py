@@ -1,14 +1,14 @@
-from finmarkets import TermStructure, TimeInterval
-from datetime import date
+from finmarkets import GlobalConst as gc, TimeInterval, TermStructure
 
-today = date.today()
-pillars = [today + TimeInterval(i) for i in ['1y', '2y', '3y']]
-spot_rates = [0.09, 0.095, 0.1]
-ts = TermStructure(today, pillars, spot_rates)
-t1 = today + TimeInterval('1y')
-t2 = today + TimeInterval('2y')
-t3 = today + TimeInterval('3y')
+t0 = gc.OBS_DATE
+spot_rates = [0.09, 0.095, 0.10]
+t1 = t0 + TimeInterval('1Y')
+t2 = t0 + TimeInterval('2Y')
+t3 = t0 + TimeInterval('3Y')
 
-print (f"f_12 = {ts.forward_rate(t1, t2):.3f}")
-print (f"f_23 = {ts.forward_rate(t2, t3):.3f}")
-print (f"f_13 = {ts.forward_rate(t1, t3):.3f}")
+pillars = [t1, t2, t3]
+
+ts = TermStructure(pillars, spot_rates)
+print (f"F(t1, t2; t0) = {ts.forward_rate(t1, t2)}")
+print (f"F(t2, t3; t0) = {ts.forward_rate(t2, t3)}")
+print (f"F(t1, t3; t0) = {ts.forward_rate(t1, t3):0.3f}")

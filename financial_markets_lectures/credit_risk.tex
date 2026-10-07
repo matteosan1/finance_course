@@ -15,31 +15,79 @@ A \emph{credit event} can be a default, the failure to make payments, the issuer
 
 \emph{Credit curves} are a way of representing survival probabilities, and just like discount curves, they are built by specifying a sequence of pillar dates to which corresponds a sequence of NDPs. 
 
+\subsection{Credit Event Simulation}
+\label{sec:credit_event_simulation}
+The simplest way to simulate possible default is to use the $\texttt{scipy.stats.binom.rvs(n, p, size)}$ function:
+\begin{itemize}
+	\item it's a binary: a borrower either defaults or do not with default probability $p$;
+	\item instead of generating $n$ individual random numbers in a loop to check each borrower's fate, $\texttt{scipy.stats.binom}$ samples the total count of defaults directly from the theoretical distribution in a single, optimized operation;
+	\item with multiple \textbf{independent} counterparties we can simulate their defaults at once specifying each different ${\Pdef}_i$.
+\end{itemize}	
+%In the next example we are generating 10 samples of a binomial random variable with $p=0.1$ probability of getting 1 (\emph{default}).
+
+As an example let's consider 10 firms with 10\% default probability each and compute the probability of having 5 defaults within the next year.
+\begin{ipythonnon}
+import numpy as np
+
+from scipy.stats import binom
+
+np.random.seed(1)
+
+n_assets = 10
+PD = np.ones(shape=(n_assets,)) * 0.1
+
+N = 1000000
+
+defaults = binom.rvs(1, PD, size=(N, n_assets)) # simulate N default scenarios
+print ("Simulated defaults:")
+print (defaults[:5])
+
+outcomes = np.sum(defaults, axis=1) # compute number of defaults per scenario
+print ("\nTotal defaults per simulation:")
+print (outcomes[:5])
+
+successes = (outcomes >= 5)
+print ("\nSimulation with >= 5 defaults:")
+print (successes[:5].astype(int))
+
+print (f"\nP(ndefs >=5): {np.mean(successes)}")
+\end{ipythonnon}
+\begin{ioutput}
+Simulated defaults:
+[[0 0 0 0 0 0 0 0 0 0]
+[0 0 0 0 0 0 0 0 0 0]
+[0 1 0 0 0 0 0 0 0 0]
+[0 0 1 0 0 0 0 0 0 0]
+[1 0 0 0 0 0 1 0 0 0]]
+
+Total defaults per simulation:
+[0 0 1 1 2]
+
+Simulation with >= 5 defaults:
+[0 0 0 0 0]
+
+Probability of having at least 5 uncorrelated defaults: 0.00166
+\end{ioutput}
+
 \subsection{Hazard Rate or Default Intensity}
 \label{hazard-rate}
 
 The \emph{hazard rate}~\cite{bib:hazard} represents the instantaneous probability of a party defaulting conditioned on it not having defaulted until that moment. Indeed it is often called a \emph{conditional failure rate} since its expression is a direct application of the conditional probability concept, see Section~\ref{sec:conditional_prob}.
 
-The instantaneous default probability conditional to no previous default $\lambda$ can be expressed as
+Let $\tau$ be the random time of default, with a cumulative distribution function $\Pdef(t) = \mathbb{P}(\tau \le t)$ and a probability density function $f(t) = \frac{d\Pdef(t)}{dt}$.
+The probability of surviving past time $t$ is:
+$$\Psur(t) = \mathbb{P}(\tau > t) = 1 - \Pdef(t)$$
+We look at the probability of defaulting between $t$ and $t + \Delta t$ conditioned on survival up to $t$:
+$$\mathbb{P}(t < \tau \le t + \Delta t \mid \tau > t) = \frac{\mathbb{P}(t < \tau \le t + \Delta t \cap \tau > t)}{\mathbb{P}(\tau > t)}$$
+Since the event $\{t < \tau \le t + \Delta t\}$ is a subset of $\{\tau > t\}$, their intersection simplifies to the numerator alone. Expressing this in terms of the CDF and the survival function $\Psur(t)$:
+$$\mathbb{P}(t < \tau \le t + \Delta t \mid \tau > t) = \frac{\Pdef(t + \Delta t) - \Pdef(t)}{\Psur(t)}$$
+To find the instantaneous rate per unit of time, we divide by the interval length $\Delta t$ and take the limit as $\Delta t \to 0$:
 
-\begin{equation}
-\begin{split}
-\lambda(t)& = \lim_{dt\rightarrow 0} \cfrac{\Pdef(t, t+dt|\tau> t)}{dt} = \cfrac{d\Pdef(t)}{\Pdef(t, +\infty)}\cfrac{1}{dt}\\[5 pt] &
-= \cfrac{d(1-\Psur(t_0 t))}{\Psur(t_0, t)}\cfrac{1}{dt} = -\cfrac{d\Psur(t)}{dt}\cfrac{1}{\Psur(t_0, t)}
-\end{split}
-\end{equation}
-where $\Psur$ and $\Pdef$ are survival and default probabilities and $\tau$ the occurrence time of the credit event.
+$$\lambda(t) = \lim_{\Delta t \to 0} \frac{\mathbb{P}(t < \tau \le t + \Delta t \mid \tau > t)}{\Delta t} = \lim_{\Delta t \to 0} \frac{\Pdef(t + \Delta t) - \Pdef(t)}{\Delta t \cdot \Psur(t)}$$
+Factoring out $\Psur(t)$ (which does not depend on $\Delta t$), the limit of the numerator is precisely the probability density function $d\Pdef(t)/dt$:
 
-In other words, since in credit modeling, the PDF of the default probability $f(t)$ is defined as the rate of change of the cumulative default probability and $\Pdef(t_0, t) = 1 - \Psur(t_0, t)$, it follows that:
-\begin{gather}
-f(t) = \frac{d\Pdef}{dt} = \frac{d(1-\Psur)}{dt} = -\frac{d\Psur}{dt} \\
-\lambda(t) = \frac{f(t)}{\Psur(t)}
-\end{gather}
-
+$$\lambda(t) = -\frac{1}{P_{\text{sur}}(t)} \frac{dP_{\text{sur}}(t)}{dt} = -\frac{d}{dt} \ln P_{\text{sur}}(t)$$
 Given the hazard rate, the survival probability can be determined as:
-
-%So far we have assumed implicitly that the credit event is bound to occur, so that $dP_{\textrm{sur}}(+\infty)=0$. Given enough time the survival probability goes down to zero. This condition implies that the cumulative hazard must diverge, i.e. we must have Λ(∞)=∞. Intuitively, the event will occur with certainty only if the cumulative risk over a long period is sufficiently high.
-
 \begin{equation}
 \begin{gathered}
 \lambda(t) = -\cfrac{1}{dt}\cdot\cfrac{d\Psur(t_0, t)}{\Psur(t_0, t)} = -\cfrac{d(\log\Psur(t_0, t))}{dt} \implies d(\log\Psur(t_0, t)) = -\lambda dt\\[5pt]
@@ -61,14 +109,13 @@ Similarly to discount curves we implement a class to handle credit curves, \text
 
 Let's test the class with some inputs.
 \begin{ipythonnon}
-from datetime import date
-from dateutil.relativedelta import relativedelta
+from finmarkets import GlobalConst as gc, CreditCurve, TimeInterval
 
-obs_date = date.today()
-cc = CreditCurve(obs_date, [obs_date + relativedelta(years=2)], [0.8])
+obs_date = gc.OBS_DATE
+cc = CreditCurve([obs_date + relativedelta(years=2)], [0.8])
 
-print (cc.ndp(obs_date + relativedelta(years=1)))
-print (cc.hazard(obs_date + relativedelta(years=1)))
+print (cc.ndp(obs_date + TimeInterval("1y")))
+print (cc.hazard(obs_date + TimeInterval("1y")))
 \end{ipythonnon}
 \begin{ioutput}
 0.9
@@ -139,6 +186,20 @@ Finally the inverse function of the CDF is:
 F^{-1}(X) = -\frac{\log(1-X)}{\lambda}
 \end{equation}
 
+A constant hazard rate ($\lambda$) implies that the probability of defaulting in the next instant, given that the entity has survived until now, is exactly the same regardless of whether the entity is 1 day old or 20 years old.
+
+In the real world, this is considered unrealistic for several key reasons:
+\begin{itemize}
+	\item the "Aging" Effect (Credit Quality Dynamics): a constant hazard rate follows a memoryless property. It assumes that the entity's history or current age provides no information about its future stability. In reality, as a company matures, it typically builds retained earnings, establishes market share, and stabilizes its capital structure, which might lower its default risk over time. Conversely, a startup has a much higher "infant mortality" rate.
+	\item the Credit Cycle and Macroeconomics: default risk is heavily tied to the economic cycle (recessions vs. expansions). Hazard rates are stochastic and time-dependent. We expect default risk to be higher during a projected downturn in 2 years than it might be in the current stable month. A constant $\lambda$ cannot capture the "mean-reverting" nature of economic conditions.
+	\item Term Structure of Credit Spreads: If you look at the market prices for Credit Default Swaps (CDS) or corporate bonds, the "Credit Curve" is rarely flat.    \textit{Upward Sloping}: investors often demand a higher premium for longer maturities because there is more uncertainty about the distant future (e.g., the company might face new competitors or technological obsolescence). \textit{Downward Sloping}: for distressed entities, the risk of defaulting now (liquidity crisis) is often much higher than the risk of defaulting in 5 years if they manage to survive the current quarter. Constant Hazard Rate results in a perfectly flat credit curve, which almost never matches market data.
+	\item Information Dissipation: the longer an entity survives, the more information the market has about its management and resilience. A constant hazard rate ignores the fact that survival itself acts as a signal of quality. In many models (like those using the Lévy process or Structural models), the probability density of default changes as the entity's asset value moves relative to its "default barrier."
+\end{itemize}
+
+So in conclusion most entities follow a \textit{Bathtub Curve}: high risk at the start (startups), low, relatively constant risk in the middle and increasing risk as the entity or industry becomes obsolete.
+
+The simplest improvement to account for the previous consideration in the credit risk modeling is to consider a \textbf{piecewise constant $\lambda$}.
+
 \begin{finmarkets}
 We now have enough information to simulate credit events according to a Poisson process. 
 
@@ -157,24 +218,6 @@ Default times can also be obtained by sampling from the distribution as shown in
 	\label{fig:default_time_simulation}
 \end{figure}
 
-\subsubsection{Piecewise Constant Hazard Rate}
-A constant hazard rate ($\lambda$) implies that the probability of defaulting in the next instant, given that the entity has survived until now, is exactly the same regardless of whether the entity is 1 day old or 20 years old.
-
-In the real world, this is considered unrealistic for several key reasons:
-\begin{itemize}
-\item the "Aging" Effect (Credit Quality Dynamics): a constant hazard rate follows a memoryless property. It assumes that the entity's history or current age provides no information about its future stability. In reality, as a company matures, it typically builds retained earnings, establishes market share, and stabilizes its capital structure, which might lower its default risk over time. Conversely, a startup has a much higher "infant mortality" rate.
-\item the Credit Cycle and Macroeconomics: default risk is heavily tied to the economic cycle (recessions vs. expansions). Hazard rates are stochastic and time-dependent. We expect default risk to be higher during a projected downturn in 2 years than it might be in the current stable month. A constant $\lambda$ cannot capture the "mean-reverting" nature of economic conditions.
-\item Term Structure of Credit Spreads: If you look at the market prices for Credit Default Swaps (CDS) or corporate bonds, the "Credit Curve" is rarely flat.    \textit{Upward Sloping}: investors often demand a higher premium for longer maturities because there is more uncertainty about the distant future (e.g., the company might face new competitors or technological obsolescence). \textit{Downward Sloping}: for distressed entities, the risk of defaulting now (liquidity crisis) is often much higher than the risk of defaulting in 5 years if they manage to survive the current quarter. Constant Hazard Rate results in a perfectly flat credit curve, which almost never matches market data.
-\item Information Dissipation: the longer an entity survives, the more information the market has about its management and resilience. A constant hazard rate ignores the fact that survival itself acts as a signal of quality. In many models (like those using the Lévy process or Structural models), the probability density of default changes as the entity's asset value moves relative to its "default barrier."
-\end{itemize}
-
-So in conclusion most entities follow a \textit{Bathtub Curve}: high risk at the start (startups), low, relatively constant risk in the middle and increasing risk as the entity or industry becomes obsolete.
-
-The simplest improvement to account for the previous consideration in the credit risk modeling is to consider a \textbf{piecewise constant $\lambda$}.
-A second slightly more complicated implementation a the Poisson Process allows to handle this new kind of hazard rate.
-
-\pythoncodenon{code/credit_risk_poisson_process_piecewise_constant.py}
-
 \subsubsection{Calibration Example}
 
 To calibrate the such a Poisson process to a non-flat market credit curve, we need to find the set of $\lambda$ values that make the model's survival probabilities match the market's implied survival probabilities at specific pillar dates.
@@ -183,25 +226,25 @@ Although this is typically done using a bootstrapping process, here we are going
 In the example below the function \texttt{calibrate} takes market pillar dates and their corresponding market survival probabilities and will use \texttt{scipy.optimize.least\_squares} to solve for the hazard rates.
 
 \begin{ipythonnon}
-from finmarkets.distributions import PiecewisePoissonProcess
+from finmarkets.distributions import PoissonProcess
 
 from scipy.optimize import least_squares
 
 def calibrate_credit_process(market_times, market_probs, initial_guess=0.02):
-    times = np.array(market_times)
-    probs = np.array(market_probs)
+  times = np.array(market_times)
+  probs = np.array(market_probs)
     
-    def residuals(log_lambdas):
-        temp_lambdas = np.exp(log_lambdas)
-        temp_process = PiecewisePoissonProcess(temp_lambdas, times)
-        return temp_process.survival_prob(times) - probs
+  def residuals(log_lambdas):
+    temp_lambdas = np.exp(log_lambdas)
+    temp_process = PoissonProcess(temp_lambdas, times)
+    return temp_process.survival_prob(times) - probs
 
-    x0 = np.log(np.ones(len(times)) * initial_guess)
-    sol = least_squares(residuals, x0, method='lm')   
-    if not sol.success:
-        raise ValueError("Calibration failed to converge")
+  x0 = np.log(np.ones(len(times)) * initial_guess)
+  sol = least_squares(residuals, x0, method='lm')   
+  if not sol.success:
+    raise ValueError("Calibration failed to converge")
 
-    return PiecewisePoissonProcess(np.exp(sol.x), times)
+  return PoissonProcess(np.exp(sol.x), times)
 \end{ipythonnon}
 
 When you run this calibration, you'll see that lambda values are no longer identical. This allows the model to "bend" the survival curve to fit market expectations. For example if the 1Y hazard rate is higher than the 5Y rate, the market is pricing immediate distress. Also if the rates increase over time, the market sees the entity as safe now but potentially risky in the long run.
@@ -257,7 +300,7 @@ In the valuation of the premium leg, we'll use the following notation:
 At each payment date $d_i$, a cash flow of $F\cdot S$ is paid if and only if the credit event has \emph{not} occurred before that date. Therefore the NPV of each flow is
 
 \begin{equation}
-f_{\textrm{premium}}^i = \mathbb{E}\left[F~S~D(d_i)|\mathbbm{1}(\tau > d_i) \right]
+f_{\textrm{premium}}^i = \mathbb{E}\left[F\cdot S\cdot D(d_i)|\mathbbm{1}(\tau > d_i) \right]
 \end{equation}
 where the indicator function $\mathbbm{1}(\tau > d_i)$ means that the expectation value has to be evaluated when $\tau > d_i$. 
 
@@ -276,16 +319,16 @@ the premium leg NPV can be expressed as:
 We assume that as soon as a credit event occurs (at a time $\tau$) the LGD is paid out (i.e. on the same date, but could potentially be paid on any date between $d_0$ and $d_n$). Mathematically, therefore, the NPV of the default leg can be expressed as follows:
 
 \begin{equation}
-\mathrm{NPV_{default}} =\mathbb{E}[F(1-R)~D(\tau)|\mathbb{1} \{\tau \leq d_n\} ] = \mathbb{E}[F(1-R)~D(\tau)|\Pdef(\tau \leq d_n) ]
+\mathrm{NPV_{default}} =\mathbb{E}[F(1-R)\cdot D(\tau)|\mathbbm{1} \{\tau \leq d_n\} ] = \mathbb{E}[F(1-R)\cdot D(\tau)|\Pdef(\tau \leq d_n) ]
 \end{equation}
 
-Also in this case we are dealing with a probabilistic event so the expectation value has to be computed taking into account the payments $F(1-R)\times D(\tau)$ averaged over the default probability $\Pdef(d, \tau)$. 
+Also in this case we are dealing with a probabilistic event so the expectation value has to be computed taking into account the payments $F(1-R)\cdot D(\tau)$ averaged over the default probability $\Pdef(d, \tau)$. 
 
 Using the law of total probability (see~\ref{sec:conditional_prob}), we can break the previous expression down into the sum of "daily NPVs" calculated as a function of the \emph{daily} default probabilities:
 
 \begin{align}
 \begin{split}
-\mathrm{NPV_{default}} &= \mathbb{E}[F(1-R)~D(\tau)|\Pdef(\tau \leq d_n) ] = \sum_{d'=d_0}^{d_n} \mathbb{E}[F(1-R) \cdot D(d')|\Pdef(d, d')] \\
+\mathrm{NPV_{default}} &= \mathbb{E}[F(1-R)\cdot D(\tau)|\Pdef(\tau \leq d_n) ] = \sum_{d'=d_0}^{d_n} \mathbb{E}[F(1-R) \cdot D(d')|\Pdef(d, d')] \\
 &= F(1-R) \sum_{d'=d_0}^{d_n} D(d') \left(\Pdef(\tau \geq d') - \Pdef( \tau \geq d'+1) \right) \\
 &= F(1-R) \sum_{d'=d_0}^{d_n} D(d') \left(\Psur(d, d') - \Psur(d, d'+1) \right)
 \end{split}
@@ -327,17 +370,17 @@ import pandas as pd
 
 from datetime import date
 
-from finmarkets import DiscountCurve, TimeInterval, CreditDefaultSwap, SwapSide
+from finmarkets import GlobalConst as gc
+from finmarkets import DiscountCurve, TimeInterval, CreditDefaultSwap
 
 dc_data = pd.read_excel("discount_curve.xlsx")
-start_date = obs_date = date.today()
+start_date = obs_date = gc.OBS_DATE
 dates = [obs_date + TimeInterval(i) for i in dc_data['maturities']]
-dc = DiscountCurve(obs_date, dates, dc_data['dfs'])
+dc = DiscountCurve(dates, dc_data['dfs'])
 
 pillars = [obs_date + TimeInterval('36m')]
-credit_curve = CreditCurve(obs_date, pillars, [0.7])
+credit_curve = CreditCurve(pillars, [0.7])
 cds = CreditDefaultSwap(1e6, start_date, "3y", 0.03)
-
 
 print (f"{cds.npv_premium_leg(dc, credit_curve):.2f}")
 print (f"{cds.npv_default_leg(dc, credit_curve):.2f}")
@@ -354,20 +397,18 @@ An alternative implementation of the default leg calculation (i.e. \texttt{npv\_
 The code below provide an example exploiting the integration function \texttt{scipy.integrate.quad}. For more information about integration in \texttt{python} please refer to Section~\ref{sec:integration}.
 
 \begin{ipythonnon}
-from dateutil.relativedelta import relativedelta
 from scipy.integrate import quad
 
 def npv_default_leg_quad(self, cc, dc):
-    def integrand(t, cc, dc):
-        current_date = self.payment_dates[0] \ 
-                                  + relativedelta(days=int(t * 365))
-        return dc.df(current_date) \
+  def integrand(t, cc, dc):
+    current_date = self.payment_dates[0] + TimeInterval(f"{int(t * 365)}d"))
+	return dc.df(current_date) \
                * (cc.ndp(current_date) \
-                  - cc.ndp(current_date + relativedelta(days=1)))    
-    maturity_in_years = (self.payment_dates[-1] \
-                         - self.payment_dates[0]).days / 365
-    npv, _ = quad(integrand, 0, maturity_in_years, args=(cc, dc))
-    return self.nominal * (1 - self.recovery) * npv * 365
+                  - cc.ndp(current_date + TimeInterval("1d")))
+  maturity_in_years = yearFraction(self.payment_dates[0], self.payment_dates[-1], \
+                       "ACT365")
+  npv, _ = quad(integrand, 0, maturity_in_years, args=(cc, dc))
+  return self.nominal * (1 - self.recovery) * npv * 365
 \end{ipythonnon}
 
 This new approach provide a higher precision and is often faster especially for long swap maturities, although it requires a little overhead in converting at each step the year fraction into an actual date.
@@ -639,13 +680,13 @@ If the survival probability is described according to a Poisson process $\Psur(t
   d\Psur(t) = -\lambda e^{-\lambda t} dt = -\lambda \Psur(t) dt 
 \end{equation*}
 
-Considering the market value of the CDS spread $S^{mkt}$, by definition, it makes the contract value null so we can equal the two NPV expression above to get
+Considering the market value of the CDS spread $S_{mkt}$, by definition, it makes the contract value null so we can equal the two NPV expression above to get
 
 \begin{equation*}
   \begin{gathered}
-    \cancel{F}(1-R) \int_{d_0}^{d_n} D(t) \underbrace{(-d\Psur(t)) dt}_{-\lambda  \Psur(t) dt} =  \cancel{F}\cdot S^{mkt} \cdot \int_{d_0}^{d_n} D(t) \cdot \Psur(t) dt \\
-    (1-R) \lambda \cancel{\int_{d_0}^{d_n} D(t) \Psur(t) dt} =  S^{mkt} \cdot \cancel{\int_{d_0}^{d_n} D(t) \cdot \Psur(t) dt} \\
-    (1-R) \lambda = S^{mkt} \implies  \lambda = \frac{ S^{mkt}}{(1-R)}
+    \cancel{F}(1-R) \int_{d_0}^{d_n} D(t) \underbrace{(-d\Psur(t)) dt}_{-\lambda  \Psur(t) dt} =  \cancel{F}\cdot S_{mkt} \cdot \int_{d_0}^{d_n} D(t) \cdot \Psur(t) dt \\
+    (1-R) \lambda \cancel{\int_{d_0}^{d_n} D(t) \Psur(t) dt} =  S_{mkt} \cdot \cancel{\int_{d_0}^{d_n} D(t) \cdot \Psur(t) dt} \\
+    (1-R) \lambda = S_{mkt} \implies  \lambda = \frac{ S_{mkt}}{(1-R)}
   \end{gathered}
 \end{equation*}
 
@@ -653,7 +694,7 @@ So given the market quote of a CDS and the corresponding recovery rate we could 
 
 As an example if the recovery rate is 40\% a CDS spread of 200~bp would translate into an implied probability of default of about 3.3\%.
 
-\subsubsection*{Default Probability with Bootstrapping}
+\subsubsection*{Default Probability with Bootstrap}
 \label{default-probabilities-and-cds}
 
 To derive default probabilities from Credit Default Swap market quotes we can exploit again the \emph{bootstrap technique}. 

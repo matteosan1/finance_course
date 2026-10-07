@@ -6,30 +6,46 @@ Historical default data has played an important role in the estimate of default 
 
 The market trend now is towards the use of mathematical models that don't rely on historical default data. In Chapter~\ref{sec:credit-default-swaps} we have seen how it is possible to derive default probabilities from market data, here we will see how copulas can be used to model their correlations to evaluate credit derivatives. 
 
-\section{Default Correlation}
+\section{Correlation}
 \label{sec:default_correlation}
+Correlation is a quantitative measure that evaluates how consistently two variables move together relative to their respective sample means. 
 
-Correlation is a precise mathematical concept that has only meaning in reference to random variables. If $X$ and $Y$ are random variables, the \emph{correlation coefficient}, $\rho$, between $X$ and $Y$ is defined as
-\begin{equation}
-\rho = \cfrac{\mathbb{E}[(X-\mu_Y)(Y-\mu_Y)]}{\sigma_X \sigma_Y}
-\label{eq:correlation_coefficient}
-\end{equation}
-where $\mu$ and $\sigma$ denote the corresponding mean and standard deviation, and $\mathbb{E}$ the expected value.
+It assesses alignment in deviations rather than raw magnitudes: \emph{positive alignment} both variables lie above (or below) their respective averages simultaneously, \emph{negative alignment} one variable lies above its average while the other lies below.
 
-%Statements such as "company $A$ and company $B$ are correlated" are meaningless unless you refer to a quantifiable variable associated with the two companies (e.g. stock price, revenue growth or credit default spread).
-Stating that the default behavior of companies $A$ and $B$ is correlated does not carry a lot of meaning unless one specifies a random variable that captures what \emph{default behavior} means.
+Mathematically, the standard measure for linear co-movement is the Pearson correlation coefficient ($\rho$):
 
-The challenge to do a good Monte Carlo simulation to model asset defaults relies on the ability to generate realistic scenarios. That is, being able to be loyal to the average default probability of the pool and to the assets’ default correlation $\rho$. Note that if we are dealing with two assets, the default correlation is captured by one number. In the case of $N>2$ assets, $\rho$ is a symmetric matrix (sometimes also indicated by $\Sigma$).
+$$\rho = \frac{\text{Cov}(X,Y)}{\sigma_X \sigma_Y}$$
+Covariance ($\text{Cov}(X,Y)$) captures the directional co-variability of the two variables relative to their means. Dividing by the product of the standard deviations scales the result to a standardized range between $-1$ and $+1$:
+\begin{itemize}
+	\item $+1.0$: perfect positive linear relationship;
+	\item $0.0$: no linear relationship;
+	\item $-1.0$: perfect negative linear relationship.
+\end{itemize}	
+
+In the case of $N>2$ assets, $\rho$ is a symmetric matrix (sometimes also indicated by $\Sigma$).
 
 \begin{equation*}
-\Sigma = \begin{bmatrix}
-\sigma^2 (X_0) & \cov(X_0, X_1) & \cov(X_0, X_2)\\
- \cov(X_1, X_0) & \sigma^2 (X_1) & \cov(X_1, X_2)\\
- \cov(X_2, X_0) & \cov(X_2, X_1) & \sigma^2 (X_2)\\
-\end{bmatrix}
+	\Sigma = \begin{bmatrix}
+		\sigma^2 (X_0) & \cov(X_0, X_1) & \cov(X_0, X_2)\\
+		\cov(X_1, X_0) & \sigma^2 (X_1) & \cov(X_1, X_2)\\
+		\cov(X_2, X_0) & \cov(X_2, X_1) & \sigma^2 (X_2)\\
+	\end{bmatrix}
 \end{equation*}
- 
 Diagonal terms report the variance of each random variable, while the non-diagonal terms represent the correlation between each pair of variables. The matrix is symmetric since the correlation between $X_i$ and $X_j$ is the same as between $X_j$ and $X_i$.
+
+A non-zero correlation indicates a structural co-movement pattern, but it provides no information regarding directional influence or functional mechanism.
+High correlation between two variables is frequently driven by an unobserved third variable (e.g., ambient temperature independently increasing both ice cream sales and swimming activities). Pearson correlation specifically measures the degree to which a linear function describes the relationship. It fails to detect strong non-linear dependencies (e.g., $y = x^2$ yields $\rho \approx 0$ over symmetric domains despite being deterministically related).
+
+Correlation is not an explanatory tool, but an initial diagnostic signal. It identifies statistically significant co-movements within datasets, establishing baseline patterns that warrant further domain specific investigation and formal causal inference models.
+
+The challenge to do a good Monte Carlo simulation to model asset defaults relies on the ability to generate realistic scenarios. That is, being able to be loyal to the average default probability of the pool and to the assets’ default correlation $\rho$. 
+
+\begin{figure}[htb]
+	\centering
+	\includegraphics[width=0.9\textwidth]{figures/marginal_joint_correlation}
+	\caption{Notice that correlation doesn't affect marginal distribution !}
+	\label{fig:marginal_joint}
+\end{figure}
 
 \section{Distribution Transformation}
 \label{sec:distribution-transformation}
@@ -99,7 +115,12 @@ A \emph{copula} $\mathcal{C}(F_1, F_2, \ldots, F_n, \rho)$ allows the joining of
 
 Its exact definition from probability theory is the following: a multivariate, i.e. multidimensional, cumulative distribution function whose \emph{marginal} probability distributions, i.e. the probability distribution of each dimension, are uniform ($F_i = U_i =\mathrm{uniform}(0,1)$), $\rho$ represents the correlation between each variable.
 
-A key part of copulas is the \emph{Sklar’s theorem}. It states that any multivariate joint distribution can be written in terms of the marginal distributions and a copula which describes the dependence structure between the variables. This property makes them very popular since allow to easily model the distribution of correlated random variables by representing marginals and correlation separately: essentially allow to split a complicated problem into simpler components.
+A key part of copulas is the \emph{Sklar’s theorem}. It states that given a joint distribution $F(x_1, x_2, \dots, x_d)$ for $d$ variables with continouos marginals $F_1(x_1), \dots, F_d(x_d)$, there exists a unique copula $\mathcal{C}$ such that:
+
+$$F(x_1, x_2, \dots, x_d) = \mathcal{C}\Big(F_1(x_1), F_2(x_2), \dots, F_d(x_d)\Big)$$
+If $u_i = F_i(x_i) \sim U(0,1)$, the copula function maps the marginal uniform probability distributions into the joint distribution.
+
+This property makes them very popular since allow to easily model the distribution of correlated random variables by representing marginals and correlation separately: essentially allow to split a complicated problem into simpler components.
 
 \begin{attention}
 Mathematically, the theorem can be stated as follows: suppose we have only two random variables, $X$ and $Y$. If $F(x,y)$ is a joint distribution function with continuous marginals $f_x(x)=u$ and $f_y(y)=v$, then the joint distribution $F(x,y)$ can be written in terms of a unique function $\mathcal{C}(u,v)$:
@@ -110,6 +131,12 @@ F(x,y)=\mathcal{C}(u,v)
 where $\mathcal{C}(u,v)$ is the copula of $F(x,y)$.
 The copula function describes how the multivariate function $F(x,y)$ is derived from or coupled with the marginal distribution functions $f_x(x)$ and $f_y(y)$.
 \end{attention}
+
+There are a large number of copulas each characterized by a particular correlation structure. The most common ones are the \emph{Gaussian} and \emph{t-student} copulas. The former relies on a multivariate-normal correlation structure $\Phi_\Sigma$, but it couples marginals which can follow arbitrary distributions.
+Mathematicaly it can be expressed as
+
+$$C_R^{\text{Gauss}}(u_1, \dots, u_d) = \Phi_\Sigma \Big( \Phi^{-1}(u_1), \dots, \Phi^{-1}(u_d) \Big)$$
+where: $\Phi^{-1}$ is the inverse of the normal CDF (quantile function), and $\Phi_\Sigma$ is the multivariate normal CDF with correlation matrix $\Sigma$.
 
 Despite the probably obscure and daunting definition given above the concept of copula is quite simple so it will be clarified with a practical example.
 
@@ -126,6 +153,14 @@ Since the two companies belongs to the same sector and to the same market it is 
 From the historical series of the two assets we can determine the distributions of the individual returns irrespective of the other one, i.e. the marginals, but we don't know how we could model the correlated probability distribution, \emph{joint distribution}, with which we should work to answer our question. 
 
 Here is where copula comes in hand, since it bridges the marginal distributions (which by definition have no correlation) into a joint probability distribution. 
+
+In order to simulate $N$ return vectors with gaussian correlation:
+\begin{enumerate}
+\item Compute the correlation matrix $\Sigma$ from historical series.
+\item Generate a sample from $Z \sim \mathcal{N}_d(0, \Sigma)$.
+\item Compute $U_i = \Phi(Z_i)$ for each dimension $i$. So $U$ (the copula) has uniform marginals $U(0,1)$ and the wanted correlation structure.
+\item Apply inverse transform transformation to each dimension to get the proper marginals.
+\end{enumerate}
 
 \pythoncode{code/modelling_risk_2.py}
 
@@ -204,81 +239,132 @@ It may be useful to create a \texttt{python} object to handle copulas. In \textt
 \pythoncodenon{code/modelling_risk_3.py}
 
 \subsubsection{Remarks on Gaussian Copula}
+\begin{quote}
 Extreme, synchronized rises and falls in financial markets occur infrequently but they do occur. The problem with Gaussian models is that they did not assign a high enough likelihood of occurrence to the scenario in which many things go wrong (or right) at the same time the “perfect storm” scenario.
+\end{quote}
 
-To make this statement a little bit more quantitative we can determine the probability of a $5\sigma$ event and then compare it with the actual distribution of such events in finance. Notice that if $P$ is the probability of an event, $1/P$ represents its occurrence frequency, e.g. $P=0.5$ means the events is going to happen once every 2 trials.
+To make this statement a little bit more quantitative we can compare the number of simultaneous extreme downturn of BMW and Siemens from the historical data to simulated events with Gaussian and t-student copulas. In this simple check we are considering an extreme event when it is $5\sigma$ away the mean
 
-\begin{attention}
-A $n\sigma$ event has a probability to happen equivalent to that of sampling a value bigger than $n$ from a normal distribution.
-To compute the occurrence frequency (in years) of such an event consider the probability to get $n\sigma$ so it is 1 over $(
-[365\cdot P(|x| \ge n\sigma)]$ (the 365 factor comes from the number of working days in a year).
+%\begin{attention}
+%A $n\sigma$ event has a probability to happen equivalent to that of sampling a value bigger than $n$ from a normal distribution.
+%To compute the occurrence frequency (in years) of such an event consider the probability to get $n\sigma$ so it is 1 over $(
+%[365\cdot P(|x| \ge n\sigma)]$ (the 365 factor comes from the number of working days in a year).
+%
+%\pythoncodebox{code/modelling_risk_4.py}
+%\begin{ioutput}
+%4778.843544161504
+%\end{ioutput}
+%\noindent
+%\end{attention}
+%
+%From the above calculation we expect to have a $5\sigma$ movement of our stock once every about 4800 years, assuming a Gaussian distribution. Looking the the distributions of the returns in the last 12 years in Fig.~\ref{fig:5sigma_contour}, where the red line represents the $5\sigma$ contour it is apparent that there are about twelve of such events instead.
 
-\pythoncodebox{code/modelling_risk_4.py}
-\begin{ioutput}
-4778.843544161504
-\end{ioutput}
-\noindent
-\end{attention}
-
-From the above calculation we expect to have a $5\sigma$ movement of our stock once every about 4800 years, assuming a Gaussian distribution. Looking the the distributions of the returns in the last 12 years in Fig.~\ref{fig:5sigma_contour}, where the red line represents the $5\sigma$ contour it is apparent that there are about twelve of such events instead.
+\pythoncodebox{code/modelling_risk_4.2.py}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.5\textwidth]{figures/5_sigma_contour}
-\caption{Distribution of the daily returns of BMW and Siemens stock price from 2010 to 2022, the red line represents the $5\sigma$ contour.}
+\includegraphics[width=0.5\textwidth]{figures/5_sigma_contour_simulation}
+\caption{Distribution of the daily returns of BMW and Siemens stock price from 2010 to 2022 (black points), Gaussian copula simulation (green points), and t-student copula simulation (red points). The red and blue lines represent the $2$ and $5\sigma$ contours.}
 \label{fig:5sigma_contour}
 \end{figure}
 
-When using a Gaussian copula, naturally assigns very little \emph{weight} to the tails. Hence it is often used the t-student copula which has fatter tails but preserves the same (bell shaped, non-skewed) characteristics of the Gaussian, see Section~\ref{sec:t-student_copula}. Indeed a $5\sigma$ movement under a t-student PDF is expected to happen once every 6 months. 
+Just \emph{counting} the number of events outside the $5\sigma$ contour it is apparent how the Gaussian copula severely underestimate extreme market shocks (actually there few events already outside the $2\sigma$).
+
+This result tells us that, not only the Normal hypothesis of the return distribution is not correct, but also the Gaussian copula is not capable of correctly account for extreme events which are rare but not so much as predicted by the model.
+
+%\subsection{t-copula with $\chi^2$ Method}
+%\label{sec:t-student_copula}
+The t-student copula instead allows a range of dependence structures depending on the $\nu$ parameter (the number of degrees of freedom of the function). It is a symmetrical copula and has larger tails than the Gaussian. 
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.45\textwidth]{figures/t-copula_2d}
+	\quad
+	\includegraphics[width=0.5\textwidth]{figures/t-copula_3d}
+	\caption{Graphical representations of the t-copula, 2D on the left, 3D on the right.}
+	\label{fig:t-copula}
+\end{figure}
+
+%\subsection{Copula Types}
+%There are numerous types of copula but two are the main classes: one-factor and two-factor copulas.
+%The most popular one-factor copulas are the Gaussian and the Archimedean. The latter can be split further into Gumbel, Clayton, and Frank copulas.
+%Two-factor copulas include the student’s t, Frechet, and Marshal-Olkin copula. 
+%We are going to concentrate on the Gaussian copula only though.
 
 \subsection{Correlated Defaults}
 
-Imagine a company with probability of defaulting within the next year equal to $\Pdef$.
+To check the $\texttt{Copula}$ class we can try to estimate the probability of simultaneous default in the case of correlated assets.
+Consider 10 firms with 10\% default probability each and compute the probability of having 5 defaults within the next year when the assets are perfectly correlated ($\rho=1$).
+%Imagine a company with probability of defaulting within the next year equal to $\Pdef$.
+%
+%To simulate the credit event by Monte Carlo it can be thrown a random number from a uniform distribution between 0 and 1  then:
+%\begin{itemize}
+%\item if it is lower or equal to $\Pdef$ then there has been default;
+%\item if it is higher no default happened.
+%\end{itemize}
 
-To simulate the credit event by Monte Carlo it can be thrown a random number from a uniform distribution between 0 and 1  then:
-\begin{itemize}
-\item if it is lower or equal to $\Pdef$ then there has been default;
-\item if it is higher no default happened.
-\end{itemize}
+\pythoncodenon{code/modelling_risk_9.py}
 
-\pythoncodenon{code/modelling_risk_5.py}
-
-In such a way we have a "successful" experiment with the desired probability.
-
-\begin{ioutput}
-0.2058
-\end{ioutput}
-
-To generate samples from correlated distributions it is enough to determine the copula function as described in the previous Section. At the end of the computation each component of the sample is now converted to a set of random numbers drawn from the proper joint distribution.
-
-Imagine three companies ($A$, $B$ and $C$) which have a cumulative probability of defaulting within the next two years of 10\%.
-Let's compare the probability to have the three of them all defaulting within the next two years in two cases: independent and perfectly correlated default probabilities.
-
-\pythoncodenon{code/modelling_risk_6.py}
-
-In the first case (independent probabilities), the odds to get three defaults within two years is equivalent to the product of the single probabilities, hence $P_{\mathrm{uncorr}} = 10\% \cdot 10\% \cdot 10\% = 0.1 \%
-$.
+%In such a way we have a "successful" experiment with the desired probability.
 
 \begin{ioutput}
-Uncorrelated defaults
-3D copula distribution (first two samples only)
-[[0.91972954 0.72719545 0.95619535]
- [0.7409053  0.81691954 0.5108085 ]]
-Measured P_def: 0.00096
+Simulated defaults (first 5 scenarios):
+[[0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+[0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+[0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+[0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]
+[0. 0. 0. 0. 0. 0. 0. 0. 0. 0.]]
+
+Total defaults per simulation:
+[0. 0. 0. 0. 0.]
+
+Simulation with >= 5 defaults:
+[0 0 0 0 0]
+
+P(ndefs >=5|rho=1): 0.100436
 \end{ioutput}
 
-If we repeat the same Monte Carlo experiment with perfectly correlated default probabilities we have (notice that the covariance matrix has non-diagonal 0.99999999 entries to avoid numerical errors, they should be 1)
+The estimated probability is correctly about 10\% indeed given the perfect correlation either there is no default or five "simultaneous" defaults with probability equal to marginal probability $P_i = 0.1$.
+This is very different from the result obtained in the case of independent defaults (see Sec.~\ref{sec:credit_event_simulation}) where the final probability was roughly 
+$$
+0.1^5 \cdot 0.9^5\cdot 252 \approx 0.0015
+$$
 
-In this case the result is close to 10\%, like we had only one single company defaulting. 
-Indeed given the perfect correlation either there is no default or three "simultaneous" defaults with 10\% probability.
 
-\begin{ioutput}
-Correlated defaults
-3D copula distribution (first two samples only)
-[[0.94531087 0.94533677 0.94534905]
- [0.3477901  0.347964   0.3478019 ]]
-Measured P_def: 0.10233
-\end{ioutput}
+%
+%In this case the result is close to 10\%, like we had only one single company defaulting. 
+%Indeed given the perfect correlation either there is no default or three "simultaneous" defaults with 10\% probability.
+
+%To generate samples from correlated distributions it is enough to determine the copula function as described in the previous Section. At the end of the computation each component of the sample is now converted to a set of random numbers drawn from the proper joint distribution.
+%
+%Imagine three companies ($A$, $B$ and $C$) which have a cumulative probability of defaulting within the next two years of 10\%.
+%Let's compare the probability to have the three of them all defaulting within the next two years in two cases: independent and perfectly correlated default probabilities.
+%
+%\pythoncodenon{code/modelling_risk_6.py}
+%
+%In the first case (independent probabilities), the odds to get three defaults within two years is equivalent to the product of the single probabilities, hence $P_{\mathrm{uncorr}} = 10\% \cdot 10\% \cdot 10\% = 0.1 \%
+%$.
+%
+%\begin{ioutput}
+%Uncorrelated defaults
+%3D copula distribution (first two samples only)
+%[[0.91972954 0.72719545 0.95619535]
+% [0.7409053  0.81691954 0.5108085 ]]
+%Measured P_def: 0.00096
+%\end{ioutput}
+%
+%If we repeat the same Monte Carlo experiment with perfectly correlated default probabilities we have (notice that the covariance matrix has non-diagonal 0.99999999 entries to avoid numerical errors, they should be 1)
+%
+%In this case the result is close to 10\%, like we had only one single company defaulting. 
+%Indeed given the perfect correlation either there is no default or three "simultaneous" defaults with 10\% probability.
+%
+%\begin{ioutput}
+%Correlated defaults
+%3D copula distribution (first two samples only)
+%[[0.94531087 0.94533677 0.94534905]
+% [0.3477901  0.347964   0.3478019 ]]
+%Measured P_def: 0.10233
+%\end{ioutput}
 
 
 %\subsubsection{Independent Defaults}\label{independent-defaults}
@@ -344,183 +430,183 @@ Measured P_def: 0.10233
 %	\end{Verbatim}
 %\end{tcolorbox}
 
-\section{Cholesky Transformation to Correlate Variables}
-In Section~\ref{sec:cholesky} it has been shown that a given matrix, $[\Sigma]$ can be factored uniquely into a product $[\Sigma]=[L]^T [L]$, where $[L]$ is a lower triangular matrix with positive diagonal entries. The matrix $[L]$ is the Cholesky (or "square root") matrix.
+%\section{Cholesky Transformation to Correlate Variables}
+%In Section~\ref{sec:cholesky} it has been shown that a given matrix, $[\Sigma]$ can be factored uniquely into a product $[\Sigma]=[L]^T [L]$, where $[L]$ is a lower triangular matrix with positive diagonal entries. The matrix $[L]$ is the Cholesky (or "square root") matrix.
+%
+%The Cholesky matrix can also be used to correlate random variables. Indeed if $[\Sigma]$ is the covariance matrix of a set of random variables , it transforms them such that their covariances are given by $[\Sigma]$. 
+%
+%The intuition behind that relies on the following statement: from the transformation properties of the Gaussian distribution it is known that if $X\approx\mathcal{N}(\tau,\Lambda)$ then the transformation $Y=BX+b$ results in $Y$ distributed as $Y\approx\mathcal{N}(B\tau +b,B\Lambda B^{T})$.
+%
+%Now immagine that $X$ is sampled from a standard $n$-dimensional normal distribution (i.e. $X\approx\mathcal{N}(0,\mathbb{1})$, where $\mathbb{1}$ is the $n\times n$ identity matrix, then $Y=BX+b$ is distributed as $Y\approx\mathcal{N}(b,BB^{T})$, which is just plugging in $\tau=0$ and $\Lambda=\mathbb{1}$ in the relation above.
+%
+%If you now want $Y$ to be distributed as $Y\approx\mathcal{N}(\mu,\Sigma)$, then you need to choose some transformation matrix $A$, such that $AA^{T}=\Sigma$. A good choice for that is the Cholesky decomposition because it is explicitly structured to fulfill this condition and there are standard functions in lots of libraries which compute it for you.
+%
+%As a practical example, suppose that $X$ is a vector of independent standard normal variables. The matrix $[L]$ can be used to create a new vector $Z$ such that the covariance of $Z$ equals $[\Sigma]$.
+%
+%\pythoncodenon{code/modelling_risk_7.py}
+%
+%\begin{ioutput}
+%[[1.73205081 0.        ]
+% [0.57735027 0.81649658]]
+%\end{ioutput}
+%
+%Figure~\ref{fig:cholesky_norm} shows the original uncorrelated variable $X$ (left), and the transformed variable $Z$ with correlation $[\Sigma]$ (right).
+%
+%\begin{figure}[htbp]
+%\centering
+%\includegraphics[width=0.7\textwidth]{figures/cholesky_norm}
+%\caption{The original uncorrelated variable $X$ (left), the transformed variable $Z$ (right).}
+%\label{fig:cholesky_norm}
+%\end{figure}
+%
+%Clearly, if you start with correlated variables, you can apply the Cholesky inverse transformation to get uncorrelated variables.
+%If you take the $Z$ points generated above and apply $[L]^{-1}$, the original data is obtained again. Figure~\ref{fig:cholesky_inv} shows the resulting distribution.
+%
+%\begin{ipythonnon}
+%orig_X = np.dot(Z, np.linalg.inv(L))
+%\end{ipythonnon}
+%
+%\begin{figure}[htbp]
+%\centering
+%\includegraphics[width=0.7\textwidth]{figures/cholesky_inv}
+%\caption{The transformed variable $Z$ (left), and the original data obtained by the application of the inverse Cholesky transformation (right).}
+%\label{fig:cholesky_inv}
+%\end{figure}
 
-The Cholesky matrix can also be used to correlate random variables. Indeed if $[\Sigma]$ is the covariance matrix of a set of random variables , it transforms them such that their covariances are given by $[\Sigma]$. 
+%\subsection{t-copula with $\chi^2$ Method}
+%\label{sec:t-student_copula}
+%The t-student copula allows a range of dependence structures depending
+%on the $\nu$ parameter (the number of degrees of freedom of the t-student function).
+%It is a symmetrical copula and has larger tails than the Gaussian. The following algorithm allows to compute it:
+%\begin{itemize}
+%\item given the correlation matrix $[\Sigma]$ find its Cholesky decomposition $[L]$;
+%\item simulate a n-dimensional vector of normal independent identically distributed variables $Y$;
+%\item simulate a $\chi^2$ with $\nu$ degrees of freedom $S$;
+%\item calculate $Z = \sqrt{\cfrac{\nu}{S}}\cdot [L] \cdot Y$;
+%\item finally, $U = CDF_{t-student(\nu)}(Z)$.
+%\end{itemize}
+%
+%\pythoncodenon{code/modelling_risk_8.py}
+%
+%\begin{figure}[htbp]
+%\centering
+%\includegraphics[width=0.45\textwidth]{figures/t-copula_2d}
+%\quad
+%\includegraphics[width=0.5\textwidth]{figures/t-copula_3d}
+%\caption{Graphical representations of the t-copula, 2D on the left, 3D on the right.}
+%\label{fig:t-copula}
+%\end{figure}
+%
+%\subsection{Copula Types}
+%There are numerous types of copula but two are the main classes: one-factor and two-factor copulas.
+%The most popular one-factor copulas are the Gaussian and the Archimedean. The latter can be split further into Gumbel, Clayton, and Frank copulas.
+%Two-factor copulas include the student’s t, Frechet, and Marshal-Olkin copula. 
+%We are going to concentrate on the Gaussian copula only though.
 
-The intuition behind that relies on the following statement: from the transformation properties of the Gaussian distribution it is known that if $X\approx\mathcal{N}(\tau,\Lambda)$ then the transformation $Y=BX+b$ results in $Y$ distributed as $Y\approx\mathcal{N}(B\tau +b,B\Lambda B^{T})$.
-
-Now immagine that $X$ is sampled from a standard $n$-dimensional normal distribution (i.e. $X\approx\mathcal{N}(0,\mathbb{1})$, where $\mathbb{1}$ is the $n\times n$ identity matrix, then $Y=BX+b$ is distributed as $Y\approx\mathcal{N}(b,BB^{T})$, which is just plugging in $\tau=0$ and $\Lambda=\mathbb{1}$ in the relation above.
-
-If you now want $Y$ to be distributed as $Y\approx\mathcal{N}(\mu,\Sigma)$, then you need to choose some transformation matrix $A$, such that $AA^{T}=\Sigma$. A good choice for that is the Cholesky decomposition because it is explicitly structured to fulfill this condition and there are standard functions in lots of libraries which compute it for you.
-
-As a practical example, suppose that $X$ is a vector of independent standard normal variables. The matrix $[L]$ can be used to create a new vector $Z$ such that the covariance of $Z$ equals $[\Sigma]$.
-
-\pythoncodenon{code/modelling_risk_7.py}
-
-\begin{ioutput}
-[[1.73205081 0.        ]
- [0.57735027 0.81649658]]
-\end{ioutput}
-
-Figure~\ref{fig:cholesky_norm} shows the original uncorrelated variable $X$ (left), and the transformed variable $Z$ with correlation $[\Sigma]$ (right).
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.7\textwidth]{figures/cholesky_norm}
-\caption{The original uncorrelated variable $X$ (left), the transformed variable $Z$ (right).}
-\label{fig:cholesky_norm}
-\end{figure}
-
-Clearly, if you start with correlated variables, you can apply the Cholesky inverse transformation to get uncorrelated variables.
-If you take the $Z$ points generated above and apply $[L]^{-1}$, the original data is obtained again. Figure~\ref{fig:cholesky_inv} shows the resulting distribution.
-
-\begin{ipythonnon}
-orig_X = np.dot(Z, np.linalg.inv(L))
-\end{ipythonnon}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.7\textwidth]{figures/cholesky_inv}
-\caption{The transformed variable $Z$ (left), and the original data obtained by the application of the inverse Cholesky transformation (right).}
-\label{fig:cholesky_inv}
-\end{figure}
-
-\subsection{t-copula with $\chi^2$ Method}
-\label{sec:t-student_copula}
-The t-student copula allows a range of dependence structures depending
-on the $\nu$ parameter (the number of degrees of freedom of the t-student function).
-It is a symmetrical copula and has larger tails than the Gaussian. The following algorithm allows to compute it:
-\begin{itemize}
-\item given the correlation matrix $[\Sigma]$ find its Cholesky decomposition $[L]$;
-\item simulate a n-dimensional vector of normal independent identically distributed variables $Y$;
-\item simulate a $\chi^2$ with $\nu$ degrees of freedom $S$;
-\item calculate $Z = \sqrt{\cfrac{\nu}{S}}\cdot [L] \cdot Y$;
-\item finally, $U = CDF_{t-student(\nu)}(Z)$.
-\end{itemize}
-
-\pythoncodenon{code/modelling_risk_8.py}
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.45\textwidth]{figures/t-copula_2d}
-\quad
-\includegraphics[width=0.5\textwidth]{figures/t-copula_3d}
-\caption{Graphical representations of the t-copula, 2D on the left, 3D on the right.}
-\label{fig:t-copula}
-\end{figure}
-
-\subsection{Copula Types}
-There are numerous types of copula but two are the main classes: one-factor and two-factor copulas.
-The most popular one-factor copulas are the Gaussian and the Archimedean. The latter can be split further into Gumbel, Clayton, and Frank copulas.
-Two-factor copulas include the student’s t, Frechet, and Marshal-Olkin copula. 
-We are going to concentrate on the Gaussian copula only though.
-
-\section{One Factor Gaussian Copula Model}
-While there are several types of copula function models, the first introduced was the \emph{one-factor Gaussian copula model}. This model is quite simple and has, above all, the advantage that can be solved analytically. 
-
-In essence the one-factor Gaussian copula, is nothing but a numerical algorithm to generate samples of normally distributed random variables that have a given (Gaussian) pair-wise correlation. 
-
-Consider a portfolio of $N$ bonds and assume that the marginal default probabilities are known for each issuer. Define:
-
-\begin{itemize}
-\tightlist
-\item
-$t_i$, the time of default of the $i^{th}$ company:
-\item $Q_i(t)$, the cumulative probability that company $i$ will default before time $t$; that is, the probability that $t_i \le t$.
-\end{itemize}
-
-To generate a one-factor model for the default times ($t_i$) we define random variables $X_i$ $(1\le i \le N)$
-\begin{equation}
-X_i = a_i M + \sqrt{1-a_i^2}Z_i,\qquad i = 1, 2,\ldots, N
-\label{eq:normalized_var}
-\end{equation}
-where $M$ and the $Z_i$ are independent zero-mean unit-variance  distributions (hence $X_i$ are also distributed with zero-mean and unit standard-deviation) and $-1 \le a_i < 1$.
-
-Eq.~\ref{eq:normalized_var} defines a correlation structure between the $X_i$ which are dependent on a single common factor $M$. The $Z_i$ term is called the \emph{idiosyncratic component} of default. The particular functional form of Eq.~\ref{eq:normalized_var} has been chosen to ensure the desired correlation structure among the $X_i$. Indeed the correlation between $X_i$ and $X_j$ is
-
-\begin{equation*}
-\rho(X_i, X_j) = \cfrac{\mathbb{E}[(X_i-\mu_i)(X_j-\mu_j)]}{\sigma_{i}\sigma_{j}} = \mathbb{E}[X_i X_j] = a_i a_j \mathbb{E}[M^2] = a_i a_j
-\end{equation*}
-where we just exploit the definition of $X_i$ and its properties.
-
-%Assume that the $i^{th}$ company has defaulted by the time $t_i$ if $X_i$ is below a threshold value $\bar{x}_i(t_i)$.
-If $F_i$ is the cumulative distribution function of $X_i$, with an inverse transform (see Sec.~\ref{sec:distribution-transformation}) we can map $X_i$ to $t_i$, so that $Q_i(t_i) = P(X_i\le x)=F_i(x)$. Therefore a point $X_i = x$ is transformed to $t_i = t$ with $x = F_i^{-1}[Q_i(t)]$ connecting the marginal distribution of the copula model to the default times.
-
-Let's note that, \textbf{conditional} on $M$, the $N$ default events are \textbf{independent}. So we can write
-\begin{equation}
-\begin{split}
-Q_i^{\textrm{corr}}(t_i|M) = P(X_i\le x|M) &= P(a_i M + \sqrt{1-a_i^2}Z_i\le x) =\\
-&= P\left(Z_i\le \cfrac{x-a_i M}{\sqrt{1-a_i^2}}\right)
-=H_i\left(\cfrac{F^{-1}[Q(t_i)]-a_i M}{\sqrt{1-a_i^2}}\right)
-\end{split}
-\label{eq:generic_copula}
-\end{equation}
-where $H_i$ is the cumulative distribution function of the $Z_i$.
-
-Although in principle any distribution could be used for $M$ and the $Z$'s (provided they have zero mean and unit variance), one common choice is to let them be standard normal distributions (resulting in a Gaussian copula).
-So we can rewrite Eq.~\ref{eq:generic_copula} as
-
-\begin{equation}
-Q_i^{\textrm{corr}}(t_i|M) = \Phi\left(\cfrac{\Phi^{-1}[Q(t_i)]-a_i M}{\sqrt{1-a_i^2}}\right)
-\label{eq:gaussian_one_factor_copula}
-\end{equation}
-where $\Phi$ denotes the standard normal cumulative distribution function.
-
-If we call $\mathcal{C}(t_1,\ldots,t_N)$ the joint distribution of the default times of the $N$ bonds in the portfolio then
-
-\begin{equation}
-\mathcal{C}(t_1,\ldots,t_N, \rho)=\Phi_{N}(\Phi^{-1}(Q_1(t_1)),\ldots,\Phi^{-1}(Q_N(t_N)), \boldsymbol{\rho})
-\label{eq:gaussian_copula}
-\end{equation}
-where $\boldsymbol{\rho}$ represents the correlation matrix of the default probabilities. Eq.~\ref{eq:gaussian_copula} is the one factor Gaussian copula model (one factor because there is only a random variable, $M$, which determines the correlation between $X_i$).
-
-Different distribution choices result in different copula models, and in various natures of the default dependence. For example, copulas where the $M$ have heavy tails, generate models where there is a greater likelihood of a early defaults clustering for several companies.
-
-\subsubsection{Standard Market Model}
-\label{standard-market-model}
-
-Consider the following two assumptions:
-
-\begin{itemize}
-\tightlist
-\item all the companies have the same default intensity (hazard rates), i.e, $\lambda_i = \lambda$ (which means they all have the same default probabilities $Q_i = Q$);
-\item the pairwise default correlations are the same, i.e $a_i = a$; in other words the contribution of the market component $M$ is the same for all the companies and the correlation between any two companies is constant, $\rho = a^2$.
-\end{itemize}
-
-Given the market situation $M = m$, all companies have the same cumulative default probability $Q_i^{\textrm{corr}}(t_i|m)=P(X_i < x|m)$. 
-
-In this case the one factor Gaussian model is also called \emph{Market Standard Model}. Later in this Notes we will also see how the correlation used in Eq.~\ref{eq:gaussian_one_factor_copula} can be implied from the market quotes of credit derivatives.
-
-Letting $l(t|m)$ be the total defaults that have occurred by time $t$ conditional on the market condition $M = m$, then $l(t|m)$ follows a binomial distribution (see Appendix~\ref{binomial-distribution}), and the probability of default of $j$ companies can be expressed as
-
-\begin{equation}
-P_{\mathrm{def}}(l(t|m) = j) = \cfrac{N!}{j!(N-j)!}(Q_i^{\textrm{corr}}(t_i|m))^j(1-Q_i^{\textrm{corr}}(t_i|m))^{N-j},\qquad  j=0, 1, 2,\ldots,N
-\end{equation}
-
-In general to evaluate any function $g(P_{\mathrm{def}}[l(t)])$ regardless the value of one its factor ($M$) (e.g. an NPV or a fair value), is necessary to average according to all possible values that this factor can take. The average is performed by integrating over the market factor (i.e. this is equivalent to perform a weighted sum of $g$ with the probability distribution of the factor).  
-
-\begin{equation}
-g(P_{\mathrm{def}}(l(t) = j)) = \int_{-\infty}^{\infty}{g(P_{\mathrm{def}}[l(t|m) = j])\cdot f_M(m)dm}
-\label{eq:gaussian_quadrature}
-\end{equation}
-
-In the general case where the default probabilities of each company are not the same it is possible to determine $P_{\mathrm{def}}[l(t|M)=j]$ through an iterative procedure before proceeding with the integration of Eq.~\ref{eq:gaussian_quadrature}. An example of this iterative technique will be shown in Section~\ref{sec:expected_losses}.
-
-\subsection{Extensions of the One Factor Copula Model}
-Many other one-factor model have been studied: t-Student copula, Clayton copula,\ldots In general we can define a new model by simply choosing particular functional forms for $M$ and $Z_i$ in Eq.~\ref{eq:normalized_var} provided they are with zero mean and standard deviation one. 
-
-If instead of the single factor $M$ there are two or more, Eq.~\ref{eq:normalized_var} becomes
-
-\begin{equation}
-X_i = a_1 M_1 + a_2 M_2 + \sqrt{1 - a_1^2 - a^2_2}Z_i
-\end{equation}
-and similarly
-\begin{equation}
-Q^{\textrm{corr}}(t|M_1, M_2) = \Phi\left(\cfrac{\Phi^{-1}[Q(t)]-a_1 M_1 - a_2 M_2}{\sqrt{1 - a_1^2 - a^2_2}}\right)
-\end{equation}
-In terms of computation time, this kind of models are proportionally slower with the increase of the factor numbers, since the integration of Eq.~\ref{eq:gaussian_quadrature} has to be carried on each factor of the model.
+%\section{One Factor Gaussian Copula Model}
+%While there are several types of copula function models, the first introduced was the \emph{one-factor Gaussian copula model}. This model is quite simple and has, above all, the advantage that can be solved analytically. 
+%
+%In essence the one-factor Gaussian copula, is nothing but a numerical algorithm to generate samples of normally distributed random variables that have a given (Gaussian) pair-wise correlation. 
+%
+%Consider a portfolio of $N$ bonds and assume that the marginal default probabilities are known for each issuer. Define:
+%
+%\begin{itemize}
+%\tightlist
+%\item
+%$t_i$, the time of default of the $i^{th}$ company:
+%\item $Q_i(t)$, the cumulative probability that company $i$ will default before time $t$; that is, the probability that $t_i \le t$.
+%\end{itemize}
+%
+%To generate a one-factor model for the default times ($t_i$) we define random variables $X_i$ $(1\le i \le N)$
+%\begin{equation}
+%X_i = a_i M + \sqrt{1-a_i^2}Z_i,\qquad i = 1, 2,\ldots, N
+%\label{eq:normalized_var}
+%\end{equation}
+%where $M$ and the $Z_i$ are independent zero-mean unit-variance  distributions (hence $X_i$ are also distributed with zero-mean and unit standard-deviation) and $-1 \le a_i < 1$.
+%
+%Eq.~\ref{eq:normalized_var} defines a correlation structure between the $X_i$ which are dependent on a single common factor $M$. The $Z_i$ term is called the \emph{idiosyncratic component} of default. The particular functional form of Eq.~\ref{eq:normalized_var} has been chosen to ensure the desired correlation structure among the $X_i$. Indeed the correlation between $X_i$ and $X_j$ is
+%
+%\begin{equation*}
+%\rho(X_i, X_j) = \cfrac{\mathbb{E}[(X_i-\mu_i)(X_j-\mu_j)]}{\sigma_{i}\sigma_{j}} = \mathbb{E}[X_i X_j] = a_i a_j \mathbb{E}[M^2] = a_i a_j
+%\end{equation*}
+%where we just exploit the definition of $X_i$ and its properties.
+%
+%%Assume that the $i^{th}$ company has defaulted by the time $t_i$ if $X_i$ is below a threshold value $\bar{x}_i(t_i)$.
+%If $F_i$ is the cumulative distribution function of $X_i$, with an inverse transform (see Sec.~\ref{sec:distribution-transformation}) we can map $X_i$ to $t_i$, so that $Q_i(t_i) = P(X_i\le x)=F_i(x)$. Therefore a point $X_i = x$ is transformed to $t_i = t$ with $x = F_i^{-1}[Q_i(t)]$ connecting the marginal distribution of the copula model to the default times.
+%
+%Let's note that, \textbf{conditional} on $M$, the $N$ default events are \textbf{independent}. So we can write
+%\begin{equation}
+%\begin{split}
+%Q_i^{\textrm{corr}}(t_i|M) = P(X_i\le x|M) &= P(a_i M + \sqrt{1-a_i^2}Z_i\le x) =\\
+%&= P\left(Z_i\le \cfrac{x-a_i M}{\sqrt{1-a_i^2}}\right)
+%=H_i\left(\cfrac{F^{-1}[Q(t_i)]-a_i M}{\sqrt{1-a_i^2}}\right)
+%\end{split}
+%\label{eq:generic_copula}
+%\end{equation}
+%where $H_i$ is the cumulative distribution function of the $Z_i$.
+%
+%Although in principle any distribution could be used for $M$ and the $Z$'s (provided they have zero mean and unit variance), one common choice is to let them be standard normal distributions (resulting in a Gaussian copula).
+%So we can rewrite Eq.~\ref{eq:generic_copula} as
+%
+%\begin{equation}
+%Q_i^{\textrm{corr}}(t_i|M) = \Phi\left(\cfrac{\Phi^{-1}[Q(t_i)]-a_i M}{\sqrt{1-a_i^2}}\right)
+%\label{eq:gaussian_one_factor_copula}
+%\end{equation}
+%where $\Phi$ denotes the standard normal cumulative distribution function.
+%
+%If we call $\mathcal{C}(t_1,\ldots,t_N)$ the joint distribution of the default times of the $N$ bonds in the portfolio then
+%
+%\begin{equation}
+%\mathcal{C}(t_1,\ldots,t_N, \rho)=\Phi_{N}(\Phi^{-1}(Q_1(t_1)),\ldots,\Phi^{-1}(Q_N(t_N)), \boldsymbol{\rho})
+%\label{eq:gaussian_copula}
+%\end{equation}
+%where $\boldsymbol{\rho}$ represents the correlation matrix of the default probabilities. Eq.~\ref{eq:gaussian_copula} is the one factor Gaussian copula model (one factor because there is only a random variable, $M$, which determines the correlation between $X_i$).
+%
+%Different distribution choices result in different copula models, and in various natures of the default dependence. For example, copulas where the $M$ have heavy tails, generate models where there is a greater likelihood of a early defaults clustering for several companies.
+%
+%\subsubsection{Standard Market Model}
+%\label{standard-market-model}
+%
+%Consider the following two assumptions:
+%
+%\begin{itemize}
+%\tightlist
+%\item all the companies have the same default intensity (hazard rates), i.e, $\lambda_i = \lambda$ (which means they all have the same default probabilities $Q_i = Q$);
+%\item the pairwise default correlations are the same, i.e $a_i = a$; in other words the contribution of the market component $M$ is the same for all the companies and the correlation between any two companies is constant, $\rho = a^2$.
+%\end{itemize}
+%
+%Given the market situation $M = m$, all companies have the same cumulative default probability $Q_i^{\textrm{corr}}(t_i|m)=P(X_i < x|m)$. 
+%
+%In this case the one factor Gaussian model is also called \emph{Market Standard Model}. Later in this Notes we will also see how the correlation used in Eq.~\ref{eq:gaussian_one_factor_copula} can be implied from the market quotes of credit derivatives.
+%
+%Letting $l(t|m)$ be the total defaults that have occurred by time $t$ conditional on the market condition $M = m$, then $l(t|m)$ follows a binomial distribution (see Appendix~\ref{binomial-distribution}), and the probability of default of $j$ companies can be expressed as
+%
+%\begin{equation}
+%P_{\mathrm{def}}(l(t|m) = j) = \cfrac{N!}{j!(N-j)!}(Q_i^{\textrm{corr}}(t_i|m))^j(1-Q_i^{\textrm{corr}}(t_i|m))^{N-j},\qquad  j=0, 1, 2,\ldots,N
+%\end{equation}
+%
+%In general to evaluate any function $g(P_{\mathrm{def}}[l(t)])$ regardless the value of one its factor ($M$) (e.g. an NPV or a fair value), is necessary to average according to all possible values that this factor can take. The average is performed by integrating over the market factor (i.e. this is equivalent to perform a weighted sum of $g$ with the probability distribution of the factor).  
+%
+%\begin{equation}
+%g(P_{\mathrm{def}}(l(t) = j)) = \int_{-\infty}^{\infty}{g(P_{\mathrm{def}}[l(t|m) = j])\cdot f_M(m)dm}
+%\label{eq:gaussian_quadrature}
+%\end{equation}
+%
+%In the general case where the default probabilities of each company are not the same it is possible to determine $P_{\mathrm{def}}[l(t|M)=j]$ through an iterative procedure before proceeding with the integration of Eq.~\ref{eq:gaussian_quadrature}. An example of this iterative technique will be shown in Section~\ref{sec:expected_losses}.
+%
+%\subsection{Extensions of the One Factor Copula Model}
+%Many other one-factor model have been studied: t-Student copula, Clayton copula,\ldots In general we can define a new model by simply choosing particular functional forms for $M$ and $Z_i$ in Eq.~\ref{eq:normalized_var} provided they are with zero mean and standard deviation one. 
+%
+%If instead of the single factor $M$ there are two or more, Eq.~\ref{eq:normalized_var} becomes
+%
+%\begin{equation}
+%X_i = a_1 M_1 + a_2 M_2 + \sqrt{1 - a_1^2 - a^2_2}Z_i
+%\end{equation}
+%and similarly
+%\begin{equation}
+%Q^{\textrm{corr}}(t|M_1, M_2) = \Phi\left(\cfrac{\Phi^{-1}[Q(t)]-a_1 M_1 - a_2 M_2}{\sqrt{1 - a_1^2 - a^2_2}}\right)
+%\end{equation}
+%In terms of computation time, this kind of models are proportionally slower with the increase of the factor numbers, since the integration of Eq.~\ref{eq:gaussian_quadrature} has to be carried on each factor of the model.
 
 \section{Complex Correlation Structures and the Financial Crisis}
 \label{complex-correlation-structures-and-the-financial-crisis}

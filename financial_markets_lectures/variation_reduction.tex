@@ -68,36 +68,35 @@ This occurs only if $\cov(f(U),f(1-U))<0$ (negative correlation). In the $x^2$ e
 This example shows the use of antithetic variates for estimating the mean and standard error of two different functions: $X^2$ and $e^{X/2}$, where $X$ follows a standard normal distribution.
 
 \begin{ipythonnon}
-import numpy as np
-import matplotlib.pyplot as plt
+import numpy as np, matplotlib.pyplot as plt
 
 def simulate_exp2(n_samples):
-	x1 = np.random.randn(n_samples)
-	x2 = -x1
-	x_std = np.random.randn(n_samples*2)
-	return np.exp(x1/2), np.exp(x2/2), np.exp(x_std/2)
+  x1 = np.random.randn(n_samples)
+  x2 = -x1
+  x_std = np.random.randn(n_samples*2)
+  return np.exp(x1/2), np.exp(x2/2), np.exp(x_std/2)
 
 def simulate_x2(n_samples):
-	x1 = np.random.randn(n_samples)
-	x2 = -x1
-	x_std = np.random.randn(n_samples*2)
-	return np.power(x1, 2), np.power(x2, 2), np.power(x_std, 2)
+  x1 = np.random.randn(n_samples)
+  x2 = -x1
+  x_std = np.random.randn(n_samples*2)
+  return np.power(x1, 2), np.power(x2, 2), np.power(x_std, 2)
 
 def simulate_exponential(n_samples, rate=1.0):
-	u = np.random.uniform(0, 1, n_samples // 2)
-	u_antithetic = 1 - u
-	x1 = -np.log(u) / rate
-	x2 = -np.log(u_antithetic) / rate
-	x_std = -np.log(np.random.uniform(0, 1, n_samples)) / rate    
-	return x1, x2, x_std
+  u = np.random.uniform(0, 1, n_samples // 2)
+  u_antithetic = 1 - u
+  x1 = -np.log(u) / rate
+  x2 = -np.log(u_antithetic) / rate
+  x_std = -np.log(np.random.uniform(0, 1, n_samples)) / rate    
+  return x1, x2, x_std
 
 def analysis(x1, x2, x_std):
-	anti_mean = (x1 + x2) / 2
-	std_mean = x_std.reshape(-1, 2).mean(axis=1)
+  anti_mean = (x1 + x2) / 2
+  std_mean = x_std.reshape(-1, 2).mean(axis=1)
 	
-	print(f"Variance (Standard MC): {np.var(std_mean):.6f}")
-	print(f"Variance (Antithetic):  {np.var(anti_mean):.6f}")
-	print(f"Reduction: {100*(1-np.var(anti_mean)/np.var(std_mean)):.2f}%")
+  print(f"Variance (Standard MC): {np.var(std_mean):.6f}")
+  print(f"Variance (Antithetic):  {np.var(anti_mean):.6f}")
+  print(f"Reduction: {100*(1-np.var(anti_mean)/np.var(std_mean)):.2f}%")
 
 N = 20000
 x1, x2, x_std = simulate_exponential(N)
@@ -128,31 +127,31 @@ Here we implement a Monte Carlo simulation to price a European call option, inco
 	
 \begin{ipythonnon}
 import numpy as np
+
 from scipy.stats import norm
 
 def mc_comparison(S0, K, r, T, sigma, n):
-	A = (r - 0.5 * sigma**2) * T
-	B = sigma * np.sqrt(T)
-	discount = np.exp(-r * T)
+  A = (r - 0.5 * sigma**2) * T
+  B = sigma * np.sqrt(T)
+  discount = np.exp(-r * T)
 	
-	Z = np.random.randn(n)
-	payoff_a1 = np.maximum(0, S0 * np.exp(A + B * Z) - K)
-	payoff_a2 = np.maximum(0, S0 * np.exp(A + B * (-Z)) - K)
+  Z = np.random.randn(n)
+  payoff_a1 = np.maximum(0, S0 * np.exp(A + B * Z) - K)
+  payoff_a2 = np.maximum(0, S0 * np.exp(A + B * (-Z)) - K)
+
+  E_antithetic = discount * 0.5 * (payoff_a1 + payoff_a2)
+  price_anti = np.mean(E_antithetic)
+  se_anti = np.std(E_antithetic) / np.sqrt(n)
+
+  Z_std = np.random.randn(2 * n)
+  payoff_std = discount * np.maximum(0, S0 * np.exp(A + B * Z_std) - K)
 	
-	E_antithetic = discount * 0.5 * (payoff_a1 + payoff_a2)
-	price_anti = np.mean(E_antithetic)
-	se_anti = np.std(E_antithetic) / np.sqrt(n)
+  price_std = np.mean(payoff_std)
+  se_std = np.std(payoff_std) / np.sqrt(2 * n)
 	
-	Z_std = np.random.randn(2 * n)
-	payoff_std = discount * np.maximum(0, S0 * np.exp(A + B * Z_std) - K)
-	
-	price_std = np.mean(payoff_std)
-	se_std = np.std(payoff_std) / np.sqrt(2 * n)
-	
-	return (price_anti, se_anti), (price_std, se_std)
+  return (price_anti, se_anti), (price_std, se_std)
 
 S0, K, r, T, sigma, n = 100, 100, 0.05, 1, 0.2, 10000
-
 (p_anti, s_anti), (p_std, s_std) = mc_comparison(S0, K, r, T, sigma, n)
 
 print(f"Antithetic: Price = {p_anti:.4f}, Std Error = {s_anti:.6f}")
@@ -224,34 +223,27 @@ Here we will see a Monte Carlo simulation to price a European call option using 
 import numpy as np
 
 def mc_control_variate(S0, K, r, T, sigma, n):
-	dt = T
-	drift = (r - 0.5 * sigma**2) * dt
-	vol = sigma * np.sqrt(dt)
-	discount = np.exp(-r * T)
+  dt = T
+  drift = (r - 0.5 * sigma**2) * dt
+  vol = sigma * np.sqrt(dt)
+  discount = np.exp(-r * T)
 	
-	Z = np.random.randn(n)
-	ST = S0 * np.exp(drift + vol * Z)
+  Z = np.random.randn(n)
+  ST = S0 * np.exp(drift + vol * Z)
+  Y = discount * np.maximum(0, ST - K)
+  X = discount * ST
+  E_X = S0 
 	
-	Y = discount * np.maximum(0, ST - K)
-	
-	X = discount * ST
-	E_X = S0 
-	
-	cov_matrix = np.cov(Y, X)
-	c = -cov_matrix[0, 1] / cov_matrix[1, 1]
-	
-	Y_cv = Y + c * (X - E_X)
-	
-	price_cv = np.mean(Y_cv)
-	se_cv = np.std(Y_cv) / np.sqrt(n)
-	
-	price_std = np.mean(Y)
-	se_std = np.std(Y) / np.sqrt(n)
-	
-	return (price_cv, se_cv), (price_std, se_std)
+  cov_matrix = np.cov(Y, X)
+  c = -cov_matrix[0, 1] / cov_matrix[1, 1]
+  Y_cv = Y + c * (X - E_X)
+  price_cv = np.mean(Y_cv)
+  se_cv = np.std(Y_cv) / np.sqrt(n)
+  price_std = np.mean(Y)
+  se_std = np.std(Y) / np.sqrt(n)
+  return (price_cv, se_cv), (price_std, se_std)
 
 S0, K, r, T, sigma, n = 100, 105, 0.05, 1, 0.2, 20000
-
 (p_cv, s_cv), (p_std, s_std) = mc_control_variate(S0, K, r, T, sigma, n)
 
 print(f"Standard MC: {p_std:.4f} (SE: {s_std:.6f})")
@@ -543,19 +535,19 @@ from scipy.stats import norm
 from scipy.optimize import fmin, minimize
 
 def Q0(mu, x, sigma, T):
-	return norm(mu*T, sigma*T).pdf(x)
+  return norm(mu*T, sigma*T).pdf(x)
 
 def Q(x, r, sigma, T):
-	return norm((r - 0.5*sigma**2)*T, sigma*T).pdf(x)
+  return norm((r - 0.5*sigma**2)*T, sigma*T).pdf(x)
 
 def f(x, r, S0, K):
-	return np.exp(-r*T)*np.maximum(0, S0*np.exp(x) - K)
+  return np.exp(-r*T)*np.maximum(0, S0*np.exp(x) - K)
 
 M = 1000000
 def arg_min(x, mu, sigma, T):
-	x_T = np.random.normal(size=M)
-	z = (mu - 0.5*sigma**2)*T + sigma*x_T*np.sqrt(T)
-	return np.mean(f(z, mu, S0, K)**2*Q(z, mu, vol, T)/Q0(x, z, vol, T))
+  x_T = np.random.normal(size=M)
+  z = (mu - 0.5*sigma**2)*T + sigma*x_T*np.sqrt(T)
+  return np.mean(f(z, mu, S0, K)**2*Q(z, mu, vol, T)/Q0(x, z, vol, T))
 
 res = minimize(arg_min, 0.6, args=(mu, vol, T), method='Nelder-Mead',
                options={'maxiter':2000})
@@ -583,9 +575,9 @@ C0_wo, SE_wo = [], []
 
 Ms = [100, 500, 1000, 2500, 5000, 10000, 25000, 50000]
 for M in Ms:
-	x_T = np.random.normal(size=M)
-	z = mu_star*T - vol*x_T*np.sqrt(T)
-	C_is = f(z, mu, S0, K)*Q(z, mu, vol, T)/Q0(mu_star, z, vol, T)
+  x_T = np.random.normal(size=M)
+  z = mu_star*T - vol*x_T*np.sqrt(T)
+  C_is = f(z, mu, S0, K)*Q(z, mu, vol, T)/Q0(mu_star, z, vol, T)
 
 z = (mu-0.5*vol**2)*T + vol*x_T*np.sqrt(T)
 C_wo = f(z, mu, S0, K)

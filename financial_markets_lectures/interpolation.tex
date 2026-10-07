@@ -325,10 +325,9 @@ Also the surface is a quadratic function of the radius so it is guaranteed to ha
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.45\linewidth]{figures/objective_function_value}
-	\includegraphics[width=0.45\linewidth]{figures/can_surface}
-	\caption{Diagnostic plots for the minimization algorithm. On the left the objective function value at each iteration, on the right the objective function 
-  value versus the can radius $x_0$.}
+	%\includegraphics[width=0.45\linewidth]{figures/objective_function_value}
+	\includegraphics[width=0.80\linewidth]{figures/can_surface_2}
+	\caption{Diagnostic plot for the minimization algorithm. Each step of the minimization is shown along the objective function down to the minimum.}
 	\label{fig:minimization_diagnostic}
 \end{figure}
 
@@ -342,7 +341,53 @@ From \href{	https://www.ball.com/eu/solutions/markets-capabilities/capabilities/
 simple cylinder.
 \end{curiosity}
 
-\subsubsection{Fencing a Field}
+\subsection{Parameter Update Techniques}
+
+\subsubsection{Gradient Descent Limitations}
+During the iterations of the minimization algorithm the parameter update is done following directly the \textit{gradient} (i.e. first derivative) scaled by the \textbf{learning rate}
+
+\begin{equation}
+\theta_i^{(t+1)} = \theta_i^{(t)} - \alpha \frac{d}{d\theta}L(\theta_i^{(t)})
+\end{equation}
+
+This method has some limitations though:
+\begin{itemize}
+	\item it is slow for large samples;
+	\item the learning rate (step size) is important. Too big, and we overshoot. Too small, and we crawl.
+\end{itemize}
+
+\subsubsection{Newton's Method: A Second-Order Approach}
+
+Newton's method is faster than Gradient Descent. As we have seen before it uses the Hessian matrix which gives information about the curvature of the loss function.
+
+Starting from the second-order Taylor expansion around the current point $t$:
+$$
+L(\theta_i^{(t)})\approx L(\theta_i^{(t)})+L'(\theta_i^{(t)})s+\frac{1}{2}L''(\theta_i^{(t)})s^2
+$$
+where $s$ is the step.
+
+To find the minimum, we set the derivative with respect to the step $s$ to zero:
+$$
+\begin{gathered}
+	\frac{d}{ds}\left[L(\theta_i^{(t)})+L'(\theta_i^{(t)})s+\frac{1}{2}L''(\theta_i^{(t)})s^2\right]=0\\
+	L'(\theta_i^{(t)})+L''(\theta_i^{(t)})s=0
+\end{gathered}
+$$
+
+Solving for the optimal step $s_k$:
+$$
+s_k=-\frac{L'(\theta_i^{(t)})}{L''(\theta_i^{(t)})}
+$$
+
+The Newton's update is:
+
+$$
+\theta_i^{(t+1)} = \theta_i^{(t)} - \alpha \frac{L'(\theta_i^{(t)})}{L''(\theta_i^{(t)})}
+$$
+
+This method has some drawbacks too: calculating and inverting the Hessian is costly. This is especially true for big models (e.g. neural networks), where indeed Gradient Descent is used.
+
+\subsection{Constrained Minimization (aka Fencing a Field)}
 \label{example-with-constraint}
 
 Here we are going to fence a rectangular field. If we look at the field from above the vertical sides fence cost is 10~EUR/m, the bottom side cost is 2~EUR/m 
@@ -382,6 +427,107 @@ The constraint is then defined as
 \end{equation*}
 
 The optimization result tells us that the field has to be 17.5~m long and 38.9~m wide for a total field area of 680.5~$\textrm{m}^2$.
+
+\subsection{Why the Sum of Squared Residuals}
+	
+We are trying to find a single constant value, $c$, that best "fits" the following three data points: $y_1=1$, $y_2=2$, and $y_3=9$.
+Spoiler: the true best-fit constant is the mean: $c = (1+2+9)/3 = 4$.
+
+\subsubsection{Wrong Objective Function: Simple Sum of Residuals}
+The objective function is the sum of the signed errors:
+
+$$L_1(c) = \sum_{i} (y_i - c)$$
+
+We want to find $c$ that minimizes $L_1(c)$.
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{cccl}
+		\toprule
+		\textbf{Candidate $c$} & \textbf{Errors $(y_i - c)$} & \textbf{$J_1(c)$} & \textbf{Problem} \\
+		\midrule
+		\textbf{3} & -2, -1, +6 & $3$ & \textbf{High total error magnitude.} \\
+		\textbf{4} (True Mean) & -3, -2, +5 & $\mathbf{0}$ & \textbf{Deceptively low.} \\
+		\textbf{10} & -9, -8, -1 & $-18$ & \textbf{Worst fit, but the function suggests going lower.} \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\begin{ipythonnon}
+import numpy as np
+
+from scipy.optimize import minimize
+
+data = np.array([1, 2, 9])
+
+def wrong_obj_function(x):
+return np.sum(data-x)
+
+x0 = np.array([100])
+opts = minimize(wrong_obj_function, x0)
+print (opts)
+\end{ipythonnon}
+\begin{ioutput}
+  message: Desired error not necessarily achieved due to precision loss.
+  success: False
+   status: 2
+      fun: -5.029350242370365e+26
+        x: [ 1.676e+26]
+      nit: 8
+      jac: [-3.000e+00]
+ hess_inv: [[-1.194e+34]]
+     nfev: 1790
+     njev: 889
+\end{ioutput}
+
+If you use the \textbf{simple sum of errors} as the objective function, the optimal $c$ is \textit{undefined} because positive and negative errors cancel out. In practical terms, it always leads to a derivative that is a constant, which gives \textbf{no meaningful minimum}.
+
+For example, a terrible fit like $c=100$ would only appear a better choice because the negative numbers dominate, but $L_1(c)$ doesn't accurately reflect the \textbf{true total distance of the points} from $c$.
+
+\subsubsection{Right Objective Function: Sum of Squared Residuals}
+
+The objective function is the sum of the squared errors:
+$$L_2(c) = \sum_{i} (y_i - c)^2$$
+
+We want to find $c$ that minimizes $L_2(c)$.
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{cccl}
+		\toprule
+		\textbf{Candidate $c$} & \textbf{Squared Errors $(y_i - c)^2$} & \textbf{$J_2(c)$} & \textbf{Result} \\
+		\midrule
+		\textbf{3} & $4, 1, 36$ & $41$ & High cost. \\
+		\textbf{4} (True Mean) & $9, 4, 25$ & $\mathbf{38}$ & \textbf{The true unique minimum.} \\
+		\textbf{10} & $81, 64, 1$ & $146$ & High cost. \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\begin{ipythonnon}
+def right_obj_function(x):
+return np.sum((data-x)**2)
+
+x0 = np.array([100])
+opts = minimize(right_obj_function, x0)
+print (opts)
+\end{ipythonnon}
+\begin{ioutput}
+  message: Optimization terminated successfully.
+  success: True
+   status: 0
+      fun: 38.0
+        x: [ 4.000e+00]
+      nit: 4
+      jac: [ 0.000e+00]
+ hess_inv: [[ 1.667e-01]]
+     nfev: 14
+     njev: 7
+\end{ioutput}
+
+By \textbf{squaring the errors}, all terms become positive, completely \textbf{eliminating the cancellation problem}. The objective function $L_2(c)$ now accurately represents the total magnitude of the error.
+
+When you minimize $L_2(c)$ (by setting the derivative with respect to $c$ to zero), you are guaranteed to find the unique minimum at the \textbf{arithmetic mean} of the data, $c=4$, which is the correct and meaningful best-fit constant.
 
 \subsection{Local Minima}
 Minimization problems can be very nasty. For example when the objective function has various local minima, the parameter initial value choice can be critical. 
