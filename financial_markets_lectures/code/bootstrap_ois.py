@@ -7,7 +7,7 @@ class OvernightIndexSwap:
   def __init__(self, nominal: float, start_date: date, 
                maturity: Union[str, TimeInterval], fixed_rate: float, 
                frequency_fix: str="1y", side: str="Receiver", 
-               day_count_convention: str="ACT365"):      
+               day_count_convention: str="ACT360"):      
     self.nominal = nominal
     self.start_date = start_date
     self.maturity = maturity if isinstance(maturity, TimeInterval) \\

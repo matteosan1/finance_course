@@ -8,5 +8,6 @@ class PortfolioOptimizer:
     for target in targets:
       opts = self.min_variance_portfolio(target)
       if opts.success:
-        results.append((self.portfolio_risk(opts.x), self.portfolio_return(opts.x)))
+        results.append((self.portfolio_risk(opts.x), 
+                        self.portfolio_return(opts.x)))
     return np.array(results) 

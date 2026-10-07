@@ -42,11 +42,6 @@ class PortfolioOptimizer:
     return minimize(self.portfolio_risk, initial_weights, method="SLSQP", 
                     bounds=bounds, constraints=constraints)
 
-df = pd.read_csv("portfolio_data.csv", index_col="date")
-daily_returns = df.pct_change()
-returns = daily_returns.mean()*252
-covariance = daily_returns.cov()*252
-
 optimizer = PortfolioOptimizer("portfolio_data.csv",
                                assets=['AAPL', 'AMZN', 'FB', 'GOOG', 'NFLX'],
                                index_col="date")

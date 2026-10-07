@@ -1,10 +1,11 @@
 from scipy.optimize import newton
 from typing import List, Dict, Union
 
-from finmarkets import DiscountCurve, CreditCurve, OvernightIndexSwap, CreditDefaultSwap
+from curves import DiscountCurve
+from ird import OvernightIndexSwap
 
 class Bootstrapper:
-  def __init__(self, objects: List[Union[OvernightIndexSwap, CreditDefaultSwap]]):    
+  def __init__(self, objects: List[OvernightIndexSwap]):    
     self.objects = objects
     self.pillars = []
 
@@ -12,8 +13,8 @@ class Bootstrapper:
     c = curve(self.pillars, x_prev + [x])
     return self.objects[i].npv(c, **kwargs)
 
-  def run(self, curve_cls: type[Union[DiscountCurve, CreditCurve]], 
-          guess: float=1.0, kwargs: Dict={}) -> Union[DiscountCurve, CreditCurve]:
+  def run(self, curve_cls: type[DiscountCurve], 
+          guess: float=1.0, kwargs: Dict={}) -> DiscountCurve:
     x = []
     last_guess = guess
 
