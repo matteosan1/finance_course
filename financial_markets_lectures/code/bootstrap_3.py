@@ -1,14 +1,14 @@
 import pandas as pd
 
-from datetime import date
 from finmarkets import GlobalConst as gc
-from finmarkets import DiscountCurve, TimeInterval, OvernightIndexSwap
+from finmarkets import OvernightIndexSwap, TimeInterval
 
-obs_date = start_date = gc.OBS_DATE
-ois = OvernightIndexSwap(1e6, start_date, "3y", 0.025)
+df = pd.read_excel("ois_2024_10_14.xlsx", index_col="maturities")
 
-df = pd.read_excel("discount_factors_2022-10-05.xlsx")
-pillars = [obs_date + TimeInterval(i) for i in df['months']]
-curve = DiscountCurve(pillars, df['dfs'])
+obs_date = gc.OBS_DATE
+oiss = []
+for i in range(len(df)):
+  maturity = df.index[i]
+  quote = df['quotes'][maturity]*0.01
+  oiss.append(OvernightIndexSwap(1, obs_date, maturity, quote))
 
-print (f"OIS NPV: {ois.npv(curve):,.2f} EUR")

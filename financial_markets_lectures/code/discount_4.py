@@ -1,35 +1,14 @@
-import numpy as np
+from finmarkets import GlobalConst as gc, TimeInterval, TermStructure
 
-from scipy.interpolate import interp1d
-from typing import Union, List
+t0 = gc.OBS_DATE
+spot_rates = [0.09, 0.095, 0.10]
+t1 = t0 + TimeInterval('1Y')
+t2 = t0 + TimeInterval('2Y')
+t3 = t0 + TimeInterval('3Y')
 
-from finmarkets import GlobalConst as gc, yearFraction
+pillars = [t1, t2, t3]
 
-class TermStructure:
-  def __init__(self, pillars: Union[np.array, List[date]], 
-               rates: Union[np.array, List[float]], 
-               day_count_convention = "ACT365"):
-    if len(pillars) != len(rates):
-      raise ValueError("pillars and rates must have the same the length.")
-
-    self.day_count_convention = day_count_convention
-    self.times = np.array([self._get_time(p) for p in pillars], dtype=float)
-    self.rates = np.array(rates, dtype=float) \\
-      if isinstance(rates, list) else rates
-    self.pillars = pillars
-    self.interpolator = interp1d(self.times, self.rates, bounds_error=True)
-    
-  def _get_time(self, d: date) -> float:
-    return YearFraction(gc.OBS_DATE, d, self.day_count_convention)
-
-  def interp_rate(self, adate: date) -> tuple[float, float]:
-    d = yearFraction(gc.OBS_DATE, adate, self.day_count_convention)
-    return float(d), float(self.interpolator(d))
-
-  def forward_rate(self, d1: date, d2: date) -> float:
-    if d1 > d2:
-      raise ValueError("d1 must be lower than d2.")
-            
-    t1, r1 = self.interp_rate(d1)
-    t2, r2 = self.interp_rate(d2)
-    return float((r2*t2 - r1*t1)/(t2-t1))
+ts = TermStructure(pillars, spot_rates)
+print (f"F(t1, t2; t0) = {ts.forward_rate(t1, t2)}")
+print (f"F(t2, t3; t0) = {ts.forward_rate(t2, t3)}")
+print (f"F(t1, t3; t0) = {ts.forward_rate(t1, t3):0.3f}")

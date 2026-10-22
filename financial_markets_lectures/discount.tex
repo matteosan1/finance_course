@@ -1,6 +1,6 @@
 \chapter{Discount Factors and Forward Rates}
 
-In this Chapter we will begin to see some \texttt{python} applications for finance, in particular we are going to deal with discount curves and forward rates.
+In this Chapter we begin to see some financial \texttt{python} applications, in particular we are going to deal with discount curves and forward rates.
 
 \section{Discounting}
 \label{discount-factors}
@@ -30,22 +30,20 @@ Given a derivative providing a payoff $H(t)$ at time $t$ it can be demonstrated 
 V_0 = \mathbb{E}^{\mathbb{Q}} \left[ D(0,T)\cdot H(t) \right]
 \end{equation}
 
-In words we can states that the value of the derivative is given by the \textbf{sum of the discounted value of the future cash-flows}. Indeed if the contract is characterized by $n$ cash-flows $CF_t$ at dates $t_1, t_2, \dots, t_n$, the previous formula becomes (expecation is a *linear operator*)
+In words we can states that the value of the derivative is given by the \textbf{sum of the discounted value of the future cash-flows}. Indeed if the contract is characterized by $n$ cash-flows $CF_t$ at dates $t_1, t_2, \dots, t_n$, the previous formula becomes (expectation is a \textit{linear operator})
 
 $$V_0 = \mathbb{E}^{\mathbb{Q}} \left[  \sum_{i=1}^{n} D(0, t_i) \cdot CF_{t_i} \right] = \sum_{i=1}^{n} \mathbb{E}^{\mathbb{Q}} \left[ D(0, t_i) \cdot CF_{t_i} \right] $$
-
-where $D(0, t_i)$ is the discount factor from tempo $t_i$ to $T_0$. It is then apparent how important is to know the proper discount factors for pricing purposes.
+where $D(0, t_i)$ is the discount factor from time $t_i$ to $T_0$. It is then apparent how important is to know the proper discount factors for pricing purposes.
 
 Discount factors are usually presented as a \emph{discount curve} which represents the factors for various dates in the future. 
-Since discount curves are made of a discrete set of discount factors derived only at some dates, we may need to find the factor at some different times: 
-this is a typical application of interpolation, see Chapter~\ref{sec:interpolation}.
+Since discount curves are made of a discrete set of discount factors at some dates, we may need to find the factor at some different times: this is a typical application of interpolation, see Chapter~\ref{sec:interpolation}.
 
 \subsection{Discount Curve}
 
 \begin{finmarkets}
-Since discount factors are an essential part for every financial calculation and we will keep using them everywhere, a \texttt{python} class which manages discount factors and curves is developed using an object oriented approach.
+A \texttt{python} class which manages discount factors and curves is developed using an object oriented approach.
 
-This class, that we name \texttt{DiscountCurve}, have as attributes
+This class, that we name \texttt{DiscountCurve}, has as attributes
 \begin{itemize}
 	\tightlist
     \item an observation date which corresponds to $t=0$;
@@ -64,16 +62,16 @@ and a method to interpolate discount factors at a generic date. The input argume
 \end{equation}
 where $i$ is such that $t_i \le t \le t_{i+1}$
 
-When dealing with discount factors we need to be careful though. \texttt{scipy.interpolate.interp1d} only accepts list of numbers as argument, i.e. it doesn't know how to interpolate them. So we need to convert the dates before going through the interpolation function. This transformation is implemented directly in the class constructor snd replace each date with the number of days from a reference using the method \texttt{toordinal()} available for each \texttt{datetime} object.
+When dealing with discount factors we need to be careful though. \texttt{scipy.interpolate.interp1d} only accepts list of numbers as argument, i.e. it doesn't know how to interpolate dates. So we need to convert the dates into numbers directly in the class constructor by replacing each date with the number of days from a reference.
 
-To protect against extrapolation problems an exception is raised if the provided date is outside the range of known discount factor dates.
+To protect against extrapolation problems an exception is raised if the provided date is outside the range of known pillars.
 \end{finmarkets}
 
-\pythoncodenon{code/discount_2.py}
+\pythoncodenon{code/discount_1.py}
 
 Using the discount curve data in \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{\texttt{discount\_factors.xlsx}} instantiate the corresponding object and compute a discount factor.
 
-\pythoncodenon{code/discount_3.py}
+\pythoncodenon{code/discount_2.py}
 
 \begin{ioutput}
 discount factor at 2027-03-25: 0.9902
@@ -127,14 +125,14 @@ F(T_1, T_2) = \frac{1}{T_2 - T_1}\Big(\frac{D(0, T_1)}{D(0, T_2)} - 1 \Big)
 \begin{finmarkets}
 The \texttt{TermStructure} class of the \texttt{finmarkets} module computes forward rates at any arbitrary date, given a set of spot rates. This class is quite similar to \texttt{DiscountCurve}, but its logic has been split into two methods: one to interpolate spot rates, another to actually compute the forward rate.
 
-In order to successfully interpolate the rates, dates need to be converted to numbers by evaluating the number of days since a reference date. Also the interpolation date is checked to avoid extrapolations, if it is outside the known range am exception will be raisedw and the calculation stopped.
+In order to successfully interpolate the rates, dates need to be converted to numbers by evaluating the number of days since a reference date. Also the interpolation date is checked to avoid extrapolations, if it is outside the known range an exception will be raise and the calculation stopped.
 \end{finmarkets}
 
-\pythoncodenon{code/discount_4.py}
+\pythoncodenon{code/discount_3.py}
 \noindent
 As an example let's compute
 
-\pythoncodenon{code/discount_5.py}
+\pythoncodenon{code/discount_4.py}
 
 \begin{ioutput}
 F(t1, t2; t0) = 0.09998633879781421

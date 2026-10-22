@@ -1,11 +1,5 @@
-from numpy import pi
-from scipy.optimize import minimize
+from finmarkets import GlobalConst as gc, DiscountCurve, TimeInterval
 
-def obj_func(x):
-    return 2*330/x[0] + 2*pi*x[0]**2
-
-x0 = [1]
-bounds = [(0.01, 100)]
-
-r = minimize(obj_func, x0, bounds=bounds)
-print (r)
+d = gc.OBS_DATE + TimeInterval("40y")
+print (f"40y df: {discount_curve.df(d):.3f}")
+print (f"40y rate : {discount_curve.get_zero_rate(d):.4f}")

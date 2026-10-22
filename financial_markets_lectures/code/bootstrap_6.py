@@ -1,20 +1,32 @@
-from scipy.optimize import minimize
+import pandas as pd, numpy as np
 
-def obj_func(x):
-    return -x[0]*x[1]
+from finmarkets import OvernightIndexSwap, DiscountCurve
 
-x0 = [1, 1]
-bounds = [(0.01, 100) for _ in range(len(x0))]
-budget = 700
-side_cost = 10
-up_cost = 2
-down_cost = 7
+mq = pd.read_excel('ois_2022_09_30.xlsx', index_col='maturities')
 
-def cons(x, budget, up_cost, down_cost, side_cost):
-    return budget - 2*x[0]*side_cost - x[1]*(up_cost + down_cost)
+pillar_dates = []
+swaps = []
+for i in range(len(mq)):
+    maturity = mq.index[i]
+    swap = OvernightIndexSwap(1e5, start_date, maturity,
+                              0.01 * mq['quotes'][maturity])
+    swaps.append(swap)
+    pillar_dates.append(swap.payment_dates[-1])
+pillar_dates = sorted(pillar_dates)
 
-constraints = {'type':'eq', 'fun':cons,
-               'args':(budget, up_cost, down_cost, side_cost)}
+def objective_function(dfs, pillars, swaps):
+    dfs = np.concatenate(([1], dfs))
+    curve = DiscountCurve(pillars, dfs)
+    sum_sq = 0.0
+    for swap in swaps:
+        sum_sq += swap.npv(curve)**2
+    return sum_sq
 
-r = minimize(obj_func, x0, bounds=bounds, constraints=constraints)
-print (r)
+x0 = [1.0 for i in range(len(swaps))]
+bounds = [(0.01, 10.0) for i in range(len(swaps))]
+
+result = minimize(objective_function, x0, bounds=bounds,
+                  args=(pillar_dates, swaps))
+print (result)
+
+

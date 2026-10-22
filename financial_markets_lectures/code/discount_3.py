@@ -1,26 +1,36 @@
-import pandas as pd, matplotlib.pyplot as plt
+import numpy as np
 
-from finmarkets import GlobalConst as gc
-from finmarkets import TimeInterval, DiscountCurve
+from scipy.interpolate import interp1d
+from typing import Union, List
 
-df = pd.read_excel("discount_factors_2022-10-05.xlsx")
+from finmarkets import GlobalConst as gc, yearFraction
 
-obs_date = gc.OBS_DATE
-pillars = [obs_date + TimeInterval(i) for i in df['months']]
-dc = DiscountCurve(pillars, df['dfs'])
+class TermStructure:
+  def __init__(self, pillars: Union[np.array, List[date]], 
+               rates: Union[np.array, List[float]],
+               eval_date: date=None,
+               day_count_convention = "ACT365"):
+    self.eval_date = eval_date if eval_date is not None else gc.OBS_DATE
+    if len(pillars) != len(rates):
+      raise ValueError("pillars and rates must have the same the length.")
+    self.day_count_convention = day_count_convention
+    self.times = np.array([self._get_time(p) for p in pillars], dtype=float)
+    self.rates = np.array(rates, dtype=float) \\
+      if isinstance(rates, list) else rates
+    self.pillars = pillars
+    self.interpolator = interp1d(self.times, self.rates, bounds_error=True)
+    
+  def _get_time(self, d: date) -> float:
+    return YearFraction(self.eval_date, d, self.day_count_convention)
 
-df_date = obs_date + TimeInterval("195d")
-df0 = dc.df(df_date)
-print (f"discount factor at {df_date}: {df0:.4f}")
+  def interp_rate(self, adate: date) -> tuple[float, float]:
+    d = self._get_time(adate)
+    return d, self.interpolator(d)
 
-r0 = dc.get_zero_rate(df_date)
-print (f"zero rate at {df_date}: {r0:.4f}")
-
-plt.plot(pillars[:10], dfs[:10], marker='o', markersize=10, 
-         label="dfs")
-plt.scatter(df_date, df0, marker='X', s=100, color='red', 
-            label='interp. df')
-plt.xticks(rotation=45)
-plt.grid(True)
-plt.legend()
-plt.show()
+  def forward_rate(self, d1: date, d2: date) -> float:
+    if d1 > d2:
+      raise ValueError("d1 must be lower than d2.")
+            
+    t1, r1 = self.interp_rate(d1)
+    t2, r2 = self.interp_rate(d2)
+    return float((r2*t2 - r1*t1)/(t2-t1))

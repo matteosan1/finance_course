@@ -15,15 +15,34 @@ A \emph{credit event} can be a default, the failure to make payments, the issuer
 
 \emph{Credit curves} are a way of representing survival probabilities, and just like discount curves, they are built by specifying a sequence of pillar dates to which corresponds a sequence of NDPs. 
 
+\begin{finmarkets}
+	Similarly to discount curves we implement a class to handle credit curves, \texttt{CreditCurve}. It is characterized by a list of pillar dates with the corresponding survival probabilities. Like the \texttt{DiscountCurve} object you don't need to pass the observation date value (survival probability 1) since it is done automatically by the class constructor. Two methods are available: one to interpolate survival probabilities and the second to compute the hazard rate at any arbitrary date (beware that extrapolation is not allowed so the input date must be within the pillar dates range).
+\end{finmarkets}
+
+\pythoncodenon{code/credit_risk_credit_curve.py}
+Let's test the class with some inputs.
+\begin{ipythonnon}
+from dates import GlobalConst as gc, TimeInterval
+from curves import CreditCurve
+
+cc = CreditCurve([ gc.OBS_DATE + relativedelta(years=2)], [0.8])
+
+print (cc.ndp( gc.OBS_DATE + TimeInterval("1y")))
+print (cc.hazard( gc.OBS_DATE + TimeInterval("1y")))
+\end{ipythonnon}
+\begin{ioutput}
+0.9
+0.11111111111112416
+\end{ioutput}
+
 \subsection{Credit Event Simulation}
 \label{sec:credit_event_simulation}
 The simplest way to simulate possible default is to use the $\texttt{scipy.stats.binom.rvs(n, p, size)}$ function:
 \begin{itemize}
-	\item it's a binary: a borrower either defaults or do not with default probability $p$;
+	\item default is a binary process: a borrower either defaults or do not with default probability $\Pdef$;
 	\item instead of generating $n$ individual random numbers in a loop to check each borrower's fate, $\texttt{scipy.stats.binom}$ samples the total count of defaults directly from the theoretical distribution in a single, optimized operation;
-	\item with multiple \textbf{independent} counterparties we can simulate their defaults at once specifying each different ${\Pdef}_i$.
+	\item with multiple \textbf{independent} counterparties we can simulate their defaults at once specifying each different ${\Pdef}^i$.
 \end{itemize}	
-%In the next example we are generating 10 samples of a binomial random variable with $p=0.1$ probability of getting 1 (\emph{default}).
 
 As an example let's consider 10 firms with 10\% default probability each and compute the probability of having 5 defaults within the next year.
 \begin{ipythonnon}
@@ -39,7 +58,7 @@ PD = np.ones(shape=(n_assets,)) * 0.1
 N = 1000000
 
 defaults = binom.rvs(1, PD, size=(N, n_assets)) # simulate N default scenarios
-print ("Simulated defaults:")
+print ("Simulated defaults (first 5 simulations):")
 print (defaults[:5])
 
 outcomes = np.sum(defaults, axis=1) # compute number of defaults per scenario
@@ -53,7 +72,7 @@ print (successes[:5].astype(int))
 print (f"\nP(ndefs >=5): {np.mean(successes)}")
 \end{ipythonnon}
 \begin{ioutput}
-Simulated defaults:
+Simulated defaults (first 5 simulations):
 [[0 0 0 0 0 0 0 0 0 0]
 [0 0 0 0 0 0 0 0 0 0]
 [0 1 0 0 0 0 0 0 0 0]
@@ -69,6 +88,14 @@ Simulation with >= 5 defaults:
 Probability of having at least 5 uncorrelated defaults: 0.00166
 \end{ioutput}
 
+We can check the correctness of the result by saying that to get at least 5 defaults out of 10 assets we need to have (at least) 5 defaults and 5 no-defaults, so the probability is $\Pdef^5$ times $\Psur^5$ times the number
+of ways in which I can choose 5 defaulting assets out of ten (combinations $\binom{10}{5}=252$):
+\begin{equation*}
+\Pdef(5) > (0.1)^5 \cdot (0.9)^5 \cdot 252 \approx 0.0015
+\end{equation*}
+
+This number doesn't exactly match the MC simulation since the calculation doesn't consider the case with 6 and more defaults, but it gives the correct order of magnitude though.
+
 \subsection{Hazard Rate or Default Intensity}
 \label{hazard-rate}
 
@@ -78,8 +105,8 @@ Let $\tau$ be the random time of default, with a cumulative distribution functio
 The probability of surviving past time $t$ is:
 $$\Psur(t) = \mathbb{P}(\tau > t) = 1 - \Pdef(t)$$
 We look at the probability of defaulting between $t$ and $t + \Delta t$ conditioned on survival up to $t$:
-$$\mathbb{P}(t < \tau \le t + \Delta t \mid \tau > t) = \frac{\mathbb{P}(t < \tau \le t + \Delta t \cap \tau > t)}{\mathbb{P}(\tau > t)}$$
-Since the event $\{t < \tau \le t + \Delta t\}$ is a subset of $\{\tau > t\}$, their intersection simplifies to the numerator alone. Expressing this in terms of the CDF and the survival function $\Psur(t)$:
+$$\mathbb{P}(t < \tau \le t + \Delta t \mid \tau > t) = \frac{\mathbb{P}((t < \tau \le t + \Delta t) \cap (\tau > t))}{\mathbb{P}(\tau > t)}$$
+Since the event $\{t < \tau \le t + \Delta t\}$ is a subset of $\{\tau > t\}$, their intersection simplifies to $\mathbb{P}(t < \tau \le t + \Delta t)$. Expressing this in terms of the CDF and the survival function $\Psur(t)$:
 $$\mathbb{P}(t < \tau \le t + \Delta t \mid \tau > t) = \frac{\Pdef(t + \Delta t) - \Pdef(t)}{\Psur(t)}$$
 To find the instantaneous rate per unit of time, we divide by the interval length $\Delta t$ and take the limit as $\Delta t \to 0$:
 
@@ -100,27 +127,6 @@ In practice hazard rate will be calculated numerically, and therefore we will co
 
 \label{sec:constant_hazard_rate}
 The simplest possible survival distribution is obtained by assuming a constant risk over time, so the hazard is $\lambda (t)=\lambda$ for all $t$. The corresponding survival function is $\Psur(t_0, t) = e^{-\lambda (t-t_0)}$.
-
-\begin{finmarkets}
-Similarly to discount curves we implement a class to handle credit curves, \texttt{CreditCurve}. It is characterized by a list of pillar dates with the corresponding survival probabilities. Like the \texttt{DiscountCurve} object you don't need to pass the observation date value (survival probability 1) since it is done automatically by the class constructor. Two methods are available: one to interpolate survival probabilities and the second to compute the hazard rate at any arbitrary date (beware that extrapolation is not allowed so the input date must be within the pillar dates range).
-\end{finmarkets}
-
-\pythoncodenon{code/credit_risk_credit_curve.py}
-
-Let's test the class with some inputs.
-\begin{ipythonnon}
-from finmarkets import GlobalConst as gc, CreditCurve, TimeInterval
-
-obs_date = gc.OBS_DATE
-cc = CreditCurve([obs_date + relativedelta(years=2)], [0.8])
-
-print (cc.ndp(obs_date + TimeInterval("1y")))
-print (cc.hazard(obs_date + TimeInterval("1y")))
-\end{ipythonnon}
-\begin{ioutput}
-0.9
-0.11111111111112416
-\end{ioutput}
 
 \subsection{Poisson Process}
 \label{sec:poisson_process}
@@ -210,6 +216,9 @@ Default times can also be obtained by sampling from the distribution as shown in
 \end{finmarkets}
 
 \pythoncodenon{code/credit_risk_poisson_process.py}
+Let's plot the distribution of the arrival time of events described by a Poisson process with constant $\lambda=5$, see Figure~\ref{fig:default_time_simulation}.
+
+\pythoncodenon{code/credit_risk_poisson_process_mc.py}
 
 \begin{figure}[htb]
 	\centering
@@ -226,9 +235,9 @@ Although this is typically done using a bootstrapping process, here we are going
 In the example below the function \texttt{calibrate} takes market pillar dates and their corresponding market survival probabilities and will use \texttt{scipy.optimize.least\_squares} to solve for the hazard rates.
 
 \begin{ipythonnon}
-from finmarkets.distributions import PoissonProcess
-
 from scipy.optimize import least_squares
+
+from distributions import PoissonProcess
 
 def calibrate_credit_process(market_times, market_probs, initial_guess=0.02):
   times = np.array(market_times)
@@ -368,32 +377,30 @@ To test the class data contained in \href{https://github.com/matteosan1/finance_
 \begin{ipythonnon}
 import pandas as pd
 
-from datetime import date
-
-from finmarkets import GlobalConst as gc
-from finmarkets import DiscountCurve, TimeInterval, CreditDefaultSwap
+from dates import GlobalConsts as gc, TimeInterval
+from curves import DiscountCurve
+from credit import CreditDefaultSwap
 
 dc_data = pd.read_excel("discount_curve.xlsx")
-start_date = obs_date = gc.OBS_DATE
-dates = [obs_date + TimeInterval(i) for i in dc_data['maturities']]
+dates = [gc.OBS_DATE + TimeInterval(i) for i in dc_data['maturities']]
 dc = DiscountCurve(dates, dc_data['dfs'])
 
-pillars = [obs_date + TimeInterval('36m')]
+pillars = [gc.OBS_DATE + TimeInterval('36m')]
 credit_curve = CreditCurve(pillars, [0.7])
-cds = CreditDefaultSwap(1e6, start_date, "3y", 0.03)
+cds = CreditDefaultSwap(1e6, gc.OBS_DATE, "3y", 0.03)
 
-print (f"{cds.npv_premium_leg(dc, credit_curve):.2f}")
-print (f"{cds.npv_default_leg(dc, credit_curve):.2f}")
-print (f"{cds.npv(dc, credit_curve):.2f}")
+print (f"NPV premium leg: {cds.npv_premium_leg(dc, credit_curve):.2f}")
+print (f"NPV default leg: {cds.npv_default_leg(dc, credit_curve):.2f}")
+print (f"NPV CDS: {cds.npv(dc, credit_curve):.2f}")
 \end{ipythonnon}
 \begin{ioutput}
-75761.20
-180902.43
-105141.23
+NPV premium leg: 75761.20
+NPV default leg: 180902.43
+NPV CDS: 105141.23
 \end{ioutput}
 	
 \begin{finmarkets}
-An alternative implementation of the default leg calculation (i.e. \texttt{npv\_default\_leg} method) is possible. The explicit daily loop over the lifetime of the swap could indeed be replaced by a numerical intergrato between $[t_0, T]$.
+An alternative implementation of the default leg calculation (i.e. \texttt{npv\_default\_leg} method) is possible. The explicit daily loop over the lifetime of the swap could indeed be replaced by a numerical intergral between $[t_0, T]$.
 The code below provide an example exploiting the integration function \texttt{scipy.integrate.quad}. For more information about integration in \texttt{python} please refer to Section~\ref{sec:integration}.
 
 \begin{ipythonnon}
@@ -401,12 +408,12 @@ from scipy.integrate import quad
 
 def npv_default_leg_quad(self, cc, dc):
   def integrand(t, cc, dc):
-    current_date = self.payment_dates[0] + TimeInterval(f"{int(t * 365)}d"))
-	return dc.df(current_date) \
-               * (cc.ndp(current_date) \
+    current_date = self.payment_dates[0] + \ 
+                   TimeInterval(f"{int(t * 365)}d"))
+	return dc.df(current_date) * (cc.ndp(current_date) \
                   - cc.ndp(current_date + TimeInterval("1d")))
-  maturity_in_years = yearFraction(self.payment_dates[0], self.payment_dates[-1], \
-                       "ACT365")
+  maturity_in_years = yearFraction(self.payment_dates[0], 
+                                   self.payment_dates[-1])
   npv, _ = quad(integrand, 0, maturity_in_years, args=(cc, dc))
   return self.nominal * (1 - self.recovery) * npv * 365
 \end{ipythonnon}

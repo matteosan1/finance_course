@@ -10,7 +10,7 @@ The name Monte Carlo refers to the city in Monaco where Ulam's uncle used to ind
 Monte Carlo tools find their application mostly in cases where the inherent complexity of a problem makes the use of other techniques impossible or where no analytically tractable solution exists.
 They are are widely used in many fields: Engineering, Physics, Computational biology, Computer graphics, Applied statistics and Artificial intelligence for games. It started to be en vogue in financial mathematics in the 1980s, particularly when the theories of the random walk of asset prices came up.
 
-In this Chapter the Monte Carlo technique is reviewed together with few applications.
+In this Chapter the Monte Carlo technique is reviewed with some applications.
 
 \section{The Algorithm}
 \label{whats-monte-carlo-simulation}
@@ -20,26 +20,26 @@ Indeed it can be considered as the algorithmic translation of the expectation va
 $$
 V_0 = \mathbb{E}^{\mathbb{Q}} \left[ D(0,T)\cdot X_T \right] \implies \mathbb{E} \text{ calculation} \iff \text{MC simulation}
 $$
-As we have seen
+As we know
 
 $$\mathbb{E}[g(X)] = \int_{-\infty}^{+\infty} g(x) f(x) \, dx$$
-
-When the involved integral can't be analytically solvable or the sample space is quite big (e.g. financial calculations) we can rely on the Strong Law of Big Numbers which states that: *"sampling $N$ independent values $x_1, x_2, \dots, x_N$ from the distribution $f(x)$, the sample mean converges to the true value:
+When the involved integral can't be analytically solved we can rely on the Strong Law of Big Numbers which states that: \textit{"sampling $N$ independent values $x_1, x_2, \dots, x_N$ from the distribution $f(x)$, the sample mean converges to the true value"}:
 
 $$\lim_{N \to \infty} \frac{1}{N} \sum_{i=1}^{N} g(x_i) = \mathbb{E}[g(X)]$$
 
 So the MC method is a direct application of the previous formula
-1. sampling: generate $N$ random scenarios/trajectories ($x_i$) complying the probability distribution of the system ($f(x)$).
-2. valuation: compute the function value (or payoff) $g(x_i)$ for each generated scenario.
-3. Monte Carlo estimator: compute the arithmetic mean of the previous calculations. This is the estimate of the expected value.
-
+\begin{enumerate}
+	\item sampling: generate $N$ random scenarios/trajectories ($x_i$) complying the probability distribution of the system ($f(x)$).
+	\item valuation: compute the function value (or payoff) $g(x_i)$ for each generated scenario.
+	\item Monte Carlo estimator: compute the arithmetic mean of the previous calculations. This is the estimate of the expected value.
 $$V_0 = e^{-rT} \, \mathbb{E}^{\mathbb{Q}}[X_T] \quad \approx \quad e^{-rT} \cdot \frac{1}{N} \sum_{i=1}^{N} X_T^{(i)}$$
 where the MC approximates $\mathbb{E}^{\mathbb{Q}}$ of the payoff $X_T$ simulating $N$ plausible scenarios at time $T$.
+\end{enumerate}
 
 %The algorithm proceeds by simulating the process under study replacing every source of uncertainty by random numbers sampled from appropriate distributions (PDF).
 %The results is re-calculated many times, using a different set of random numbers within the estimated range. This process generates many probable outcomes, which become more accurate as the number of inputs grows, i.e. law of large numbers.
 
-The main advantage of the technique is that predictions are based on an estimated range of values instead of a fixed set of values and evolve randomly.
+The main advantage of the technique is that predictions are based on an estimated range of values instead of a fixed set and evolve randomly.
 Note that depending upon the number of uncertainties and their ranges, a Monte Carlo simulation could involve thousands or even millions of recalculations before it is completed.
 %
 %Although they might vary from case to case, the general steps to a Monte Carlo simulation can be summarized as follows:
@@ -59,19 +59,17 @@ As an example imagine to simulate the results of rolling a die: the only variabl
 The need of generating random inputs during a MC simulation requires large amounts of \emph{random numbers} to be generated. A random number is a "randomly chosen" number from a particular distribution.
 Their use in Monte Carlo simulations spurred the development of \emph{pseudo-random number generators}. Nowadays every programming language has libraries that allow to produce huge series of random numbers. 
 
-These series, which have very large periodicity (e.g. $2^{20000}$), are calculated by algorithms that take as input a \emph{seed} which determines them uniquely. \textbf{This means that choosing the same seed will produce the same set of numbers every time (which is great for debugging purposes though).}
+These series, which have very large periodicity (e.g. $2^{20000}$), are calculated by algorithms that take as input a \emph{seed} which determines them uniquely. \textbf{This means that choosing the same seed will produce the same set of numbers every time} (which is great for debugging purposes though).
 
-In \texttt{python} one of the available modules to generate random numbers is \texttt{numpy.random} which has, among others, the following useful functions:
+In \texttt{python} there are two main ways to generate random numbers by using either \texttt{numpy.random} or \texttt{scipy.stats} modules. Among others, they have the following useful functions:
 \begin{itemize}
 \tightlist
-\item \texttt{seed}: set the seed of the random number generator;
-\item \texttt{uniform}: returns a random number between 0 and 1 (with uniform probability);
-\item \texttt{randint(min,\ max)}: returns an integer random number between \texttt{min} and \texttt{max} (with uniform probability);
-\item \texttt{choice(aList,\ k=n, replace=True)}: samples n elements from the list \texttt{aList} with or without replacement.
-\item \texttt{normal}: throws random numbers sampled from a normal distribution ($\mathcal{N}(0, 1)$).
+\item \texttt{numpy.random.seed}: set the seed of the random number generator;
+\item \texttt{numpy.random.uniform}, \texttt{scipy.stats.uniform.rvs}: returns a random number between 0 and 1 (with uniform probability);
+\item \texttt{numpy.random.randint(min,\ max)}: returns an integer random number between \texttt{min} and \texttt{max} (with uniform probability);
+\item \texttt{numpy.random.choice(aList,\ k=n, replace=True)}: samples n elements from the list \texttt{aList} with or without replacement.
+\item \texttt{numpy.random.normal}, \texttt{scipy.stats.norm.rvs}: throws random numbers sampled from a normal distribution ($\mathcal{N}(0, 1)$).
 \end{itemize}
-
-The following example show few simple applications.
 
 \pythoncodenon{code/monte_carlo_1.py}
 \begin{ioutput}
@@ -87,9 +85,14 @@ choose two items among aList: ['c' 'd']
 
 \subsection{Sampling from a Distribution}
 
-If we need to sample from a generic distribution it is convenient to use \texttt{scipy.stats}. In there a lot of useful distribution have been defined such that with the convenient method \texttt{rvs(size=n)} (random variable sample) allows to sample as many time as specified by the argument \texttt{size}. 
+In probabilistic modeling and simulation, sampling from a given distribution means generating random numerical realizations governed by the mathematical laws of that distribution.
+Rather than picking numbers arbitrarily, every draw respects the underlying probability density function: values associated with high probability occur frequently, while extreme or tail events appear only in proportion to their theoretical likelihood. 
 
-Below two examples which sample 50000 times from the discrete uniform distribution (\texttt{randint}) and from the normal distribution, the results are shown in Fig.~\ref{fig:gauss_dist}.
+For instance, sampling from a standard normal distribution $\mathcal{N}(0, 1)$ will yield numbers that cluster densely around zero, with large deviations becoming exponentially rare.
+
+If we need to sample from a generic distribution it is convenient to use \texttt{scipy.stats}. Lots of useful distribution have been defined there, each with convenient methods e.g. \texttt{rvs(size=n)} allows to sample as many time as specified by the argument \texttt{size}. 
+
+Below two examples which sample 50000 times from the discrete uniform distribution (\texttt{randint}) and from the normal distribution, the results are shown in  Fig.~\ref{fig:gauss_dist}.
 
 \pythoncodenon{code/monte_carlo_2.py}
 
@@ -108,19 +111,17 @@ In this Section we go through some applications of the Monte Carlo method.
 
 \subsection{Probability to Draw Two Kings From a Deck}
 
-Imagine we would like to determine the probability of drawing consecutively two kings from a deck of cards, at the beginning there are 40 cards (i.e. the entire deck) with 4 possible kings. According to the frequentist approach~\ref{cap:bayes}, we can calculate the probability of an event as the ratio of the number of favourable outcomes ("successes") and all possible outcomes. 
-
-So the probability to get the first king is $4/40=10\%$. Next, assuming we've got a king the first time, we are left with 39 cards and 3 kings only, so the probability to get the second king is $3/39=7.7\%$. Since we want both events to happen, the final probability is the product of the two:
+Imagine we would like to determine the probability of drawing consecutively two kings from a deck of 40 cards. At the beginning all the cards are available with 4 possible kings, so according to the frequentist approach~\ref{cap:bayes}, the probability to get the first king is $4/40=10\%$. Next, assuming we've got a king the first time, we are left with 39 cards and 3 kings only, so the probability to get the second one is $3/39=7.7\%$. Since we want both events to happen, the final probability is the product of the two:
 
 \begin{equation*}
 P_\textrm{two kings} = \frac{4}{40} \cdot \frac{3}{39} = \frac{1}{130} \approx 0.77\%
 \end{equation*}
 
-Let's now try to estimate the same probability with a MC simulation, following the steps outlined above.
+Let's now estimate the same probability with a MC simulation, following the steps outlined above.
 
-\pythoncode{code/monte_carlo_4.py}
+\pythoncode{code/monte_carlo_3.py}
 
-In this case the domain is a deck of cards; to simulate it we can define a list with the values of each card (actually we can create first the list of "cards" for a single suit and then "multiply" the list by four, see line 4). We pick up randomly, one million times, two cards from the virtual deck with uniform probability since the deck is fair (line 8); for debugging purpose the first ten draws are printed on screen. Check if the card pair is \texttt{['K', 'K']} in line 11 and in case increase the counter of successes (line 12). Finally just print \texttt{successes/trials} which is the sought probability.
+In this case the domain is a deck of cards; to simulate it we can define a list with the values of each card (actually we can create first the list of "cards" for a single suit and then "multiply" the list by four, see line 4). We pick up randomly, one million times, two cards from the virtual deck (line 8); for debugging purpose the first ten draws are printed on screen. Check if the card pair is \texttt{['K', 'K']} (line 11) and in case increase the counter of successes (line 12). Finally just print \texttt{successes/trials} which is the sought probability.
 In the example we are going to set the seed to 1 to make it reproducible.
 
 \begin{ioutput}
@@ -143,7 +144,7 @@ The result is in agreement with the theoretical expectations, further considerat
 \subsection{Determine $\pi$}
 \label{determine-pi}
 
-We know what the result has to be: $\pi\approx 3.141592653589793\ldots$ and in order to get an estimate through MC simulation of this famous constant a geometric approach can be considered. Imagine a circle of radius $r$ which is \emph{inscribed} in a square with side length $2r$, see Fig.~\ref{fig:circle_inscribed}.
+We know that $\pi\approx 3.141592653589793\ldots$ and in order to get an estimate through MC simulation of this famous constant a geometric approach can be considered. Imagine a circle of radius $r$ which is \emph{inscribed} in a square with side length $2r$, see Fig.~\ref{fig:circle_inscribed}.
 
 \begin{figure}[htb]
 \centering
@@ -167,7 +168,7 @@ The algorithm to approximate $\pi$ should then be
 \item multiply the approximated area by 4 to get $\pi$.
 \end{itemize}
 
-\pythoncodenon{code/monte_carlo_5.py}
+\pythoncodenon{code/monte_carlo_4.py}
 \begin{ioutput}
 Approx. pi: 3.1524
 \end{ioutput}
@@ -176,14 +177,15 @@ Approx. pi: 3.1524
 \label{sec:confidence_interval}
 
 A general consideration that we can make is that the lower is the probability we try to estimate with MC the higher has to be the number of simulations. The result precision indeed depends on the amount of "successes" and if the success probability is small, many trials are needed. 
+Imagine an event has a probability of 0.001 to happen. Running only 100 experiments we should see $100*0.001 \approx 0.1$ successful events, which means most likely no event will be recorded. 
 
-This can be simply checked by playing with the number of simulations in the previous examples. We may run an entire set without getting two consecutive kings, nevertheless we cannot conclude there is zero probability of such event.
+\textbf{Note that this doesn't mean we can conclude the process has a 0 probability to happen, but just that I need to run a number of MC simulation of order of the thousands.} This can also be checked by playing with the number of simulations in the previous examples. We may run an entire simulation without getting two consecutive kings, nevertheless we cannot conclude there is zero probability of such event.
 
-The only conclusion we can draw is that, despite its undoubted power, Monte Carlo simulation is not always the best approach to follow, especially for computationally heavy experiments. Many times indeed the simulation of a single experiment requires a lot of computing resources (and time) and it may not be practical to embark into such a large simulation.
+The only conclusion we can draw is that, despite its undoubted power, Monte Carlo simulation is not always the best approach to follow, especially for computationally heavy experiments. Many times indeed the simulation of a single experiment requires a lot of computing resources (and time) and it may not be practical to embark into quite a large simulation.
 
-In the following example it is apparent how increasing the number of simulations in a single experiment the approximation precision improves. In Fig.~\ref{fig:circle_approx} it is shown graphically the results with 100, 1000, 10000, 100000 and 1000000 simulations.
+In the following example it is apparent how increasing the number of experiments the result precision increases. Fig.~\ref{fig:circle_approx} shows graphically the results with 100, 1000, 10000, 100000 and 1000000 simulations.
 
-\pythoncodenon{code/monte_carlo_5_2.py}
+\pythoncodenon{code/monte_carlo_5.py}
 \begin{ioutput}
 pi=3.120000 0.0001s
 pi=3.096000 0.0012s
@@ -198,18 +200,16 @@ pi=3.142136 1.0671s
 \caption{Graphical representation of geometrical approximation of $\pi$. Results are reported for $N = 100, 1000, 10000, 100000, 1000000$ simulations. It is clear how the result improves with $N$.}
 \label{fig:circle_approx}
 \end{figure}
-
 In this case the simulation is so simple that even in the larger case ($N=1000000$) the program runs for only about a second.
 
-Now let's go back to the card example and imagine that you didn't know how much is the probability of getting two consecutive K from a deck of 40 cards. 
+Now let's go back to the card example and imagine that you couldn't analytically compute the probability of getting two consecutive $'K'$ from the 40 cards deck. 
 
-\pythoncodenon{code/monte_carlo_4_2.py}
+\pythoncodenon{code/monte_carlo_6.py}
 \begin{ioutput}
 0.0084
 \end{ioutput}
 
-What can be concluded from the result of this single MC experiment ? Unfortunately not much, but a famous theorem come to rescue us.
-The Central Limit Theorem~\cite{bib:central_limit} (CLT) states that if we have $X_1, X_2,\dots, X_n$ which are $n$ random samples from a distribution $X$ with true mean $\mu$ and variance $\sigma^{2}$, then with $n$ sufficiently large,
+What can be concluded from the result of this single MC experiment ? Unfortunately not much, butthe Central Limit Theorem~\cite{bib:central_limit} (CLT) come to rescue us. It states that if we have $X_1, X_2,\dots, X_n$ which are $n$ random samples from a distribution $X$ with true mean $\mu$ and variance $\sigma^{2}$, then with $n$ sufficiently large,
 
 \begin{equation*} 
 \mu_n = \cfrac{X_1 + X_2 +\ldots + X_n}{n} = \cfrac{1}{n}\sum_i^n X_i
@@ -218,7 +218,7 @@ has approximately a normal distribution $\mathcal{N}(\mu, \sigma^2/n)$.
 
 This means that if one repeats the same MC experiment many times (changing the random number generator seed otherwise we are always repeating the \textbf{same} experiment) would obtain results normally distributed around the \textbf{true} value $\mu$. \emph{Also the best estimate $\mu_n$ of the unknown parameter $\mu$ is the mean of the MC experiment results.}
 
-Another very important consequence of the CLT is that the standard deviation of our estimate $\mu_n$ is \emph{the standard deviation of the sample ($\sigma_{Y_i}$) divided by the square root of the sample size}. Indeed
+Another very important consequence of the CLT is that the error of our estimate $\mu_n$ is \emph{the standard deviation of the sample ($\sigma_{Y_i}$) divided by the square root of the sample size}. Indeed
 \begin{equation*}
 \begin{gathered}
 \bar{X} = \cfrac{X_1 + X_2 +\ldots +X_n}{n}\\
@@ -227,17 +227,14 @@ Another very important consequence of the CLT is that the standard deviation of 
 \end{gathered}
 \end{equation*}
 
-This is sometimes called the standard deviation of the sample mean (contrary to the standard deviation of a sample). Hence, the sample mean is much less volatile than the sample values themselves. Consequently, the error reduces at the rate of 1 over the square root of the sample size. 
+This is sometimes called the standard deviation of the sample mean (contrary to the standard deviation of a sample). Hence, the sample mean is much less volatile than the samples themselves. Consequently, the error reduces at the rate of 1 over the square root of the sample size. 
 
-Notice what this means, for increasing the sample accuracy by increasing the sample size. Suppose $\sigma$ is the standard deviation of the sample. We first conduct a Monte Carlo simulation using $n_1$ experiments. The standard deviation of our estimate of the unknown value is $\cfrac{\sigma}{\sqrt{n_1}}$. Now suppose we wanted to reduce that uncertainty in half. How much larger must the sample be? Let this new sample size be $n_2$. Then the standard deviation of the estimate becomes $\cfrac{\sigma}{\sqrt{n_2}}$.
+Suppose we first conduct a Monte Carlo simulation using $n_1$ experiments. The standard deviation of the unknown value estimate is $\cfrac{\sigma}{\sqrt{n_1}}$. Now if we would like to reduce that uncertainty by 50\% how much larger must the sample should be ? Let this new sample size be $n_2$. Then the standard deviation of the estimate becomes $\cfrac{\sigma}{\sqrt{n_2}}$.
 Finally note that,
 \begin{equation*}
   \cfrac{1}{2}\cfrac{\sigma}{\sqrt{n_1}}  = \cfrac{\sigma}{\sqrt{n_2}} \implies n_2 = 4 n_1
 \end{equation*}
-
-Thus, to achieve a 50\% reduction in error, i.e., a 50\% increase in accuracy, we must \textbf{quadruple} the number of random experiments.
-
-
+Thus, to achieve a 50\% increase in accuracy, we must \textbf{quadruple} the number of random experiments.
 
 
 
@@ -289,38 +286,11 @@ Thus, to achieve a 50\% reduction in error, i.e., a 50\% increase in accuracy, w
 %Despite its centrality to modern science, the central limit theorem has limits of its own. It only works when you’re combining many samples, and those samples need to be independent. If they’re not — for example, if you only run a national presidential poll in a single small town in Maine — repeating the experiment won’t get you closer to the expected bell curve.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 \subsection{Central Limit Theorem in the Kings Example}
 
-We can check the Central Limit Theorem by repeating many times the MC experiment with our virtual deck and see how the distribution of $\mu_n$ behaves.
+We can check the Central Limit Theorem by repeating many times the virtual deck MC experiment and see how the distribution of $\mu_n$ behaves.
 
-\pythoncodenon{code/monte_carlo_4_3.py}
+\pythoncodenon{code/monte_carlo_7.py}
 \begin{ioutput}
 mu_true: 0.007692
 mu: 0.007640 +- 0.000151
@@ -342,8 +312,7 @@ From the Central Limit Theorem we know that:
 \begin{equation}
 \mu_n - \mu \approx \mathcal{N}(0, \sigma^2/n)
 \end{equation}
-
-From the previous equation and remembering the definition of quantiles~\ref{sec:quantile-function} it is then possible to define an interval such that there is a certain probability to find $\mu$ in there. Referring to Fig.~\ref{fig:confidence_interval} we can write:
+Remembering the definition of quantiles~\ref{sec:quantile-function} it is then possible to define an interval such that there is a certain probability to find $\mu$ in there. Referring to Fig.~\ref{fig:confidence_interval} we can write:
 
 \begin{equation}
 P\left(\mu_n - 1.96\frac{\sigma}{\sqrt{n}}\le \mu \le \mu_n + 1.96\frac{\sigma}{\sqrt{n}}\right) = 0.95
@@ -373,7 +342,7 @@ P(\mu - A\sigma \le X \le \mu+ A\sigma) = \alpha
 
 Below an example of how to compute a confidence level in \texttt{python} given a set of simulation results (the inverse of the Gaussian CDF $\Phi^{-1}$, used in Eq.~\ref{for:A}, is computed with the method \texttt{norm.ppf()}, see Section~\ref{sec:quantile-function}).
 
-\pythoncodenon{code/monte_carlo_6.py}
+\pythoncodenon{code/monte_carlo_8.py}
 \begin{ioutput}
 95% confidence int.: 4.437 +- 0.812
 \end{ioutput}

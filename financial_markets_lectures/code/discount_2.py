@@ -1,49 +1,26 @@
-import numpy as np
-
-from datetime import date
-from scipy.interpolate import interp1d
-from typing import Union, List
+import pandas as pd, matplotlib.pyplot as plt
 
 from finmarkets import GlobalConst as gc
-from finmarkets import TimeInterval, yearFraction
+from finmarkets import TimeInterval, DiscountCurve
 
-class DiscountCurve:
-  def __init__(self, pillars: Union[List[date], np.array], 
-               discount_factors: Union[List[float], np.array]):
-    if len(pillars) != len(discount_factors):
-       raise ValueError("pillars and discount_factors must have"
-         "the same length.")
-    self.day_count_convention = "ACT365"
-    self.dfs = np.array(discount_factors, dtype=float) \\
-      if isinstance(discount_factors, list) else discount_factors
-    self.pillars = pillars
-    if gc.OBS_DATE not in pillars:
-      self.pillars = [gc.OBS_DATE] + self.pillars
-      self.dfs = np.insert(self.dfs, 0, 1.0)
-    self.times = np.array([self._get_time(d) for d in self.pillars], 
-                           dtype=float)
-    self.log_df_interpolator = interp1d(self.times, np.log(self.dfs), 
-                                        bounds_error=True)
+df = pd.read_excel("discount_factors_2022-10-05.xlsx")
 
-  def _get_time(self, d: date):
-    return yearFraction(gc.OBS_DATE, d, self.day_count_convention)
+obs_date = gc.OBS_DATE
+pillars = [obs_date + TimeInterval(i) for i in df['months']]
+dc = DiscountCurve(pillars, df['dfs'])
 
-  def df(self, d: date) -> float:
-    t = self._get_time(d)
-    if t <= 0.0:
-      return 1.0
-    log_df_t = self.log_df_interpolator(t)
-    return float(np.exp(log_df_t))
+df_date = obs_date + TimeInterval("195d")
+df0 = dc.df(df_date)
+print (f"discount factor at {df_date}: {df0:.4f}")
 
-  def get_zero_rate(self, d: date, compounding: str="Continuous") -> float:
-    t = self._get_time(d)
-    if t <= 0.0:
-      return 0.0
-    df = self.df(d)
+r0 = dc.get_zero_rate(df_date)
+print (f"zero rate at {df_date}: {r0:.4f}")
 
-    if compounding == "Continuous":
-      return -np.log(df) / t
-    elif compounding == "Annual":
-      return (1.0 / df) ** (1.0 / t) - 1.0
-    else:
-      raise ValueError(f"Regime non supportato: {compounding}")
+plt.plot(pillars[:10], dfs[:10], marker='o', markersize=10, 
+         label="dfs")
+plt.scatter(df_date, df0, marker='X', s=100, color='red', 
+            label='interp. df')
+plt.xticks(rotation=45)
+plt.grid(True)
+plt.legend()
+plt.show()

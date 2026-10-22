@@ -190,7 +190,7 @@ In order to valuate the swaption payoff the key issue is to estimate $S(d_{\math
 \subsubsection{Evaluation through Black Formula}
 \label{evaluation-through-black-scholes-formula}
 
-In this case we are going to use (but not to derive) a generalization of the Black-Scholes formula
+In this case we are going to use (but not to derive) a generalization of the Black formula
 
 \begin{equation}
 \mathrm{NPV} = N\cdot A\cdot [S \Phi(d_+) - K\Phi(d_-)]
@@ -204,70 +204,61 @@ A = \sum_{i=1}^{p}D(d, d_{i}^{\mathrm{fixed}})\qquad\mathrm{(annuity})
 \end{gathered}
 \end{equation}
 
+\subsubsection{Valuation through Monte Carlo Simulation}
+\label{evaluation-through-monte-carlo-simulation}
+
+When pricing swaptions via Monte Carlo simulation, two primary modeling philosophies can be adopted:
+
+\begin{enumerate}
+	\item \textbf{Direct Swap-Rate Modeling (Black-Type Framework):} under this approach, one models the target swap rate directly. Starting from the current swap rate $S(d)$ evaluated at the pricing date $d$, we assume it follows a log-normal stochastic process with zero drift under the corresponding forward measure. Its distribution at the exercise date $d_{\mathrm{ex}}$ (with time-to-maturity $T = d_{\mathrm{ex}} - d$) is given by:
+	\begin{equation*}
+		S(d_{\mathrm{ex}}) = S(d)\exp\left(-\frac{1}{2}\sigma^{2}T+\sigma \sqrt{T}Z\right)
+	\end{equation*}
+	where $Z\sim\mathcal{N}(0,1)$ and $\sigma$ represents the Black volatility. This method is the industry standard for European swaptions because it matches market quotation conventions directly and requires no modeling of the entire term structure.	
+	\item \textbf{Short-Rate Modeling (Equilibrium or No-Arbitrage Framework):} alternatively, one can simulate the evolution of the instantaneous short rate $r(t)$ (such as through the Vasicek model). By generating paths for $r(t)$, we dynamically determine the entire term structure of zero-coupon bond prices, which in turn allows us to price the underlying swap's legs and evaluate derivative payoffs consistently across different maturities and complex exercise structures.
+\end{enumerate}
+
+While direct log-normal simulation of the swap rate is computationally efficient and practical for European-style options, the implementation chosen for pedagogical purposes in this text relies on the Vasicek short-rate model. Simulating the short rate directly provides a unified framework: it demonstrates to students how a single foundational stochastic process can simultaneously govern term structure dynamics, yield curve shapes, bond pricing equations, and derivative valuation.
+
 \begin{finmarkets}
-The \texttt{finmarkets} module has a class, \texttt{InterestRateSwaption}, capable of valuing swaptions both with Monte Carlo simulation and Black-Scholes formula. As usual its attributes are the parameters needed to define the swaption itself and the underlying IR swap. First we are going to review the method to compute the NPV with the analytic closed form given by the Black-Scholes formula. It is quite simple since it just takes as input the pricing date and the discount and forward curves needed to evaluate $d_{\pm}$, the annuity and other underlying related quantities are computed through the relevant InterestRateSwap methods instead.
+The \texttt{finmarkets} module has a class, \texttt{Swaption}, capable of valuing swaptions both with Monte Carlo simulation and Black-Scholes formula. As usual its attributes are the parameters needed to define the swaption itself and the underlying IR swap.
 \end{finmarkets}
 
 \pythoncodenon{code/ir_derivatives_3.py}
 
-As an example let's consider a swaption whose underlying is a 6 months IRS with a notional of 1~M, fixed rate of 5\%, and a maturity of 4 years. In addition we assume a volatility associated to the swap rate of 15\%.
+As an example let's consider a swaption expiring in 1 year whose underlying is a 6 months IRS with a notional of 1~M, fixed rate of 3.5\%, and a maturity of 4 years. In addition we assume a volatility associated to the swap rate of 15\%.
+The interest rate are modelled according to the Vasicek model with parameters $a=0.1; b=0.03; \sigma=0.01$ and $r_0=0.02$.
+First compute the derivative NPV with the MC simulation estimating also the 95\% confidence level.
 
 \pythoncodenon{code/ir_derivatives_4.py}
 
 \begin{ioutput}
-9759.26
+Swaption Price: 58,240.83 +- 981.97 EUR
 \end{ioutput}
-
-\subsubsection{Valuation through Monte Carlo Simulation}
-\label{evaluation-through-monte-carlo-simulation}
-
-In this second case we start from the current swap rate $S(d)$ evaluated at the pricing date $d$ and assume that it follows a log-normal stochastic process with zero drift, i.e. its distribution at $d_{\mathrm{ex}}$ (exercise date) is 
-
-\begin{equation*}
-S(d_{\mathrm{ex}}) = S(d)\mathrm{exp}(-\frac{1}{2}\sigma^{2}T+\sigma Z\sqrt{T})
-\end{equation*}
-\noindent
-where $Z\approx\mathcal{N}(0,1)$. %This assumption is not correct since we know that interest rate follows different processes, but it is ok for illustrative purposes. 
-
-\begin{finmarkets}
-The \texttt{InterestRateSwaption} class is extended with another method to calculate the NPV using MC simulation. The algorithm works as follows
-
-\begin{itemize}
-\tightlist
-\item sample the normal distribution $\mathcal{N}(0, 1)$ to calculate a large number of scenarios for $S(d_{\mathrm{ex}})$;
-\item evaluate the underlying swap's NPV at the expiry date, and consequently the swaption's payoff, for each scenario;
-\item take the average of these values to get the final estimate.
-\end{itemize}
-\end{finmarkets}
-
-\pythoncodenon{code/ir_derivatives_5.py}
-
-Using the 95\% confidence interval defined in Sec.~\ref{sec:confidence_interval} it can be checked whether the Monte Carlo estimate of the swaption payoff is in agreement with what computed using the Black-Scholes formula.
-
-\pythoncodenon{code/ir_derivatives_6.py}
-\begin{ioutput}
-MC: 9805.66 +- 81.35
-BS: 9759.26
-\end{ioutput}
-
-The NPV calculated via the Black-Scholes formula falls well within the confidence interval of the Monte Carlo simulation so we can assert the two estimates are in agreement at the 95\% confidence level.
-
-Figure~\ref{fig:swap_rate} shows the distribution of the simulated swap rate at the exercise date. The red line indicates the spot swap rate.
+Figure~\ref{fig:mc_swaption_price} shows the distribution of the simulated swaption prices.
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.55\textwidth]{figures/simulated_swap_rate}
-	\caption{Distribution of the simulated swap rate at the exercise date, the spot swap rate is also shown (red line).}
+	\includegraphics[width=0.55\textwidth]{figures/simulated_swaption_price}
+	\caption{Distribution of the simulated swaption prices, the large number of zeros represents simulation with out-of-the-money option.}
 	\label{fig:swap_rate}
 \end{figure}
 
-The simulation has been repeated a number of times to check how the swaption NPV changes with the underlying IRS fixed rate $K$. As for plain vanilla European options, when the strike $K$ is much greater then the average simulated swap rate the NPV is almost 0. Conversely when $K$ is much lower the swaption is much valuable. In the intermediate situation where $K$ is close to the average swap rate, the swaption value is influenced by under and over-fluctuation in the simulated swap rate such that there is not a sharp transition between zero and non-zero value.
+Then repeat the pricing using the Black formula; the discount and forward curves are the spot curves estimated with the Vasicek model.
+
+\pythoncodenon{code/ir_derivatives_5.py}
+\begin{ioutput}
+Swaption Price Black: 57,918.47 EUR
+\end{ioutput}
+The NPV calculated via the Black formula falls well within the confidence interval of the Monte Carlo simulation so we can assert the two estimates are in agreement at the 95\% confidence level.
+
+Finally the MC simulation has been repeated a number of times to check how the swaption NPV changes with the underlying IRS fixed rate $K$. As for plain vanilla European options, when the strike $K$ is much lower then the swap rate the NPV is almost 0. Conversely when $K$ is much lower the swaption is much valuable. In the intermediate situation where $K$ is close to the swap rate, the swaption value is influenced by under and over-fluctuation in the simulated swap rate such that there is not a sharp transition between zero and non-zero value.
 The results are reported in Fig.~\ref{fig:swaption_npv_vs_K}.
 
 \begin{figure}[htb]
 \centering
 \includegraphics[width=0.6\textwidth]{figures/swaption_npv_vs_K}
-\caption{Swaption NPV as a function of the underlying interest rate swap fixed rate $K$.}
+\caption{Swaption NPV as a function of the strike $K$.}
 \label{fig:swaption_npv_vs_K}
 \end{figure}
 

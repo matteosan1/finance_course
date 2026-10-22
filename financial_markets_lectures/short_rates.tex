@@ -4,58 +4,48 @@ The volume of traded interest rate derivatives in both the OTC and exchange-trad
 
 In this Chapter the most common interest rate modeling techniques are reviewed together with related \texttt{python} applications.
 
-\section{Short Rate Models}
-Bond, option and other derivative prices depend only on the process followed by $r$ in a risk neutral world.
-Let $Z(R, t, T)$ be the price of a zero coupon bond with maturity $T$ at time $t$. It defines the corresponding interest rate $R(T)$ by the formula
+\section{The Short Rate and Term Structure Dynamics}
 
-\begin{equation}
-\begin{gathered}
-Z(R, t, T) = e^{-R(T)(T-t)} \\
-R(T) = -\cfrac{\ln Z(R, t, T)}{T-t}
-\end{gathered}
-\label{eq:zcb}
-\end{equation}
+Bond, option, and other derivative prices depend fundamentally on the stochastic process followed by the short rate $r$ under a risk-neutral probability measure.
 
-\emph{Zero-coupon yield curve}, also called term structure of interest rates, is then formed by interest rates with different maturities.
+Let $Z(t, T)$ be the price at time $t$ of a zero-coupon bond with maturity $T$. The corresponding annualized continuously-compounded yield $R(t, T)$ is defined by the relation:
 
-The \emph{short rate} (also called \emph{instantaneous short rate}), $r(t)$, at time $t$ is the rate that applies to an infinitesimally short period at time $t$. It can be seen as the \emph{beginning} of the yield curve: 
+$$Z(t, T) = e^{-R(t, T)(T-t)} \implies R(t, T) = -\frac{\ln Z(t, T)}{T-t}$$
 
-\begin{equation}
-r(t) = \underset{T\rightarrow t^{+}}{lim}R(T)
-\label{eq:short_rate}
-\end{equation}
+The \textbf{zero-coupon yield curve} (or term structure of interest rates) represents the collection of these yields across various maturities $T$.
 
-From Equations~\ref{eq:zcb} and~\ref{eq:short_rate} it is clear that the term structure of interest rates at any time can be obtained from the value of $r$ at that time and the evolution process for $r$. They show that once the process for $r$ has been defined, everything about the initial zero curve and its evolution through time can be determined.
+The \textbf{instantaneous short rate} $r(t)$ at time $t$ represents the rate applicable over an infinitesimally short time interval. Analytically, it corresponds to the limit of the yield curve as maturity approaches the current time:
 
-Short rate models have been introduced in order to be able to explore the dynamics of $r(t)$. They generally owe their popularity to both their high degree of tractability and flexibility. For many models one can find explicit solutions for bond and bond option prices. They may be applied to price simple instruments in closed form or sometimes by deterministic numerical methods.
+$$r(t) = \lim_{T \to t^{+}} R(t, T)$$
 
-In particular, the stochastic evolution of short rate models is identified by the following generalized SDE
+Once the stochastic process for $r(t)$ is fully specified, the theoretical evolution of the entire yield curve is determined. Short-rate models are prized in quantitative finance for their high degree of mathematical tractability and flexibility, often yielding closed-form solutions for zero-coupon bonds and European options.
 
-\begin{equation}
-dr(t) = (\theta(t)-\alpha(t)r(t)) dt + \sigma(t)r(t)^{\gamma} dW
-\label{eq:short_rate_sde}
-\end{equation}
-This equation denotes a generic Gaussian Markov process where $\theta$, $\alpha$ and $\sigma$ in general are all deterministic functions of time and $dW$ is a Brownian motion.
+The risk-neutral evolution of these models is commonly represented by the generalized stochastic differential equation (SDE):
 
-\section{Equilibrium Models}\label{equilibrium-models}
+$$dr(t) = \left[\theta(t) - \alpha(t)r(t)\right] dt + \sigma(t)r(t)^{\gamma} dW(t)$$
+where $dW(t)$ is a standard Brownian motion under the risk-neutral measure, and $\theta$, $\alpha$, and $\sigma$ are deterministic functions of time governing the drift and diffusion terms.
 
-Equilibrium models usually start with assumptions about how the economy works and about economic variables themselves. Then they attempt to derive a process for the short rate $r(t)$ and explore what the defined process for $r$ may imply for bond and option prices.
+\subsection{Equilibrium vs. No-Arbitrage}
 
-Thus, the key idea behind this approach is to build an economically sound model, whose output are interest rates evolved as a consequence of market equilibrium. It is important to stress that they do not automatically fit today’s term structure of interest rates, but rather the current term structure is included as an output. 
+Short-rate models are generally categorized into two broad philosophical classes based on how they interact with market data:
+\begin{itemize}
+\item \textbf{Equilibrium Models}: these models originate from fundamental economic assumptions regarding macroeconomic variables and market equilibrium. They derive the short-rate process dynamically, treating the resulting term structure as an output. Consequently, equilibrium models do not automatically fit today’s observed term structure of interest rates verbatim (requiring parameter estimation or market calibration). Examples include the Vasicek and Cox-Ingersoll-Ross (CIR) models, where parameters ($\theta, \alpha, \sigma$) are typically assumed to be time-homogeneous constants.
+\item \textbf{No-Arbitrage Models}: these models are explicitly constructed to take today's observed yield curve as an exact input, ensuring that the model prices traded zero-coupon bonds perfectly at $t = 0$ (e.g., Hull-White or Black-Karasinski extensions).
+\end{itemize}
 
-Usually the risk-neutral process for the short rate is described by a SDE analogous to Eq.~\ref{eq:short_rate_sde} where $\theta$, $\alpha$ and $\sigma$ are assumed to be function of $r$ but independent of time.
+A prevalent subset within both categories is represented by \textbf{one-factor models}, in which the stochastic evolution of $r(t)$ is driven by a single Brownian motion $dW(t)$.
 
-A subset of such models, called \emph{one-factor equilibrium models}, is made of those whose process for $r$ involves only one source of uncertainty (i.e. one stochastic term). 
+By relying on a single source of uncertainty, one-factor models assume that the dynamics of the entire term structure are fully captured by the short rate. While this implies that all yields across different maturities must move in the same direction over any infinitesimal time interval, it does not restrict them to move by the same magnitude.
 
-One factor models are essentially assuming that the dynamics of the whole term structure is captured by the short rate, and its future evolution. Nevertheless, one factor models are not as restrictive as it might appear. They imply that all rates move in the same direction over any short time interval, but they do not assume that they move by the same amount. Yet, it is sometimes difficult or even infeasible to find a more or less realistic model based on one factor only.
+Although one-factor formulations provide immense analytical tractability, capturing complex yield curve shifts (such as twists and butterflies) often necessitates multi-factor extensions.
 
-\subsection{Vasicek Model}\label{vasicek-model}
+\section{Vasicek Model}\label{vasicek-model}
 
 In Vasicek model the process for $r$ is described by
 
 \begin{equation}
-dr = k(\theta - r_t)dt + \sigma dW
-\label{eq:vasicek_process}
+	dr = k(\theta - r_t)dt + \sigma dW
+	\label{eq:vasicek_process}
 \end{equation}
 where \(k\), \(\theta\) and \(\sigma\) are constants.
 
@@ -66,7 +56,7 @@ There are real economic arguments in favor of mean reversion. When rates are hig
 The Vasicek model incorporates this feature (the short rate is pulled to a level $\theta$ at a rate $k$), which is a good property, but interest rates can go negative, which instead is not such as good property.
 
 \begin{finmarkets}
-The following code implements the \texttt{VasicekModel} referring to the process described by Eq.~\ref{eq:vasicek_process}.
+	The following code implements the \texttt{VasicekModel} referring to the process described by Eq.~\ref{eq:vasicek_process}.
 \end{finmarkets}
 
 \pythoncodenon{code/short_rates_vasicek.py}
@@ -75,10 +65,10 @@ Figure~\ref{fig:vasicek_path} shows just various realizations of the short rate 
 Two facts can be noticed by this plot: each process starts at $r_0$, but is pulled towards 0.10 which is the value of $\theta$ (dashed red line), and the interest rate can drop below 0\%. The Figure also shows the expected value of the process.
 
 \begin{figure}[htb]
-  \centering
-  \includegraphics[width=0.7\linewidth]{figures/vasicek_short_rate}
-  \caption{A realization of a path determined with Vasicek model ($k=0.3, \theta=0.1, \sigma=0.03$).}
-  \label{fig:vasicek_path}
+	\centering
+	\includegraphics[width=0.7\linewidth]{figures/vasicek_short_rate}
+	\caption{A realization of a path determined with Vasicek model ($k=0.3, \theta=0.1, \sigma=0.03$).}
+	\label{fig:vasicek_path}
 \end{figure}
 
 \subsubsection{Vasicek Stochastic Differential Equation}
@@ -88,37 +78,37 @@ In this Section we outline the steps necessary to determine the solutions of Eq.
 Multiplying both sides by \(e^{kdt}\) and rearranging the terms gives
 
 \begin{equation*}
-e^{kdt}dr_t + e^{kdt}kr_t dt = e^{kt}k\theta dt + e^{kt}\sigma dW
+	e^{kdt}dr_t + e^{kdt}kr_t dt = e^{kt}k\theta dt + e^{kt}\sigma dW
 \end{equation*}
 The left-hand side follows the product rule for the derivative
 
 \begin{equation*}
-d(e^{kdt}r_t) = e^{kdt}dr_t + e^{kdt}kr_t dt= e^{kt}k\theta dt + e^{kt}\sigma dW
+	d(e^{kdt}r_t) = e^{kdt}dr_t + e^{kdt}kr_t dt= e^{kt}k\theta dt + e^{kt}\sigma dW
 \end{equation*}
 Then we can integrate both sides
 
 \begin{equation*}
-\int^{t=T}_{t=s} d(e^{kdt}r_t)\,dt = \int^T_s e^{kt}k\theta dt +\int^T_s e^{kt}\sigma dW
+	\int^{t=T}_{t=s} d(e^{kdt}r_t)\,dt = \int^T_s e^{kt}k\theta dt +\int^T_s e^{kt}\sigma dW
 \end{equation*}
 The integral on the left-hand is trivial since \(\int^b_a\,dx = x(b)-x(a)\), so
 
 \begin{equation*}
-e^{kT}r_T - e^{ks}r_s = \int^T_s e^{kt}k\theta\,dt +\int^T_s e^{kt}\sigma\,dW
+	e^{kT}r_T - e^{ks}r_s = \int^T_s e^{kt}k\theta\,dt +\int^T_s e^{kt}\sigma\,dW
 \end{equation*}
 and solving for $r(T)$
 
 \begin{equation*}
-r_T=e^{-k(T-s)}r_s+ e^{-kT}\int^T_s e^{kt}k\theta\,dt +e^{-kT}\int^T_s e^{kt}\sigma dW
+	r_T=e^{-k(T-s)}r_s+ e^{-kT}\int^T_s e^{kt}k\theta\,dt +e^{-kT}\int^T_s e^{kt}\sigma dW
 \end{equation*}
 The second term of the right-hand side is a simple deterministic integral
 
 \begin{equation*}
-e^{-kT}\int^T_s e^{kt}k\theta\,dt=e^{-kT}k\theta\int^T_s e^{kt}d_t=e^{-kT}k\theta\frac{1}{k}(e^{kt}|^T_s)= e^{-kT}\theta(e^{kT}-e^{ks})=\theta\left(1-e^{-k(T-s)}\right)
+	e^{-kT}\int^T_s e^{kt}k\theta\,dt=e^{-kT}k\theta\int^T_s e^{kt}d_t=e^{-kT}k\theta\frac{1}{k}(e^{kt}|^T_s)= e^{-kT}\theta(e^{kT}-e^{ks})=\theta\left(1-e^{-k(T-s)}\right)
 \end{equation*}
 Substituting back we get the searched solution
 
 \begin{equation}
-r_T=e^{-k(T-s)} r_s+\theta(1-e^{-k(T-s)})+ \sigma e^{-kT}\int^T_s e^{kt}\,dW
+	r_T=e^{-k(T-s)} r_s+\theta(1-e^{-k(T-s)})+ \sigma e^{-kT}\int^T_s e^{kt}\,dW
 \end{equation}
 
 The first thing to note is that the short rate is made of a deterministic term
@@ -126,34 +116,34 @@ and a stochastic integral.
 Therefore, the rate is distributed like a normal Gaussian
 
 \begin{equation*}
-r_T \sim \mathcal{N}(\mathbb{E}(r_t), \textrm{var}(r_t))
+	r_T \sim \mathcal{N}(\mathbb{E}(r_t), \textrm{var}(r_t))
 \end{equation*}
 We can also determine the mean and the variance of such a distribution.
 Concerning the mean
 
 \begin{equation}
-\mathbb{E}(r_T)=e^{-k(T-s)} r_s+\theta\left(1-e^{-k(T-s)}\right)
+	\mathbb{E}(r_T)=e^{-k(T-s)} r_s+\theta\left(1-e^{-k(T-s)}\right)
 \end{equation}
 where the property that $\mathbb{E}(\textrm{stochastic~Integral}) = 0$ has been used.
 
 Regarding the variance, noting that the variance of a deterministic variable is zero, we only need to calculate it for the stochastic integral. We can do this by using the It$\hat{o}$ Isometry, as the terms inside the Stochastic Integral are deterministic functions of time.
 
 \begin{equation*}
-\textrm{var}(r_T)=\mathbb{E}(r^2_T)-(\mathbb{E}(r_T))^2
+	\textrm{var}(r_T)=\mathbb{E}(r^2_T)-(\mathbb{E}(r_T))^2
 \end{equation*}
 where $(\mathbb{E}(r_T))^2 = 0$ therefore
 
 \begin{equation}
-\begin{aligned}
-\textrm{var}(r_T)&=\mathbb{E}(r^2_T)=\mathbb{E}(\sigma^2 \int^T_s e^{-2k(T-t)}\,dt)=\sigma^2 e^{-2kT} \mathbb{E}( \int^T_s e^{-2k(-t)}\,dt)=\\
-&=\sigma^2 e^{-2kT} \frac {1}{2k}(e^{2kT}-e^{2ks})=\sigma^2 \frac {1}{2k}(1-e^{2k(T-s)}) 
-\end{aligned}
+	\begin{aligned}
+		\textrm{var}(r_T)&=\mathbb{E}(r^2_T)=\mathbb{E}(\sigma^2 \int^T_s e^{-2k(T-t)}\,dt)=\sigma^2 e^{-2kT} \mathbb{E}( \int^T_s e^{-2k(-t)}\,dt)=\\
+		&=\sigma^2 e^{-2kT} \frac {1}{2k}(e^{2kT}-e^{2ks})=\sigma^2 \frac {1}{2k}(1-e^{2k(T-s)}) 
+	\end{aligned}
 \end{equation}
 where we have used that $dW^2 = dt$.
 So in conclusion the distribution of the stochastic rate is
 
 \begin{equation}
-r_T \sim \mathcal{N}(e^{-k(T-s)} r_s+\theta(1-e^{-k(T-s)}),\sigma^2 \frac {1}{2k}(1-e^{2k(T-s)}))
+	r_T \sim \mathcal{N}(e^{-k(T-s)} r_s+\theta(1-e^{-k(T-s)}),\sigma^2 \frac {1}{2k}(1-e^{2k(T-s)}))
 \end{equation}
 
 \subsubsection{Bond Pricing Equation}\label{bond-pricing-equation}
@@ -167,38 +157,38 @@ So let's set up a portfolio containing two bonds with different maturities $T_1$
 and $Z_2(r, t, T_2)$. We hold one of the former and a number $\Delta$ of the latter
 
 \begin{equation*}
-\Pi = Z_1-\Delta Z_2
+	\Pi = Z_1-\Delta Z_2
 \end{equation*}
 The change in this portfolio in a time $dt$ is given by
 
 \begin{equation*}
-d\Pi = \cfrac{\partial Z_1}{\partial t}dt + \cfrac{\partial Z_1}{\partial r}dr + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt - \Delta\left(\cfrac{\partial Z_2}{\partial t}dt + \cfrac{\partial Z_2}{\partial r}dr + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_2}{\partial r^2}dt\right)
+	d\Pi = \cfrac{\partial Z_1}{\partial t}dt + \cfrac{\partial Z_1}{\partial r}dr + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt - \Delta\left(\cfrac{\partial Z_2}{\partial t}dt + \cfrac{\partial Z_2}{\partial r}dr + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_2}{\partial r^2}dt\right)
 \end{equation*}
 where we have applied It$\hat{o}$'s lemma to functions of $r$ and $t$. All the randomness in this expression comes from $dr$ terms given that the rate follows Eq.~\ref{eq:vasicek_process} which contains the Brownian motion $dW$. So to eliminate it (hedging) we need to choose $\Delta$ such that $dr$ terms canceled out
 
 \begin{equation*}
-\Delta = \cfrac{\cfrac{\partial Z_1}{\partial r}}{\cfrac{\partial Z_2}{\partial r}}
+	\Delta = \cfrac{\cfrac{\partial Z_1}{\partial r}}{\cfrac{\partial Z_2}{\partial r}}
 \end{equation*}
 So we get
 
 \begin{equation*}
-d\Pi = \cfrac{\partial Z_1}{\partial t}dt + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt - \Delta\left(\cfrac{\partial Z_1}{\partial t}dt + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt\right) = r\, \Pi dt = r \left(Z_1 - \Delta Z_2\right)dt
+	d\Pi = \cfrac{\partial Z_1}{\partial t}dt + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt - \Delta\left(\cfrac{\partial Z_1}{\partial t}dt + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2}dt\right) = r\, \Pi dt = r \left(Z_1 - \Delta Z_2\right)dt
 \end{equation*}
 where we have used arbitrage arguments to set the return of the portfolio equal to the risk-free rate (i.e. this risk-free rate is just the spot rate). Rearranging the terms
 
 \begin{equation*}
-\cfrac{\cfrac{\partial Z_1}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2} - rZ_1}{\cfrac{\partial Z_1}{\partial r}}=\cfrac{\cfrac{\partial Z_2}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_2}{\partial r^2} - rZ_2}{\cfrac{\partial Z_2}{\partial r}}
+	\cfrac{\cfrac{\partial Z_1}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_1}{\partial r^2} - rZ_1}{\cfrac{\partial Z_1}{\partial r}}=\cfrac{\cfrac{\partial Z_2}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z_2}{\partial r^2} - rZ_2}{\cfrac{\partial Z_2}{\partial r}}
 \end{equation*}
 
 Since the two sides of the equation depend on $T_1$ and $T_2$ separately the only way for this to be possible is for both sides to be independent of the maturity date. So in general
 
 \begin{equation*}
-\cfrac{\cfrac{\partial Z}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial r^2} - rZ}{\cfrac{\partial Z}{\partial r}}= a(r, t)
+	\cfrac{\cfrac{\partial Z}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial r^2} - rZ}{\cfrac{\partial Z}{\partial r}}= a(r, t)
 \end{equation*}
 for some function $a(r, t)$. A convenient definition for $a$ is $a(r, t) = \sigma(r, t)\lambda(r, t)-u(r, t)$ which leads to the bond pricing equation
 \begin{equation}
-\cfrac{\partial Z}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial r^2} + (u-\lambda\sigma)\cfrac{\partial Z}{\partial r}-rZ = 0
-\label{eq:bond_pricing_equation}
+	\cfrac{\partial Z}{\partial t} + \cfrac{1}{2}\sigma^2 \cfrac{\partial^2 Z}{\partial r^2} + (u-\lambda\sigma)\cfrac{\partial Z}{\partial r}-rZ = 0
+	\label{eq:bond_pricing_equation}
 \end{equation}
 
 The function $\lambda$ is called the market price of risk since it can be interpreted as the excess return above the risk-free rate for accepting a certain level of risk.
@@ -208,66 +198,65 @@ The function $\lambda$ is called the market price of risk since it can be interp
 The value of a zero-coupon bond according to Eq.~\ref{eq:bond_pricing_equation} in the context of the Vasicek model is
 
 \begin{equation} 
-\begin{gathered}
-Z(0, T) = e^{A(0,T)-r_0 B(0,T)} \\
-B(0, T) = \cfrac{1-e^{-kT}}{k}\\
-A(0, T) = \cfrac{(B(0, T)-T)(k^2\theta - \sigma^2/2)}{k^2} - \cfrac{\sigma^2 B(0, T)^2}{4k}
-\label{eq:zcb_vasicek}
-\end{gathered}
+	\begin{gathered}
+		Z(0, T) = e^{A(0,T)-r_0 B(0,T)} \\
+		B(0, T) = \cfrac{1-e^{-kT}}{k}\\
+		A(0, T) = \cfrac{(B(0, T)-T)(k^2\theta - \sigma^2/2)}{k^2} - \cfrac{\sigma^2 B(0, T)^2}{4k}
+		\label{eq:zcb_vasicek}
+	\end{gathered}
 \end{equation}
 Furthermore
 \begin{equation}
-R(t, T) = \cfrac{1}{T-t} A(t,T)+\cfrac{1}{T-t}B(t, T)r(t)
-\label{eq:term_structure_vasicek}
+	R(t, T) = \cfrac{1}{T-t} A(t,T)+\cfrac{1}{T-t}B(t, T)r(t)
+	\label{eq:term_structure_vasicek}
 \end{equation}
 showing that the entire term structure can be determined as a function of $r(t)$ once the model parameters have been chosen.
 
 All the formulas discussed in the previous Sections have been implemented in the \texttt{VasicekModel}.
-
 To demonstrate some of the possible curve shapes allowed by the Vasicek model solving Eq.~\ref{eq:zcb}, Figure~\ref{fig:yield_vasicek} shows yield curves with different spot rates. Notice that the yield curve can be both increasing or decreasing with maturity.
 
 \begin{figure}[htb]
-    \centering
-    \includegraphics[width=0.7\linewidth]{figures/vasicek_yields}
-    \caption{Various yield curves computed according to the Vasicek model ($k=0.3, \theta=0.1, \sigma=0.03$).}
-    \label{fig:yield_vasicek}
+	\centering
+	\includegraphics[width=0.7\linewidth]{figures/vasicek_yields}
+	\caption{Various yield curves computed according to the Vasicek model ($k=0.3, \theta=0.1, \sigma=0.03$).}
+	\label{fig:yield_vasicek}
 \end{figure}
 
 Just to cross check the bond pricing formula was implemented correctly, the price using Eq.~\ref{eq:zcb_vasicek} versus the price using Monte Carlo simulation of $\mathbb{E}\left[e^{-\int_0^T r_s ds}\right]$ have been compared. The prices are in excellent agreement.
 
 \pythoncodenon{code/short_rates_vasicek_mc_check.py}
 \begin{ioutput}
-Exact Vasicek Price: 0.9614
-MC Price: 0.9609 +- 0.0005
+Exact Vasicek Price: 0.9697
+MC Price: 0.9697 +- 0.0002
 \end{ioutput}
 
 \subsubsection{Model Calibration}
 In order to estimate the Vasicek model parameters from market data, it is possible to discretize the SDE of Eq.~\ref{eq:vasicek_process} as follows
 \begin{equation*}
-r_{t=\delta t} = r_t (1-k\delta t) + k\theta\delta t + \sigma \sqrt{\delta t}\mathcal{N}(0,1)
+	r_{t=\delta t} = r_t (1-k\delta t) + k\theta\delta t + \sigma \sqrt{\delta t}\mathcal{N}(0,1)
 \end{equation*}
 which can be rearranged as
 \begin{equation}
-r_{t+\delta t} = ar_t + b + \epsilon
-\label{eq:vasicek_regression}
+	r_{t+\delta t} = ar_t + b + \epsilon
+	\label{eq:vasicek_regression}
 \end{equation}
 Equation~\ref{eq:vasicek_regression} can be used in a linear regression (see Section~\ref{sec:linear-regression}) to determine the model parameters as follows
 \begin{equation}
-\begin{gathered}
-k = \frac{1-a}{\delta t} \\
-\theta = \frac{b}{1-a} \\
-\sigma^2 = \frac{Var(\epsilon)}{\delta t}
-\end{gathered}
-\label{eq:vasicek_parameters_estimate}
+	\begin{gathered}
+		k = \frac{1-a}{\delta t} \\
+		\theta = \frac{b}{1-a} \\
+		\sigma^2 = \frac{Var(\epsilon)}{\delta t}
+	\end{gathered}
+	\label{eq:vasicek_parameters_estimate}
 \end{equation}
 
 As an example the Vasicek model has been calibrated on the 3-months Treasury Bills monthly data since 2010 (\href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/input_files/TB3MS.csv}{TB3MS.csv}). Figure~\ref{fig:TB3MS} reports the scatter plot of $r(t)$ vs $r(t+1)$.
 
 \begin{figure}[htb]
-\centering
-\includegraphics[width=0.7\linewidth]{figures/TB3MS}
-\caption{Scatter plot of 3-months Treasury Bills data since 2010.}
-\label{fig:TB3MS}
+	\centering
+	\includegraphics[width=0.7\linewidth]{figures/TB3MS}
+	\caption{Scatter plot of 3-months Treasury Bills data since 2010.}
+	\label{fig:TB3MS}
 \end{figure}
 
 The regression is performed in the following code, notice that it is necessary to remove possible \texttt{NaN} values from the dataframe for the algorithm to work. For a more detailed explanation of the regression summary please look in Sec.~\ref{sec:linear_regression}.
@@ -276,7 +265,7 @@ The corresponding Vasicek model parameter values have been estimated using Eqs.~
 \pythoncode{code/short_rates_vasicek_calibration.py}
 
 \begin{ioutput}
-                            OLS Regression Results                            
+OLS Regression Results                            
 ==============================================================================
 Dep. Variable:                  TB3MS   R-squared:                       0.964
 Model:                            OLS   Adj. R-squared:                  0.964
@@ -288,7 +277,7 @@ Df Residuals:                     138   BIC:                            -1417.
 Df Model:                           1                                         
 Covariance Type:            nonrobust                                         
 ==============================================================================
-                 coef    std err          t      P>|t|      [0.025      0.975]
+coef    std err          t      P>|t|      [0.025      0.975]
 ------------------------------------------------------------------------------
 const       9.773e-05      0.000      0.625      0.533      -0.000       0.000
 prec           0.9478      0.016     60.922      0.000       0.917       0.979
@@ -303,10 +292,10 @@ k: 0.627, theta: 0.0019, sigma: 0.018
 \end{ioutput}
 
 \begin{figure}[htb]
-\centering
-\includegraphics[width=0.7\linewidth]{figures/vasicek_calibrated_paths}
-\caption{Realizations of $r(t)$ with the Vasicek calibrated model ($k=0.63, \theta=0.0019, \sigma=0.018$).}
-\label{fig:vasicek_calibrated_paths}
+	\centering
+	\includegraphics[width=0.7\linewidth]{figures/vasicek_calibrated_paths}
+	\caption{Realizations of $r(t)$ with the Vasicek calibrated model ($k=0.63, \theta=0.0019, \sigma=0.018$).}
+	\label{fig:vasicek_calibrated_paths}
 \end{figure}
 
 \subsection{Cox, Ingersoll and Ross (CIR) Model}
@@ -334,24 +323,24 @@ A(t, T) = \left[\cfrac{2\gamma e^{(k+\gamma)(T-t)/2}}{(\gamma+k)(e^{\gamma(T-t)}
 \end{equation}
 with $\gamma = \sqrt {k^2 + 2\sigma^2}$. As in the Vasicek model the value of $r(t)$ determines the term structure level at time $t$.
 
-\begin{finmarkets}
-The following code implements the \texttt{CIRModel} class which has similar methods to \texttt{VasicekModel} for computing short rate, and zero coupon bond value.
-\end{finmarkets}
-
-\pythoncodenon{code/short_rates_cir.py}
+%\begin{finmarkets}
+%The following code implements the \texttt{CIRModel} class which has similar methods to \texttt{VasicekModel} for computing short rate, and zero coupon bond value.
+%\end{finmarkets}
+%
+%\pythoncodenon{code/short_rates_cir.py}
 
 Figures~\ref{fig:cir_path} and~\ref{fig:cir_yields} show respectively one simulation of the short rate and the interest rate resulting from the application of the CIR model. Notice how it remains always positive.
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=0.7\linewidth]{figures/cir_short_rate}
+\includegraphics[width=0.65\linewidth]{figures/cir_short_rate}
 \caption{Various realizations of short rate determined with CIR model ($k=0.3, \theta=0.07, \sigma=0.03$). The plot shows also the expected value and the $2\sigma$ band.}
 \label{fig:cir_path}
 \end{figure}
 
 \begin{figure}[htb]
 \centering
-\includegraphics[width=0.7\linewidth]{figures/cir_yields}
+\includegraphics[width=0.65\linewidth]{figures/cir_yields}
 \caption{Various yield curves computed according to the CIR model ($k=0.3, \theta=0.07, \sigma=0.03$).}
 \label{fig:cir_yields}
 \end{figure}

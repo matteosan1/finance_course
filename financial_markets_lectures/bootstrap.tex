@@ -1,14 +1,12 @@
 \chapter{Bootstrap}
 \label{sec:swaps-and-bootstrapping}
 
-In this Chapter the Overnight Index Swap contract is reviewed. Besides the financial arguments another very important mathematical technique is introduced: the \emph{bootstrapping}.
+In this Chapter the Overnight Index Swap contract is reviewed. Another very important mathematical technique is introduced: the \emph{bootstrapping}.
 
 \section{Overnight Index Swap}
 \label{overnight-index-swap}
 
-Interest rate swaps (IRS), that will be described in Chapter~\ref{sec:interest-rate-swaps}, are generally used to mitigate the risks of interest rates fluctuations or to benefit from expected decreasing rates.
-
-Overnight Index Swaps (OIS) are a particular kind of IRS which pay a floating coupon, determined by overnight rate fixings over the reference periods, against a fixed coupon. An OIS in general is defined by:
+Overnight Index Swaps (OIS) are a particular kind of Interest rate swaps (IRS) (will be described in Chapter~\ref{sec:interest-rate-swaps}) which pay a floating coupon, determined by overnight rate fixings over the reference periods, against a fixed coupon. An OIS in general is defined by:
 
 \begin{itemize}
 \tightlist
@@ -25,10 +23,12 @@ Overnight Index Swaps (OIS) are a particular kind of IRS which pay a floating co
 For simplicity in the following we are assuming that both fixed and floating legs have the same notional and payment dates, although this is not necessarily 
 always the case in practice. We will always look at these products from the point of view of the \textbf{receiver of the floating leg}.
 
-\subsection{OIS Valuation}\label{ois-valuation}
+\subsection{Valuation}
+\label{ois-valuation}
 The net present value (NPV) of such products is defined as the sum of the discounted cash-flows of each leg, see Sec.~\ref{sec:risk_neutral_pricing}.
 
-\subsubsection{Floating leg}\label{floating-leg}
+\subsubsection{Floating leg}
+\label{floating-leg}
 At each payment date, the floating leg pays a cash-flow determined as follows:
 
 \begin{equation}
@@ -56,7 +56,8 @@ Using Eq.~\ref{eq:no_arbitrage_r} the resulting expression can be written in ter
 \begin{equation*}
 (1+r_{d,d'}\tau_{d,d'}) = \left(\cfrac{1+r_{0, d'}\tau_{0,d'}}{1+r_{0,d}\tau_{0,d}}\right)
 \end{equation*}
-\noindent Finally it is useful to express the expectation in terms of discount factors
+\noindent 
+Finally it is useful to express the expectation in terms of discount factors
 
 \begin{equation*}
 \mathbb{E}[f_{\mathrm{float},~i}] = N\cdot\Big(\cfrac{D_{\mathrm{OIS}}(0, d_{i-1})}{D_{\mathrm{OIS}}(0, d_{i})} - 1\Big)\qquad \mathrm{where}\ D_{\mathrm{OIS}}(0,d)=\cfrac{1}{1+r_{0,d}\tau_{0,d}}
@@ -126,7 +127,7 @@ K = \cfrac{[D(d_0) - D(d_n)]}{\sum_{i=1}^{n}D(d_{i})\cfrac{d_i - d_{i-1}}{360}}
 Let's test the class using the following discount curve: 
 \href{https://github.com/matteosan1/finance_course/raw/master/input_files/discount_factors_2022-10-05.xlsx}{discount\_factors\_2022-10-05.xlsx}.
 
-\pythoncodenon{code/bootstrap_3.py}
+\pythoncodenon{code/bootstrap_1.py}
 
 \begin{ioutput}
 -2,162.61 EUR
@@ -139,20 +140,18 @@ In finance, the \emph{bootstrap algorithm} is a method for constructing a yield 
 The term structure of spot rates is obtained from the product yields by solving for them recursively, by \emph{forward substitution}. 
 The beauty of bootstrap resides on that using only a few carefully selected products, it is possible to derive forward and spot rates for all maturities.
 
-This algorithm relies on the assumption that market quotes represent the \textbf{fair price} of the contracts such that their NPVs are null. The fair price 
-is an estimate of what a willing buyer would pay a willing seller for a given asset, assuming both have a reasonable knowledge of the asset's worth.
+This algorithm relies on the assumption that market quotes represent the \textbf{fair price} of the contracts such that their NPVs are null. The fair price is an estimate of what a willing buyer would pay a willing seller for a given asset, assuming both have a reasonable knowledge of the asset's worth.
 
-To illustrate bootstrapping let's consider some bonds (yearly coupon of 4\%, 5\%, 6\%, 7\% and 8\% respectively) with maturities ranging from 1 to 5 years, 
-each having a value of 100 and traded at par. 
+To illustrate bootstrapping let's consider a set of bonds with yearly coupons of 4\%, 5\%, 6\%, 7\% and 8\% respectively and maturities ranging from 1 to 5 years, each currently traded at 100.
 
 To determine the yield curve proceed as follows:
 \begin{enumerate}
 \item at the end of the first year the $1^{st}$ bond will pay a coupon of 4 (= 100 * 4\%) plus the principal (=100) which sums up to 104 while the bond is 
-trading at 100. The implied 1-year spot rate $S_{1y}$ can be calculated from $\mbox{100} = \mbox{104} / (1 + S_{1y})$;
-\item at the end of second year the sum of the cash flows of the $2^{nd}$ bond can be compared to its trading price to compute the 2-year spot rate $S_{2y}$ 
-from $\mbox{100} = \mbox{5} / (1 + S_{1y}) + \mbox{105} / (1 + S_{2y})^{2}$ where the previously derived value of $S_{1y}$ is used;
+trading at 100. The implied 1-year spot rate $r_{1y}$ can be calculated from $\mbox{100} = \mbox{104} / (1 + r_{1y})$;
+\item at the end of second year the sum of the cash flows of the $2^{nd}$ bond can be compared to its trading price to compute the 2-year spot rate $r_{2y}$ 
+from $\mbox{100} = \mbox{5} / (1 + r_{1y}) + \mbox{105} / (1 + r_{2y})^{2}$ where the previously derived value of $r_{1y}$ is used;
 \item similarly at the end of third year we get the 3-year spot rate 
-$S_{3y}$ as $\mbox{100} = \mbox{6} / (1 + S_{1y}) + \mbox{6} / (1 + S_{2y})^{2} + \mbox{106} / (1 + S_{3y})^{3}$, using $S_{1y}$ and $S_{2y}$ computed before;
+$r_{3y}$ as $\mbox{100} = \mbox{6} / (1 + r_{1y}) + \mbox{6} / (1 + r_{2y})^{2} + \mbox{106} / (1 + r_{3y})^{3}$, using $r_{1y}$ and $r_{2y}$ computed before;
 \item and so on for all the remaining bonds\ldots
 \end{enumerate}
 
@@ -160,31 +159,32 @@ Putting all together we can construct a system of equations
 
 \begin{equation}
 \begin{cases}
-100 = \cfrac{104}{(1 + S_{1y})} \\
-100 = \cfrac{5}{(1 + S_{1y})} + \cfrac{105}{(1 + S_{2y})^{2}} \\
-100 = \cfrac{6} {(1 + S_{1y})} + \cfrac{6}{(1 + S_{2y})^{2}} + \cfrac{106} {(1 + S_{3y})^{3}} \\
-100 = \cfrac{7} {(1 + S_{1y})} + \cfrac{7} {(1 + S_{2y})^{2}} + \cfrac{7} {(1 + S_{3y})^{3}} + \cfrac{107} {(1 + S_{4y})^{4}} \\
-100 = \cfrac{8} {(1 + S_{1y})} + \cfrac{8} {(1 + S_{2y})^{2}}+ \cfrac{8} {(1 + S_{3y})^{3}} + \cfrac{8} {(1 + S_{4y})^{4}} + \cfrac{108} {(1 + S_{5y})^{5}}
+100 = \cfrac{104}{(1 + r_{1y})} \\
+100 = \cfrac{5}{(1 + r_{1y})} + \cfrac{105}{(1 + r_{2y})^{2}} \\
+100 = \cfrac{6} {(1 + r_{1y})} + \cfrac{6}{(1 + r_{2y})^{2}} + \cfrac{106} {(1 + r_{3y})^{3}} \\
+100 = \cfrac{7} {(1 + r_{1y})} + \cfrac{7} {(1 + r_{2y})^{2}} + \cfrac{7} {(1 + r_{3y})^{3}} + \cfrac{107} {(1 + r_{4y})^{4}} \\
+100 = \cfrac{8} {(1 + r_{1y})} + \cfrac{8} {(1 + r_{2y})^{2}}+ \cfrac{8} {(1 + r_{3y})^{3}} + \cfrac{8} {(1 + r_{4y})^{4}} + \cfrac{108} {(1 + r_{5y})^{5}}
 \end{cases}
 \label{eq:fifth_year_rate}
 \end{equation}
 
-This system can be solved quite easily: $S_{1y}$ can be derived from the first equation, $S_{2y}$ from the second, $S_{3y}$ from the third\ldots So
+This system can be solved quite easily: $r_{1y}$ can be derived from the first equation, $r_{2y}$ from the second, $r_{3y}$ from the third\ldots So
 
 \begin{equation}
-100 = 104 / (1 + S_{1y})\quad\Rightarrow\quad S_{1y} = 104/100 - 1 = 4\%
+100 = 104 / (1 + r_{1y})\quad\Rightarrow\quad r_{1y} = 104/100 - 1 = 4\%
 \end{equation}
 Moving to the second equation:
 \begin{equation}
 \begin{split}
-& 100 = 5 / (1 + 0.04) + 105 / (1 + S_{2y})^{2}\quad\Rightarrow\quad S_{2y}^2  + 2 S_{2y}  - 0.103030 = 0 \\
-& S_{2y} = - 1 \pm \sqrt{1 + 0.103030} = \begin{cases}\text{\sout{-2.05023}} \\ 0.0502\end{cases}
+& 100 = 5 / (1 + 0.04) + 105 / (1 + r_{2y})^{2}\quad\Rightarrow\quad r_{2y}^2  + 2 r_{2y}  - 0.103030 = 0 \\
+& r_{2y} = - 1 \pm \sqrt{1 + 0.103030} = \begin{cases}\text{\sout{-2.05023}} \\ 0.0502\end{cases}
 \end{split}
 \end{equation}
 where the first solution has been discarded because negative. This equation can also be solved in \texttt{python} with \texttt{numpy.roots}.
 
-From the third equation on, it is not as simple to solve them analytically since they involve third order (or more) equations, but is still possible to 
-compute a numerical solution.
+Notice that it would have been possible to bootstrap directly the discount factors by considering the $1/(1+r_n)^n$ term as the unknown.
+
+From the third equation on, it is not as simple to solve them analytically since they involve third order (or more) equations, but is still possible to compute a numerical solution.
 As an example assume all rates up to the fourth year have been calculated and just the last one needs to be determined. The last column of Table~\ref{tab:rates} 
 provides the terms to fill the yield curve.
 
@@ -223,7 +223,7 @@ which solves the equation should be around 0.08.
   \label{fig:fifth_year_rate}
 \end{figure}
 
-\pythoncodenon{code/bootstrap_4.py}
+\pythoncodenon{code/bootstrap_2.py}
 
 \begin{ioutput}
 5y rate: 0.0836
@@ -233,14 +233,14 @@ The very same mechanism can be generalized and extended to other maturities to g
 
 \begin{equation}
 \begin{cases}
-f_1(S_1, p_1) = 0 \\
-f_2(S_1, S_2, p_2) = 0 \\
-f_3(S_1, S_2, S_3, p_3) = 0 \\
-f_4(S_1, S_2, S_3, S_4, p_4) = 0 \\
+f_1(r_1, P_1) = 0 \\
+f_2(r_1, r_2, P_2) = 0 \\
+f_3(r_1, r_2, r_3, P_3) = 0 \\
+f_4(r_1, r_2, r_3, r_4, P_4) = 0 \\
 \cdots
 \end{cases}
 \end{equation}
-where $S_i$ are the unknown spot rates and $p_i$ the market quotes of the considered products. The iterative procedure we have applied before exploits the first equation to find $S_1 = f_1^{-1}(p_1)$, the second to find $S_2 = f_2^{-1}(S_1, p_2)$ and so on. Each equation determines exactly one spot rate which is not already determined by the others.
+where $r_i$ are the unknown spot rates and $P_i$ the market quotes of the considered products. The iterative procedure we have applied before exploits the first equation to find $r_1 = f_1^{-1}(P_1)$, the second to find $r_2 = f_2^{-1}(r_1, P_2)$ and so on. Each equation determines exactly one spot rate which is not already determined by the others.
 
 \subsection{Bootstrapping the Discount Curve}
 
@@ -256,8 +256,7 @@ Our choice concerns a set of Overnight Index Swaps indexed on \euro STR, in Fig.
 	\label{fig:icap}
 \end{figure}
 
-Note that interest rate swap quotes vary from standard prices of commonly traded instruments, they can be puzzling but are effectively interest rates 
-(i.e. the rate of the fixed leg).
+Note that interest rate swap quotes vary from standard prices of commonly traded instruments, they can be puzzling but are effectively interest rates (i.e. the rate of the fixed leg).
 
 OIS became the standard following the 2008 financial crisis; previously, the LIBOR curve was used, but its stability was called into question when the spread between LIBOR and other "risk-free" rates, like U.S. Treasury bills, widened dramatically. The floating leg of those instruments is based on a daily compounded overnight rate and this is generally considered the best proxy for a risk-free rate because the time horizon is so short (i.e. the risk of a bank defaulting on an overnight loan is significantly lower than on a longer-term loan, like those captured by LIBOR).
 
@@ -265,7 +264,7 @@ In the post-crisis world, a dual-curve bootstrapping methodology is used to pric
 
 The resulting dateset is stored in (\href{https://github.com/matteosan1/finance_course/raw/master/input_files/ois_2024_10_14.xlsx}{\texttt{ois\_2024\_10\_14.xlsx}}).
 
-\pythoncodenon{code/bootstrap_6.1.py}
+\pythoncodenon{code/bootstrap_3.py}
 
 \begin{ioutput}
   maturities    quotes     
@@ -288,12 +287,12 @@ Moving to the 14D OIS, its NPV depends on the 7D (already found) and 14D discoun
 determined by again requiring the net present value to be 0. The process iteratively will find a new discount factor for each OIS in the list defining the entire
 discount curve.
 
-\pythoncodenon{code/bootstrap_6.2.py}
+\pythoncodenon{code/bootstrap_4.py}
 
 Finally we have created the discount curve implied by the market quotes of our swaps (see Fig.~\ref{fig:discount_curve}), so we can compute some implied 
 rates.
 
-\pythoncodenon{code/bootstrap_6.3.py}
+\pythoncodenon{code/bootstrap_5.py}
 
 \begin{ioutput}
 40y df: 0.622
@@ -310,11 +309,11 @@ rates.
 \subsection{Bootstrap as Minimization Problem}
 \label{sec:bootstrap_as_minimization}
 
-The bootstrap algorithm can alternatively be seen under another point of view. Define a vector of spot rates $\mathbf{S} = (S_1, S_2, S_3, \ldots)$ and 
-seek for a particular set $\mathbf{\hat{S}}$ which solves the following equation:
+The bootstrap algorithm can alternatively be seen under another point of view. Define a vector of spot rates $\mathbf{r} = (r_1, r_2, r_3, \ldots)$ and 
+seek for a particular set $\mathbf{\hat{r}}$ which solves the following equation:
 
 \begin{equation}
-F = f_1^2(\hat{S}_1,p_1) + f_2^2(\hat{S}_1, \hat{S}_2,p_2) + f_3^2(\hat{S}_1, \hat{S}_2, \hat{S}_3,p_3) + f_4^2(\hat{S}_1, \hat{S}_2, \hat{S}_3, \hat{S}_4,p_4) + \ldots = 0
+F = f_1^2(\hat{r}_1,P_1) + f_2^2(\hat{r}_1, \hat{r}_2,P_2) + f_3^2(\hat{r}_1, \hat{r}_2, \hat{r}_3,P_3) + f_4^2(\hat{r}_1, \hat{r}_2, \hat{r}_3, \hat{r}_4,P_4) + \ldots = 0
 \label{eq:bootstrap_as_minimization}
 \end{equation}
 
@@ -375,22 +374,22 @@ Finally launch the minimizer to find the discount factors $\mathbf{x}$
  hess_inv: <30x30 LbfgsInvHessProduct with dtype=float64>
  \end{ioutput}
 
-A useful cross-check to perform to understand if everything went fine, is the comparison of the objective function value at the beginning and at the end of 
-minimization.
-
-\begin{ipythonnon}
-print ("Initial objective function value ", objective_function(x0, obs_date, 
-                                          pillar_dates, swaps))
-print ("Final objective function value ", objective_function(result.x, obs_date,
-                                          pillar_dates, swaps))
-\end{ipythonnon}
-\begin{ioutput}
-Initial objective function value  51601443377.52911
-Final objective function value  6.013612670431716e-06
-\end{ioutput}
-The objective function at the end of the minimization is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied: 
-the initial value was around $10^{10}$ and now it is $10^{-6}$ so several orders of magnitude smaller. This means that with the derived discount curve 
-the NPV's of our OIS won't be identically 0 but so small that can be regarded as they would.
+%A useful cross-check to perform to understand if everything went fine, is the comparison of the objective function value at the beginning and at the end of 
+%minimization.
+%
+%\begin{ipythonnon}
+%print ("Initial objective function value ", objective_function(x0, obs_date, 
+%                                          pillar_dates, swaps))
+%print ("Final objective function value ", objective_function(result.x, obs_date,
+%                                          pillar_dates, swaps))
+%\end{ipythonnon}
+%\begin{ioutput}
+%Initial objective function value  51601443377.52911
+%Final objective function value  6.013612670431716e-06
+%\end{ioutput}
+%The objective function at the end of the minimization is not exactly 0 (and rarely it will be) but its value is small enough for us to be satisfied: 
+%the initial value was around $10^{10}$ and now it is $10^{-6}$ so several orders of magnitude smaller. This means that with the derived discount curve 
+%the NPV's of our OIS won't be identically 0 but so small that can be regarded as they would.
 
 \subsection{Discount Factors with Pseudo-inverse}
 An alternative procedure to derive discount factors involves matrix inversion and in some special cases the usage of the \emph{pseudoinverse} described in Section~\ref{sec:the-moore-penrose-pseudoinverse}. Details on this algorithm can be found in~\cite{bib:boostrap_pseudoinv}.
@@ -417,7 +416,7 @@ The sought solution is
 \end{equation} 
 If matrix $[C]$ is not invertible (i.e. the system of equations is under-determined) $[C^{-1}]$ can be replaced by the optimal approximation $[C^+]$ (i.e. the pseudo-inverse). 
 
-To illustrate the algorithm let's consider again the previous example with five coupon bearing bonds (coupon of 4\%, 5\%, 6\%, 7\% and 8\% respectively) with maturities ranging from 1 to 5 years, each having a value of \euro{100} and traded at par. In this case we have
+To illustrate the algorithm let's consider again the previous example with five coupon bearing bonds (coupon of 4\%, 5\%, 6\%, 7\% and 8\% respectively) with maturities ranging from 1 to 5 years, each having a value of \euro{100}. In this case we have
 \begin{equation*}
 \boldsymbol{P} = 
 \begin{bmatrix}
@@ -445,7 +444,7 @@ d_5
 \end{equation*}
 The \texttt{python} implementation to determine the solution is given in the snippet below. The code use by default the pseudo-inverse since if $[C]$ is invertible holds $[C^+] = [C^{-1}]$. 
 
-\pythoncodenon{code/bootstrap_9.py}
+\pythoncodenon{code/bootstrap_8.py}
 
 \begin{ioutput}
 [0.96153846 0.90659341 0.83765291 0.75756548 0.66938146]	
@@ -463,5 +462,5 @@ which matches those in Table~\ref{tab:rates}.
 
 In this simple example just bonds were considered but clearly the method can be extended also to other instruments when creating the cash-flow matrix $[C]$.
 
-\section*{Exercises}
+%\section*{Exercises}
 %\input{bootstrap_ex_text}

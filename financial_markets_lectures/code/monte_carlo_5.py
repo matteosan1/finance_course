@@ -1,25 +1,9 @@
-from numpy.random import uniform, seed
-from numpy import sqrt, power
+import time
 
-def simulation(trials):
-  r = 1
-  in_circle = 0
-  for _ in range(trials):
-    x1 = -r + uniform()*2*r
-    x2 = -r + uniform()*2*r
-    distance = sqrt(x1**2 + x2**2)
-    if distance <= r:
-      in_circle += 1
-  return in_circle 
-  
-def simulation_v2(trials):
-  r = 1
-  x1 = uniform(-r, r, trials)
-  x2 = uniform(-r, r, trials)
-  distances = sqrt(power(x1, 2) + power(x2, 2))
-  return (distance <= r).sum()
-	
-seed(2)
-trials = 10000
-in_circle = simulation(trials)
-print (f"Approx. pi: {in_circle/trials*4}")
+seed(1)
+trials = [100, 1000, 10000, 100000, 1000000]
+for i, t in enumerate(trials):
+  t1 = time.time()
+  in_circle = simulation(t)
+  t2 = time.time() - t1
+  print (f"pi={in_circle/t*4:.6f} {t2:.4f}s")

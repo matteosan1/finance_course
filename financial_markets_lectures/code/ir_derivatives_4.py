@@ -1,26 +1,31 @@
-import pandas as pd
+import numpy as np
 
 from datetime import date
+from dates import GlobalConsts as gc, TimeInterval, yearFraction
+from curves import DiscountCurve, TermStructure
+from ird import InterestRateSwap
+from short_rate import VasicekModel
 
-from finmarkets import GlobalConst as gc
-from finmarkets import DiscountCurve, TermStructure, TimeInterval
+np.random.seed(42)
+r0 = 0.02
+a, b, sigma = 0.1, 0.03, 0.01
 
-obs_date = gc.OBS_DATE
-discount_data = pd.read_excel('discount_factors_2022-10-05.xlsx')
-euribor_data = pd.read_excel('euribor_curve.xlsx', sheet_name='EURIBOR6M')
-
-dates = [obs_date + TimeInterval(i) for i in discount_data['maturities']]
-dc = DiscountCurve(dates, discount_data.loc[:, 'dfs'])
-
-dates = [obs_date + TimeInterval(i) for i in euribor_data['maturities']]
-fr = TermStructure(dates, euribor_data.loc[:, 'rates']*0.01)
-
-exercise_date = obs_date + TimeInterval("1Y")
-nominal = 1e6
-strike = 0.031
+vasicek = VasicekModel(a, b, sigma)
+swaption_exercise = TimeInterval("1y")
+start_date_swap = gc.OBS_DATE + swaption_exercise
+swap_tenor = "5y"
+strike_K = 0.035
+nominal = 1_000_000
+float_freq = "6m"
+N = 5000
 volatility = 0.15
-swaption = InterestRateSwaption(nominal, start_date, exercise_date, "4y", \
-                                volatility, strike, "6m")
 
-price_bs = swaption.npv_Black(dc, fr)
-print (f"{price_bs:.2f}")
+swap_m = InterestRateSwap(nominal=nominal, start_date=start_date_swap, 
+                          maturity=swap_tenor, fixed_rate=strike_K, 
+                          frequency_float=float_freq, side="Receiver")
+swaption = Swaption(start_date=gc.OBS_DATE, 
+                    exercise_date=start_date_swap, 
+                    swap=swap_m)
+swaption_price, cl = swaption.npv(N, r0, 1/12, vasicek)
+
+print(f"Swaption Price: {swaption_price:,.2f} +- {cl:.2f} EUR")

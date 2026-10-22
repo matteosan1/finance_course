@@ -1,15 +1,10 @@
 import numpy as np
+from scipy.stats import norm
 
-from numpy.random import random
-
-def myrand(llim, ulim, n):
-    return random(size=n)*(ulim-llim) + llim
-
-def f(x, a):
-    return np.exp(-x)/(a+(x-1)**2)
-
-def integration_mc(f, args, llim, ulim, iter=10000):
-    vals = f(myrand(llim, ulim, iter), *args)
-    return (ulim-llim)*np.mean(vals)
-
-print (integration_mc(f, (3,), 0, 5, 1000000))
+samples = [1.,2.,3.,4.,4.,4.,5.,5.,5.,5.,4.,4.,4.,6.,7.,8.]
+alpha = 0.95
+X = np.array(samples)
+A = norm.ppf((1 + alpha)/2)
+m, se = np.mean(X), np.std(X)
+h = A*se/np.sqrt(len(samples))
+print (f"{alpha*100:.0f}% confidence int.: {m:.3f} +- {h:.3f}")

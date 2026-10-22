@@ -6,7 +6,8 @@ from finmarkets import GlobalConst as gc
 from finmarkets import TimeInterval
 
 class CreditCurve:
-  def __init__(self, pillars: Union[List[date], np.array], ndps: Union[List[float], np.array]):
+  def __init__(self, pillars: Union[List[date], np.array], 
+               ndps: Union[List[float], np.array]):
     if len(pillars) != len(ndps):
       raise ValueError("pillars and ndps must have the same length.")
     self.ndps = np.array(ndps, dtype=float) if isinstance(ndps, list) else ndps

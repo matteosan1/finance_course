@@ -6,12 +6,19 @@ from dates import TimeInterval, yearFraction
 from curves import DiscountCurve, TermStructure
 
 class InterestRateSwap:
-  def __init__(self, nominal: float, start_date: date, maturity: Union[str, TimeInterval], fixed_rate: float, 
-               frequency_float: str, frequency_fix: str="1y", side: str="Receiver", day_count_convention: str="ACT360"):      
+  def __init__(self, nominal: float, start_date: date, 
+               maturity: Union[date, str, TimeInterval], fixed_rate: float, 
+               frequency_float: str, frequency_fix: str="1y", 
+               side: str="Receiver", day_count_convention: str="ACT360"):      
     self.nominal = nominal
     self.start_date = start_date
-    self.maturity = maturity if isinstance(maturity, TimeInterval) \\
-      else TimeInterval(maturity)
+    if isinstance(maturity, TimeInterval):
+      self.maturity = maturity
+    elif isinstance(maturity, str):
+      self.maturity = TimeInterval(maturity)
+    elif isinstance(maturity, date):
+      dt = (maturity-start_date).days
+      self.maturity = TimeInterval(f"{dt}d")
     self.side = 1 if side == "Receiver" else -1
     self.day_count_convention = day_count_convention        
     self.fixed_rate = fixed_rate
@@ -23,7 +30,8 @@ class InterestRateSwap:
     for i in range(1, len(self.fix_dates)):
       if gc.OBS_DATE > self.fix_dates[i]:
         continue
-      tau = yearFraction(self.fix_dates[i-1], self.fix_dates[i], self.day_count_convention)
+      tau = yearFraction(self.fix_dates[i-1], self.fix_dates[i], 
+                         self.day_count_convention)
       a += tau*dc.df(self.fix_dates[i])
     return a
 
@@ -33,7 +41,8 @@ class InterestRateSwap:
       if gc.OBS_DATE > self.float_dates[j]:
         continue
       F = fc.forward_rate(self.float_dates[j-1], self.float_dates[j])
-      tau = yearFraction(self.float_dates[j-1], self.float_dates[j], self.day_count_convention)
+      tau = yearFraction(self.float_dates[j-1], self.float_dates[j], 
+                         self.day_count_convention)
       D = dc.df(self.float_dates[j])
       num += F * tau * D
     return num/self.annuity(dc)

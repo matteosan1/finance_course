@@ -1,5 +1,4 @@
-import pandas as pd, numpy as np
-import statsmodels.api as sm
+import pandas as pd, numpy as np, statsmodels.api as sm
 
 df = pd.read_csv("TB3MS.csv")
 df = df[df['DATE']>'2010-12-01']

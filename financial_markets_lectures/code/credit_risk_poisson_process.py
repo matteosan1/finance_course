@@ -11,7 +11,8 @@ class PoissonProcess(rv_continuous):
       self.times = np.array([])
     else:
       self.lambdas = np.array(lambdas, dtype=float)
-      self.times = np.array(times, dtype=float) if times is not None else np.array([])
+      self.times = np.array(times, dtype=float) \
+        if times is not None else np.array([])
 
     if len(self.lambdas) != len(self.times) + 1:
       raise ValueError(f"lambdas must have len(times) + 1, got "
@@ -64,14 +65,3 @@ class PoissonProcess(rv_continuous):
 
   def survival_prob(self, x):
     return np.exp(-self._cumulative_intensity(x))
-
-p = PoissonProcess(5)
-t = p.rvs(size=500)
-
-p1 = expon.fit(t)
-
-xplot = np.linspace(0.01, 1.5, 100)
-plt.hist(t, bins=20, density=True, color="xkcd:lightblue")
-plt.plot(xplot, expon.pdf(xplot, *p1), color="xkcd:red")
-plt.title("Inter-arrival time distribution")
-plt.show()

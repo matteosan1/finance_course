@@ -1,7 +1,7 @@
 \chapter{Interpolation, Root Finding and Minimization}
 \label{sec:interpolation}
 
-In this Chapter some very important mathematical tools will be reviewed. These will be intensively used later on throughout the book.
+In this Chapter some very important mathematical tools will be reviewed. These will be intensively used later on throughout this book.
 
 \section{Linear Interpolation}
 \label{linear-interpolation}
@@ -72,13 +72,13 @@ NASA took the entire responsibility for having vaporized about 300~M\$ in the Ma
 tests that would have caught this unit discrepancy~\cite{bib:mars}.	
 \end{curiosity}
 
-\subsubsection{Extrapolation Risk}
+\subsubsection{Extrapolation Issue}
 
-Interpolation is primarily designed to estimate values \textbf{within} the range of known data points. Attempting to extrapolate beyond the data range 
-can lead to inaccurate results and is generally discouraged. Extrapolation assumes that the relationship between data points remains constant \emph{also} outside 
-the known range, which may not be valid in general.
+Interpolation is primarily designed to estimate values \textbf{within} the range of known data points. Attempting to extrapolate beyond the data range can lead to inaccurate results and is generally discouraged. 
 
-Indeed if this assumption is not correct you can simple ask $\texttt{python}$ to raise an error to avoid misleading results
+Extrapolation assumes that the relationship between data points remains true \emph{forever}, which may not be valid in general.
+
+Indeed if this assumption is not correct you can simple ask $\texttt{python}$ to raise an error to avoid misleading results using the \texttt{bounds\_error} option
 \begin{ipython}
 interpolator = interp1d(t, dfs, bounds_error=True)
 \end{ipython} 
@@ -86,26 +86,24 @@ interpolator = interp1d(t, dfs, bounds_error=True)
 \subsection{Log-linear Interpolation}
 \label{log-linear-interpolation}
 
-When there is an exponential relationship between the two variables (e.g. $t$ and $p$) we can fall back to the linear case by a simple variable transformation. 
+When there is an exponential connection between the two variables (e.g. $t$ and $p$) we can fall back to the linear case by a simple transformation. 
 Imagine that $p=e^{-rt}$, applying the logarithm to both sides of the equation gives:
 
 \begin{equation}
 f = \log(p) = \log(\exp(-rt)) = -rt
 \end{equation}
-so there is a linear relation between the new variable $f$ and $t$. At this point we can use the results of the previous Section to interpolate for values of 
-$f$, just remember to exponentiate the final result to get the correct value of $p$.
+so there is a linear relation between the new variable $f$ and $t$. At this point we can use the results of the previous Section to interpolate for values of $f$, just remember to exponentiate the final result to get the correct value of $p$.
 
-\pythoncodenon{code/discount_1.1.py}
+\pythoncodenon{code/interp_1.py}
 
 \begin{ioutput}
 0.988
 \end{ioutput}
 
 \subsection{Limitations of Interpolation}
-Interpolation is just an approximation and works well when we are trying to apply it between two points that are close enough to believe that the function is 
-almost linear in that interval.
+Interpolation is just an approximation and it can be easily demonstrated that the underlying linear approximation of a function $f(x)$ gets worse as the second derivative of the function ($f''(x)$). 
 
-It can be easily demonstrated that the linear approximation between two points of a given function $f(x)$ gets worse with the second derivative of the approximated function ($f''(x)$). This is intuitively correct: the "curvier" the function, the worse the approximation made with simple linear interpolation, see Fig.~\ref{fig:sine_interp} where we try to interpolate a sine function.
+This is intuitively correct: the "curvier" the function, the worse the approximation made with simple linear interpolation, see Fig.~\ref{fig:sine_interp}.
 
 \begin{figure}
   \centering
@@ -114,26 +112,22 @@ It can be easily demonstrated that the linear approximation between two points o
   \label{fig:sine_interp}
 \end{figure}
 
-To improve the approximation accuracy with complicated curves e.g. in the evaluation of natural logarithm or trigonometric functions, a higher order polynomial 
-can be used ($p(x)=a_0 + a_1\cdot x + a_2\cdot x^2+\cdots$). It has to be clear however that going to higher degrees does not always help~\cite{bib:runge}.
-Some interpolation methods, indeed, can result in \emph{overfitting}. This means the interpolating function fits the data points very closely but may not 
-generalize well to unseen data, i.e. it can lead to excessive fluctuations between data points.
+To improve the approximation accuracy e.g. in the evaluation of natural logarithm or trigonometric functions, higher order polynomials can be used ($p(x)=a_0 + a_1\cdot x + a_2\cdot x^2+\cdots$). It has to be clear however that going to higher degrees does not always help~\cite{bib:runge}.
+Some interpolation methods, indeed, can result in \emph{overfitting}. This means the interpolating function fits the data points very closely but may not generalize well to unseen data, i.e. it can lead to excessive fluctuations between data points.
 
 \section{Root Finding}
 \label{sec:root_finding}
 
-To find the zeros of a function $f(x)$ means to determine the values $\hat{x}$ such that $f(\hat{x})=0$ and the process is equivalently called finding the 
-roots of $f(x)$. There are various methods to achieve that, in the following we will see few of them.
+To find the zeros of a function $f(x)$ means to determine the values $\hat{x}$ such that $f(\hat{x})=0$ and the process is equivalently called "finding the roots of $f(x)$". Below we are going to review few methods to perform root finding.
 
 \subsection{Bisection}
 \emph{Bisection}~\cite{bib:bisection} method is considered the simplest one-dimensional root-finding algorithm.
-Suppose we know two points of an interval $[a,b]$, and that $f(a)< 0$ and $f(b)> 0$.
-Since the value of $f(a)$ is negative and $f(b)$ is positive, the bisection method assumes that the root $x$ lies somewhere between $a$ and $b$.
 
-Taking the midpoint of this $[a, b]$ interval as $c$, the algorithm evaluates the value $f(c)$.
-If $f(c) = 0$ or is very close to zero by some predetermined error tolerance value, then a root is declared as found. If $f(c)< 0$, then we may conclude that a root exists along the interval $[c, b]$, or along $[a,c]$ otherwise.
+Suppose we know two points of an interval $[a,b]$ (see Fig.~\ref{fig:bisection}), and that $f(a)< 0$ and $f(b)> 0$. Since the value of $f(a)$ is negative and $f(b)$ is positive, we are certain that at least one root $x$ lies somewhere between $a$ and $b$.
 
-On the next evaluation, $c$ is replaced as either $a$ or $b$ accordingly. With the new interval shortened, the bisection method repeats with the same evaluation to determine the next value of $c$. This process continues, shrinking the width of the interval until the root is determined as found. Figure~\ref{fig:bisection} shows an example of bisection algorithm application.
+Taking the midpoint of the $[a, b]$ interval, say $c$, the algorithm evaluates the value $f(c)$. If $f(c) \simeq 0$ within some predetermined tolerance, then a root has been found. If $f(c)< 0$, then we may conclude that a root exists along the interval $[c, b]$, or along $[a,c]$ otherwise.
+
+On the next evaluation, $c$ is replaced as either $a$ or $b$ accordingly. With the new interval shortened, the bisection method repeats with the same evaluation to determine the next value of $c$. This process continues, shrinking the width of the interval until the root is found.
 
 \begin{figure}[htbp]
 \centering
@@ -142,14 +136,10 @@ On the next evaluation, $c$ is replaced as either $a$ or $b$ accordingly. With t
 \label{fig:bisection}
 \end{figure}
 
-The biggest advantage of the bisection method is it is guaranteed to converge to an approximation of the root, given a predetermined error tolerance level 
-and the maximum number of iterations allowed. It should be noted that the bisection method does not require knowledge of the derivative of the unknown 
-function. In certain continuous functions, the derivative could be complex or even impossible to calculate. This makes this method extremely valuable for 
-working on functions that are not smooth.
-Contrary, its major drawback is that it takes up more computational time in the iterative evaluation as compared to other root-finder methods. 
+The biggest advantage of the bisection method is it is guaranteed to converge to, at least, an approximation of the root. It should be noted that it does not require knowledge of the derivative of the unknown function $f(x)$, which in certain cases could be complex or even impossible to calculate. This makes this method extremely valuable for working on functions that are not smooth.
+Contrary, its major drawback is that it takes up more computational time in the iterative evaluation as compared to other methods. 
 
-Although this method is simple enough to be quickly implemented in \texttt{python} we will opt for the surely bug free version available as 
-\texttt{scipy.optimize.bisect} (for the usage of \texttt{args} see Section~\ref{sec:kwargs_args}).
+We can implement the bisection method with \texttt{scipy.optimize.bisect} (for the usage of \texttt{args} see Section~\ref{sec:kwargs_args}).
 
 \begin{ipythonnon}
 from scipy.optimize import bisect 
@@ -163,8 +153,7 @@ print (bisect(f, -3, 3, args=(1, -8, 4)))
 0.5358983848632306
 \end{ioutput}
 
-An alternative algorithm is the \emph{Brent's method}~\cite{bib:brent} which combines the advantages of both bisection and secant 
-(another root-finding algorithm) methods. Its \texttt{python} implementation is \texttt{scipy.optimize.brentq}.
+An alternative algorithm is the \emph{Brent's method}~\cite{bib:brent} which combines the advantages of both bisection and secant (another root-finding algorithm) methods. Its \texttt{python} implementation is \texttt{scipy.optimize.brentq}.
 
 \begin{ipythonnon}
 from scipy.optimize import brentq
@@ -180,38 +169,29 @@ The results match down to the eleventh digit.
 
 \subsection{Newton-Raphson Method}
 
-Newton's method, also known as the Newton-Raphson method, is a root-finding algorithm which produces successively better approximations to the roots (or zeroes) 
-of a real-valued function. 
-%The most basic version starts with a real-valued function f, its derivative f′, and an initial guess x0 for a root of f. If f satisfies certain assumptions and the initial guess is close, then
+Newton's method is a root-finding algorithm which produces successively better approximations to the roots (or zeroes) of a real-valued function. 
 
-The idea is to start with an initial guess $x_0$, then to approximate the function by its tangent line ($g(x)$), 
+The algorithm starts by choosing an initial guess $x_0$, then approximating the function with its tangent ($g(x)$), 
 \begin{equation*}
 g(x) = f(x_0) + \cfrac{\partial f}{\partial x}(x_0)(x - x_0)
 \end{equation*}
-and finally to compute the $x$-intercept of this tangent line. This $x$-intercept will typically be a better approximation to the original function's root 
-than the first guess, and the method can be iterated.
+and finally computing the $x$-intercept of this tangent line. The intercept will typically be a better approximation to the original function's root than the first guess, and the method can be iterated.
 
-Suppose the tangent line to the curve $f(x)$ at $x = x_n$ intercepts the $x$-axis at $x_{n+1}$ then we have two cases:
+Suppose the tangent to $f(x)$ at $x = x_n$ intercepts the $x$-axis at $x_{n+1}$ then we have two cases:
 \begin{enumerate}
-\item the original function value in $x_{n+1}$ is "close enough" to 0 such that we are happy with this approximate solution e.g.
-\begin{equation*}
-f(x_{n+1}) < \texttt{tol}=10^{-8}
-\end{equation*}
-where the parameter \texttt{tol} is set in advance. In this case we are done and the algorithm stops;
-\item otherwise we need to solve for $x_{n+1}$ and iterate the process again. Indeed 
+\item the original function value in $x_{n+1}$ is "close enough" to 0 such that we are fine with this approximated solution e.g. $f(x_{n+1}) < \texttt{tol}=10^{-8}$. In this case we are done and the algorithm stops;
+\item otherwise we need to solve for $x_{n+1}$ and iterate the process again
 \begin{equation*}
 g(x_{n+1}) = f(x_n) + \cfrac{\partial f}{\partial x}(x_n)(x_{n+1} - x_n) = 0
 \end{equation*}
-
 from which we get
 \begin{equation*}
 f(x_{n})-0 = f'(x_n)(x_{n}-x_{n+1}) \Rightarrow x_{n+1}=x_n-\frac {f(x_n)}{f'(x_n)}
 \end{equation*}
-
-Another iteration is then started from $x_{n+1}$.
+\item Another iteration is then started from $x_{n+1}$.
 \end{enumerate}
 
-The method will usually converge, provided this initial guess is close enough to the unknown zero, and that $f'(x_0) \neq 0$.
+The method will usually converge, provided the initial guess is close enough to the unknown zero, and $f'(x_0) \neq 0$.
 \begin{center}
 	\includegraphics[width=0.6\linewidth]{figures/newton_method}
 \end{center}
@@ -231,32 +211,21 @@ print (newton(f, 1, args=(1, -8, 4)))
 \section{Minimization  Algorithm}
 \label{sec:minimization-algorithm}
 
-Minimization algorithms are fundamental tools across various scientific and engineering disciplines, playing a crucial role in finding the best possible 
-solutions to problems by systematically reducing a defined \emph{objective function}. Whether it's minimizing energy in physics, cost in economics, 
-error in machine learning models, or resource usage in operations research, these algorithms iteratively search through a solution space to locate the point 
+Minimization algorithms are fundamental tools across various scientific and engineering disciplines, playing a crucial role in finding the best possible solutions to problems by systematically reducing a defined \emph{objective function}. Whether it's minimizing energy in physics, cost in economics, error in machine learning models, or resource usage in operations research, these algorithms iteratively search through a solution space to locate the point 
 that yields the smallest value of the function being optimized. 
 
-Their importance lies in enabling us to automate the process of finding optimal or near-optimal solutions to complex problems that would be intractable to 
-solve manually, leading to more efficient processes, better predictions, and improved designs.
+Their importance lies in enabling us to automate the process of finding optimal or near-optimal solutions to complex problems that would be intractable to solve manually, leading to more efficient processes, better predictions, and improved designs.
 
 \subsection{The Algorithm}
 The minimization algorithm follows these steps:
 
 \begin{itemize}
 \tightlist
-\item
-  define an \emph{objective function} i.e. the function that has to be minimized;
-\item
-  set the initial value of the unknown parameters ($\mathbf{x_0}$) and their range of variability (those are the parameters that will be changed to find 
-  the objective function minimum);
-\item
-  compute the objective function value;
-\item
-  move the parameter values to find a smaller value of the objective function (e.g. following the derivative direction w.r.t. each parameter); in 
-  case constraints are defined, they will be considered when the parameter values are varied;
-\item
-  repeat the previous two steps until further variations of $\mathbf{x}$ won't change significantly the objective
-  function (i.e. we have found a minimum of the function so the minimization process is completed !).
+\item define an \emph{objective function} i.e. the function that has to be minimized;
+\item set the initial value of the unknown parameters ($\mathbf{x_0}$) and their range of variability (those are the parameters that will be changed to find  the objective function minimum);
+\item compute the objective function value;
+\item move the parameter values to find a smaller value of the objective function (e.g. following the derivative direction w.r.t. each parameter); in case constraints are defined, they will be considered when the parameter values are varied;
+\item repeat the previous two steps until further variations of $\mathbf{x}$ won't change significantly the objective function (i.e. we have found a minimum of the function so the minimization process is completed !).
 \end{itemize}
 
 Let's see with a couple of examples how minimization can be implemented in \texttt{python} using the function \texttt{scipy.optimize.minimize}.
@@ -264,8 +233,7 @@ Let's see with a couple of examples how minimization can be implemented in \text
 \subsubsection{Reducing the Production Costs}
 \label{example}
 
-In this exampe we will try to determine the optimal size of a circular cylindrical can of volume, $330~\mathrm{cm}^3$, that minimizes the cost of manufacture, 
-see Figure~\ref{fig:cylinder}.
+Let's determine the optimal size of a circular cylindrical can of volume, $330~\mathrm{cm}^3$, that minimizes the cost of manufacture, see Figure~\ref{fig:cylinder}.
 
 \begin{figure}[ht]
 \centering
@@ -274,62 +242,53 @@ see Figure~\ref{fig:cylinder}.
 \label{fig:cylinder}
 \end{figure}
 
-Clearly to minimize the costs, you need to reduce the amount of aluminum used, consequently the can surface. 
-The objective function is given by the area of a cylinder
+To minimize the costs, you need to reduce the amount of alluminum used, consequently the can surface. The objective function is given by the area of the cylinder (the can is assumed to be smooth to simplify the calculation). On the other hand the can volume is fixed to 33~cl (or 330~$\mathrm{cm}^3$) so we get a system of two equations
 
-\begin{equation} 
-S = 2\pi rh + 2\pi r^2 
-\label{eq:can_surface}
-\end{equation}
-On the other hand the can volume is fixed to 33~cl or 330~$\mathrm{cm}^3$ and this allows to simplify the previous equation by removing $h$
-
-\begin{equation*} 
+$$
+\begin{cases}
+S = 2\pi rh + 2\pi r^2 \\
 V = \pi r^2 h = 330\quad\implies h = \cfrac{330}{\pi r^2}
-\end{equation*}
-Replacing $h$ in Eq.~\ref{eq:can_surface} 
+\label{eq:can_surface}
+\end{cases}
+$$
+Replacing $h$ in the first equation leads to
 
 \begin{equation}
 S = 2\pi rh + 2\cdot(\pi r^2) = \cfrac{2\cdot 330}{r} + 2\cdot(\pi r^2)
 \end{equation}
-The objective function depends on one parameter only \texttt{x[0]} which is the can radius. We are going to use a \texttt{list} (or a \texttt{numpy.array}) 
-even in this simple case so that the same code can be generalized to more complex problems with a larger number of parameters to minimize. 
-
-\pythoncodenon{code/bootstrap_5.py}
-
+The objective function depends on one parameter only \texttt{x[0]} which is the can radius. We are going to use a \texttt{list} (or a \texttt{numpy.array}) even if we deal with one parameter so that the same code can be generalized to more complex problems with a larger number of parameters.
 Set the limits to our unknown variable and its initial value and finally run the minimization.
 
+\pythoncodenon{code/interp_2.py}
 \begin{ioutput}
-     fun: 264.356810914805
-hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
-     jac: array([5.68434189e-06])
- message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
-    nfev: 24
-     nit: 9
-  status: 0
- success: True
-       x: array([3.7449385])
+  message: CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL
+  success: True
+   status: 0
+      fun: 264.35681091484054
+        x: [ 3.745e+00]
+      nit: 9
+      jac: [ 0.000e+00]
+     nfev: 24
+     njev: 12
+ hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>       
 \end{ioutput}
 
 Printing the result gives us the a lot of information about the minimization just performed, the most useful are:
 \begin{itemize}
-\item \texttt{func}: the objective function value at the last iteration;
+\item \texttt{fun}: the objective function value at the last iteration;
 \item \texttt{message}: the summary message (if it is \texttt{CONVERGENCE} is almost always OK);
 \item \texttt{success}: the name is self explanatory;
+\item \texttt{status}: should be 0;
 \item \texttt{x}: the vector of unknown parameters that have been optimized.
 \end{itemize}
 
-Referring to Fig.~\ref{fig:minimization_diagnostic} it can be understood how minimization works. On the left plot it is shown the objective function value at 
-each iteration, on the right the objective function vs the can radius is plotted.
-The parameter $x[0]$ starts with the initial value we have set (1) then it is moved, too far, to 100.0 and indeed the evaluation gives an even higher value. 
-$x[0]$ is then "adjusted" to $19.4\rightarrow 6.6\rightarrow 4.3\rightarrow 3.9\rightarrow 3.72\rightarrow 3.74\ldots$ always reducing the objective 
-function value. Notice that the parameter is always moved according to the objective function derivative $\cfrac{dS}{dr}$ though by different amount.
-Also the surface is a quadratic function of the radius so it is guaranteed to have just one minimum.
+Referring to Fig.~\ref{fig:minimization_diagnostic} it can be understood how minimization works, each step of the minimization is shown along the objective function down to the minimum. Notice that the surface is a quadratic function of the radius so it is guaranteed to have just one minimum.
 
 \begin{figure}[htb]
 \centering
 %\includegraphics[width=0.45\linewidth]{figures/objective_function_value}
 \includegraphics[width=0.80\linewidth]{figures/can_surface_2}
-\caption{Diagnostic plot for the minimization algorithm. Each step of the minimization is shown along the objective function down to the minimum.}
+\caption{Diagnostic plot for the minimization algorithm. The parameter $x[0]$ starts with the initial value $1$ then it is adjusted at each iteration in order to reduce the can surface.}
 \label{fig:minimization_diagnostic}
 \end{figure}
 
@@ -354,7 +313,7 @@ During the iterations of the minimization algorithm the parameter update is done
 
 This method has some limitations though:
 \begin{itemize}
-	\item it is slow for large samples;
+	\item is slow for large samples;
 	\item the learning rate (step size) is important. Too big, and we overshoot. Too small, and we crawl.
 \end{itemize}
 
@@ -375,13 +334,11 @@ $$
 	L'(\theta_i^{(t)})+L''(\theta_i^{(t)})s=0
 \end{gathered}
 $$
-
 Solving for the optimal step $s_k$:
 $$
 s_k=-\frac{L'(\theta_i^{(t)})}{L''(\theta_i^{(t)})}
 $$
-
-The Newton's update is:
+the Newton's update is:
 
 $$
 \theta_i^{(t+1)} = \theta_i^{(t)} - \alpha \frac{L'(\theta_i^{(t)})}{L''(\theta_i^{(t)})}
@@ -392,12 +349,11 @@ This method has some drawbacks too: calculating and inverting the Hessian is cos
 \subsection{Constrained Minimization (aka Fencing a Field)}
 \label{example-with-constraint}
 
-Here we are going to fence a rectangular field. If we look at the field from above the vertical sides fence cost is 10~EUR/m, the bottom side cost is 2~EUR/m 
-and that of the top side is 7~EUR/m. If we have a 700~EUR budget determine the field dimensions that will maximize the enclosed area, see Fig.~\ref{fig:field}.
+Imagine to fence a rectangular field. If we look at the field from above the vertical sides fence cost is 10~EUR/m, the bottom side cost is 2~EUR/m and that of the top side is 7~EUR/m. If we have a 700~EUR budget determine the field dimensions that will maximize the enclosed area, see Fig.~\ref{fig:field}.
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.4\textwidth]{figures/field.png}
+\includegraphics[width=0.5\textwidth]{figures/field.png}
 \caption{Graphical representation of the \emph{field} minimization example.}
 \label{fig:field}
 \end{figure}
@@ -406,22 +362,17 @@ In this example there are two differences with respect to the previous:
 
 \begin{itemize}
 \tightlist
-\item we want to \emph{maximize} a quantity (not minimize);
+\item we want to \emph{maximize} a quantity rather than to minimize;
 \item there is a constraint (we have a limited budget).
 \end{itemize}
 
-\pythoncodenon{code/bootstrap_6.py}
+\pythoncodenon{code/interp_3.py}
 
-So let's repeat the steps as before. The objective is to maximize the enclosed area $A$ but our algorithm can only minimize functions. To overcome this issue 
-the objective function can be defined to return the quantity $-A$, so that minimizing its value, the real objective, $A$, is maximized. 
-Define length and width of the field respectively as \texttt{x[0]} and \texttt{x[1]} (items of the \texttt{list} \texttt{x}):
+The objective is to maximize the enclosed area $A$ but our algorithm can only minimize functions. To overcome this issue the objective function can be defined to return the quantity $-A$, so that minimizing its value, the real objective, $A$, is maximized. 
+Define the field length and width as two items of an array \texttt{x]}, then set their boundaries, their initial values (1~m each) and each side cost and total budget.
 
-Then we can set the boundaries for length and width, their initial values (1~m each) and the other needed parameters.
-Finally we have to impose the budget constraint. This is done by defining a function that computes the fence cost and compare it to the total budget. 
-The constraint is passed to the minimizer as a dictionary (or a list  of dictionaries if there are more) which has three keys: \texttt{type}, in this case 
-set to \texttt{'eq'} (like equality, since we want to spend all of our available money so the fence has to cost \textbf{exactly} 700~EUR), \texttt{'fun'} 
-which defines the constraint function and \texttt{'args'} which is optional and set to a tuple whose items are the parameters for the constraint function 
-(see Section~\ref{sec:kwargs_args}).
+Finally we have to impose the budget constraint. This is done by defining a function that computes the fence cost and compare it to the total budget. The constraint is passed to the minimizer as a dictionary (or a list  of dictionaries if there are more) with three keys: \texttt{type}, here set to \texttt{'eq'} (i.e. equality, since we want to spend all of our available money so the fence has to cost \textbf{exactly} 700~EUR), \texttt{'fun'} 
+which defines the constraint function and \texttt{'args'} which is optional and set to a tuple whose items are possible additional parameters needed by the constraint function.
 
 The constraint is then defined as
 \begin{equation*}
@@ -432,15 +383,13 @@ The optimization result tells us that the field has to be 17.5~m long and 38.9~m
 
 \subsection{Why the Sum of Squared Residuals}
 	
-We are trying to find a single constant value, $c$, that best "fits" the following three data points: $y_1=1$, $y_2=2$, and $y_3=9$.
-Spoiler: the true best-fit constant is the mean: $c = (1+2+9)/3 = 4$.
+Imagine you need to find a single constant value, $c$, that best "fits" the following three data points: $y_1=1$, $y_2=2$, and $y_3=9$.
 
 \subsubsection{Wrong Objective Function: Simple Sum of Residuals}
-The objective function is the sum of the signed errors:
+Use an objective function which is the sum of the signed errors:
 
 $$L_1(c) = \sum_{i} (y_i - c)$$
-
-We want to find $c$ that minimizes $L_1(c)$.
+Let's compute by hand few values of $L_1$ with different candidates for the parameter $c$.
 
 \begin{table}[h]
 	\centering
@@ -488,10 +437,9 @@ For example, a terrible fit like $c=100$ would only appear a better choice becau
 
 \subsubsection{Right Objective Function: Sum of Squared Residuals}
 
-The objective function is the sum of the squared errors:
+Use an objective function with the sum of the squared errors:
 $$L_2(c) = \sum_{i} (y_i - c)^2$$
-
-We want to find $c$ that minimizes $L_2(c)$.
+We want to find $c$ that minimizes now $L_2(c)$.
 
 \begin{table}[h]
 	\centering
@@ -527,18 +475,17 @@ print (opts)
      njev: 7
 \end{ioutput}
 
-By \textbf{squaring the errors}, all terms become positive, completely \textbf{eliminating the cancellation problem}. The objective function $L_2(c)$ now accurately represents the total magnitude of the error.
+By \textbf{squaring the errors}, all terms become positive, \textbf{eliminating the cancellation problem}. The objective function $L_2(c)$ now accurately represents the total magnitude of the error.
 
 When you minimize $L_2(c)$ (by setting the derivative with respect to $c$ to zero), you are guaranteed to find the unique minimum at the \textbf{arithmetic mean} of the data, $c=4$, which is the correct and meaningful best-fit constant.
 
 \subsection{Local Minima}
 Minimization problems can be very nasty. For example when the objective function has various local minima, the parameter initial value choice can be critical. 
-Assume we would like to minimize an objective function like 
+Assume we would like to minimize something like Fig.~\ref{fig:local_minima}
 
 \begin{equation*}
 f(x) = \cfrac{\mathrm{cos}(3\pi x)}{x}
 \end{equation*}
-This function is plotted in Fig.~\ref{fig:local_minima} in the range $[0, 2]$, and clearly it has many minima. 
 
 \begin{figure}[htb]
 	\centering
@@ -555,19 +502,19 @@ r = minimize(func, x0, bounds=bounds)
 print (r)
 \end{ipythonnon}
 \begin{ioutput}
-     fun: array([-1.00569871])
-hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
-     jac: array([-4.4408921e-07])
- message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
-    nfev: 16
-     nit: 5
-  status: 0
- success: True
-       x: array([0.98865633])
+  message: CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL
+  success: True
+   status: 0
+      fun: -1.005698713865489
+        x: [ 9.887e-01]
+      nit: 5
+      jac: [-4.441e-07]
+     nfev: 16
+     njev: 8
+ hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
 \end{ioutput}
-The minimization worked perfectly and we found $x=0.98865633$ (i.e. the red point in Fig.~\ref{fig:local_minima}) but this is not the absolute minimum we 
-were expecting to find. The problem arise since the algorithm, following the derivative direction, has got stuck in a local minimum without any possibility 
-to jump out the well.
+The minimization worked perfectly and we found $x=0.9887$ (i.e. the red point in Fig.~\ref{fig:local_minima}) but this is not the absolute minimum we 
+were expecting to find. The algorithm, following the derivative direction, has got stuck in the local minimum without any possibility to jump out the well.
 
 If we repeat the minimization using as initial value $0.5$ instead
 \begin{ipythonnon}
@@ -578,23 +525,19 @@ r = minimize(func, x0, bounds=bounds)
 print (r)
 \end{ipythonnon}
 \begin{ioutput}
-     fun: array([-3.17151711])
-hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
-     jac: array([9.76996262e-07])
- message: b'CONVERGENCE: NORM_OF_PROJECTED_GRADIENT_<=_PGTOL'
-    nfev: 16
-     nit: 5
-  status: 0
- success: True
-       x: array([0.29691798])
+  message: CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL
+  success: True
+   status: 0
+      fun: -3.171517111385885
+        x: [ 2.969e-01]
+      nit: 5
+      jac: [ 8.882e-07]
+     nfev: 16
+     njev: 8
+ hess_inv: <1x1 LbfgsInvHessProduct with dtype=float64>
 \end{ioutput}
-Now clearly the algorithm found the absolute minimum in $x=0.29691798$ (i.e. the green point in Fig.~\ref{fig:local_minima}) because there was no chance to 
-find a local minimum during the iterations.
+Now clearly the algorithm found the absolute minimum in $x=0.2969$ (i.e. the green point in Fig.~\ref{fig:local_minima}).
 
-This is just an example of what could happen when minimizing a function. When dealing with complicated cases it is possible to make a \emph{scan} of the objective 
-function to try to approximately determine where the global minimum is and choose suitable initial values of the guess parameters.
-%However there shouldn't be such an issue in the application of the bootstrap algorithm since the function that is minimized is a sum of squared terms which 
-%has no local minimum, just a global one (i.e. it is a hyper-parabola).
+This is just an example of what could happen when minimizing a function. When dealing with complicated cases it is possible to make a \emph{scan} of the objective function to try to approximately determine where the global minimum is and choose suitable initial values of the guess parameters.
 
-\section*{Exercises}
-%\input{bootstrap_ex_text}
+%\section*{Exercises}

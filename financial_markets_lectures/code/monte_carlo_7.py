@@ -1,8 +1,13 @@
 import numpy as np
-from scipy.integrate import quad
-	
-def f(x, a):
-    return np.exp(-x)/(a+(x-1)**2)
-	
-s = quad(f, 0, np.inf, args=(3,))
-print (s)
+import matplotlib.pyplot as plt
+
+true_value = 1/130
+experiments = 300
+simulations = 1000
+r = []
+for e in range(experiments):
+  seed(e*experiments)
+  r.append(draw_sim(simulations))
+
+print (f"mu_true: {true_value:.6f}")
+print (f"mu: {np.mean(r):.6f} +- {np.std(r)/np.sqrt(experiments):.6f}")
