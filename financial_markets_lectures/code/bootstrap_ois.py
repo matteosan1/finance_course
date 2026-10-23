@@ -1,8 +1,9 @@
 from datetime import date
 from typing import Union
 
-from finmarkets import TimeInterval, yearFraction, DiscountCurve
-       
+from dates import GlobalConsts as gc, TimeInterval, yearFraction
+from curves import DiscountCurve
+
 class OvernightIndexSwap:
   def __init__(self, nominal: float, start_date: date, 
                maturity: Union[str, TimeInterval], fixed_rate: float, 
@@ -10,13 +11,13 @@ class OvernightIndexSwap:
                day_count_convention: str="ACT360"):      
     self.nominal = nominal
     self.start_date = start_date
-    self.maturity = maturity if isinstance(maturity, TimeInterval) \\
+    self.maturity = maturity if isinstance(maturity, TimeInterval) \
       else TimeInterval(maturity)
     self.side = 1 if side == "Receiver" else -1
     self.day_count_convention = day_count_convention        
     self.fixed_rate = fixed_rate
     self.fix_dates = self.maturity.generate_schedule(start_date, frequency_fix)        
-   
+
   def _npv_floating(self, dc: DiscountCurve) -> float:
     return self.nominal * (dc.df(self.fix_dates[0]) - dc.df(self.fix_dates[-1]))
   
@@ -29,6 +30,6 @@ class OvernightIndexSwap:
                          self.day_count_convention)
       val += dc.df(self.fix_dates[i]) * tau
     return self.nominal*self.fixed_rate*val
-          
+  
   def npv(self, dc: DiscountCurve) -> float: # type: ignore
     return self.side*(self._npv_floating(dc) - self._npv_fixed(dc))

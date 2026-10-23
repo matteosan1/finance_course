@@ -1,6 +1,4 @@
-import datetime
-
-from datetime import date
+from datetime import date, datetime
 from typing import Union
 
 def yearFraction(start_date: Union[str, date], end_date: Union[str, date], 
@@ -15,4 +13,4 @@ def yearFraction(start_date: Union[str, date], end_date: Union[str, date],
   elif day_count_convention == "ACT360":
       return days / 360
   else:
-      raise ValueError(f"Convenzione non supportata: {day_count_convention}") 
+      raise ValueError(f"Convenzione non supportata: {day_count_convention}")

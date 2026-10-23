@@ -1,6 +1,6 @@
 import pandas as pd
 
-from finmarkets.ml.pca import PCAWrapper
+from pca import PCAWrapper
 
 df = pd.read_csv("DGS_2017_2018.csv", index_col="date")
 

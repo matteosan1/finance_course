@@ -3,7 +3,8 @@ import numpy as np
 from scipy.interpolate import interp1d
 from typing import Union, List
 
-from finmarkets import GlobalConst as gc, yearFraction
+from dates import GlobalConsts as gc, TimeInterval
+from curves import DiscountCurve
 
 class TermStructure:
   def __init__(self, pillars: Union[np.array, List[date]], 

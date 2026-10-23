@@ -1,10 +1,11 @@
-from finmarkets import GlobalConst as gc, TimeInterval, TermStructure
+from dates import GlobalConsts as gc, TimeInterval
+from curves import TermStructure
 
 t0 = gc.OBS_DATE
 spot_rates = [0.09, 0.095, 0.10]
-t1 = t0 + TimeInterval('1Y')
-t2 = t0 + TimeInterval('2Y')
-t3 = t0 + TimeInterval('3Y')
+t1 = gc.OBS_DATE + TimeInterval('1Y')
+t2 = gc.OBS_DATE + TimeInterval('2Y')
+t3 = gc.OBS_DATE + TimeInterval('3Y')
 
 pillars = [t1, t2, t3]
 
