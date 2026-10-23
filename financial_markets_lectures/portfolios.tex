@@ -132,7 +132,7 @@ The application of this model reduces to a minimization problem: given the covar
 \end{equation}
 with the constraints $\sum_{i}w_i = 1$ , $0 \le w_i \le 1$ and $\mathbf{w}\cdot\mathbf{R}=R_{\textrm{target}}$.
 
-In \texttt{python} we have already seen how to solve minimization problems (see Section~\ref{sec:minimization-algorithm}) so it is enough to repeat the same steps.
+In \texttt{python} we have already seen how to solve minimization problems (see  Section~\ref{sec:minimization-algorithm}) so it is enough to repeat the same steps.
 %:
 %
 %\begin{itemize}
@@ -159,6 +159,8 @@ Expected portfolio return: 0.25
 \end{ioutput}
 
 The optimization recommends to devote about 44\% of the portfolio to AAPL, about 10\% to AMZN, 12\% to FB and so on\ldots The expected return is 25\% as desired, with a variance of about 0.036 or, equivalently, a standard deviation of 0.19.
+
+Note that if a \texttt{target\_return} is not specified the algorithm find the \textit{absolute} minimum variance portfolio, the one with the lowest possible risk given the investment universe regardless the portfolio return.
 
 There is no precise way for an investor to determine the “correct” trade off between risk and return. The desired higher expected return needs to be paid for with higher risk. Thus, one is frequently interested in looking at the relative distribution of the two.
 In finance terminology, means to trace the \emph{efficient frontier of return and risk}. This can be done by solving the previous minimization for a variety of target returns.
@@ -213,18 +215,18 @@ The calculation of this portfolio risk is simple because the standard deviation 
 \begin{equation*}
 \sigma_p = (1-w_f)\cdot \sigma_r
 \end{equation*}
-In this simple example, if an investor invested 100\% into the risk-free asset ($w_f=1$), the expected return would be 3\% and the risk of the portfolio would be 0\%. Otherwise, investing 100\% into the stock ($w_f=0$) would give an investor an expected return of 10\% and a portfolio risk of 20\%. If the investor allocated 25\% to the risk-free asset and 75\% to the risky asset, the portfolio expected return and risk calculations would be
+%In this simple example, if an investor invested 100\% into the risk-free asset ($w_f=1$), the expected return would be 3\% and the risk of the portfolio would be 0\%. Otherwise, investing 100\% into the stock ($w_f=0$) would give an investor an expected return of 10\% and a portfolio risk of 20\%. If the investor allocated 25\% to the risk-free asset and 75\% to the risky asset, the portfolio expected return and risk calculations would be
+%
+%\begin{equation*}
+%\begin{gathered}
+%\mathbb{E}(R_p) = (3\% \cdot 25\%) + (10\% \cdot 75\%) = 0.75\% + 7.5\% = 8.25\% \\
+%\sigma_p = 75\% \cdot 20\% = 15\%
+%\end{gathered}
+%\end{equation*}
+%\noindent
+%If you plot these three points they lay on a line.
 
-\begin{equation*}
-\begin{gathered}
-\mathbb{E}(R_p) = (3\% \cdot 25\%) + (10\% \cdot 75\%) = 0.75\% + 7.5\% = 8.25\% \\
-\sigma_p = 75\% \cdot 20\% = 15\%
-\end{gathered}
-\end{equation*}
-\noindent
-If you plot these three points they lay on a line.
-
-If we added a risk-free asset, with an expected return of 10\%, to the five risky ones considered so far we could repeat the Markowitz minimization to determine the efficient frontier of the resulting portfolio.
+If we added a risk-free asset, with an expected return of 10\%, to the five risky ones considered so far we could repeat the Markowitz minimization to determine the efficient frontier of the resulting portfolio. We need to update the \texttt{PortfolioOptimizer} class to take into account the new asset, in particular we update the return vector, appending the risk-free return, and the covariance matrix, adding a row and a column with zeros.
 
 \pythoncodenon{code/portfolios_cal.py}
 
@@ -608,13 +610,11 @@ where $\lambda_N$ is the smallest empirical eigenvalue;
 
 A security total risk can be divided into \emph{unsystematic}, the risk portion peculiar to the company that can be diversified away, and systematic, the non-diversifiable portion that is related to the movement of the stock market and is therefore unavoidable.
 
-Diversification is a common topic in portfolio construction and allows to combine risky stocks so that the resulting portfolio is less risky than the sum of its components. Although such diversification is a familiar notion, it may be worthwhile to review the manner in which diversification reduces risk.
-
-Suppose there are two companies located on an isolated island whose chief industry is tourism. One company manufactures suntan lotion; its stock predictably performs well in sunny years and poorly in rainy ones. The other company produces umbrellas; its stock performs equally poorly in sunny years and well in rainy ones. Each company earns a 12\% average return.
-
-In purchasing either stock, investors incur a great amount of risk because of the price variability driven by fluctuations in weather conditions. Investing half the funds in the suntan lotion stock and half in the umbrella manufacturer stock, however, results in a return of 12\% regardless of which weather condition prevails. Portfolio diversification thus transforms two risky stocks, each with an average return of 12\%, into a risk-less portfolio certain of earning the expected 12\%.
-
-Unfortunately, the perfect negative relationship between the returns on these two stocks is very rare in real world. To some extent, corporate securities move together, so complete elimination of risk through simple portfolio diversification is impossible. However, as long as some lack of parallelism in the returns of securities exists, diversification will always reduce risk.
+\textbf{Diversification} is a common topic in portfolio construction and allows to combine risky stocks so that the resulting portfolio is less risky than the sum of its components. 
+%Although such diversification is a familiar notion, it may be worthwhile to review the manner in which diversification reduces risk.
+%Suppose there are two companies located on an isolated island whose chief industry is tourism. One company manufactures suntan lotion; its stock predictably performs well in sunny years and poorly in rainy ones. The other company produces umbrellas; its stock performs equally poorly in sunny years and well in rainy ones. Each company earns a 12\% average return.
+%In purchasing either stock, investors incur a great amount of risk because of the price variability driven by fluctuations in weather conditions. Investing half the funds in the suntan lotion stock and half in the umbrella manufacturer stock, however, results in a return of 12\% regardless of which weather condition prevails. Portfolio diversification thus transforms two risky stocks, each with an average return of 12\%, into a risk-less portfolio certain of earning the expected 12\%.
+Unfortunately, the perfect negative relationship between the returns on two stocks is very rare in real world. To some extent, corporate securities move together, so complete elimination of risk through simple portfolio diversification is impossible. However, as long as some lack of parallelism in the returns of securities exists, diversification will always reduce risk.
 Empirical studies have demonstrated that risk can be virtually eliminated in portfolios of 30 to 40 randomly selected stocks. Of course, if investments are made in closely related industries, more securities are required to eradicate it.
 
 When using the standard variation of the portfolio return as a measure of the risk, as in the Markowitz model, it is easy to show how diversification allows to reduce the risk.
@@ -651,44 +651,50 @@ D=\cfrac{\mathbf{w}^T\boldsymbol{\sigma}}{\sqrt {\mathbf{w}^T\Sigma \mathbf{w}}}
 where $\boldsymbol{\sigma}$ is the vector of volatilities and $\Sigma$ is the covariance matrix. The denominator represents portfolio volatility and the numerator the asset weighted average volatilities. More diversification within a portfolio decreases the denominator and leads to a higher diversification ratio.
 Let's construct a portfolio that maximize this ratio.
 
-\begin{ipython}
-def diversification_ratio(w):
-    w_vol = np.dot(np.sqrt(np.diag(covariance)), w.T)
-    port_vol = np.sqrt(np.dot(w.T, np.dot(covariance, w)))
-    diversification_ratio = w_vol/port_vol
-    return -diversification_ratio
+\begin{ipythonnon}
+def _sum_weights(w: np.array) -> float:
+  return np.sum(w) - 1.0
 
+def diversification_ratio(w):
+  w_vol = np.dot(np.sqrt(np.diag(covariance)), w.T)
+  port_vol = np.sqrt(np.dot(w.T, np.dot(covariance, w)))
+  diversification_ratio = w_vol/port_vol
+  return -diversification_ratio
+
+covariance = optimizer.covariance
+returns = optimizer.returns
+num_assets = len(optimizer.assets)
 bounds = tuple((0, 1) for asset in range(num_assets))
-cons = ({'type': 'eq', 'fun': sum_weights},)
+cons = ({'type': 'eq', 'fun': _sum_weights},)
 #cons = cons + ({'type': 'ineq', 'fun': long_only_constraint},)
 weights = [1./num_assets for _ in range(num_assets)]
 opts = minimize(diversification_ratio, weights, bounds=bounds,
                 constraints=cons)
 print (opts)
-\end{ipython}
+\end{ipythonnon}
 \begin{ioutput}
-    fun: -1.3580745811820554
-    jac: array([-0.00035974,  0.00029349, -0.00035594,  0.00077944,
-                 0.00016446])
-message: 'Optimization terminated successfully.'
-   nfev: 36
-    nit: 5
-   njev: 5
- status: 0
-success: True
-      x: array([0.34867985, 0.18062199, 0.15557008, 0.1235694, 0.19155868])
+    message: Optimization terminated successfully
+    success: True
+     status: 0
+        fun: -1.3545218215934602
+          x: [ 3.500e-01  1.803e-01  1.552e-01  1.236e-01  1.909e-01]
+        nit: 5
+        jac: [-3.762e-04  3.166e-04 -4.323e-04  8.811e-04  1.648e-04]
+       nfev: 32
+       njev: 5
+multipliers: [ 9.138e-05]
 \end{ioutput}
 \begin{ipythonnon}
 ret = np.sum(returns*opts.x)
 vol = np.sqrt(opts.x.T.dot(np.dot(covariance, opts.x)))
-print ("Return: ", ret)
-print ("Vol: ", vol)
-print ("Diversification: ", -opts.fun)
+print (f"Return: {ret:.3f}")
+print (f"Vol: {vol:.3f}")
+print (f"Diversification: {-opts.fun:.3f}")
 \end{ipythonnon}
 \begin{ioutput}
-Return:  0.32143376694380044
-Vol:  0.20743461253140413
-Diversification:  1.360393553158368
+Return: 0.280
+Vol: 0.207
+Diversification: 1.355
 \end{ioutput}
 Figure~\ref{fig:max_div} shows how the maximum diversified portfolio compares to the efficient frontier.
 

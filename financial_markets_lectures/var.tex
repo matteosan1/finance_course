@@ -16,7 +16,7 @@ In this Chapter we will concentrate specifically on two of them: VaR and ES.
 \text{VaR}_{\alpha}(X) = -F^{-1}_X(\alpha)
 \label{eq:var}
 \end{equation}
-Mathematically it is the loss corresponding to the $(100-X)\textrm{th}$ percentile of the portfolio returns over the next $N$ days (e.g. in Figure~\ref{fig:var_loss} the graphical representation of the VaR, with $N=1$ and $X=95$, is shown; in the example a normal distribution for the changes in value is assumed). By definition it is a function of two parameters: the time horizon (i.e. $N$ days usually set to 1) and the confidence level (usually 95\%), see Fig.~\ref{fig:var_loss}. 
+Mathematically it is the loss corresponding to the $(100-X)^{th}$ percentile of the portfolio returns over the next $N$ days (e.g. in Figure~\ref{fig:var_loss} the graphical representation of the VaR, with $N=1$ and $X=95$, is shown; in the example a normal distribution for the changes in value is assumed). By definition it is a function of two parameters: the time horizon (i.e. $N$ days usually set to 1) and the confidence level (usually 95\%). 
 
 \begin{figure}[htb]
 \centering
@@ -25,7 +25,10 @@ Mathematically it is the loss corresponding to the $(100-X)\textrm{th}$ percenti
 \label{fig:var_loss}
 \end{figure}
 
-For example, if a bank's 10-day 99\% VaR is 3 million USD, there is considered to be only a 1\% chance that losses will exceed 3 million USD in 10 days. One problem with VaR is that, when used in an attempt to limit the risks taken by a trader, it can lead to undesirable results. Suppose a bank tells a trader that the one-day 99\% VaR of the trader's portfolio must be kept less than 10 million USD. There is a danger that the trader will construct a portfolio where there is a 99\% chance that the daily loss is less than 10 million USD and a 1\% chance that it is 500 million USD. The trader is satisfying the risk limits imposed by the bank, but is clearly taking unacceptable risks. 
+For example, if a bank's 10-day 95\% VaR is 3 million USD, there is considered to be only a 5\% chance that losses will exceed 3 million USD in 10 days.
+
+One problem with VaR is that, when used in an attempt to limit the risks taken by a trader, it can lead to undesirable results. Suppose a bank tells a trader that the one-day 95\% VaR of the trader's portfolio must be kept less than 10 million USD. There is a danger that the trader will construct a portfolio where there is a 95\% chance that the daily loss is less than 10 million USD and a 5\% chance that it is 500 million USD. The trader is satisfying the risk limits imposed by the bank, but is clearly taking unacceptable risks. 
+
 The problem is summarized in Figure~\ref{fig:var_vs_badvar}. It shows the probability distribution for the gain or loss on a portfolio over a specified period of time. Both portfolios have the same VaR. However, the portfolio on the right is much riskier than the portfolio on the left because potential losses are much larger. 
 
 \begin{figure}[htb]
@@ -35,7 +38,12 @@ The problem is summarized in Figure~\ref{fig:var_vs_badvar}. It shows the probab
 \label{fig:var_vs_badvar}
 \end{figure}
 
-A measure that produces better incentives for traders than VaR is \emph{expected shortfall} (ES). This is also sometimes referred to as conditional VaR. Where VaR asks the question 'how bad can things get?', expected shortfall asks 'if things do get bad, what is our expected loss?'. It is the expected loss during an N-day period, conditional that the loss is greater than the $X^{th}$ percentile of the loss distribution
+Furthermore VaR hasn't the \textit{sub-additivity property}. So given a portfolio with two assets it is \textbf{not} guaranteed that
+\begin{equation*}
+\text{VaR}_A +  \text{VaR}_B \geq  \text{VaR}(A+B)	
+\end{equation*}
+
+A measure that produces better incentives for traders than VaR is \emph{expected shortfall} (ES). This can be also referred to as conditional VaR. Where VaR asks the question 'how bad can things get?', expected shortfall asks 'if things do get bad, what is our expected loss?'. It is the expected loss during an N-day period, conditional that the loss is greater than the $X^{th}$ percentile of the loss distribution
 \begin{equation}
 \text{ES}_{\alpha}(X) = \frac{1}{\alpha}\int_0^\alpha \text{VaR}_p(X) dp
 \label{eq:es}
@@ -43,7 +51,7 @@ A measure that produces better incentives for traders than VaR is \emph{expected
 
 For example, with $X = 99$ and $N = 10$, the expected shortfall is the average amount that is lost over a 10-day period, assuming that the loss is greater than the $99^{th}$ percentile of the loss distribution.  Clearly, the expected shortfall is much higher in Figure~\ref{fig:var_vs_badvar} (right) than (left). 
 
-Expected shortfall is the negative of the expected value of the tail beyond the VaR, hence it is always a larger number than the corresponding VaR, see Figure~\ref{fig:es_loss}.
+Expected shortfall is the negative of the expected value of the tail beyond the VaR, hence it is always a equal to or larger than the corresponding VaR, see Figure~\ref{fig:es_loss}.
 
 \begin{figure}[htb]
 \centering
@@ -53,12 +61,14 @@ Expected shortfall is the negative of the expected value of the tail beyond the 
 \end{figure}
 
 Regulators make extensive use of VaR and its importance as a risk measure is therefore unlikely to diminish. However, expected shortfall has a number of advantages over VaR, and this has led many financial institutions to use it as a risk measure internally. 
-For details about how to perform the integral in Eq.~\ref{eq:es} refer to Section~\ref{sec:integration}.
+Contrary to VaR, Expected Shortfall follows the sub-additivity property.
+
+%For details about how to perform the integral in Eq.~\ref{eq:es} refer to Section~\ref{sec:integration}.
 
 \section{How to Compute Risk Measures}
 \label{how-to-estimate-the-var}
 
-Throughout this Section the historical series of following tickers AAPL, CSCO, GOOG, INTC, NVDA are used to create an equally weighted portfolio. The dataset with their historical series between January 2023 and September 2024 is available in \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/input_files/historical_data.csv}{historical\_data.csv}.
+Throughout this Section the historical series of following tickers AAPL, CSCO, GOOG, INTC, NVDA are used to create an equally weighted reference portfolio. The dataset with their historical series between January 2023 and September 2024 is available in \href{https://raw.githubusercontent.com/matteosan1/finance_course/develop/input_files/historical_data.csv}{historical\_data.csv}.
 
 \subsection{Parametric VaR, ES}
 
@@ -71,11 +81,9 @@ The historical performance of the portfolio can be determined by the series of t
 	\label{fig:asset_return_distro}
 \end{figure}
 
-\pythoncode{code/var_var_continuous.py}
-Once the dataframe has been loaded the portfolio returns are calculated, lines 6-7.
+Below are reported the resulting VaR and ES using the normal and the t-student models, computed passing in turn the two fitted models.
 
-Below are reported the resulting VaR and ES using the normal and the t-student models, computed passing in turn the two functions the fitted model. Of course the better the model used to describe the actual histogram the more precise will be the resulting risk measurement.
-  
+\pythoncodenon{code/var_var_continuous.py}
 \begin{ioutput}
 Gaussian
 1d-95% VaR: 0.022
@@ -126,12 +134,12 @@ Given the above definitions we can express the Credit VaR as the (100-X)-quantil
 
 Note that in this case quantile has to be computed on the "positive" tail of the loss distribution, because $L$ represents the loss value (i.e. it is a positive quantity).
 
-Credit VaR is actually either the difference of the percentile from the mean, or the percentile itself. There is more than one possible definition, anyway we  will use the latter.
+%Credit VaR is actually either the difference of the percentile from the mean, or the percentile itself. There is more than one possible definition, anyway we  will use the latter.
 
 \subsection{Credit VaR and MC Simulation}
 \label{sec:credit-var-sim}
 
-Credit VaR can be calculated through a simulation of the evolution of a portfolio up to the risk horizon; the simulation must of course include possible defaults of the counter-parties. In each experiment the portfolio is priced obtaining a number of scenarios to draw the loss distribution. It is then straightforward to derive the Credit VaR.
+Credit VaR can be calculated through a simulation of the evolution of a portfolio up to the risk horizon; the simulation must of course include possible defaults of the counter-parties. In each experiment the portfolio is priced obtaining a number of scenarios to draw the loss distribution.
 
 Consider a portfolio of 3 swaps all with a 5y maturity and a fixed rate respectively of (3\%, 2.85\% and 3.3\%) on nominals of (1M, 2M and 1.5M).
 
@@ -146,52 +154,47 @@ Results are also reported in Fig.~\ref{fig:credit_var_uncorr}.
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.5\textwidth]{figures/credit_var_uncorr}
+	\includegraphics[width=0.9\textwidth]{figures/credit_var_uncorr}
 	\caption{Distribution of losses (left) and number of defaults per scenario (right).}
 	\label{fig:credit_var_uncorr}
 \end{figure}
 
 If these swaps belong to counterparties subject to systematic market risk, assuming independent defaults will underestimate tail risk.
-To model default clustering, we can sample $PD$ through a Gaussian Copula\ldots
+
+So repeat the exercise modeling default clustering through a Gaussian Copula with:
+\begin{itemize}
+	\item correlation structure $\rho=0.9999995$ and $P_{\text{def}} = [0.2, 0.2, 0.2]$
+	\item correlation structure $\rho=0.9999995$ and $P_{\text{def}} = [0.2, 0.5, 0.15]$
+\end{itemize}
 
 \begin{ipythonnon}
-from finmarkets import Copula
+from scipy.stats import binom
+
+from copulas import Copula
 
 np.random.seed(42)
 n_sims = 10000
-PD = np.array([0.2, 0.5, 0.15])
+PD = np.array([0.2, 0.2, 0.2])
+#PD = np.array([0.2, 0.5, 0.15])
 R = 0.4
 LGD = 1 - R
 
-rho = 0.50
+rho = 0.9999995
 correlation = np.full((3, 3), rho)
 np.fill_diagonal(correlation, 1.0)
 
 copula = Copula(3, "gauss", {'corr':correlation})
-binoms = [binom(1, PD[asset]) for asset in range(3)]
-
-defaults = copula.sample_marginals(n_sims, binoms)
-exposures = np.array([max(s.npv(dc, libor), 0.0) for s in swaps])
-correlated_losses = np.dot(defaults, exposures*LGD)
-
-confidence_level = 0.95
-credit_var = np.percentile(correlated_losses, confidence_level * 100)
-
-n_defaults_corr = np.sum(defaults, axis=1).astype(int)
-counts_corr = np.bincount(n_defaults_corr, minlength=4)
-
-print(f"Portfolio Credit VaR (at {int(confidence_level*100)}% c.l.) {credit_var:,.2f} EUR")
+...
 \end{ipythonnon}
-\begin{ioutput}
-Portfolio Credit VaR (at 95% c.l.) 58,570.30 EUR
-\end{ioutput}
-A comparison of the two cases is reported in Fig.~\ref{fig:credit_var_corr}. Looking in particular at the number of defaults distributions it is apparent how the number of simulation with 0 or one single default are reduced w.r.t. the uncorrelated case.
-Contrary there is substantial increase in the number of three defaults events.
+A comparison of the two cases is reported in Fig.~\ref{fig:credit_var_corr}. Compared to the uncorrelated case (blu bars) the number of simulations with 0 or a single default are reduced in both scenarios. Contrary there is substantial increase in the number of three defaults events.
+
+Comparing the two correlated results emerges a clear threshold effect: when the $\Pdef$s are all equal there are not 1 or 2 default events since the portfolio is equivalent to a single asset. On the other hand, when the assets have different default probabilities, despite the perfect correlation, there are also intermediate scenarios.
 
 \begin{figure}[htb]
 	\centering
-	\includegraphics[width=0.5\textwidth]{figures/credit_var_corr}
-	\caption{Distribution of losses (left) and number of defaults per scenario (right).}
+	\includegraphics[width=0.9\textwidth]{figures/credit_var_corr_v1}\\
+	\includegraphics[width=0.9\textwidth]{figures/credit_var_corr_v2}
+	\caption{Distribution of losses (left) and number of defaults per scenario (right) for the two cases described in the text: $PD = [0.2, 0.2, 0.2]$ (upper) and $ PD=[0.2, 0.5, 0.15]$ (bottom).}
 	\label{fig:credit_var_corr}
 \end{figure}
 
@@ -416,35 +419,12 @@ Inputs:
 \item Company A hazard rate: $\lambda = 0.05$.
 \end{itemize}
 
-%\begin{finmarkets}
-%Up to now we have always assumed that the valuation date and the start date of the contract are the same.
-%Since the CVA simulation requires to compute the swap value at various date it is instructive to look again at the \texttt{InterestRateSwap} class implementation, in particular at the annuity method:
-%
-%\begin{ipythonbox}
-%...
-%    def annuity(self, dc, current_date=None):
-%        if current_date is None:
-%            current_date = self.fix_dates[0]
-%
-%        a = 0
-%        for i in range(1, len(self.fix_dates)):
-%            if current_date > self.fix_dates[i]:
-%                continue
-%            tau = (self.fix_dates[i]-self.fix_dates[i-1]).days/360
-%            a += tau*dc.df(self.fix_dates[i])
-%        return a
-%\end{ipythonbox}
-%
-%Recalling the definition of the annuity ($\sum_{i=1}^{n}D(d, d_{i}^{\mathrm{fixed}}$), we pass to the method an optional parameter (\texttt{current\_date}) which specifies the evaluation date (by default this is assumed to be the start date of the contract). In such a way we exclude from the summation all the dates in the past to give the correct valuation when this those not happen at the start date.
-%\end{finmarkets}
-
 CVA can be estimated with Monte Carlo simulation through the following formula:
 
 $$
 CVA = \frac{1}{N}\sum_{n=0}^N \left[\sum_i \underbrace{LGD}_{\text{loss given default}} \cdot \underbrace{D(t_i)\cdot EE(t_i)}_{\text{ZCB value at time }t_i}\cdot \underbrace{PD(t_{i-1}, t_i)}_{\text{default probability in }[t_{i-1},t_i]}\right]
 $$
-
-let's consider each term of the expression and how we can work them out.
+Let's consider each term of the expression and how we can work them out.
 \subsubsection{Loss Given default}
 This is the easiest part, we have been given the recovery rate (40\%) so $LGD = 1 - R = 0.6$.
 
@@ -469,18 +449,18 @@ $$
 
 The entire code is reported below:
 
-\pythoncode{code/var_cva.py}
+\pythoncodenon{code/var_cva.py}
 
 \begin{ioutput}
 Bond price without adjustment: 0.9679
-CVA medio: 0.028
-Price: 0.9397
-CVA/Rf-Price: 0.029
+CVA: 0.029
+Price: 0.9392
+CVA/Rf-Price: 0.030
 \end{ioutput}
 
 \emph{Expressing the CVA as a fraction of the notional can be a useful way to compare the credit risk of different contracts.}
 This percentage represents the expected loss due to credit risk as a proportion of the contract's nominal value.
-Figure~\ref{fig:cva_distribution} reports the evolution of the exposure in the swap as time flows.
+%Figure~\ref{fig:cva_distribution} reports the evolution of the exposure in the swap as time flows.
 
 %\begin{figure}[htb]
 %	\centering
@@ -488,13 +468,6 @@ Figure~\ref{fig:cva_distribution} reports the evolution of the exposure in the s
 % 	\caption{Swap exposure as a function of time.}
 % 	\label{fig:cva_exposure}
 %\end{figure} 
-
-\begin{figure}[htb]
-	\centering
-	\includegraphics[width=0.65\textwidth]{figures/cva_distribution}
-	\caption{Portfolio CVA distribution.}
-	\label{fig:cva_distribution}
-\end{figure} 
 
 \section*{Exercises}
 \input{var_ex_text}

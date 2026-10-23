@@ -13,7 +13,8 @@ class RiskValuation:
     var = -np.percentile(self.df[self.y_col], (1 - confidence_level) * 100)
     return var, confidence_level
 
-  def parametric_VaR(self, distribution: Any, confidence_level: float=0.95) -> Tuple[float, float, Any]:
+  def parametric_VaR(self, distribution: Any, 
+                     confidence_level: float=0.95) -> Tuple[float, float, Any]:
     fitted_params = distribution.fit(self.df[self.y_col])
     func = distribution(*fitted_params)
     alpha = 1.0 - confidence_level
@@ -27,7 +28,8 @@ class RiskValuation:
     expected_shortfall = -np.mean(tail)
     return expected_shortfall, confidence_level
 
-  def parametric_ES(self, distribution: Any, confidence_level: float=0.95) -> Tuple[float, float, Any]:
+  def parametric_ES(self, distribution: Any, 
+                    confidence_level: float=0.95) -> Tuple[float, float, Any]:
     fitted_params = distribution.fit(df[self.y_col])
     func = distribution(*fitted_params)
     alpha = 1 - confidence_level

@@ -5,33 +5,41 @@ from typing import List, Union
 
 class PortfolioOptimizer:
   ...
-  def portfolio_return(self, w: np.array) -> float:
-    if self.rf_return > 0:
-      return np.dot(w[:-1], self.returns) + self.rf_return * w[-1]
-    else:
-      return np.dot(w, self.returns))
-
-  def portfolio_risk(self, w: np.array) -> float:
-    if self.rf_return > 0:
-      w = w[:-1]
-    return np.sqrt(w.T @ self.covariance @ w)
-
-  def min_variance_portfolio(self, target_return: float):
+  def min_variance_portfolio(self, target_return: float=None, 
+                             rf: Union[float, None]=None):    
+    self.annualized_return_cov()
     num_assets = len(self.assets)
-    if self.rf_return > 0:
+    if rf is not None:
+      self.returns['rf'] = rf
+      self.covariance['rf'] = 0.0
+      self.covariance.loc['rf'] = 0.0
       num_assets += 1
+    
+    constraints = [{"type": "eq", "fun": self._sum_weights}]
+    if target_return is not None:
+      constraints.append({"type": "eq", "fun": self._target_return, 
+                          "args": [target_return]})
 
-    constraints = [{"type": "eq", "fun": self._sum_weights},
-                   {"type": "eq", "fun": self._target_return, 
-                    "args": (target_return,)},]
-
-    bounds = tuple((0.0, 1.0) for _ in range(num_assets))
+    bounds = [(0.0, 1.0) for _ in range(num_assets)]
     initial_weights = [1.0 / num_assets for _ in range(num_assets)]
+
     return minimize(self.portfolio_risk, initial_weights, method="SLSQP", 
                     bounds=bounds, constraints=constraints)
-  ...
+
+  def efficient_frontier(self, targets: Union[List[float], None]=None, 
+                         rf: Union[float, None]=None):
+    if targets is None:
+      targets = np.arange(0.10, 0.40, 0.01)
+
+    results = []
+    for target in targets:
+      opts = self.min_variance_portfolio(target, rf)
+      if opts.success:
+        results.append((self.portfolio_risk(opts.x), 
+                        self.portfolio_return(opts.x)))
+    return np.array(results)
 
 optimizer = PortfolioOptimizer("portfolio_data.csv",
                                assets=['AAPL', 'AMZN', 'FB', 'GOOG', 'NFLX'],
-                               rf_return=0.1, index_col="date")
-results_rf = optimizer.efficient_frontier()    
+                               index_col="date")
+results_rf = optimizer.efficient_frontier(rf=0.10)    

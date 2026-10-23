@@ -19,8 +19,3 @@ std = np.sqrt(opts.x.T.dot(covariance.dot(opts.x)))
 for i in range(num_assets):
   a = opts.x[i]*covariance.dot(opts.x)[i]
   sigma_i.append(a/std)
-
-print (opts)
-	
-for i in range(num_assets):
-  print (f"Risk per asset {i}: {sigma_i[i]/sum(sigma_i)*100:.3f}%")    

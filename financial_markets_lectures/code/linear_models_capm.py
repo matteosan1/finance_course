@@ -7,26 +7,29 @@ class CAPMModel:
     self.df = dataframe
     self.model = None
     self.predicted = None
+    self.var = {}
 
-  def fit(self, y_col: str, x_col: Union[str, List[str]]):
+  def fit(self, y_col: str, x_col: Union[str, List[str]], 
+          verbose: bool=False):
     X = sm.add_constant(self.df[x_col])
     self.model = sm.OLS(self.df[y_col], X).fit()
-    print (self.model.summary())
+    if verbose:
+      print (self.model.summary())
     self.predicted = self.model.predict(X)
 
-  def risk_decomposition(self, y_col: str, x_col: str):
+  def risk_decomposition(self, y_col: str, x_col: Union[str, List[str]],
+                         verbose: bool=False):
     if self.model is None:
       raise ValueError("You need to fit a model first.")
     alpha, beta = self.model.params
-    ddof = 1
-    n = len(self.df[y_col])
-    total_var = float(np.var(self.df[y_col], ddof=ddof))
-    systematic_var = float((beta**2) * np.var(self.df[x_col], ddof=ddof))
-    idiosyncratic_var = float(np.var(self.model.resid, ddof=ddof))
-    print(f"Total Variance: {total_var:.6f}")
-    print(f"Systematic:     {systematic_var:.6f}")
-    print(f"Idiosyncratic:  {idiosyncratic_var:.6f}")
+    self.var['total'] = self.df[y_col].var()
+    self.var['systematic'] = (beta**2) * self.df[x_col].var()
+    self.var['idiosyncratic'] = self.model.resid.var()
+    if verbose:
+      print(f"Total Variance: {self.var['total']:.6f}")
+      print(f"Systematic:     {self.var['systematic']:.6f}")
+      print(f"Idiosyncratic:  {self.var['idiosyncratic']:.6f}")
 
 returns = pd.read_csv("capm.csv")
 capm = CAPMModel(returns)
-capm.fit('ret_GE', 'ret_SP500')
+capm.fit('ret_GE', 'ret_SP500', verbose=True)

@@ -401,9 +401,8 @@ NPV CDS: 105141.23
 	
 \begin{finmarkets}
 An alternative implementation of the default leg calculation (i.e. \texttt{npv\_default\_leg} method) is possible. The explicit daily loop over the lifetime of the swap could indeed be replaced by a numerical intergral between $[t_0, T]$.
-The code below provide an example exploiting the integration function \texttt{scipy.integrate.quad}. For more information about integration in \texttt{python} please refer to Section~\ref{sec:integration}.
-
-\begin{ipythonnon}
+The code below provide an example exploiting the integration function \texttt{scipy.integrate.quad}. It performs a numerical integration returning two floats: the actual integral result and the associated error but usually we will be interested only in the first number.
+\begin{ipythonbox}
 from scipy.integrate import quad
 
 def npv_default_leg_quad(self, cc, dc):
@@ -416,7 +415,7 @@ def npv_default_leg_quad(self, cc, dc):
                                    self.payment_dates[-1])
   npv, _ = quad(integrand, 0, maturity_in_years, args=(cc, dc))
   return self.nominal * (1 - self.recovery) * npv * 365
-\end{ipythonnon}
+\end{ipythonbox}
 
 This new approach provide a higher precision and is often faster especially for long swap maturities, although it requires a little overhead in converting at each step the year fraction into an actual date.
 
@@ -451,18 +450,18 @@ Using this summation across the "buckets" of your credit curve is the industry s
 %Credit also takes time to build up. An entity with good credit but a short credit history is not seen as positively as another entity with the same quality of credit but a longer history. Debtors want to know a borrower can maintain good credit consistently over time.
 
 \section{Determine Default Probabilities from Market Quotes}
-In this Section we find out how to derive default probabilities implied by market quotes, checking how it can be done both from bonds and Credit Default Swaps.
+In this Section we find out how to derive market implied default probabilities, both using bonds and Credit Default Swaps.
 
 \subsection{Default Probability from Bonds}
 \label{default-probabilities-and-bond-prices}
 
-The price of a bond issued by a party is directly linked to the credit rating of that party, since there is always an associated default risk (the borrower might not be able to repay fully or partially the amount of the taken loan). 
+The price of a bond is directly linked to the credit rating of the issuing party since there is always an associated default risk (the borrower might not be able to repay fully or partially the amount of the taken loan). 
 
-Bonds with low ratings, called junk bonds, are sold at lower prices (since riskier), while those with higher ratings, called investment-grade bonds, are sold at higher prices.
+Bonds with low ratings, called \textit{junk bonds}, are sold at lower prices (i.e. they are riskier), while those with higher ratings, called \textit{investment-grade bonds}, are sold at higher prices.
 
-The average default intensity can be approximated by considering the spread $s$ between the rates of a risky and a risk-free bond, and the recovery rate $R$.
+The average default intensity can be approximated by considering the recovery rate $R$ and the rate spread $s$ between a risky and a risk-free bond.
 
-The risk-free zero coupon bond value $e^{-(r+s)\cdot T}$ equals that of the risky bond which can be computed remembering the expression for the default probability as a function of the hazard rate when this is constant (see Example~\ref{sec:constant_hazard_rate})
+The risk-free bond value $e^{-(r+s)\cdot T}$ equals that of the risky bond which can be computed remembering the expression for the default probability as a function of the hazard rate when this is constant (see Example~\ref{sec:constant_hazard_rate})
 
 \begin{equation}
 e^{-(r+s)\cdot T} = 
@@ -473,11 +472,11 @@ R\;\;\textrm{with probability}\;1 - e^{-\lambda T} \\
 (e^{-\lambda T} + R - R e^{-\lambda T})e^{-rT}
 \end{equation}
 
-If $\lambda$ is small we can use the Taylor expansion neglecting orders higher than the first $e^{x} = 1 + x$ (the discount factor can be simplified away from both sides)
+We can expand in the Taylor expansion the right-hand side up to $\mathcal{O}(1)$ i.e. $e^{x} = 1 + x$
 
 \begin{equation}
 \begin{gathered}
-e^{-sT} = e^{-\lambda T} + R - R e^{-\lambda T} \\
+e^{-rT}e^{-sT} = (e^{-\lambda T} + R - R e^{-\lambda T})\cdot e^{-rT}\\
 1 - sT = 1 - \lambda T + R - R(1 - \lambda T) = 1 - \lambda T + R - R + R\lambda T\\
 \end{gathered}
 \end{equation}
@@ -704,9 +703,8 @@ As an example if the recovery rate is 40\% a CDS spread of 200~bp would translat
 \subsubsection*{Default Probability with Bootstrap}
 \label{default-probabilities-and-cds}
 
-To derive default probabilities from Credit Default Swap market quotes we can exploit again the \emph{bootstrap technique}. 
-If we consider the parallelism between discount and credit curves indeed we can follow the same steps applied in Section~\ref{sec:the-bootstrapping-technique} 
-when deriving the discount factors from Overnight Index Swaps.
+To derive default probabilities from Credit Default Swap quotes we can exploit again the \emph{bootstrap technique}. 
+If we consider the parallelism between discount and credit curves indeed we can follow the same steps applied in Section~\ref{sec:the-bootstrapping-technique} when deriving the discount factors from Overnight Index Swaps.
 
 % Let's summarize the procedure: 
 % \begin{itemize}
@@ -723,14 +721,14 @@ We now implement the code to bootstrap for the survival probabilities using the 
 
 So first load market data and create a discount curve and the swaps, than apply boostrapping.
 
-\pythoncode{code/credit_risk_cds_bootstrap.py}
+\pythoncodenon{code/credit_risk_cds_bootstrap.py}
 
 We can now get the list of non-default probabilities corresponding to the expiry dates of our CDSs.
 
-\begin{ipython}
+\begin{ipythonnon}
 for i in range(len(pillar_dates)):
     print (f"S(t<{credit_curve.pillar_dates[i]}): {credit_curve.ndps[i]:.2f}")
-\end{ipython}
+\end{ipythonnon}
 \begin{ioutput}
 S(t<2025-08-10): 0.98
 S(t<2026-08-10): 0.95
@@ -740,5 +738,5 @@ S(t<2034-08-10): 0.74
 S(t<2044-08-10): 0.54
 \end{ioutput}
 
-\section*{Exercises}
+%\section*{Exercises}
 %\input{credit_risk_ex_text}
